@@ -1,4 +1,6 @@
 # PolyPotion
+Free forever, Open source, All-in-one 3D Mesh, rig, mocap etc suite of tools. 
+Website to come. 
 
 ## What this is 
  - A suite of tools, made for meshes, to rig them, test them, mocap them, edit them, uv unwrap them etc. All I could think of, I put in.
