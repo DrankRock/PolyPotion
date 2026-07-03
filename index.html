@@ -1,0 +1,987 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PolyPotion — 3D Character Pipeline</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;500;600;700&family=Nunito:ital,wght@0,400;0,600;0,700;0,800;1,600&display=swap" rel="stylesheet">
+<script src="theme.js"></script>
+<style>
+:root{
+  --ink:#5a3e28; --ink-soft:#8a6a4a;
+  --cream:#fbf1d9; --cream-2:#fff7e3; --parchment:#f6e7c9;
+  --wood:#9c6b3f; --wood-dark:#6b4a2b;
+  --clay:#c8743c; --sage:#6e9355; --sage-deep:#527040; --honey:#e0a93b;
+  --bg:#f6e7c9; --gutter:#ecd9b3; --panel:#fbf1d9; --panel-2:#fff7e3; --panel-3:#f3e3c0; --header:#f3e6c8;
+  --text:#5a3e28; --text-2:#8a6a4a;
+  --hard:0 4px 0 rgba(107,74,43,.28);
+  --hard-lg:0 8px 0 rgba(107,74,43,.22), 0 14px 24px rgba(107,74,43,.18);
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;height:100%;overflow:hidden;
+  background:radial-gradient(circle at 18% -12%, rgba(224,169,59,.20), transparent 46%), var(--bg);
+  color:var(--text);font-family:var(--font-ui);font-size:13px;font-weight:600;
+  -webkit-font-smoothing:antialiased;user-select:none;}
+.mono{font-family:var(--font-mono);font-weight:500;}
+button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:none;}
+::-webkit-scrollbar{width:12px;height:12px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--wood);border:3px solid var(--bg);border-radius:8px;}
+::-webkit-scrollbar-thumb:hover{background:var(--wood-dark);}
+
+#app{display:flex;flex-direction:column;height:100%;}
+
+/* topbar = wooden plank */
+.topbar{height:60px;flex:none;display:flex;align-items:center;gap:16px;padding:0 16px;
+  background:linear-gradient(180deg,var(--wood),var(--wood-dark));
+  border-bottom:5px solid var(--wood-dark);
+  box-shadow:inset 0 4px 0 rgba(255,255,255,.16), inset 0 -5px 0 rgba(0,0,0,.12);z-index:20;}
+.brand{display:flex;align-items:center;gap:11px;}
+.brand .glyph{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;
+  background:var(--cream-2);color:var(--clay);font-size:18px;border:3px solid var(--wood-dark);box-shadow:0 3px 0 rgba(0,0,0,.18);}
+.brand .name{font-family:var(--font-mono);font-weight:700;font-size:20px;letter-spacing:1px;color:#fff6e0;text-shadow:2px 2px 0 var(--wood-dark);}
+.brand .ver{font-family:var(--font-mono);font-size:10px;color:#ffe7b8;letter-spacing:.05em;margin-top:2px;}
+.flow{display:none !important;}
+.spacer{flex:1;}
+.tbtn{display:inline-flex;align-items:center;gap:7px;height:38px;padding:0 16px;border-radius:12px;
+  font-family:var(--font-mono);font-size:13px;font-weight:600;letter-spacing:.02em;
+  background:var(--cream-2);border:3px solid var(--wood-dark);color:var(--wood-dark);box-shadow:0 4px 0 rgba(107,74,43,.30);
+  transition:transform .12s ease, box-shadow .12s ease;}
+.tbtn:hover{transform:translateY(-2px);box-shadow:0 6px 0 rgba(107,74,43,.30);}
+.tbtn:active{transform:translateY(2px);box-shadow:0 2px 0 rgba(107,74,43,.30);}
+.tbtn.primary{background:var(--clay);border-color:var(--wood-dark);color:#fff6e0;}
+.tbtn.primary:disabled{opacity:.45;cursor:not-allowed;transform:none;box-shadow:0 4px 0 rgba(107,74,43,.30);}
+.tbtn.ghost{background:var(--cream);}
+.tbtn:disabled{opacity:.45;cursor:not-allowed;}
+
+.body{flex:1;display:flex;min-height:0;}
+
+/* dock = a little shelf of tags */
+.dock{width:92px;flex:none;background:var(--cream-2);border-right:5px solid var(--wood-dark);
+  display:flex;flex-direction:column;align-items:center;padding:11px 0;gap:3px;z-index:10;overflow-y:auto;overflow-x:hidden;
+  box-shadow:inset -6px 0 0 rgba(107,74,43,.06);}
+.dock-item{width:74px;flex:none;padding:6px 0 5px;border-radius:12px;display:flex;flex-direction:column;align-items:center;gap:4px;
+  color:var(--ink-soft);border:3px solid transparent;transition:transform .12s ease, box-shadow .12s ease, background .12s, border-color .12s;}
+.dock-item .ic{font-size:16px;line-height:1;}
+.dock-item .lb{font-family:var(--font-mono);font-size:9px;font-weight:500;letter-spacing:.02em;text-transform:lowercase;}
+.dock-item:hover{background:var(--cream);border-color:var(--wood-dark);color:var(--ink);transform:translateY(-2px);box-shadow:0 4px 0 rgba(107,74,43,.22);}
+.dock-item.active{background:var(--active-dim);border-color:var(--clay);color:var(--clay);box-shadow:0 4px 0 rgba(200,116,60,.30);}
+.dock-item.active .ic{color:var(--clay);}
+.dock-sep{width:40px;height:3px;border-radius:2px;background:repeating-linear-gradient(90deg,var(--wood) 0 5px,transparent 5px 9px);margin:4px 0;opacity:.5;}
+.dock-spacer{flex:1;}
+.dock-item.disabled{opacity:.34;cursor:not-allowed;}
+
+/* stage */
+.stage{flex:1;position:relative;min-width:0;min-height:0;background:var(--bg);}
+.tool-frame{position:absolute;inset:0;width:100%;height:100%;border:0;display:block;background:#fff;}
+.tool-pane{position:absolute;inset:0;display:none;}
+.tool-pane.show{display:block;}
+
+/* library */
+.lib{position:absolute;inset:0;display:none;flex-direction:column;background:var(--bg);}
+.lib.show{display:flex;}
+.lib-head{height:62px;flex:none;display:flex;align-items:center;gap:14px;padding:0 22px;border-bottom:4px solid var(--wood-dark);background:var(--cream-2);}
+.lib-head h1{margin:0;font-family:var(--font-mono);font-size:22px;font-weight:700;color:var(--ink);}
+.lib-head .sub{font-family:var(--font-mono);font-size:11px;color:var(--ink-soft);}
+.lib-tabs{display:flex;gap:4px;margin-left:8px;background:var(--cream);border:3px solid var(--wood-dark);border-radius:12px;padding:3px;}
+.lib-tab{padding:6px 15px;border-radius:8px;font-family:var(--font-mono);font-size:12px;font-weight:600;color:var(--ink-soft);}
+.lib-tab.on{background:var(--clay);color:#fff6e0;box-shadow:0 2px 0 rgba(107,74,43,.3);}
+.lib-import{margin-left:auto;}
+.lib-scroll{flex:1;overflow-y:auto;padding:32px 26px;}
+.lib-section-label{font-family:var(--font-mono);font-size:12px;font-weight:500;color:var(--ink-soft);margin:2px 0 24px;}
+.lib-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(232px,1fr));gap:36px 26px;align-content:start;}
+.asset{position:relative;overflow:visible;background:var(--cream);border:4px solid var(--wood-dark);border-radius:18px;padding:14px;display:flex;flex-direction:column;
+  box-shadow:var(--hard-lg);transition:transform .18s ease, box-shadow .18s ease, rotate .18s ease;}
+.asset::before{content:"";position:absolute;top:-14px;left:50%;transform:translateX(-50%);width:62px;height:18px;
+  background:linear-gradient(180deg,var(--wood),var(--wood-dark));border:3px solid var(--wood-dark);border-radius:7px;box-shadow:inset 0 -3px 0 rgba(0,0,0,.18);z-index:3;}
+.asset:hover{transform:translateY(-6px);rotate:-1deg;box-shadow:0 14px 0 rgba(107,74,43,.18),0 22px 30px rgba(107,74,43,.2);}
+.thumb{position:relative;aspect-ratio:16/10;border-radius:12px;overflow:hidden;border:3px solid var(--wood-dark);background:var(--accent,var(--sage));display:flex;align-items:center;justify-content:center;}
+.thumb .gly{font-size:38px;opacity:.9;filter:drop-shadow(0 2px 0 rgba(0,0,0,.18));color:#fff6e0;}
+.thumb img.pfp{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:top center;opacity:0;transition:opacity .25s;z-index:0;image-rendering:pixelated;}
+.asset .badges{position:absolute;left:8px;top:8px;display:flex;gap:5px;z-index:2;}
+.bdg{font-family:var(--font-mono);font-size:10px;font-weight:500;padding:2px 8px;border-radius:7px;letter-spacing:.02em;background:var(--cream-2);border:2px solid var(--wood-dark);color:var(--wood-dark);}
+.bdg.fbx{background:#dcecff;} .bdg.glb{background:#d8f3e6;} .bdg.session{background:#ffe6c9;} .bdg.mixamo{background:#dff0d6;} .bdg.autorig{background:#f6e6c2;} .bdg.chunked{background:#ecdcf6;} .bdg.unrig{background:#eee7dd;}
+.tags{display:flex;flex-wrap:wrap;gap:5px;}
+.tag{font-family:var(--font-mono);font-size:9.5px;font-weight:600;padding:2px 8px;border-radius:20px;background:var(--cream-2);border:2px solid var(--wood-dark);color:var(--wood-dark);letter-spacing:.02em;}
+.tag.nsfw{background:#f6d8da;} .tag.female{background:#f6e0ee;} .tag.male{background:#dce6ff;} .tag.human{background:#e6f0d6;} .tag.non-human{background:#efe2cf;}
+/* library filter bar */
+.lib-filters{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:0 0 24px;}
+.lib-filters .flabel{font-family:var(--font-mono);font-size:11px;font-weight:600;color:var(--ink-soft);margin-right:2px;}
+.fchip{cursor:pointer;font-family:var(--font-mono);font-size:11px;font-weight:600;padding:5px 12px;border-radius:20px;background:var(--cream);border:3px solid var(--wood-dark);color:var(--wood-dark);box-shadow:0 3px 0 rgba(107,74,43,.25);transition:transform .12s ease, box-shadow .12s ease, background .12s;user-select:none;}
+.fchip:hover{transform:translateY(-2px);box-shadow:0 5px 0 rgba(107,74,43,.25);}
+.fchip.on{background:var(--clay);border-color:var(--wood-dark);color:#fff6e0;box-shadow:0 2px 0 rgba(107,74,43,.35);}
+.fchip .ct{opacity:.6;font-weight:500;margin-left:4px;}
+.fchip.clear{background:transparent;border-style:dashed;box-shadow:none;}
+.asset .cardDel{z-index:2;}
+.meta{padding:13px 4px 2px;display:flex;flex-direction:column;gap:9px;flex:1;}
+.nm{font-family:var(--font-mono);font-size:16px;font-weight:700;color:var(--ink);}
+.dt{font-family:var(--font-mono);font-size:10.5px;color:var(--ink-soft);}
+.acts{display:flex;gap:7px;margin-top:auto;}
+.act{flex:1;padding:8px;border-radius:9px;font-family:var(--font-mono);font-size:11px;font-weight:600;text-align:center;
+  background:var(--cream-2);border:3px solid var(--wood-dark);color:var(--wood-dark);box-shadow:0 3px 0 rgba(107,74,43,.3);transition:transform .12s ease, box-shadow .12s ease, background .12s;}
+.act:hover{transform:translateY(-2px);box-shadow:0 5px 0 rgba(107,74,43,.3);background:var(--cream);}
+.act:active{transform:translateY(2px);box-shadow:0 1px 0 rgba(107,74,43,.3);}
+.act.accent{background:var(--sage);border-color:var(--sage-deep);color:#fff6e0;}
+.act.warm{background:var(--clay);border-color:var(--wood-dark);color:#fff6e0;}
+
+/* drop-any-mesh hero */
+.dropzone{display:flex;align-items:center;gap:18px;padding:20px 24px;margin-bottom:30px;border:3px dashed var(--wood-dark);border-radius:18px;background:var(--cream-2);box-shadow:var(--hard);cursor:pointer;transition:transform .15s ease, box-shadow .15s ease, background .15s;}
+.dropzone:hover{transform:translateY(-3px);box-shadow:var(--hard-lg);}
+.dropzone.drag{background:var(--active-dim);border-color:var(--clay);transform:translateY(-3px);}
+.dropzone .dz-ic{width:54px;height:54px;flex:none;border-radius:14px;background:linear-gradient(180deg,var(--clay),#a85a2c);color:#fff6e0;display:flex;align-items:center;justify-content:center;font-size:25px;border:3px solid var(--wood-dark);box-shadow:0 4px 0 rgba(107,74,43,.3);}
+.dropzone h2{margin:0 0 4px;font-family:var(--font-mono);font-size:18px;color:var(--ink);}
+.dropzone p{margin:0;font-size:12.5px;color:var(--ink-soft);font-weight:600;}
+.dropzone .dz-cta{margin-left:auto;flex:none;pointer-events:none;}
+
+/* status bar = wooden footer */
+.statusbar{height:32px;flex:none;display:flex;align-items:center;gap:14px;padding:0 16px;
+  background:var(--cream-2);border-top:4px solid var(--wood-dark);font-family:var(--font-mono);font-size:11px;color:var(--ink-soft);}
+.statusbar .stmark{color:var(--sage-deep);font-size:13px;}
+.statusbar .mono{color:var(--ink-soft);}
+.statusbar .right{margin-left:auto;display:flex;gap:14px;align-items:center;}
+
+/* tool loading */
+.tool-loading{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;background:var(--bg);color:var(--ink-soft);font-family:var(--font-mono);font-size:13px;}
+/* the little potion bottle that bobs while a workspace loads */
+.tool-loading .ring{position:relative;width:34px;height:46px;background:none;border:none;box-shadow:none;animation:bob 1.4s ease-in-out infinite;}
+.tool-loading .ring::before{content:"";position:absolute;left:3px;top:13px;width:28px;height:31px;border-radius:8px 8px 13px 13px;background:linear-gradient(180deg,rgba(255,246,224,.55) 0 40%, var(--clay) 40% 100%);border:2.5px solid var(--wood-dark);box-shadow:inset 0 -4px 0 rgba(0,0,0,.14);}
+.tool-loading .ring::after{content:"";position:absolute;left:11px;top:0;width:12px;height:16px;background:var(--cream-2);border:2.5px solid var(--wood-dark);border-radius:3px 3px 2px 2px;}
+@keyframes bob{0%,100%{transform:translateY(0) rotate(-6deg)}50%{transform:translateY(-9px) rotate(6deg)}}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+/* ===== PolyPotion boot splash ===== */
+#bootSplash{position:fixed;inset:0;z-index:600;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;
+  background:radial-gradient(circle at 50% 38%, rgba(224,169,59,.22), transparent 55%), var(--bg);transition:opacity .45s ease;}
+.pp-stage{position:relative;width:150px;height:170px;display:flex;align-items:center;justify-content:center;}
+.pp-gif{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;z-index:2;image-rendering:auto;}
+.pp-flask{position:relative;width:104px;height:132px;animation:pp-tilt 3.2s ease-in-out infinite;transform-origin:50% 78%;}
+.pp-neck{position:absolute;left:50%;top:0;transform:translateX(-50%);width:30px;height:34px;background:var(--cream-2);border:5px solid var(--wood-dark);border-bottom:none;border-radius:8px 8px 0 0;}
+.pp-neck::after{content:"";position:absolute;left:50%;top:-11px;transform:translateX(-50%);width:38px;height:13px;background:linear-gradient(180deg,var(--wood),var(--wood-dark));border:4px solid var(--wood-dark);border-radius:5px;}
+.pp-body{position:absolute;left:50%;bottom:0;transform:translateX(-50%);width:104px;height:104px;border-radius:0 0 50% 50%/0 0 46% 46%;background:var(--cream-2);border:6px solid var(--wood-dark);overflow:hidden;box-shadow:inset 0 6px 0 rgba(107,74,43,.08);}
+.pp-body::after{content:"";position:absolute;left:16px;top:20px;width:16px;height:34px;background:rgba(255,255,255,.5);border-radius:40%;transform:rotate(18deg);}
+.pp-liquid{position:absolute;left:-20%;bottom:-10%;width:140%;height:62%;background:linear-gradient(180deg,var(--clay),#a85a2c);border-radius:42% 42% 0 0;animation:pp-slosh 3.2s ease-in-out infinite;}
+.pp-liquid::before{content:"";position:absolute;left:0;right:0;top:-6px;height:12px;background:var(--honey);opacity:.7;border-radius:50%;}
+.pp-bub{position:absolute;bottom:12%;width:9px;height:9px;border-radius:50%;background:rgba(255,246,224,.85);opacity:0;}
+.pp-bub.b1{left:34%;animation:pp-rise 1.9s ease-in .1s infinite;}
+.pp-bub.b2{left:54%;width:6px;height:6px;animation:pp-rise 2.3s ease-in .7s infinite;}
+.pp-bub.b3{left:44%;width:7px;height:7px;animation:pp-rise 2.1s ease-in 1.3s infinite;}
+.pp-word{font-family:var(--font-mono);font-weight:700;font-size:26px;letter-spacing:1px;color:var(--ink);text-shadow:2px 2px 0 rgba(107,74,43,.18);}
+.pp-sub{font-family:var(--font-mono);font-size:12px;color:var(--ink-soft);letter-spacing:.06em;margin-top:-8px;}
+@keyframes pp-tilt{0%,100%{transform:rotate(-13deg)}30%{transform:rotate(-13deg)}50%{transform:rotate(0deg)}70%{transform:rotate(13deg)}90%{transform:rotate(13deg)}}
+@keyframes pp-slosh{0%,100%{transform:rotate(13deg) translateY(2px)}30%{transform:rotate(13deg)}50%{transform:rotate(0deg) translateY(0)}70%{transform:rotate(-13deg)}90%{transform:rotate(-13deg) translateY(2px)}}
+@keyframes pp-rise{0%{opacity:0;transform:translateY(0) scale(.6)}20%{opacity:.9}100%{opacity:0;transform:translateY(-58px) scale(1)}}
+
+/* toasts */
+#toasts{position:fixed;bottom:42px;right:18px;z-index:300;display:flex;flex-direction:column;gap:10px;}
+.toast{padding:12px 16px;border-radius:12px;font-family:var(--font-ui);font-weight:700;font-size:12.5px;color:var(--ink);
+  background:var(--cream);border:3px solid var(--wood-dark);border-left:7px solid var(--sage);box-shadow:var(--hard);max-width:360px;animation:tin .25s cubic-bezier(.2,1,.3,1);}
+.toast.warn{border-left-color:var(--honey);}
+.toast.error{border-left-color:#c2562f;}
+.toast.info{border-left-color:var(--clay);}
+.toast.success{border-left-color:var(--sage);}
+@keyframes tin{from{transform:translateX(120%);opacity:0;}to{transform:translateX(0);opacity:1;}}
+</style>
+</head>
+<body>
+<div id="bootSplash">
+  <div class="pp-stage">
+    <img class="pp-gif" src="loading.gif" alt="" onerror="this.remove()">
+    <div class="pp-flask">
+      <span class="pp-neck"></span>
+      <span class="pp-body"><span class="pp-liquid"></span><span class="pp-bub b1"></span><span class="pp-bub b2"></span><span class="pp-bub b3"></span></span>
+    </div>
+  </div>
+  <div class="pp-word">PolyPotion</div>
+  <div class="pp-sub">warming the cauldron…</div>
+</div>
+<div id="app">
+  <!-- TOP BAR -->
+  <header class="topbar">
+    <div class="brand">
+      <div class="glyph" title="PolyPotion — brew a character">⚗</div>
+      <div>
+        <div class="name">PolyPotion</div>
+        <div class="ver mono">3D CHARACTER PIPELINE · LOCAL</div>
+      </div>
+    </div>
+    <div class="flow" id="flow">
+      <div class="fstep" data-flow="import"><span class="fi">1</span>Import</div>
+      <span class="farrow">›</span>
+      <div class="fstep" data-flow="rig"><span class="fi">2</span>Rig</div>
+      <span class="farrow">›</span>
+      <div class="fstep" data-flow="mocap"><span class="fi">3</span>MoCap</div>
+      <span class="farrow">›</span>
+      <div class="fstep" data-flow="export"><span class="fi">4</span>Export</div>
+    </div>
+    <div class="spacer"></div>
+    <button class="tbtn primary" id="btnHandoff" disabled title="Bake the rigged character and send it to MoCap">⟐ Send rig to MoCap →</button>
+    <button class="tbtn ghost" id="btnTheme" title="Switch theme (cute / dark)">◐ Cute</button>
+    <button class="tbtn ghost" id="btnLib">▤ Library</button>
+  </header>
+
+  <div class="body">
+    <!-- TOOL DOCK -->
+    <nav class="dock" id="dock">
+      <div class="dock-item" data-tool="library"><span class="ic">▤</span><span class="lb">Library</span></div>
+      <div class="dock-item" data-tool="showcase" title="Showcase — view, spin & animate a finished character"><span class="ic">◈</span><span class="lb">Show</span></div>
+      <div class="dock-sep"></div>
+      <div class="dock-item" data-tool="rig"><span class="ic">⦿</span><span class="lb">Rig</span></div>
+      <div class="dock-item" data-tool="mocap"><span class="ic">⛷</span><span class="lb">MoCap</span></div>
+      <div class="dock-item" data-tool="motion" title="Motion editor — layer, merge, pose"><span class="ic">⌗</span><span class="lb">Motion</span></div>
+      <div class="dock-item" data-tool="edit" title="Edit mesh — separate, cut, simulate"><span class="ic">✎</span><span class="lb">Edit</span></div>
+      <div class="dock-item" data-tool="sculpt" title="Sculpt mesh — draw, grab, smooth, mask"><span class="ic">✺</span><span class="lb">Sculpt</span></div>
+      <div class="dock-item" data-tool="hair" title="Hair Extract — paint, split & drape hair"><span class="ic">〰</span><span class="lb">Hair</span></div>
+      <div class="dock-item" data-tool="pose" title="Pose rig — IK / FK joint handles"><span class="ic">⟁</span><span class="lb">Pose</span></div>
+      <div class="dock-item" data-tool="physics" title="Physics — soft-body & cloth (WASM)"><span class="ic">≈</span><span class="lb">Physics</span></div>
+      <div class="dock-item" data-tool="bake" title="Bake — raytraced AO + cavity into the mesh"><span class="ic">☀</span><span class="lb">Bake</span></div>
+      <div class="dock-item" data-tool="decimate" title="Decimate — reduce poly count (QEM)"><span class="ic">◇</span><span class="lb">Decimate</span></div>
+      <div class="dock-item" data-tool="csg" title="Boolean — exact cut / union / intersect (Manifold WASM)"><span class="ic">⊘</span><span class="lb">Boolean</span></div>
+      <div class="dock-item" data-tool="uv" title="UV Unwrap — seams, LSCM conformal unwrap, pack (WASM)"><span class="ic">⬚</span><span class="lb">UV</span></div>
+      <div class="dock-item" data-tool="paint" title="Paint — texture painting, clone stamp, live surface preview"><span class="ic">▧</span><span class="lb">Paint</span></div>
+      <div class="dock-spacer"></div>
+      <div class="dock-sep"></div>
+      <div class="dock-item disabled" title="Scene assembly — coming soon"><span class="ic">⊞</span><span class="lb">Scene</span></div>
+    </nav>
+
+    <!-- STAGE -->
+    <div class="stage" id="stage">
+      <!-- Library -->
+      <div class="lib" id="lib">
+        <div class="lib-head">
+          <h1>Library</h1>
+          <div class="lib-tabs" id="libTabs">
+            <div class="lib-tab on" data-tab="characters">Characters</div>
+            <div class="lib-tab" data-tab="animations">Animations</div>
+          </div>
+          <button class="tbtn ghost lib-import" id="libImport">⬇ Import file…</button>
+          <input type="file" id="libFile" accept=".fbx,.glb,.gltf,.obj" style="display:none;">
+        </div>
+        <div class="lib-scroll">
+          <div class="dropzone" id="dropZone">
+            <div class="dz-ic">⬇</div>
+            <div>
+              <h2>Drop any mesh to begin</h2>
+              <p>.glb · .fbx · .obj — it lands in Showcase, and PolyPotion tells you what to brew next</p>
+            </div>
+            <span class="tbtn primary dz-cta">⬇ Choose a file…</span>
+            <input type="file" id="dropFile" accept=".glb,.gltf,.fbx,.obj" style="display:none;">
+          </div>
+          <div class="lib-section-label" id="libLabel">Rigged characters · drop in <span class="mono" style="color:var(--text-2)">data/characters/</span></div>
+          <div class="lib-filters" id="libFilters"></div>
+          <div class="lib-grid" id="libGrid"></div>
+        </div>
+      </div>
+
+      <!-- Showcase tool -->
+      <div class="tool-pane" id="pane-showcase">
+        <div class="tool-loading" id="load-showcase"><div class="ring"></div><div>Loading Showcase…</div></div>
+      </div>
+
+      <!-- Decimate tool -->
+      <div class="tool-pane" id="pane-decimate">
+        <div class="tool-loading" id="load-decimate"><div class="ring"></div><div>Loading Decimate workspace…</div></div>
+      </div>
+
+      <!-- Bake tool -->
+      <div class="tool-pane" id="pane-bake">
+        <div class="tool-loading" id="load-bake"><div class="ring"></div><div>Loading Bake workspace…</div></div>
+      </div>
+
+      <!-- Rig tool -->
+      <div class="tool-pane" id="pane-rig">
+        <div class="tool-loading" id="load-rig"><div class="ring"></div><div>Loading Rig workspace…</div></div>
+      </div>
+
+      <!-- MoCap tool -->
+      <div class="tool-pane" id="pane-mocap">
+        <div class="tool-loading" id="load-mocap"><div class="ring"></div><div>Loading MoCap workspace…</div></div>
+      </div>
+
+      <!-- Edit tool -->
+      <div class="tool-pane" id="pane-edit">
+        <div class="tool-loading" id="load-edit"><div class="ring"></div><div>Loading Edit workspace…</div></div>
+      </div>
+
+      <!-- Motion tool -->
+      <div class="tool-pane" id="pane-motion">
+        <div class="tool-loading" id="load-motion"><div class="ring"></div><div>Loading Motion workspace…</div></div>
+      </div>
+
+      <!-- Sculpt tool -->
+      <div class="tool-pane" id="pane-sculpt">
+        <div class="tool-loading" id="load-sculpt"><div class="ring"></div><div>Loading Sculpt workspace…</div></div>
+      </div>
+
+      <!-- Hair Extract tool -->
+      <div class="tool-pane" id="pane-hair">
+        <div class="tool-loading" id="load-hair"><div class="ring"></div><div>Loading Hair workspace</div></div>
+      </div>
+
+      <!-- Pose tool -->
+      <div class="tool-pane" id="pane-pose">
+        <div class="tool-loading" id="load-pose"><div class="ring"></div><div>Loading Pose workspace…</div></div>
+      </div>
+
+      <!-- Physics tool -->
+      <div class="tool-pane" id="pane-physics">
+        <div class="tool-loading" id="load-physics"><div class="ring"></div><div>Loading Physics workspace…</div></div>
+      </div>
+
+      <!-- Boolean (CSG) tool -->
+      <div class="tool-pane" id="pane-csg">
+        <div class="tool-loading" id="load-csg"><div class="ring"></div><div>Loading Boolean workspace…</div></div>
+      </div>
+
+      <!-- UV Unwrap tool -->
+      <div class="tool-pane" id="pane-uv">
+        <div class="tool-loading" id="load-uv"><div class="ring"></div><div>Loading UV workspace…</div></div>
+      </div>
+
+      <!-- Paint tool -->
+      <div class="tool-pane" id="pane-paint">
+        <div class="tool-loading" id="load-paint"><div class="ring"></div><div>Loading Paint workspace…</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STATUS BAR -->
+  <footer class="statusbar">
+    <span class="stmark">✿</span>
+    <span id="stTool">Library</span>
+    <span class="mono" id="stAsset">no asset loaded</span>
+    <div class="right">
+      <span class="mono" id="stHint">Pick a character to rig, or jump straight to MoCap</span>
+      <span class="mono">⌥ local · nothing uploaded</span>
+    </div>
+  </footer>
+</div>
+
+<div id="toasts"></div>
+
+<!-- ============ COMMAND PALETTE ============ -->
+<div id="cmdk" style="display:none;position:fixed;inset:0;z-index:500;background:rgba(8,8,8,0.55);backdrop-filter:blur(2px);align-items:flex-start;justify-content:center;">
+  <div style="margin-top:11vh;width:560px;max-width:92vw;background:#1a1815;border:1px solid #34322d;border-radius:12px;box-shadow:0 24px 80px rgba(0,0,0,0.6);overflow:hidden;">
+    <div style="display:flex;align-items:center;gap:10px;padding:13px 16px;border-bottom:1px solid #070706;">
+      <span style="color:#6e6a60;font-size:14px;">⌘</span>
+      <input id="cmdkIn" placeholder="Jump to a tool or run a command…" autocomplete="off"
+        style="flex:1;background:none;border:none;outline:none;color:#e9e6dd;font-family:'Archivo',sans-serif;font-size:14px;">
+      <span style="font-family:'Spline Sans Mono',monospace;font-size:10px;color:#5a574f;border:1px solid #2a2823;border-radius:4px;padding:2px 6px;">ESC</span>
+    </div>
+    <div id="cmdkList" style="max-height:50vh;overflow-y:auto;padding:6px;"></div>
+  </div>
+</div>
+
+<!-- ============ SHORTCUTS CHEAT SHEET ============ -->
+<div id="cheat" style="display:none;position:fixed;inset:0;z-index:500;background:rgba(8,8,8,0.6);backdrop-filter:blur(2px);align-items:center;justify-content:center;">
+  <div style="width:520px;max-width:92vw;background:#1a1815;border:1px solid #34322d;border-radius:12px;box-shadow:0 24px 80px rgba(0,0,0,0.6);padding:22px 24px;">
+    <div style="display:flex;align-items:center;margin-bottom:16px;">
+      <div style="font-size:15px;font-weight:700;letter-spacing:0.03em;">Keyboard Shortcuts</div>
+      <div style="margin-left:auto;font-family:'Spline Sans Mono',monospace;font-size:10px;color:#5a574f;">press ? or ESC to close</div>
+    </div>
+    <div id="cheatGrid" style="display:grid;grid-template-columns:1fr 1fr;gap:9px 26px;font-size:12.5px;"></div>
+  </div>
+</div>
+
+<script>
+(function () {
+  const $ = s => document.querySelector(s);
+  const ready = setInterval(() => { if (window.Studio) { clearInterval(ready); init(); } }, 30);
+
+  function init() {
+    const S = window.Studio;
+    const physicsPost = (type, payload) => S.post('physics', type, payload);
+
+    // ---- THEME (delegated to shared theme.js) ----
+    function applyTheme(name){ if (window.StudioTheme) window.StudioTheme.apply(name); }
+    function cycleTheme(){ if (!window.StudioTheme) return; window.StudioTheme.toggle();
+      S && S.toast && S.toast('Theme: ' + window.StudioTheme.get(), 'info'); }
+
+    // ---- COMMAND REGISTRY ----
+    const TOOLDEFS = [
+      { k:'library', label:'Library', icon:'▤', key:'0' },
+      { k:'showcase', label:'Showcase', icon:'◈', key:'9' },
+      { k:'rig', label:'Rig', icon:'⦿', key:'1' },
+      { k:'mocap', label:'MoCap', icon:'⛷', key:'2' },
+      { k:'motion', label:'Motion', icon:'⌗', key:'3' },
+      { k:'edit', label:'Edit', icon:'✎', key:'4' },
+      { k:'sculpt', label:'Sculpt', icon:'✺', key:'5' },
+      { k:'pose', label:'Pose', icon:'⟁', key:'6' },
+      { k:'physics', label:'Physics', icon:'≈', key:'7' },
+      { k:'bake', label:'Bake', icon:'☀', key:'8' },
+      { k:'uv', label:'UV Unwrap', icon:'⬚', key:'' },
+      { k:'paint', label:'Paint', icon:'▧', key:'' },
+    ];
+    const COMMANDS = [
+      ...TOOLDEFS.map(t => ({ id:'go:'+t.k, title:'Go to ' + t.label, hint:t.icon + '  ·  ' + t.key, run:() => S.setTool(t.k) })),
+      { id:'physics:cloth', title:'Physics — Drop a cloth', hint:'≋', run:() => { S.setTool('physics'); setTimeout(()=>physicsPost('studio:cmd',{cmd:'cloth'}),120); } },
+      { id:'physics:flag', title:'Physics — Flag in wind', hint:'🏳', run:() => { S.setTool('physics'); setTimeout(()=>physicsPost('studio:cmd',{cmd:'flag'}),120); } },
+      { id:'physics:drape', title:'Physics — Drape over sphere (WASM collision)', hint:'☂', run:() => { S.setTool('physics'); setTimeout(()=>physicsPost('studio:cmd',{cmd:'drape'}),120); } },
+      { id:'physics:sim', title:'Physics — Play / pause simulation', hint:'␣', run:() => { S.setTool('physics'); setTimeout(()=>physicsPost('studio:cmd',{cmd:'toggleSim'}),120); } },
+      { id:'physics:flick', title:'Physics — Flick it (boing)', hint:'✦', run:() => { S.setTool('physics'); setTimeout(()=>physicsPost('studio:cmd',{cmd:'flick'}),120); } },
+      { id:'theme', title:'Cycle theme (dark / slate / contrast)', hint:'T', run:cycleTheme },
+      { id:'clearsession', title:'Clear saved session (delete restored rigs)', hint:'⌫', run:() => S.clearSavedSession && S.clearSavedSession() },
+      { id:'handoff', title:'Send rig to MoCap', hint:'⟐', run:() => $('#btnHandoff') && $('#btnHandoff').click() },
+      { id:'cheat', title:'Show keyboard shortcuts', hint:'?', run:() => openCheat() },
+    ];
+
+    // ---- PALETTE UI ----
+    const pal = $('#cmdk'), input = $('#cmdkIn'), list = $('#cmdkList');
+    let filtered = COMMANDS.slice(), sel = 0;
+    function fuzzy(q) {
+      q = q.trim().toLowerCase();
+      if (!q) return COMMANDS.slice();
+      return COMMANDS.filter(c => c.title.toLowerCase().includes(q) || c.id.includes(q))
+        .sort((a,b) => a.title.toLowerCase().indexOf(q) - b.title.toLowerCase().indexOf(q));
+    }
+    function render() {
+      list.innerHTML = '';
+      filtered.forEach((c, i) => {
+        const row = document.createElement('div');
+        row.style.cssText = 'display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:8px;cursor:pointer;'
+          + (i === sel ? 'background:rgba(255,79,0,0.18);' : '');
+        row.innerHTML = '<span style="font-size:13px;color:#ffd2bb;width:18px;text-align:center;">'+(c.hint||'')+'</span>'
+          + '<span style="flex:1;font-size:13px;color:#e0e0e0;">'+c.title+'</span>';
+        row.addEventListener('mouseenter', () => { sel = i; render(); });
+        row.addEventListener('click', () => exec());
+        list.appendChild(row);
+      });
+      if (!filtered.length) list.innerHTML = '<div style="padding:18px;color:#5a574f;font-size:12.5px;text-align:center;">No matches</div>';
+    }
+    function openPal() { pal.style.display = 'flex'; input.value = ''; filtered = COMMANDS.slice(); sel = 0; render(); setTimeout(()=>input.focus(),0); }
+    function closePal() { pal.style.display = 'none'; }
+    function exec() { const c = filtered[sel]; closePal(); if (c) c.run(); }
+    input.addEventListener('input', () => { filtered = fuzzy(input.value); sel = 0; render(); });
+    input.addEventListener('keydown', e => {
+      if (e.key === 'ArrowDown') { sel = Math.min(filtered.length-1, sel+1); render(); e.preventDefault(); }
+      else if (e.key === 'ArrowUp') { sel = Math.max(0, sel-1); render(); e.preventDefault(); }
+      else if (e.key === 'Enter') { exec(); e.preventDefault(); }
+      else if (e.key === 'Escape') { closePal(); }
+    });
+    pal.addEventListener('click', e => { if (e.target === pal) closePal(); });
+
+    // ---- CHEAT SHEET ----
+    const CHEAT = [
+      ['⌘K / Ctrl K','Command palette'], ['1 – 8','Switch tool'], ['0','Library'],
+      ['Space','Physics: play / pause'], ['F','Physics: flick'], ['T','Cycle theme'],
+      ['⟐','Send rig to MoCap'], ['?','This cheat sheet'],
+    ];
+    const cheat = $('#cheat');
+    $('#cheatGrid').innerHTML = CHEAT.map(([k,v]) =>
+      '<div style="display:flex;align-items:center;gap:10px;"><span style="font-family:IBM Plex Mono,monospace;font-size:11px;color:#ffd2bb;background:#1c1b19;border:1px solid #2a2823;border-radius:5px;padding:3px 8px;min-width:54px;text-align:center;">'+k+'</span><span style="color:#9b958a;">'+v+'</span></div>'
+    ).join('');
+    function openCheat() { cheat.style.display = 'flex'; }
+    function closeCheat() { cheat.style.display = 'none'; }
+    cheat.addEventListener('click', e => { if (e.target === cheat) closeCheat(); });
+
+    // ---- GLOBAL KEYS ----
+    window.addEventListener('keydown', e => {
+      const typing = /input|textarea|select/i.test((e.target && e.target.tagName) || '');
+      if ((e.metaKey || e.ctrlKey) && (e.key === 'k' || e.key === 'K')) { e.preventDefault(); pal.style.display === 'flex' ? closePal() : openPal(); return; }
+      if (pal.style.display === 'flex' || typing) return;
+      if (e.key === 'Escape') { closeCheat(); return; }
+      if (e.key === '?') { cheat.style.display === 'flex' ? closeCheat() : openCheat(); return; }
+      if (e.key === 't' || e.key === 'T') { cycleTheme(); return; }
+      if (e.key >= '0' && e.key <= '9') { const d = TOOLDEFS.find(t => t.key === e.key); if (d) S.setTool(d.k); return; }
+      if (e.key === ' ') { S.post('physics','studio:cmd',{cmd:'toggleSim'}); e.preventDefault(); return; }
+      if (e.key === 'f' || e.key === 'F') { S.post('physics','studio:cmd',{cmd:'flick'}); return; }
+    });
+
+    // expose theme for other callers
+    window.Studio.applyTheme = applyTheme;
+    window.Studio.openPalette = openPal;
+  }
+})();
+</script>
+
+<script>
+(function () {
+  const $ = s => document.querySelector(s);
+  const $$ = s => [...document.querySelectorAll(s)];
+
+  const TOOLS = {
+    showcase:{ src: 'Showcase.dc.html?embed=1', frame: null, ready: false, label: 'Showcase' },
+    rig:   { src: 'AutoRig.html?embed=1', frame: null, ready: false, label: 'Rig' },
+    mocap: { src: 'MoCap.dc.html?embed=1', frame: null, ready: false, label: 'MoCap' },
+    edit:  { src: 'MeshEdit.dc.html?embed=1', frame: null, ready: false, label: 'Edit' },
+    motion:{ src: 'Motion.dc.html?embed=1', frame: null, ready: false, label: 'Motion' },
+    sculpt:{ src: 'Sculpt.dc.html?embed=1', frame: null, ready: false, label: 'Sculpt' },
+    hair:  { src: 'HairExtract.dc.html?embed=1', frame: null, ready: false, label: 'Hair' },
+    pose:  { src: 'Pose.dc.html?embed=1', frame: null, ready: false, label: 'Pose' },
+    physics:{ src: 'Physics.dc.html?embed=1', frame: null, ready: false, label: 'Physics' },
+    decimate:{ src: 'Decimate.dc.html?embed=1', frame: null, ready: false, label: 'Decimate' },
+    bake:  { src: 'Bake.dc.html?embed=1', frame: null, ready: false, label: 'Bake' },
+    csg:   { src: 'Boolean.dc.html?embed=1', frame: null, ready: false, label: 'Boolean' },
+    uv:    { src: 'UVUnwrap.dc.html?embed=1', frame: null, ready: false, label: 'UV Unwrap' },
+    paint: { src: 'TexturePaint.dc.html?embed=1', frame: null, ready: false, label: 'Paint' },
+  };
+  let activeTool = 'library';
+  let session = { characters: [], animations: [] };  // rigged-this-session
+  let libData = { characters: [], animations: [] };
+  let libTab = 'characters';
+  let libFilters = new Set();   // active category filters (AND-combined)
+  let activeChar = null;        // shared character state — { it, deliveredTo:Set } follows you across tools
+  const CHAR_TOOLS = ['showcase', 'mocap', 'pose', 'edit', 'sculpt', 'physics', 'decimate', 'bake', 'hair', 'csg', 'uv', 'paint'];
+  let lastLoadedName = '';
+
+  // ---------- toasts ----------
+  function toast(msg, kind) {
+    const el = document.createElement('div');
+    el.className = 'toast ' + (kind || '');
+    el.textContent = msg;
+    $('#toasts').appendChild(el);
+    setTimeout(() => { el.style.transition = 'opacity .3s'; el.style.opacity = '0'; setTimeout(() => el.remove(), 300); }, 3400);
+  }
+
+  // ---------- iframe lifecycle ----------
+  function ensureFrame(tool) {
+    const T = TOOLS[tool]; if (!T || T.frame) return T && T.frame;
+    const pane = $('#pane-' + tool);
+    const f = document.createElement('iframe');
+    f.className = 'tool-frame';
+    f.src = T.src;
+    f.allow = 'camera; microphone';
+    pane.appendChild(f);
+    T.frame = f;
+    return f;
+  }
+  function post(tool, type, payload, transfer) {
+    const T = TOOLS[tool]; if (!T || !T.frame) return;
+    T.frame.contentWindow.postMessage(Object.assign({ __studio: true, type }, payload || {}), '*', transfer || []);
+  }
+
+  // ---------- tool switching ----------
+  function setTool(tool) {
+    activeTool = tool;
+    $$('.dock-item').forEach(d => d.classList.toggle('active', d.dataset.tool === tool));
+    $('#lib').classList.toggle('show', tool === 'library');
+    ['showcase', 'rig', 'mocap', 'edit', 'motion', 'sculpt', 'hair', 'pose', 'physics', 'decimate', 'bake', 'csg', 'uv', 'paint'].forEach(t => {
+      const pane = $('#pane-' + t);
+      const on = t === tool;
+      pane.classList.toggle('show', on);
+      if (on) { ensureFrame(t); const ld = $('#load-' + t); }
+    });
+    // status + flow
+    $('#stTool').textContent = tool === 'library' ? 'Library' : TOOLS[tool].label;
+    // shared character state — the active character follows you into each tool (once)
+    if (tool !== 'library' && activeChar && CHAR_TOOLS.indexOf(tool) !== -1 && !activeChar.deliveredTo.has(tool)) {
+      activeChar.deliveredTo.add(tool);
+      deliverChar(tool, activeChar.it, true);
+      toast(activeChar.it.label + ' follows you into ' + TOOLS[tool].label, 'info');
+    }
+    updateFlow(tool);
+    $('#btnHandoff').style.display = tool === 'rig' ? '' : 'none';
+    if (tool === 'showcase') $('#stHint').textContent = 'Orbit the character, spin the turntable, and play a clip on it if it\u2019s rigged';
+    else if (tool === 'mocap') $('#stHint').textContent = 'Pick a character + a clip or webcam, then retarget';
+    else if (tool === 'rig') $('#stHint').textContent = 'Place joints over the mesh, then Compute Skeleton + Skin';
+    else if (tool === 'edit') $('#stHint').textContent = 'Import or open a mesh, then separate / cut / simulate its pieces';
+    else if (tool === 'motion') $('#stHint').textContent = 'Layer & merge motion clips, trim takes, and pose hands over a span';
+    else if (tool === 'sculpt') $('#stHint').textContent = 'Push, pull, smooth and grab the mesh surface — symmetric, with masking & undo';
+    else if (tool === 'pose') $('#stHint').textContent = 'Drag joint handles to pose — IK reach on wrists & ankles, FK on the rest';
+    else if (tool === 'physics') $('#stHint').textContent = 'Simulate soft-body jiggle or cloth in wind — every particle solved in WASM, on-device';
+    else if (tool === 'decimate') $('#stHint').textContent = 'Reduce triangle count with quadric edge-collapse — silhouette-preserving LOD, on-device';
+    else if (tool === 'bake') $('#stHint').textContent = 'Raytrace ambient occlusion + cavity into the vertex colors — flat scans read as rendered, on-device';
+    else if (tool === 'csg') $('#stHint').textContent = 'Place the cutter, then run exact union / subtract / intersect — Manifold WASM, on-device';
+    else if (tool === 'uv') $('#stHint').textContent = 'Auto-detect or paint seams, then LSCM-unwrap every chart — WASM conformal solve, on-device';
+    else if (tool === 'paint') $('#stHint').textContent = 'Paint straight onto the model or the flat map — clone-stamp, heal, fill; the map is the live texture, on-device';
+    else if (tool === 'hair') $('#stHint').textContent = 'Paint the head & hair, split the hair off, then drape it under gravity — on-device';
+    else $('#stHint').textContent = 'Pick a character to rig, or jump straight to MoCap';
+  }
+
+  function updateFlow(tool) {
+    const map = { library: 'import', rig: 'rig', mocap: 'mocap', edit: 'mocap', motion: 'mocap', sculpt: 'mocap', pose: 'mocap', physics: 'mocap' };
+    const order = ['import', 'rig', 'mocap', 'export'];
+    const cur = map[tool] || 'import';
+    const ci = order.indexOf(cur);
+    $$('#flow .fstep').forEach(s => {
+      const i = order.indexOf(s.dataset.flow);
+      s.classList.toggle('on', i === ci);
+      s.classList.toggle('done', i < ci);
+    });
+  }
+
+  // ---------- session persistence (IndexedDB) ----------
+  // Baked rigs live only in memory by default; we mirror them into IndexedDB
+  // so a page reload restores the full character (skeleton + skin GLB buffer).
+  const IDB = { name: 'studioSession', store: 'chars', _db: null };
+  function idbOpen() {
+    if (IDB._db) return Promise.resolve(IDB._db);
+    return new Promise((res, rej) => {
+      const req = indexedDB.open(IDB.name, 1);
+      req.onupgradeneeded = () => { const db = req.result; if (!db.objectStoreNames.contains(IDB.store)) db.createObjectStore(IDB.store, { keyPath: 'id' }); };
+      req.onsuccess = () => { IDB._db = req.result; res(IDB._db); };
+      req.onerror = () => rej(req.error);
+    });
+  }
+  async function idbTx(mode, fn) {
+    try { const db = await idbOpen(); return await new Promise((res, rej) => { const tx = db.transaction(IDB.store, mode); const st = tx.objectStore(IDB.store); const out = fn(st); tx.oncomplete = () => res(out && out.result !== undefined ? out.result : out); tx.onerror = () => rej(tx.error); }); }
+    catch (e) { return null; }
+  }
+  function idbSaveChar(it) {
+    if (!it._buffer) return;
+    const rec = { id: it.path + '|' + it.label, label: it.label, path: it.path, ext: it.ext || 'glb', rig: it.rig || 'autorig', buffer: it._buffer.slice(0), ts: Date.now() };
+    idbTx('readwrite', st => st.put(rec));
+  }
+  function idbDeleteChar(it) { idbTx('readwrite', st => st.delete(it.path + '|' + it.label)); }
+  async function idbRestore() {
+    const recs = await idbTx('readonly', st => { const r = st.getAll(); return r; });
+    if (!recs || !recs.length) return 0;
+    recs.sort((a, b) => b.ts - a.ts);
+    for (const r of recs) {
+      if (session.characters.some(c => c.path === r.path && c.label === r.label)) continue;
+      session.characters.push({ label: r.label, path: r.path, ext: r.ext, session: true, restored: true, rig: r.rig, _buffer: r.buffer });
+    }
+    return recs.length;
+  }
+  function clearSavedSession() {
+    idbTx('readwrite', st => st.clear());
+    session.characters = session.characters.filter(c => !c.session);
+    renderLib(); toast('Saved session cleared', 'info');
+  }
+  window.Studio = window.Studio || {};
+
+  // ---------- library ----------
+  async function loadManifests() {
+    try { const r = await fetch('data/characters/manifest.json'); if (r.ok) libData.characters = (await r.json()).characters || []; } catch (e) {}
+    try { const r = await fetch('data/animations/manifest.json'); if (r.ok) libData.animations = (await r.json()).animations || []; } catch (e) {}
+    renderLib();
+  }
+
+  // ---- categories / filtering ----
+  function itemTags(it) {
+    const t = new Set((it.tags || []).map(x => String(x).toLowerCase()));
+    if (it.chunked === 'true' || it.chunked === true) t.add('chunked');
+    if (it.rigged === 'true' || it.rig === 'mixamo' || it.rig === 'autorig') t.add('rigged');
+    else if (it.rigged === 'false') t.add('unrigged');
+    if (it.session) t.add('session');
+    return t;
+  }
+  function itemMatches(it) {
+    if (!libFilters.size) return true;
+    const t = itemTags(it);
+    for (const f of libFilters) if (!t.has(f)) return false;   // AND across active filters
+    return true;
+  }
+  function renderFilters(all) {
+    const bar = $('#libFilters');
+    if (!bar) return;
+    if (libTab !== 'characters') { bar.innerHTML = ''; return; }
+    const counts = {};
+    all.forEach(it => itemTags(it).forEach(tag => { counts[tag] = (counts[tag] || 0) + 1; }));
+    const order = ['male','female','human','non-human','sfw','nsfw','t-pose','rigged','unrigged','chunked','session'];
+    const keys = Object.keys(counts).sort((a, b) => {
+      const ia = order.indexOf(a), ib = order.indexOf(b);
+      return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib) || a.localeCompare(b);
+    });
+    bar.innerHTML = '';
+    if (!keys.length) return;
+    const lbl = document.createElement('span'); lbl.className = 'flabel'; lbl.textContent = 'Filter:'; bar.appendChild(lbl);
+    keys.forEach(tag => {
+      const chip = document.createElement('div');
+      chip.className = 'fchip' + (libFilters.has(tag) ? ' on' : '');
+      chip.innerHTML = tag + '<span class="ct">' + counts[tag] + '</span>';
+      chip.addEventListener('click', () => {
+        if (libFilters.has(tag)) libFilters.delete(tag); else libFilters.add(tag);
+        renderLib();
+      });
+      bar.appendChild(chip);
+    });
+    if (libFilters.size) {
+      const clr = document.createElement('div');
+      clr.className = 'fchip clear'; clr.textContent = '✕ clear';
+      clr.addEventListener('click', () => { libFilters.clear(); renderLib(); });
+      bar.appendChild(clr);
+    }
+  }
+
+  function renderLib() {
+    const grid = $('#libGrid');
+    const all = libTab === 'characters'
+      ? [...session.characters, ...libData.characters]
+      : [...session.animations, ...libData.animations];
+    $('#libLabel').innerHTML = libTab === 'characters'
+      ? 'Rigged characters · drop in <span class="mono" style="color:var(--text-2)">data/characters/</span>'
+      : 'Motion clips · drop in <span class="mono" style="color:var(--text-2)">data/animations/</span>';
+    renderFilters(all);
+    const items = libTab === 'characters' ? all.filter(itemMatches) : all;
+    grid.innerHTML = '';
+    if (!all.length) {
+      grid.innerHTML = '<div style="color:var(--muted);font-size:12px;padding:30px 0;">Nothing here yet. Use Import, or drop files into the data/ folder.</div>';
+      return;
+    }
+    if (!items.length) {
+      grid.innerHTML = '<div style="color:var(--muted);font-size:12px;padding:30px 0;">No characters match these filters.</div>';
+      return;
+    }
+    items.forEach(it => grid.appendChild(libTab === 'characters' ? charCard(it) : animCard(it)));
+  }
+
+  function cardEl(html) { const d = document.createElement('div'); d.className = 'asset'; d.innerHTML = html; return d; }
+
+  function fmtBytes(b){ b = +b || 0; if (!b) return ''; return b >= 1048576 ? (b/1048576).toFixed(1)+' MB' : (b/1024).toFixed(0)+' KB'; }
+  function cardSub(it){ const parts = []; const s = fmtBytes(it.size); if (s) parts.push(s); if (it.source) parts.push(it.source); if (!parts.length) parts.push((it.path||'').replace('data/characters/','')); return parts.join(' · '); }
+  function pfpCandidates(it){ const base = (it.path||'').split('/').pop().replace(/\.[^.]+$/,''); const id = it.id || base; const out = []; if (it.pfp) out.push(it.pfp); if (id) out.push('data/characters/pfp/'+id+'.png'); if (base && base !== id) out.push('data/characters/pfp/'+base+'.png'); return out; }
+  function attachPfp(el, it){ const thumb = el.querySelector('.thumb'); if (!thumb) return; const cands = pfpCandidates(it); if (!cands.length) return; const img = document.createElement('img'); img.className = 'pfp'; img.alt = it.label || ''; let i = 0; const tryNext = () => { if (i >= cands.length) { img.remove(); return; } img.src = cands[i++]; }; img.onerror = tryNext; img.onload = () => { img.style.opacity = '1'; const g = thumb.querySelector('.gly'); if (g) g.style.display = 'none'; }; thumb.appendChild(img); tryNext(); }
+  function charCard(it) {
+    const ext = (it.ext || 'fbx').toLowerCase();
+    const rig = it.rig || (it.session ? 'autorig' : 'unknown');
+    const el = cardEl(`
+      <div class="thumb"><span class="gly">⦿</span>
+        <div class="badges">
+          <span class="bdg ${ext}">${ext}</span>
+          ${it.session ? '<span class="bdg session">session</span>' : ''}${it.chunked === 'true' || it.chunked === true ? '<span class="bdg chunked" title="stored as chunks">chunked</span>' : ''}${it.rigged === 'true' ? '<span class="bdg mixamo">rigged</span>' : (it.rigged === 'false' ? '<span class="bdg unrig">unrigged</span>' : '')}
+          ${rig === 'mixamo' ? '<span class="bdg mixamo">mixamo</span>' : (rig === 'autorig' ? '<span class="bdg autorig">autorig</span>' : '')}
+          ${it.restored ? '<span class="bdg autorig" title="restored from a previous session">saved</span>' : ''}
+        </div>
+        ${it.session ? '<button class="cardDel" title="Remove from session" style="position:absolute;top:7px;right:7px;width:22px;height:22px;border-radius:5px;border:1px solid var(--edge,#34322d);background:rgba(15,15,15,0.7);color:var(--text-2,#9b958a);font-size:13px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;">×</button>' : ''}
+      </div>
+      <div class="meta">
+        <div class="nm">${it.label}</div>
+        <div class="dt">${it.session ? 'rigged this session' : cardSub(it)}</div>
+        ${(it.tags && it.tags.length) ? '<div class="tags">' + it.tags.map(x => '<span class="tag ' + String(x).toLowerCase().replace(/[^a-z0-9]+/g, '-') + '">' + x + '</span>').join('') + '</div>' : ''}
+        <div class="acts" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;">
+          <button class="act">⦿ Rig</button>
+          <button class="act">⟁ Pose</button>
+          <button class="act">≈ Physics</button>
+          <button class="act">✺ Sculpt</button>
+          <button class="act">✎ Edit</button>
+          <button class="act">☀ Bake</button>
+          <button class="act">◇ Decimate</button>
+          <button class="act">▧ Paint</button>
+          <button class="act warm" style="grid-column:span 2;">⛷ MoCap</button>
+        </div>
+      </div>`);
+    attachPfp(el, it);
+    const [openRig, openPose, openPhysics, openSculpt, openEdit, openBake, openDecimate, openPaint, toMocap] = el.querySelectorAll('.act');
+    const del = el.querySelector('.cardDel');
+    if (del) del.addEventListener('click', (e) => {
+      e.stopPropagation();
+      idbDeleteChar(it);
+      const arr = session.characters; const i = arr.indexOf(it); if (i >= 0) arr.splice(i, 1);
+      renderLib(); toast('Removed “' + it.label + '” from session', 'info');
+    });
+    openRig.addEventListener('click', () => openInRig(it));
+    openPose.addEventListener('click', () => sendCharToPose(it));
+    openPhysics.addEventListener('click', () => sendCharToTool('physics', it));
+    openSculpt.addEventListener('click', () => sendCharToSculpt(it));
+    openEdit.addEventListener('click', () => sendCharToEdit(it));
+    openBake.addEventListener('click', () => sendCharToTool('bake', it));
+    openDecimate.addEventListener('click', () => sendCharToTool('decimate', it));
+    openPaint.addEventListener('click', () => sendCharToTool('paint', it));
+    toMocap.addEventListener('click', () => sendCharToMocap(it));
+    const thumbEl = el.querySelector('.thumb'); if (thumbEl) thumbEl.style.cursor = 'pointer';
+    const nmEl = el.querySelector('.nm'); if (nmEl) nmEl.style.cursor = 'pointer';
+    el.addEventListener('click', (e) => { if (e.target.closest('.acts') || e.target.closest('.cardDel')) return; openInShowcase(it); });
+    return el;
+  }
+
+  function animCard(it) {
+    const ext = (it.ext || 'fbx').toLowerCase();
+    const el = cardEl(`
+      <div class="thumb"><span class="gly">⛷</span>
+        <div class="badges"><span class="bdg ${ext}">${ext}</span></div>
+      </div>
+      <div class="meta">
+        <div class="nm">${it.label}</div>
+        <div class="dt">${it.frames ? it.frames + ' frames · ' + (it.fps || 30) + 'fps' : (it.path || '').replace('data/animations/', '')}</div>
+        <div class="acts">
+          <button class="act accent">⛷ Use in MoCap</button>
+        </div>
+      </div>`);
+    el.querySelector('.act').addEventListener('click', () => useAnimInMocap(it));
+    return el;
+  }
+
+  // ---------- library actions ----------
+  // Shared character state: whichever character you last opened becomes the
+  // "active character" and automatically follows you into every tool that can
+  // host it — no re-import. Each tool receives it once (first visit).
+  function setActiveChar(it, tool) {
+    if (!activeChar || activeChar.it !== it) activeChar = { it, deliveredTo: new Set() };
+    if (tool) activeChar.deliveredTo.add(tool);
+    $('#stAsset').textContent = '◉ ' + it.label + (tool ? ' → ' + (TOOLS[tool] ? TOOLS[tool].label : tool) : '');
+  }
+  function deliverChar(tool, it, quiet) {
+    const sendLib = () => { if (tool === 'showcase') post('showcase', 'studio:animLibrary', { animations: [...session.animations, ...libData.animations] }); };
+    let send;
+    if (it.session && it._buffer) {
+      const copy = it._buffer.slice(0);
+      send = () => { post(tool, 'studio:loadCharBuffer', { buffer: copy, name: (it.label || 'character') + '.glb' }, [copy]); sendLib(); };
+    } else {
+      send = () => { post(tool, 'studio:loadCharUrl', { url: it.path, label: it.label, ext: it.ext, chunked: it.chunked, chunks: it.chunks }); sendLib(); };
+    }
+    if (TOOLS[tool].ready) send(); else TOOLS[tool]._pending = send;
+    if (!quiet) toast('Opening ' + it.label + ' in ' + (TOOLS[tool] ? TOOLS[tool].label : tool) + '…', 'info');
+  }
+  function openCharIn(tool, it) {
+    setActiveChar(it, tool);
+    lastLoadedName = it.label;
+    setTool(tool);
+    deliverChar(tool, it);
+  }
+  function openInShowcase(it) { openCharIn('showcase', it); }
+
+  function openInRig(it) {
+    setActiveChar(it, 'rig');
+    setTool('rig');
+    lastLoadedName = it.label;
+    $('#stAsset').textContent = it.label + ' → Rig';
+    const send = () => post('rig', 'studio:loadUrl', { url: it.path, name: (it.label || 'model') + '.' + (it.ext || 'fbx'), chunked: it.chunked, chunks: it.chunks });
+    if (TOOLS.rig.ready) send(); else TOOLS.rig._pending = send;
+    toast('Opening ' + it.label + ' in Rig…', 'info');
+  }
+
+  function sendCharToMocap(it) { openCharIn('mocap', it); }
+
+  function sendCharToEdit(it) { openCharIn('edit', it); }
+
+  function sendCharToSculpt(it) { openCharIn('sculpt', it); }
+
+  function sendCharToTool(tool, it) { openCharIn(tool, it); }
+
+  function sendCharToPose(it) { openCharIn('pose', it); }
+
+  function useAnimInMocap(it) {
+    setTool('mocap');
+    $('#stAsset').textContent = it.label + ' (source)';
+    const send = () => post('mocap', 'studio:setVideoUrl', { url: it.path, label: it.label, ext: it.ext, chunked: it.chunked, chunks: it.chunks });
+    if (TOOLS.mocap.ready) send(); else TOOLS.mocap._pending = send;
+    toast('Using ' + it.label + ' as MoCap source…', 'info');
+  }
+
+  // ---------- rig → mocap handoff ----------
+  $('#btnHandoff').addEventListener('click', () => {
+    if (!TOOLS.rig.ready) { toast('Rig workspace not ready', 'warn'); return; }
+    toast('Baking rigged character…', 'info');
+    post('rig', 'studio:getRiggedGLB', { name: lastLoadedName || 'character' });
+  });
+
+  // ---------- import ----------
+  $('#libImport').addEventListener('click', () => $('#libFile').click());
+
+  // ---------- drop-any-mesh hero ----------
+  // Drop a raw mesh → it lands in Showcase as the active character (so it
+  // follows you into every other tool) and Showcase advises what to do next.
+  async function openDroppedMesh(file) {
+    const name = file.name; const ext = (name.split('.').pop() || 'glb').toLowerCase();
+    if (!/^(glb|gltf|fbx|obj)$/.test(ext)) { toast('Unsupported file: .' + ext, 'warn'); return; }
+    let buf;
+    try { buf = await file.arrayBuffer(); } catch (e) { toast('Could not read ' + name, 'error'); return; }
+    const it = { label: name.replace(/\.(glb|gltf|fbx|obj)$/i, ''), path: name, ext, session: true, dropped: true, rig: 'unknown', rigged: 'false', _buffer: buf };
+    session.characters.unshift(it);
+    renderLib();
+    setActiveChar(it, 'showcase');
+    lastLoadedName = it.label;
+    setTool('showcase');
+    deliverChar('showcase', it);
+    toast('Dropped ' + it.label + ' → Showcase', 'success');
+  }
+  (function () {
+    const dz = $('#dropZone'), dzFile = $('#dropFile');
+    if (!dz) return;
+    dz.addEventListener('click', (e) => { if (e.target.tagName !== 'INPUT') dzFile.click(); });
+    dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag'); });
+    dz.addEventListener('dragleave', () => dz.classList.remove('drag'));
+    dz.addEventListener('drop', e => { e.preventDefault(); dz.classList.remove('drag'); const f = e.dataTransfer.files && e.dataTransfer.files[0]; if (f) openDroppedMesh(f); });
+    dzFile.addEventListener('change', e => { const f = e.target.files[0]; if (f) { openDroppedMesh(f); e.target.value = ''; } });
+  })();
+
+  $('#libFile').addEventListener('change', e => {
+    const f = e.target.files[0]; if (!f) return;
+    e.target.value = '';
+    if (libTab === 'characters') {
+      // send to rig for rigging, or mocap if already rigged? default: open in Rig
+      setTool('rig');
+      const url = URL.createObjectURL(f);
+      const send = () => post('rig', 'studio:loadUrl', { url, name: f.name });
+      if (TOOLS.rig.ready) send(); else TOOLS.rig._pending = send;
+      toast('Importing ' + f.name + ' into Rig…', 'info');
+    }
+  });
+
+  // ---------- dock + library button ----------
+  $$('.dock-item').forEach(d => {
+    if (d.classList.contains('disabled')) return;
+    d.addEventListener('click', () => setTool(d.dataset.tool));
+  });
+  $('#btnLib').addEventListener('click', () => setTool('library'));
+  const btnTheme = $('#btnTheme');
+  function updateThemeBtn(){ const n = window.StudioTheme ? window.StudioTheme.get() : 'cute'; if (btnTheme) btnTheme.textContent = (n === 'dark' ? '\u25D1 Dark' : '\u25D0 Cute'); }
+  if (btnTheme) btnTheme.addEventListener('click', () => { window.StudioTheme && window.StudioTheme.toggle(); updateThemeBtn(); });
+  window.addEventListener('studiothemechange', updateThemeBtn); updateThemeBtn();
+  $$('#libTabs .lib-tab').forEach(t => t.addEventListener('click', () => {
+    libTab = t.dataset.tab;
+    $$('#libTabs .lib-tab').forEach(x => x.classList.toggle('on', x === t));
+    renderLib();
+  }));
+
+  // ---------- message bridge from tools ----------
+  window.addEventListener('message', async (e) => {
+    const d = e.data; if (!d || !d.__studio) return;
+    if (d.type === 'studio:ready') {
+      const t = d.tool; if (TOOLS[t]) { TOOLS[t].ready = true; const ld = $('#load-' + t); if (ld) ld.style.display = 'none';
+        if (TOOLS[t]._pending) { TOOLS[t]._pending(); TOOLS[t]._pending = null; }
+        if (t === 'showcase') post('showcase', 'studio:animLibrary', { animations: [...session.animations, ...libData.animations] }); }
+    }
+    else if (d.type === 'studio:riggedGLB') {
+      // received baked GLB from rig → add to session library, hand to mocap
+      const name = d.name || 'rigged.glb';
+      const buf = d.buffer;
+      session.characters.unshift({ label: name.replace(/\.(glb|gltf|fbx)$/i, ''), path: name, ext: 'glb', session: true, rig: 'autorig', _buffer: buf.slice(0) });
+      idbSaveChar(session.characters[0]);
+      toast('Rigged character baked → sent to MoCap', 'success');
+      setActiveChar(session.characters[0], 'mocap');   // rigged result becomes the active character everywhere
+      setTool('mocap');
+      const send = () => post('mocap', 'studio:loadCharBuffer', { buffer: buf, name }, [buf]);
+      if (TOOLS.mocap.ready) send(); else TOOLS.mocap._pending = send;
+      $('#stAsset').textContent = name + ' → MoCap';
+      renderLib();
+    }
+    else if (d.type === 'studio:loaded') {
+      $('#stHint').textContent = 'Place joints over the mesh, then Compute Skeleton + Skin to enable handoff';
+    }
+    else if (d.type === 'studio:bound') {
+      $('#btnHandoff').disabled = false;
+      $('#stHint').textContent = 'Rig bound · Send to MoCap to retarget motion onto it';
+      $$('#flow .fstep').forEach(s => { if (s.dataset.flow === 'rig') s.classList.add('done'); });
+    }
+    else if (d.type === 'studio:charLoaded') {
+      $('#stAsset').textContent = d.name + ' · ' + (d.bones || '?') + ' bones';
+    }
+    else if (d.type === 'studio:routeBuffer') {
+      // a tool is handing its current mesh off to another tool (e.g. UV → Decimate)
+      const tool = d.tool, buf = d.buffer, name = d.name || 'mesh.glb';
+      if (!TOOLS[tool]) return;
+      setTool(tool);
+      $('#stAsset').textContent = name + ' → ' + TOOLS[tool].label;
+      const send = () => post(tool, 'studio:loadCharBuffer', { buffer: buf, name }, [buf]);
+      if (TOOLS[tool].ready) send(); else TOOLS[tool]._pending = send;
+      toast('Handed off to ' + TOOLS[tool].label, 'info');
+    }
+    else if (d.type === 'studio:goTool') {
+      if (TOOLS[d.tool] || d.tool === 'library') setTool(d.tool);
+    }
+    else if (d.type === 'studio:error') {
+      toast((d.tool || 'tool') + ': ' + d.message, 'error');
+    }
+  });
+
+  // ---------- boot ----------
+  loadManifests();
+  idbRestore().then(n => { if (n) { renderLib(); toast(n + ' saved character' + (n > 1 ? 's' : '') + ' restored', 'info'); } });
+  setTool('library');
+
+  // dismiss the potion splash once the shell is up (min ~1s so it's seen)
+  (function () {
+    const b = document.querySelector('#bootSplash'); if (!b) return;
+    const hide = () => { b.style.opacity = '0'; setTimeout(() => b.remove(), 500); };
+    setTimeout(hide, 1100);
+  })();
+
+  // expose for verification
+  window.Studio = { setTool, post, TOOLS, session, libData, toast, clearSavedSession, idbDeleteChar };
+})();
+</script>
+</body>
+</html>

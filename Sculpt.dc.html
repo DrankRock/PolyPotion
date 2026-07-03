@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./studio3D_scripts/support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Spline+Sans+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="theme.js"></script>
+<style>
+  html,body{margin:0;padding:0;height:100%;background:var(--gutter);}
+  *{box-sizing:border-box;}
+  @keyframes sc-spin{to{transform:rotate(360deg);}}
+  @keyframes sc-tin{from{transform:translateX(120%);opacity:0;}to{transform:translateX(0);opacity:1;}}
+  #sc-root ::-webkit-scrollbar{width:10px;height:10px;}
+  #sc-root ::-webkit-scrollbar-track{background:var(--gutter);}
+  #sc-root ::-webkit-scrollbar-thumb{background:var(--panel-3);border:2px solid var(--gutter);border-radius:6px;}
+  #sc-root input[type=range]{-webkit-appearance:none;height:4px;border-radius:2px;background:var(--panel);outline:none;}
+  #sc-root input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--new);cursor:pointer;border:2px solid var(--panel);}
+</style>
+</helmet>
+
+<div id="sc-root" style=" display:flex;flex-direction:column;height:100vh;width:100%;overflow:hidden;background:var(--gutter);color:var(--text);font-family:var(--font-ui);font-size:13px;-webkit-font-smoothing:antialiased;user-select:none;">
+
+  <!-- TOP BAR -->
+  <header style="height:46px;flex:none;display:flex;align-items:center;gap:18px;padding:0 14px;background:var(--header);border-bottom:1px solid var(--seam);">
+    <div style="display:flex;align-items:center;gap:9px;">
+      <div style="width:26px;height:26px;border-radius:5px;display:flex;align-items:center;justify-content:center;background:var(--new);color:#04201f;font-weight:700;font-size:15px;box-shadow:0 1px 2px rgba(0,0,0,.4),0 0 0 1px rgba(255,255,255,.08) inset;">✺</div>
+      <div>
+        <div style="font-weight:700;letter-spacing:.04em;font-size:14px;">SCULPT</div>
+        <div style="font-family:var(--font-mono);font-size:10px;color:var(--muted);letter-spacing:.1em;margin-top:1px;">DRAW · GRAB · SMOOTH · MASK · LOCAL</div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:3px;background:var(--panel);border:1px solid var(--seam);border-radius:7px;padding:3px;">
+      <sc-for list="{{ brushes }}" as="b" hint-placeholder-count="7">
+        <button style="{{ b.style }}" title="{{ b.tip }}" onClick="{{ b.onClick }}">{{ b.label }}</button>
+      </sc-for>
+    </div>
+    <div style="flex:1;"></div>
+    <button style="display:inline-flex;align-items:center;gap:7px;height:30px;padding:0 12px;border-radius:6px;font-size:11.5px;font-weight:600;background:var(--panel3);border:1px solid var(--edge);color:var(--text);cursor:pointer;" title="Undo last stroke (Ctrl/Cmd-Z)" onClick="{{ undo }}">↶ Undo</button>
+    <button style="display:inline-flex;align-items:center;gap:7px;height:30px;padding:0 13px;border-radius:6px;font-size:11.5px;font-weight:600;background:var(--panel3);border:1px solid var(--edge);color:var(--text);cursor:pointer;" onClick="{{ pickFile }}">⬇ Import model…</button>
+    <div style="display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--text2);padding:4px 10px;background:var(--panel);border:1px solid var(--seam);border-radius:5px;">
+      <span style="width:7px;height:7px;border-radius:50%;flex:none;background:{{ dotColor }};"></span>
+      <span style="font-family:var(--font-mono);">{{ meshName }}</span>
+    </div>
+  </header>
+
+  <div style="flex:1;display:flex;min-height:0;">
+
+    <!-- LEFT : BRUSH + RESOLUTION -->
+    <aside style="width:248px;flex:none;background:var(--panel);border-right:1px solid var(--seam);display:flex;flex-direction:column;min-height:0;overflow-y:auto;">
+      <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--header);border-bottom:1px solid var(--seam);flex:none;">
+        <span style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);">{{ brushName }}</span>
+        <span style="margin-left:auto;font-family:var(--font-mono);font-size:10px;color:var(--new);">brush</span>
+      </div>
+      <div style="padding:12px;">
+        <div style="font-size:11px;line-height:1.55;color:var(--text2);margin-bottom:14px;">{{ brushHint }}</div>
+
+        <label style="display:block;font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:7px;">Radius <span style="float:right;font-family:IBM Plex Mono,monospace;color:var(--text2);">{{ radiusLabel }}</span></label>
+        <input type="range" min="2" max="60" value="{{ radiusSlide }}" onInput="{{ onRadius }}" style="width:100%;margin-bottom:14px;">
+
+        <label style="display:block;font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:7px;">Strength <span style="float:right;font-family:IBM Plex Mono,monospace;color:var(--text2);">{{ strengthLabel }}</span></label>
+        <input type="range" min="2" max="100" value="{{ strengthSlide }}" onInput="{{ onStrength }}" style="width:100%;margin-bottom:16px;">
+
+        <div style="display:flex;gap:8px;margin-bottom:8px;">
+          <button style="{{ symStyle }}" title="Mirror every stroke across the X axis" onClick="{{ toggleSym }}">⇄ Symmetry</button>
+          <button style="{{ invStyle }}" title="Carve in instead of out (or hold Alt)" onClick="{{ toggleInv }}">⊖ Invert</button>
+        </div>
+        <div style="font-size:10px;line-height:1.5;color:var(--muted);">Hold <b style="color:var(--text2);">Shift</b> to smooth · <b style="color:var(--text2);">Alt</b> to invert · <b style="color:var(--text2);">[ ]</b> resize brush</div>
+      </div>
+
+      <div style="border-top:1px solid var(--seam);">
+        <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--header);border-bottom:1px solid var(--seam);">
+          <span style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);">Resolution</span>
+          <span style="margin-left:auto;font-family:var(--font-mono);font-size:10px;color:var(--muted);">{{ triLabel }} tris</span>
+        </div>
+        <div style="padding:12px;">
+          <div style="font-size:10.5px;line-height:1.55;color:var(--text2);margin-bottom:11px;">Low-poly imports sculpt blocky. <b style="color:var(--text2);">Smooth Subdivide</b> quadruples the triangles <i>and</i> rounds the surface toward its limit shape — the per-vertex math runs in WASM.</div>
+          <button style="display:flex;align-items:center;justify-content:center;gap:7px;padding:9px;border-radius:6px;font-size:12px;font-weight:600;background:var(--newDim,rgba(67,182,196,.16));border:1px solid rgba(67,182,196,.35);color:#aee3ea;width:100%;cursor:pointer;margin-bottom:8px;" onClick="{{ loopSubdiv }}">◈ Smooth Subdivide ×4</button>
+          <div style="display:flex;gap:8px;">
+            <button style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:9px;border-radius:6px;font-size:11.5px;font-weight:600;background:var(--panel3);border:1px solid var(--edge);color:var(--text);cursor:pointer;" title="Linear midpoint split — more triangles, same shape" onClick="{{ subdivide }}">⊞ Split ×4</button>
+            <button style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:9px;border-radius:6px;font-size:11.5px;font-weight:600;background:var(--panel3);border:1px solid var(--edge);color:var(--text);cursor:pointer;" title="Taubin relax — global smoothing that doesn't shrink the mesh (masked verts held)" onClick="{{ relax }}">∿ Relax</button>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:10.5px;padding:8px 2px 0;color:var(--muted);"><span>Vertices</span><span style="font-family:IBM Plex Mono,monospace;color:var(--text2);">{{ vertLabel }}</span></div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- VIEWPORT -->
+    <div style="flex:1;position:relative;min-width:0;min-height:0;background:var(--viewport);">
+      <canvas id="sc-gl" style="position:absolute;inset:0;width:100%;height:100%;display:block;"></canvas>
+
+      <sc-if value="{{ noModel }}" hint-placeholder-val="{{ true }}">
+        <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;background:rgba(18,20,24,.86);">
+          <div style="width:70px;height:70px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:30px;background:var(--newDim);border:1px solid rgba(67,182,196,.3);color:var(--new);">✺</div>
+          <div style="text-align:center;">
+            <div style="font-size:16px;font-weight:700;margin-bottom:6px;">Sculpt a real surface</div>
+            <div style="font-size:12.5px;color:var(--text2);max-width:430px;line-height:1.6;">Drop a <b>.glb / .fbx / .obj</b> here, or open one from the Library. It's welded into one editable skin so brushes push, pull, smooth and grab the model's true geometry — symmetric and undoable.</div>
+          </div>
+          <div style="display:flex;gap:10px;">
+            <button style="padding:10px 18px;border-radius:7px;font-size:12.5px;font-weight:600;background:var(--new);border:1px solid var(--new);color:#04201f;cursor:pointer;box-shadow:0 2px 12px rgba(67,182,196,.35);" onClick="{{ pickFile }}">⬇ Import file…</button>
+            <button style="padding:10px 18px;border-radius:7px;font-size:12.5px;font-weight:600;background:var(--panel3);border:1px solid var(--edge);color:var(--text);cursor:pointer;" onClick="{{ loadSample }}">Load sample figure</button>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ loading }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:rgba(18,20,24,.8);color:var(--muted);">
+          <div style="width:38px;height:38px;border:3px solid var(--panel-3);border-top-color:var(--new);border-radius:50%;animation:sc-spin .9s linear infinite;"></div>
+          <div style="font-size:12px;">{{ loadingMsg }}</div>
+        </div>
+      </sc-if>
+
+      <!-- top: views -->
+      <div style="position:absolute;left:50%;top:10px;transform:translateX(-50%);display:flex;align-items:center;gap:4px;background:rgba(15,15,15,.86);border:1px solid var(--edge);border-radius:8px;padding:5px 7px;">
+        <sc-for list="{{ views }}" as="v" hint-placeholder-count="5">
+          <button style="font-size:11px;font-weight:600;padding:5px 9px;border-radius:5px;cursor:pointer;background:transparent;border:none;color:var(--text2);" onClick="{{ v.onClick }}">{{ v.label }}</button>
+        </sc-for>
+      </div>
+      <div style="position:absolute;right:10px;top:10px;display:flex;gap:6px;">
+        <button style="{{ wireChip }}" onClick="{{ toggleWire }}">▦ Wire</button>
+        <button style="{{ spinChip }}" onClick="{{ toggleSpin }}">↻ Turntable</button>
+      </div>
+      <div style="position:absolute;left:10px;top:10px;font-family:var(--font-mono);font-size:10px;letter-spacing:.1em;color:var(--text2);background:rgba(15,15,15,.6);padding:3px 7px;border-radius:3px;pointer-events:none;">{{ modeBadge }}</div>
+      <div style="position:absolute;right:10px;bottom:12px;font-size:10.5px;color:var(--text2);background:rgba(15,15,15,.78);border:1px solid var(--edge);padding:6px 11px;border-radius:6px;pointer-events:none;max-width:250px;">{{ vpHint }}</div>
+    </div>
+
+    <!-- RIGHT : MASK + STATS -->
+    <aside style="width:288px;flex:none;background:var(--panel);border-left:1px solid var(--seam);display:flex;flex-direction:column;min-height:0;overflow-y:auto;">
+      <div style="border-bottom:1px solid var(--seam);">
+        <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--header);border-bottom:1px solid var(--seam);">
+          <span style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);">Mask</span>
+          <span style="margin-left:auto;font-family:var(--font-mono);font-size:10px;color:var(--accent);">{{ maskLabel }}</span>
+        </div>
+        <div style="padding:11px 12px;">
+          <div style="font-size:11px;line-height:1.55;color:var(--text2);margin-bottom:11px;">Pick the <b>Mask</b> brush and paint to freeze a region — masked verts (shown blue) are protected from every deform brush. Great for holding a face still while you reshape a jaw.</div>
+          <div style="display:flex;gap:7px;">
+            <button style="flex:1;padding:8px;border-radius:6px;font-size:11px;font-weight:600;background:var(--panel3);border:1px solid var(--edge);color:var(--text);cursor:pointer;" onClick="{{ invertMask }}">⇆ Invert</button>
+            <button style="flex:1;padding:8px;border-radius:6px;font-size:11px;font-weight:600;background:transparent;border:1px solid var(--edge);color:var(--text2);cursor:pointer;" onClick="{{ clearMask }}">Clear mask</button>
+          </div>
+        </div>
+      </div>
+
+      <div style="border-bottom:1px solid var(--seam);">
+        <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--header);border-bottom:1px solid var(--seam);">
+          <span style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);">Surface</span>
+        </div>
+        <div style="padding:6px 12px 12px;">
+          <sc-for list="{{ stats }}" as="s" hint-placeholder-count="4">
+            <div style="display:flex;justify-content:space-between;font-size:11px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.03);"><span style="color:var(--muted);">{{ s.k }}</span><span style="font-family:IBM Plex Mono,monospace;color:var(--text);">{{ s.v }}</span></div>
+          </sc-for>
+        </div>
+      </div>
+
+      <div style="padding:12px;">
+        <div style="display:flex;gap:9px;padding:9px 11px;border-radius:7px;font-size:11px;line-height:1.5;background:var(--newDim);border:1px solid rgba(67,182,196,.3);color:#aee3ea;"><span style="flex:none;">✦</span><span>Sculpt is non-destructive to the rest of the pipeline — reshape a character here, then hand it back to <b>Edit</b> or <b>MoCap</b> from the Library. Drag to orbit, scroll to zoom; the brush ring previews radius on the surface.</span></div>
+      </div>
+    </aside>
+  </div>
+
+  <input type="file" id="sc-file" accept=".glb,.gltf,.fbx,.obj" style="display:none;">
+  <div id="sc-toasts" style="position:fixed;bottom:16px;right:16px;z-index:300;display:flex;flex-direction:column;gap:8px;"></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = {
+    brush: 'draw', meshName: 'no model', loading: false, loadingMsg: '',
+    hasModel: false, radius: 13, strength: 50, symmetry: true, invert: false,
+    wire: false, spin: false, verts: 0, tris: 0, masked: 0,
+  };
+
+  componentDidMount() { this.setupEmbed(); this.boot(); this.setupDrop(); }
+
+  async boot() {
+    try {
+      const canvas = document.getElementById('sc-gl');
+      const mod = await import('./sculpt-engine.js');
+      const eng = new mod.SCEngine(canvas); this._eng = eng;
+      eng.onStatus = (msg) => this.setState({ loading: !!msg, loadingMsg: msg || '' });
+      eng.onChange = () => this.refresh();
+      if (this._pending) { const p = this._pending; this._pending = null; p(); }
+    } catch (e) {
+      this.toast('Engine failed: ' + (e && e.message || e));
+      if (this._post) this._post('studio:error', { tool: 'sculpt', message: String(e && e.message || e) });
+    }
+  }
+
+  refresh() {
+    if (!this._eng) return;
+    const s = this._eng.stats();
+    this.setState({ hasModel: this._eng.hasModel(), meshName: this._eng.hasModel() ? s.name : 'no model', verts: s.verts, tris: s.tris, masked: s.masked });
+  }
+
+  async loadVia(fn, label) {
+    if (!this._eng) { this._pending = () => this.loadVia(fn, label); return; }
+    this.setState({ loading: true, loadingMsg: 'Loading ' + (label || 'model') + '…' });
+    try { const r = await fn(); this.refresh(); this.setState({ loading: false }); this.toast('Loaded ' + r.name + ' — ' + r.verts.toLocaleString() + ' verts, ' + r.tris.toLocaleString() + ' tris'); }
+    catch (e) { this.setState({ loading: false }); this.toast('Load failed: ' + (e && e.message || e)); if (this._post) this._post('studio:error', { tool: 'sculpt', message: String(e && e.message || e) }); }
+  }
+
+  setupDrop() {
+    const root = document.getElementById('sc-root'); if (!root) return;
+    root.addEventListener('dragover', e => { e.preventDefault(); });
+    root.addEventListener('drop', e => { e.preventDefault(); const f = e.dataTransfer.files && e.dataTransfer.files[0]; if (f) this.loadVia(() => this._eng.loadFile(f), f.name); });
+    const inp = document.getElementById('sc-file');
+    if (inp) inp.addEventListener('change', e => { const f = e.target.files[0]; if (f) { this.loadVia(() => this._eng.loadFile(f), f.name); e.target.value = ''; } });
+  }
+
+  setupEmbed() {
+    const params = new URLSearchParams(location.search);
+    this._embedded = params.get('embed') === '1' || window.parent !== window;
+    this._post = (type, payload, transfer) => { try { window.parent && window.parent.postMessage(Object.assign({ __studio: true, type }, payload || {}), '*', transfer || []); } catch (e) {} };
+    if (this._embedded) { const hide = () => { const h = document.querySelector('#sc-root > header'); if (h && h.firstElementChild) h.firstElementChild.style.display = 'none'; }; hide(); setTimeout(hide, 60); setTimeout(hide, 300); }
+    window.addEventListener('message', (e) => {
+      const d = e.data; if (!d || !d.__studio) return;
+      if (d.type === 'studio:loadCharUrl') this.loadVia(() => this._eng.loadUrl(d.url, d.ext, { chunked: d.chunked, chunks: d.chunks }), d.label || 'character');
+      else if (d.type === 'studio:loadCharBuffer') this.loadVia(() => this._eng.loadBuffer(d.buffer, d.name, (d.name || '').split('.').pop()), d.name || 'rig');
+    });
+    setTimeout(() => this._post('studio:ready', { tool: 'sculpt' }), 0);
+  }
+
+  toast(msg) {
+    const wrap = document.getElementById('sc-toasts'); if (!wrap) return;
+    const el = document.createElement('div');
+    el.style.cssText = 'padding:11px 15px;border-radius:7px;font-size:12px;background:var(--panel-3);border:1px solid var(--edge);border-left:3px solid var(--new);box-shadow:0 8px 24px rgba(0,0,0,.45);max-width:340px;color:var(--text);animation:sc-tin .25s cubic-bezier(.2,1,.3,1);';
+    el.textContent = msg; wrap.appendChild(el);
+    setTimeout(() => { el.style.transition = 'opacity .3s'; el.style.opacity = '0'; setTimeout(() => el.remove(), 300); }, 2800);
+  }
+
+  seg(on) { return 'font-size:11px;font-weight:600;padding:6px 10px;border-radius:5px;cursor:pointer;border:none;background:' + (on ? 'var(--panel-3)' : 'transparent') + ';color:' + (on ? 'var(--text)' : 'var(--text-2)') + ';box-shadow:' + (on ? '0 1px 2px rgba(0,0,0,.3)' : 'none') + ';'; }
+  chip(on, color) { color = color || 'var(--new)'; return 'font-family:IBM Plex Mono,monospace;font-size:10px;padding:5px 10px;border-radius:5px;cursor:pointer;background:rgba(15,15,15,.6);border:1px solid ' + (on ? color : 'var(--edge)') + ';color:' + (on ? '#aee3ea' : 'var(--text-2)') + ';'; }
+  pill(on) { return 'flex:1;padding:8px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid ' + (on ? 'var(--new)' : 'var(--edge)') + ';background:' + (on ? 'rgba(67,182,196,0.16)' : 'var(--panel-3)') + ';color:' + (on ? '#aee3ea' : 'var(--text)') + ';'; }
+
+  setBrush(b) { this.setState({ brush: b }); if (this._eng) this._eng.setBrush(b); }
+
+  renderVals() {
+    const st = this.state, eng = this._eng;
+    const BR = [
+      { key: 'draw', label: '✎ Draw', tip: 'Push or pull the surface along its normals', name: 'Draw', hint: 'Drag on the surface to push it outward along its normals. Alt (or Invert) carves inward — block in volume, build a brow, swell a muscle.' },
+      { key: 'inflate', label: '◉ Inflate', tip: 'Swell verts outward along their own normals', name: 'Inflate', hint: 'Inflates each vertex along its own normal, so the surface puffs up evenly. Good for fattening a limb or rounding a hard edge.' },
+      { key: 'smooth', label: '∿ Smooth', tip: 'Relax the surface toward its neighbour average', name: 'Smooth', hint: 'Relaxes bumps toward the neighbour average — your cleanup tool. You can reach it from any brush by holding Shift.' },
+      { key: 'grab', label: '✊ Grab', tip: 'Drag a soft region of the surface through space', name: 'Grab', hint: 'Click and drag to pull a whole soft region with the cursor through the view plane. Reshape a silhouette, pull a nose, sweep a hip.' },
+      { key: 'pinch', label: '⊳ Pinch', tip: 'Pull verts toward the brush centre', name: 'Pinch', hint: 'Pulls verts toward the brush centre to sharpen ridges and define seams and creases. Pairs well with Draw + Smooth.' },
+      { key: 'flatten', label: '▭ Flatten', tip: 'Push verts onto the average brush plane', name: 'Flatten', hint: 'Pushes the surface onto the average plane under the brush — flatten a cheek, plane down a facet, settle lumps.' },
+      { key: 'mask', label: '⊘ Mask', tip: 'Paint a protected region', name: 'Mask', hint: 'Paint a protected region (shown blue). Masked verts ignore every deform brush. Alt erases the mask; use the panel to invert or clear it.' },
+    ];
+    const cur = BR.find(b => b.key === st.brush) || BR[0];
+    const brushes = BR.map(b => ({ label: b.label, tip: b.tip, style: this.seg(st.brush === b.key), onClick: () => this.setBrush(b.key) }));
+
+    const views = ['Persp', 'Front', 'Side', 'Top', 'Back'].map(v => ({ label: v, onClick: () => eng && eng.setView(v.toLowerCase()) }));
+    const fmt = n => n >= 1000 ? (n / 1000).toFixed(n >= 10000 ? 0 : 1) + 'k' : ('' + n);
+
+    return {
+      brushes, brushName: cur.name, brushHint: cur.hint,
+      meshName: st.meshName, hasModel: st.hasModel, noModel: !st.hasModel && !st.loading,
+      dotColor: st.hasModel ? 'var(--good)' : 'var(--muted)',
+      loading: st.loading, loadingMsg: st.loadingMsg,
+      modeBadge: st.hasModel ? (cur.name.toUpperCase() + ' — drag to sculpt' + (st.symmetry ? ' · symmetric' : '')) : 'IMPORT A MESH',
+      vpHint: st.brush === 'grab' ? 'click-drag pulls the region · scroll zoom' : (st.brush === 'mask' ? 'drag paints mask · alt erases' : 'drag sculpts · shift smooths · alt inverts'),
+      pickFile: () => document.getElementById('sc-file').click(),
+      loadSample: () => this.loadVia(() => this._eng.loadUrl('data/characters/Humanoid.fbx', 'fbx'), 'Humanoid'),
+      undo: () => { const ok = eng && eng.undo(); this.toast(ok ? 'Reverted last stroke' : 'Nothing to undo'); },
+      // sliders
+      radiusSlide: st.radius, radiusLabel: st.radius + '%',
+      onRadius: (e) => { const v = +e.target.value; this.setState({ radius: v }); if (eng) eng.setRadiusFrac(v / 100); },
+      strengthSlide: st.strength, strengthLabel: st.strength + '%',
+      onStrength: (e) => { const v = +e.target.value; this.setState({ strength: v }); if (eng) eng.setStrength(v / 100); },
+      symStyle: this.pill(st.symmetry), invStyle: this.pill(st.invert),
+      toggleSym: () => { const v = !st.symmetry; this.setState({ symmetry: v }); if (eng) eng.setSymmetry(v); },
+      toggleInv: () => { const v = !st.invert; this.setState({ invert: v }); if (eng) eng.setInvert(v); },
+      // resolution
+      triLabel: fmt(st.tris), vertLabel: st.verts.toLocaleString(),
+      subdivide: () => { if (!eng || !st.hasModel) { this.toast('Load a model first'); return; } if (st.tris > 180000) { this.toast('Already dense — subdividing further may be slow'); } this.setState({ loading: true, loadingMsg: 'Subdividing…' }); setTimeout(() => { const r = eng.subdivide(); this.setState({ loading: false }); if (r) this.toast('Subdivided → ' + r.tris.toLocaleString() + ' tris'); }, 30); },
+      loopSubdiv: () => { if (!eng || !st.hasModel) { this.toast('Load a model first'); return; } if (st.tris > 90000) { this.toast('Already dense (' + fmt(st.tris) + ' tris) — use Relax to refine instead'); return; } this.setState({ loading: true, loadingMsg: 'Smooth subdividing (WASM)…' }); setTimeout(async () => { const r = await eng.loopSubdivide(); this.setState({ loading: false }); if (r && r.tooDense) this.toast('Already dense — use Relax instead'); else if (r) this.toast('Smooth-subdivided → ' + r.tris.toLocaleString() + ' tris'); }, 30); },
+      relax: () => { if (!eng || !st.hasModel) { this.toast('Load a model first'); return; } this.setState({ loading: true, loadingMsg: 'Relaxing (WASM)…' }); setTimeout(async () => { await eng.relax(0.5, -0.53, 2); this.setState({ loading: false }); this.toast('Surface relaxed'); }, 30); },
+      // view chips
+      wireChip: this.chip(st.wire), toggleWire: () => { const v = !st.wire; this.setState({ wire: v }); if (eng) eng.setWire(v); },
+      spinChip: this.chip(st.spin), toggleSpin: () => { const v = !st.spin; this.setState({ spin: v }); if (eng) eng.setTurntable(v); },
+      // mask
+      maskLabel: st.masked > 0 ? (fmt(st.masked) + ' verts') : 'none',
+      invertMask: () => { if (eng) { eng.invertMask(); this.refresh(); this.toast('Mask inverted'); } },
+      clearMask: () => { if (eng) { eng.clearMask(); this.refresh(); this.toast('Mask cleared'); } },
+      // stats
+      stats: [
+        { k: 'Model', v: st.meshName },
+        { k: 'Vertices', v: st.verts.toLocaleString() },
+        { k: 'Triangles', v: st.tris.toLocaleString() },
+        { k: 'Masked', v: st.masked > 0 ? st.masked.toLocaleString() : '—' },
+      ],
+    };
+  }
+}
+</script>
+</body>
+</html>

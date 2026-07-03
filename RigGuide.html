@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RIG GUIDE — Where joints go</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Spline+Sans+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="theme.js"></script>
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+<style>
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;height:100%;overflow:hidden;background:var(--gutter);
+  color:var(--text);font-family:var(--font-ui);font-size:13px;-webkit-font-smoothing:antialiased;}
+.mono{font-family:var(--font-mono);}
+#app{display:flex;flex-direction:column;height:100%;}
+.topbar{height:46px;flex:none;display:flex;align-items:center;gap:14px;padding:0 14px;
+  background:var(--header);border-bottom:1px solid var(--seam);}
+.brand{display:flex;align-items:center;gap:9px;}
+.brand .glyph{width:26px;height:26px;border-radius:5px;display:flex;align-items:center;justify-content:center;
+  background:var(--accent);color:#fff;font-weight:700;font-size:15px;}
+.brand .name{font-weight:700;letter-spacing:0.04em;font-size:14px;}
+.brand .ver{font-size:10px;color:var(--muted);letter-spacing:0.1em;margin-top:1px;}
+.topbar .spacer{flex:1;}
+.backlink{font-size:11.5px;color:var(--text-2);text-decoration:none;padding:5px 11px;
+  border:1px solid var(--edge);border-radius:5px;background:var(--panel);}
+.backlink:hover{border-color:var(--accent);color:#ffd2bb;}
+.body{flex:1;display:flex;min-height:0;}
+.rail{width:400px;flex:none;background:var(--panel);border-right:1px solid var(--seam);
+  display:flex;flex-direction:column;min-height:0;}
+.rail-scroll{overflow-y:auto;flex:1;min-height:0;padding:13px;}
+::-webkit-scrollbar{width:10px;}
+::-webkit-scrollbar-track{background:var(--gutter);}
+::-webkit-scrollbar-thumb{background:var(--panel-3);border:2px solid var(--gutter);border-radius:6px;}
+
+.principles{padding:11px 13px;border-radius:8px;background:rgba(255,79,0,0.09);
+  border:1px solid rgba(255,79,0,0.28);color:#ffd2bb;font-size:12px;line-height:1.65;margin-bottom:13px;}
+.principles b{color:#fff;}
+.principles ul{margin:7px 0 0;padding-left:17px;}
+.principles li{margin-bottom:5px;}
+
+.gh{font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);
+  margin:15px 2px 7px;}
+.rule{padding:9px 11px;border:1px solid var(--seam);border-radius:7px;background:var(--panel-2);
+  margin-bottom:7px;cursor:pointer;transition:.13s;}
+.rule:hover,.rule.on{border-color:var(--accent);background:var(--accent-dim);}
+.rule .rn{font-weight:700;font-size:12.5px;display:flex;align-items:center;gap:8px;}
+.rule .rn .dot{width:9px;height:9px;border-radius:50%;background:var(--accent);flex:none;}
+.rule .rt{font-size:11.5px;line-height:1.6;color:var(--text-2);margin-top:4px;}
+.rule .rt b{color:var(--text);}
+.viewport{flex:1;position:relative;min-width:0;background:var(--gutter);}
+#gl{display:block;width:100%;height:100%;}
+.vp-btns{position:absolute;top:10px;left:50%;transform:translateX(-50%);display:flex;gap:6px;
+  background:rgba(15,15,15,0.85);border:1px solid var(--edge);border-radius:8px;padding:5px;}
+.vp-btns button{font-family:var(--font-ui);font-size:11px;font-weight:600;color:var(--text-2);
+  background:none;border:none;border-radius:5px;padding:5px 12px;cursor:pointer;}
+.vp-btns button:hover{color:var(--text);}
+.vp-btns button.on{background:var(--accent);color:#fff;}
+.vp-note{position:absolute;bottom:10px;left:50%;transform:translateX(-50%);font-size:11px;color:var(--text-2);
+  background:rgba(15,15,15,0.78);border:1px solid var(--edge);padding:6px 13px;border-radius:6px;pointer-events:none;}
+.legend{position:absolute;top:10px;left:10px;font-family:var(--font-mono);font-size:10px;letter-spacing:0.1em;
+  color:var(--text-2);background:rgba(15,15,15,0.6);padding:5px 9px;border-radius:4px;border:1px solid rgba(255,255,255,0.05);line-height:1.9;}
+.legend .sw{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;vertical-align:middle;}
+</style>
+</head>
+<body>
+<div id="app">
+  <header class="topbar">
+    <div class="brand">
+      <div class="glyph">⊹</div>
+      <div>
+        <div class="name">RIG GUIDE</div>
+        <div class="ver mono">JOINT PLACEMENT REFERENCE</div>
+      </div>
+    </div>
+    <div class="spacer"></div>
+    <a class="backlink" href="AutoRig.html">← Back to AUTORIG</a>
+  </header>
+  <div class="body">
+    <aside class="rail">
+      <div class="rail-scroll">
+        <div class="principles">
+          <b>The four rules of joint placement</b>
+          <ul>
+            <li><b>Center of the volume, always.</b> A joint is a rotation pivot — it sits in the middle of the limb's thickness (the medial axis), never on the surface. Check the <b>side view</b>: a knee that looks right from the front is often floating in front of the leg.</li>
+            <li><b>Anatomical pivots, not visual middles.</b> Place where the real bone rotates: the hip socket, the elbow crease, ear level for the head.</li>
+            <li><b>Rig in T-pose.</b> Mixamo clips assume a T-pose rest (arms straight out, palms down). If your mesh is A-posed, retargeted arms will land wrong.</li>
+            <li><b>Bulky characters:</b> center on the <b>bone line</b>, not the muscle mass. A huge deltoid doesn't move the shoulder pivot outward — it stays close to the torso. Use <b>Auto-center</b> after rough placement, then sanity-check shoulders and hips yourself.</li>
+          </ul>
+        </div>
+
+        <div class="gh">Core</div>
+        <div class="rule" data-j="Hips"><div class="rn"><span class="dot"></span>Hips (root)</div>
+          <div class="rt">Center of the <b>pelvis</b>, midway between the two hip sockets — roughly where the leg crease tops out. Centered front-to-back. Not the belly button, not the waist.</div></div>
+        <div class="rule" data-j="Spine"><div class="rn"><span class="dot"></span>Spine</div>
+          <div class="rt">A hand above the hips, at belly level. Push it <b>slightly toward the back</b> — the real spine is behind the gut, especially on a bulky torso.</div></div>
+        <div class="rule" data-j="Chest"><div class="rn"><span class="dot"></span>Chest</div>
+          <div class="rt">Sternum height, centered in the ribcage. This bone carries the shoulders, so keep it on the body's midline.</div></div>
+        <div class="rule" data-j="Neck"><div class="rn"><span class="dot"></span>Neck</div>
+          <div class="rt">Where the neck meets the shoulders — the pit of the throat, centered in the neck's thickness.</div></div>
+        <div class="rule" data-j="Head"><div class="rn"><span class="dot"></span>Head</div>
+          <div class="rt">The skull's pivot: <b>ear level</b>, centered between the ears. Too low and nods hinge at the chin; too high and the whole head shears.</div></div>
+
+        <div class="gh">Arms</div>
+        <div class="rule" data-j="Shoulder_R,Shoulder_L"><div class="rn"><span class="dot"></span>Shoulder</div>
+          <div class="rt"><b>Inside the deltoid</b>, at the arm's rotation center — a little below the shoulder's top surface and in from its outer edge. The most common mistake is placing it at the top corner of the silhouette: that stretches the whole armpit when the arm raises.</div></div>
+        <div class="rule" data-j="Elbow_R,Elbow_L"><div class="rn"><span class="dot"></span>Elbow</div>
+          <div class="rt">Dead center of the elbow's thickness, at the crease. On a muscular arm, center between bicep and tricep — not inside the bicep bulge.</div></div>
+        <div class="rule" data-j="Wrist_R,Wrist_L"><div class="rn"><span class="dot"></span>Wrist</div>
+          <div class="rt">At the wrist crease, centered in the wrist. Everything from here out is hand — if it's too far up the forearm, the forearm bends like rubber.</div></div>
+
+        <div class="gh">Legs</div>
+        <div class="rule" data-j="UpperLeg_R,UpperLeg_L"><div class="rn"><span class="dot"></span>Upper leg</div>
+          <div class="rt">The <b>hip socket</b>: inside the top of the thigh, NOT at the pelvis center — that's the Hips joint's job. Front-to-back, center of the thigh.</div></div>
+        <div class="rule" data-j="Knee_R,Knee_L"><div class="rn"><span class="dot"></span>Knee</div>
+          <div class="rt">Center of the knee's volume, <b>nudged slightly forward</b> (toward the kneecap). A dead-center knee locks oddly when bent deep.</div></div>
+        <div class="rule" data-j="Ankle_R,Ankle_L"><div class="rn"><span class="dot"></span>Ankle</div>
+          <div class="rt">At ankle-bone height, centered in the ankle — which means <b>slightly back</b>, above the heel, not above the arch.</div></div>
+        <div class="rule" data-j="Toe_R,Toe_L"><div class="rn"><span class="dot"></span>Toe</div>
+          <div class="rt">The <b>ball of the foot</b> — where it flexes when you walk. Inside the foot, not at the tip of the toes.</div></div>
+
+        <div class="gh">Hands</div>
+        <div class="rule" data-j="Index1_R,Middle1_R,Ring1_R,Pinky1_R,Thumb1_R,Index1_L,Middle1_L,Ring1_L,Pinky1_L,Thumb1_L"><div class="rn"><span class="dot"></span>Finger bases (knuckles)</div>
+          <div class="rt">Each at its <b>knuckle center</b>, inside the finger's thickness. Crank mesh opacity to 100% and use <b>Focus → Hands</b>; the depth (top view) matters as much as the front view.</div></div>
+        <div class="rule" data-j="Thumb1_R,Thumb2_R,Thumb3_R,Thumb1_L,Thumb2_L,Thumb3_L"><div class="rn"><span class="dot"></span>Thumb</div>
+          <div class="rt">The thumb base sits low, near the wrist, and the chain angles <b>forward out of the palm</b> — it's the one finger that isn't flat with the hand.</div></div>
+      </div>
+    </aside>
+
+    <div class="viewport">
+      <canvas id="gl"></canvas>
+      <div class="legend">
+        <span class="sw" style="background:#c8ccd2;"></span>JOINT<br>
+        <span class="sw" style="background:#ff4f00;"></span>HIGHLIGHTED<br>
+        <span class="sw" style="background:#4d82d6;"></span>CROSS-SECTION RING
+      </div>
+      <div class="vp-btns" id="viewBtns">
+        <button data-v="threeq" class="on">¾ VIEW</button>
+        <button data-v="front">FRONT</button>
+        <button data-v="side">SIDE</button>
+      </div>
+      <div class="vp-note">Hover a rule to light up its joints · drag to orbit · scroll to zoom · the ring shows the limb cross-section the joint should center in</div>
+    </div>
+  </div>
+</div>
+
+<script src="studio3D_scripts/template.js"></script>
+<script type="module">
+import * as THREE from 'three';
+
+const canvas = document.getElementById('gl');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x141517);
+scene.add(new THREE.HemisphereLight(0xffffff, 0x40464d, 0.9));
+const key = new THREE.DirectionalLight(0xffffff, 1.7); key.position.set(4, 7, 5); scene.add(key);
+const rim = new THREE.DirectionalLight(0x8fa8d0, 0.6); rim.position.set(-4, 3, -4); scene.add(rim);
+
+const H = 1.7;                      // world height of the mannequin
+const cam = new THREE.PerspectiveCamera(40, 1, 0.01, 100);
+let az = 0.55, el = 0.12, radius = 3.1;
+const target = new THREE.Vector3(0, H * 0.52, 0);
+function updateCam() {
+  cam.position.set(
+    target.x + radius * Math.cos(el) * Math.sin(az),
+    target.y + radius * Math.sin(el),
+    target.z + radius * Math.cos(el) * Math.cos(az));
+  cam.lookAt(target);
+}
+
+// ground
+const grid = new THREE.GridHelper(6, 18, 0x4d82d6, 0x26282b);
+grid.material.opacity = 0.35; grid.material.transparent = true; scene.add(grid);
+
+// ---- build mannequin from the ACTUAL rig template ----
+const joints = window.RigTemplate.build();     // normalized unit-height space
+const P = {};                                   // id → world Vector3
+joints.forEach(j => { P[j.id] = new THREE.Vector3(j.home[0] * H, j.home[1] * H, j.home[2] * H); });
+
+const bodyMat = new THREE.MeshStandardMaterial({ color: 0x3a4048, roughness: 0.85, metalness: 0.02, transparent: true, opacity: 0.5, depthWrite: false });
+function limb(a, b, r0, r1) {
+  const A = P[a], B = P[b]; if (!A || !B) return;
+  const len = A.distanceTo(B);
+  const m = new THREE.Mesh(new THREE.CylinderGeometry(r1, r0, len, 18), bodyMat);
+  m.position.copy(A).add(B).multiplyScalar(0.5);
+  m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), B.clone().sub(A).normalize());
+  scene.add(m);
+}
+// torso + head volumes
+limb('Hips', 'Neck', 0.135 * H, 0.115 * H);
+{ const head = new THREE.Mesh(new THREE.SphereGeometry(0.075 * H, 22, 18), bodyMat);
+  head.position.copy(P.Head).lerp(P.HeadTop, 0.45); scene.add(head); }
+limb('Neck', 'Head', 0.035 * H, 0.03 * H);
+// limbs with tapering radii (thigh thicker than calf, upper arm thicker than forearm)
+[['Shoulder', 'Elbow', 0.048, 0.036], ['Elbow', 'Wrist', 0.036, 0.026],
+ ['UpperLeg', 'Knee', 0.075, 0.05], ['Knee', 'Ankle', 0.05, 0.032], ['Ankle', 'Toe', 0.03, 0.022]]
+.forEach(([a, b, r0, r1]) => { limb(a + '_R', b + '_R', r0 * H, r1 * H); limb(a + '_L', b + '_L', r0 * H, r1 * H); });
+// simple hand slabs
+['R', 'L'].forEach(s => {
+  const w = P['Wrist_' + s], m = P['Middle3_' + s]; if (!w || !m) return;
+  const len = w.distanceTo(m);
+  const hand = new THREE.Mesh(new THREE.BoxGeometry(len, 0.02 * H, 0.07 * H), bodyMat);
+  hand.position.copy(w).add(m).multiplyScalar(0.5);
+  scene.add(hand);
+});
+
+// ---- bone lines + joint markers ----
+const boneMat = new THREE.LineBasicMaterial({ color: 0xe08534, transparent: true, opacity: 0.9, depthTest: false });
+{
+  const pts = [];
+  joints.forEach(j => { if (j.parent && P[j.parent]) pts.push(P[j.id], P[j.parent]); });
+  const g = new THREE.BufferGeometry().setFromPoints(pts);
+  const lines = new THREE.LineSegments(g, boneMat); lines.renderOrder = 900; scene.add(lines);
+}
+const markers = {};
+joints.forEach(j => {
+  const small = j.group === 'fingers' || j.group === 'face';
+  const m = new THREE.Mesh(
+    new THREE.SphereGeometry((small ? 0.008 : 0.014) * H, 14, 12),
+    new THREE.MeshBasicMaterial({ color: 0xc8ccd2, depthTest: false, transparent: true, opacity: 0.95 }));
+  m.position.copy(P[j.id]); m.renderOrder = 999; scene.add(m);
+  markers[j.id] = m;
+});
+
+// ---- cross-section rings (shown on highlight) ----
+const ringMat = new THREE.MeshBasicMaterial({ color: 0x4d82d6, transparent: true, opacity: 0.85, depthTest: false, side: THREE.DoubleSide });
+const RING_R = {                                // limb radius at each joint (unit space)
+  Shoulder: 0.05, Elbow: 0.037, Wrist: 0.027, UpperLeg: 0.077, Knee: 0.051, Ankle: 0.033, Toe: 0.024,
+  Hips: 0.13, Spine: 0.125, Chest: 0.12, Neck: 0.036, Head: 0.075,
+};
+let rings = [];
+function clearRings() { rings.forEach(r => scene.remove(r)); rings = []; }
+function addRing(id) {
+  const base = id.replace(/_[RL]$/, '');
+  const r = RING_R[base]; if (!r) return;
+  const j = joints.find(x => x.id === id); if (!j) return;
+  // ring plane ⟂ to the bone direction (joint → parent), so it reads as the limb's circumference
+  let dir = new THREE.Vector3(0, 1, 0);
+  if (j.parent && P[j.parent]) dir = P[j.parent].clone().sub(P[id]).normalize();
+  if (base === 'Hips' || base === 'Spine' || base === 'Chest') dir = new THREE.Vector3(0, 1, 0);
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(r * H * 1.15, 0.004 * H, 10, 40), ringMat);
+  ring.position.copy(P[id]);
+  ring.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), dir);
+  ring.renderOrder = 998;
+  scene.add(ring); rings.push(ring);
+}
+
+// ---- rules list interaction ----
+let locked = null;
+function highlight(ids) {
+  clearRings();
+  for (const id in markers) {
+    const on = ids && ids.includes(id);
+    markers[id].material.color.setHex(on ? 0xff4f00 : 0xc8ccd2);
+    markers[id].scale.setScalar(on ? 1.9 : 1);
+  }
+  (ids || []).forEach(addRing);
+}
+document.querySelectorAll('.rule').forEach(el => {
+  const ids = el.dataset.j.split(',');
+  el.addEventListener('mouseenter', () => { if (!locked) highlight(ids); });
+  el.addEventListener('mouseleave', () => { if (!locked) highlight(null); });
+  el.addEventListener('click', () => {
+    if (locked === el) { locked = null; el.classList.remove('on'); highlight(null); return; }
+    if (locked) locked.classList.remove('on');
+    locked = el; el.classList.add('on'); highlight(ids);
+  });
+});
+
+// ---- view buttons + orbit ----
+document.querySelectorAll('#viewBtns button').forEach(b => b.addEventListener('click', () => {
+  document.querySelectorAll('#viewBtns button').forEach(x => x.classList.toggle('on', x === b));
+  const v = b.dataset.v;
+  if (v === 'front') { az = 0; el = 0.02; }
+  else if (v === 'side') { az = Math.PI / 2; el = 0.02; }
+  else { az = 0.55; el = 0.12; }
+  updateCam();
+}));
+let dragging = false, lx = 0, ly = 0;
+canvas.addEventListener('pointerdown', e => { dragging = true; lx = e.clientX; ly = e.clientY; canvas.setPointerCapture(e.pointerId); });
+canvas.addEventListener('pointermove', e => {
+  if (!dragging) return;
+  az -= (e.clientX - lx) * 0.008; el += (e.clientY - ly) * 0.008;
+  el = Math.max(-1.3, Math.min(1.3, el)); lx = e.clientX; ly = e.clientY; updateCam();
+});
+canvas.addEventListener('pointerup', () => dragging = false);
+canvas.addEventListener('wheel', e => { e.preventDefault(); radius = Math.max(1.2, Math.min(9, radius * Math.pow(1.0015, e.deltaY))); updateCam(); }, { passive: false });
+
+function resize() {
+  const w = canvas.clientWidth || 1, h = canvas.clientHeight || 1;
+  renderer.setSize(w, h, false);
+  cam.aspect = w / h; cam.updateProjectionMatrix();
+}
+window.addEventListener('resize', resize);
+resize(); updateCam();
+(function loop() { requestAnimationFrame(loop); renderer.render(scene, cam); })();
+</script>
+</body>
+</html>

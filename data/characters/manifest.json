@@ -1,0 +1,625 @@
+{
+    "comment": "Studio character library. Each entry: {id,label,path,ext,rig,rigged,source,tags,chunked?,chunks?}. rig=mixamo|autorig|unknown. tags are free-form categories used by the library filter (e.g. male,female,human,non-human,sfw,nsfw,t-pose). Add/edit tags freely — chunker.py never overwrites them. Paths are relative to the app root. Portraits go in data/characters/pfp/<id>.png",
+    "characters": [
+        {
+            "id": "8-tailed-white-fox-woman",
+            "label": "8 tailed white fox woman",
+            "path": "data/characters/8 tailed white fox woman.glb",
+            "ext": "glb",
+            "rig": "unknown",
+            "rigged": "false",
+            "source": "local",
+            "tags": [
+                "female",
+                "non-human"
+            ],
+            "chunked": "true",
+            "chunks": 3
+        },
+        {
+            "id": "aura-minotaur",
+            "label": "Aura minotaur",
+            "path": "data/characters/Aura minotaur.glb",
+            "ext": "glb",
+            "rig": "unknown",
+            "rigged": "false",
+            "source": "local",
+            "tags": [
+                "male",
+                "non-human"
+            ],
+            "chunked": "true",
+            "chunks": 2
+        },
+        {
+            "id": "autumn-woman",
+            "label": "Autumn woman",
+            "path": "data/characters/Autumn woman.glb",
+            "ext": "glb",
+            "rig": "unknown",
+            "rigged": "false",
+            "source": "local",
+            "tags": [
+                "female",
+                "human"
+            ]
+        },
+        {
+            "id": "blue-laser-man",
+            "label": "Blue laser man",
+            "path": "data/characters/Blue laser man.glb",
+            "ext": "glb",
+            "rig": "unknown",
+            "rigged": "false",
+            "source": "local",
+            "tags": [
+                "male",
+                "non-human"
+            ],
+            "chunked": "true",
+            "chunks": 2
+        },
+        {
+            "id": "computer-woman",
+            "label": "Computer woman",
+            "path": "data/characters/Computer woman.glb",
+            "ext": "glb",
+            "rig": "unknown",
+            "rigged": "false",
+            "source": "local",
+            "tags": [
+                "female",
+                "non-human"
+            ],
+            "chunked": "true",
+            "chunks": 2
+        },
+        {
+            "id": "cow-woman",
+            "label": "Cow woman",
+            "path": "data/characters/Cow woman.glb",
+            "ext": "glb",
+            "rig": "unknown",
+            "rigged": "false",
+            "source": "local",
+            "tags": [
+                "female",
+                "non-human"
+            ],
+            "chunked": "true",
+            "chunks": 2
+        },
+        {
+            "id": "death-demoness-woman",
+            "label": "Death demoness woman",
+            "path": "data/characters/Death demoness woman.glb",
+            "ext": "glb",
+            "rig": "unknown",
+            "rigged": "false",
+            "source": "local",
+            "tags": [
+                "female",
+                "non-human"
+            ]
+        },
+        {
+            "id": "demon-warrior",
+            "label": "Demon warrior",
+            "path": "data/characters/Demon warrior.glb",
+            "ext": "glb",
+            "rig": "unknown",
+            "rigged": "false",
+            "source": "local",
+            "tags": [
+                "non-human"
+            ],
+            "chunked": "true",
+            "chunks": 2
+        },
+        {
+            "id": "dragon-man-warrior",
+            "label": "Dragon man warrior",
+            "path": "data/characters/Dragon man warrior.glb",
+            "ext": "glb",
+            "rig": "unknown",
+            "rigged": "false",
+            "source": "local",
+            "tags": [
+                "male",
+                "non-human"
+            ],
+            "chunked": "true",
+            "chunks": 2
+        },
+        {
+            "id": "dragon-woman",
+            "label": "Dragon woman",
+            "path": "data/characters/Dragon woman.glb",
+            "ext": "glb",
+            "rig": "unknown",
+            "rigged": "false",
+            "source": "local",
+            "tags": [
+                "female",
+                "non-human"
+            ]
+        },
+        {
+            "id": "dreamworld-woman",
+            "label": "Dreamworld woman",
+            "path": "data/characters/Dreamworld woman.glb",
+            "ext": "glb",
+            "rig": "unknown",
+            "rigged": "false",
+            "source": "local",
+            "tags": [
+                "female",
+                "human"
+            ],
+            "chunked": "true",
+            "chunks": 2
+        },
+        {
+            "id": "egyptian-cat-girl-gold",
+            "label": "Egyptian cat girl gold",
+            "path": "data/characters/Egyptian cat girl gold.glb",
+            "ext": "glb",
+            "rig": "unknown",
+            "rigged": "false",
+            "source": "local",
+            "tags": [
+                "female",
+                "non-human"
+            ]
+        },
+        {
+            "id": "egyptian-tomb-spirit",
+            "label": "Egyptian tomb spirit",
+            "path": "data/characters/Egyptian tomb spirit.glb",
+            "ext": "glb",
+            "rig": "unknown",
+            "rigged": "false",
+            "source": "local",
+            "tags": [
+                "non-human"
+            ],
+            "chunked": "true",
+            "chunks": 2
+        },
+        {
+            "id": "ice-warrior",
+            "label": "Ice warrior",
+            "path": "data/characters/Ice warrior.glb",
+            "ext": "glb",
+            "rig": "unknown",
+            "rigged": "false",
+            "source": "local",
+            "tags": [
+                "human"
+            ],
+            "chunked": "true",
+            "chunks": 2
+        },
+        {
+            "id": "ice-winged-angel-man",
+            "label": "Ice winged angel man",
+            "path": "data/characters/Ice winged angel man.glb",
+            "ext": "glb",
+            "rig": "unknown",
+            "rigged": "false",
+            "source": "local",
+            "tags": [
+                "male",
+                "non-human"
+            ],
+            "chunked": "true",
+            "chunks": 2
+        },
+        {
+            "id": "lion-man-warrior",
+            "label": "Lion man warrior",
+            "path": "data/characters/Lion man warrior.glb",
+            "ext": "glb",
+            "rig": "unknown",
+            "rigged": "false",
+            "source": "local",
+            "tags": [
+                "male",
+                "non-human"
+            ],
+            "chunked": "true",
+            "chunks": 2
+        },
+        {
+            "id": "lizard-man-warrior",
+            "label": "Lizard man warrior",
+            "path": "data/characters/Lizard man warrior.glb",
+            "ext": "glb",
+            "rig": "unknown",
+            "rigged": "false",
+            "source": "local",
+            "tags": [
+                "male",
+                "non-human"
+            ],
+            "chunked": "true",
+            "chunks": 2
+        },
+        {
+            "id": "matvei",
+            "label": "Matvei",
+            "path": "data/characters/Matvei.glb",
+            "ext": "glb",
+            "rig": "unknown",
+            "rigged": "false",
+            "source": "local",
+            "tags": [
+                "human"
+            ]
+        },
+        {
+            "id": "metallic-woman",
+            "label": "Metallic woman",
+            "path": "data/characters/Metallic woman.glb",
+            "ext": "glb",
+            "rig": "unknown",
+            "rigged": "false",
+            "source": "local",
+            "tags": [
+                "female",
+                "non-human"
+            ]
+        },
+        {
+            "id": "nightmare-woman",
+            "label": "Nightmare woman",
+            "path": "data/characters/Nightmare woman.glb",
+            "ext": "glb",
+            "rig": "unknown",
+            "rigged": "false",
+            "source": "local",
+            "tags": [
+                "female",
+                "human"
+            ],
+            "chunked": "true",
+            "chunks": 2
+        },
+        {
+            "id": "panther-woman",
+            "label": "Panther woman",
+            "path": "data/characters/Panther woman.glb",
+            "ext": "glb",
+            "rig": "unknown",
+            "rigged": "false",
+            "source": "local",
+            "tags": [
+                "female",
+                "non-human"
+            ]
+        },
+        {
+            "id": "psychic-purple-demoness",
+            "label": "Psychic purple demoness",
+            "path": "data/characters/Psychic purple demoness.glb",
+            "ext": "glb",
+            "rig": "unknown",
+            "rigged": "false",
+            "source": "local",
+            "tags": [
+                "female",
+                "non-human"
+            ]
+        },
+        {
+            "id": "purity-woman",
+            "label": "Purity woman",
+            "path": "data/characters/Purity woman.glb",
+            "ext": "glb",
+            "rig": "unknown",
+            "rigged": "false",
+            "source": "local",
+            "tags": [
+                "female",
+                "human"
+            ],
+            "chunked": "true",
+            "chunks": 2
+        },
+        {
+            "id": "purple-haired-demon-woman",
+            "label": "Purple haired demon-woman",
+            "path": "data/characters/Purple haired demon-woman.glb",
+            "ext": "glb",
+            "rig": "unknown",
+            "rigged": "false",
+            "source": "local",
+            "tags": [
+                "female",
+                "non-human"
+            ]
+        },
+        {
+            "id": "purple-succubus-woman",
+            "label": "Purple succubus woman",
+            "path": "data/characters/Purple succubus woman.glb",
+            "ext": "glb",
+            "rig": "unknown",
+            "rigged": "false",
+            "source": "local",
+            "tags": [
+                "female",
+                "non-human"
+            ]
+        },
+        {
+            "id": "snake-woman",
+            "label": "Snake woman",
+            "path": "data/characters/Snake woman.glb",
+            "ext": "glb",
+            "rig": "unknown",
+            "rigged": "false",
+            "source": "local",
+            "tags": [
+                "female",
+                "non-human"
+            ],
+            "chunked": "true",
+            "chunks": 2
+        },
+        {
+            "id": "storm-woman",
+            "label": "Storm woman",
+            "path": "data/characters/Storm woman.glb",
+            "ext": "glb",
+            "rig": "unknown",
+            "rigged": "false",
+            "source": "local",
+            "tags": [
+                "female",
+                "non-human"
+            ],
+            "chunked": "true",
+            "chunks": 3
+        },
+        {
+            "id": "t-pose-10-tailed-fox-girl-red-clothes",
+            "label": "T-Pose 10-tailed fox girl red clothes",
+            "path": "data/characters/T-Pose 10-tailed fox girl red clothes.glb",
+            "ext": "glb",
+            "rig": "unknown",
+            "rigged": "false",
+            "source": "local",
+            "tags": [
+                "female",
+                "non-human",
+                "t-pose"
+            ],
+            "chunked": "true",
+            "chunks": 3
+        },
+        {
+            "id": "t-pose-alien",
+            "label": "T-Pose alien",
+            "path": "data/characters/T-Pose alien.glb",
+            "ext": "glb",
+            "rig": "unknown",
+            "rigged": "false",
+            "source": "local",
+            "tags": [
+                "non-human",
+                "t-pose"
+            ]
+        },
+        {
+            "id": "t-pose-bunny-girl-white",
+            "label": "T-Pose bunny girl white",
+            "path": "data/characters/T-Pose bunny girl white.glb",
+            "ext": "glb",
+            "rig": "unknown",
+            "rigged": "false",
+            "source": "local",
+            "tags": [
+                "female",
+                "non-human",
+                "t-pose"
+            ],
+            "chunked": "true",
+            "chunks": 2
+        },
+        {
+            "id": "t-pose-demoness",
+            "label": "T-Pose demoness",
+            "path": "data/characters/T-Pose demoness.glb",
+            "ext": "glb",
+            "rig": "unknown",
+            "rigged": "false",
+            "source": "local",
+            "tags": [
+                "female",
+                "non-human",
+                "t-pose"
+            ],
+            "chunked": "true",
+            "chunks": 2
+        },
+        {
+            "id": "t-pose-earth-dragon",
+            "label": "T-Pose earth dragon",
+            "path": "data/characters/T-Pose earth dragon.glb",
+            "ext": "glb",
+            "rig": "unknown",
+            "rigged": "false",
+            "source": "local",
+            "tags": [
+                "non-human",
+                "t-pose"
+            ]
+        },
+        {
+            "id": "t-pose-egyptian-cat-girl-golden-attire",
+            "label": "T-Pose egyptian cat girl golden attire",
+            "path": "data/characters/T-Pose egyptian cat girl golden attire.glb",
+            "ext": "glb",
+            "rig": "unknown",
+            "rigged": "false",
+            "source": "local",
+            "tags": [
+                "female",
+                "non-human",
+                "t-pose"
+            ]
+        },
+        {
+            "id": "t-pose-gargoyl",
+            "label": "T-Pose gargoyl",
+            "path": "data/characters/T-Pose gargoyl.glb",
+            "ext": "glb",
+            "rig": "unknown",
+            "rigged": "false",
+            "source": "local",
+            "tags": [
+                "non-human",
+                "t-pose"
+            ]
+        },
+        {
+            "id": "t-pose-medusa",
+            "label": "T-Pose medusa",
+            "path": "data/characters/T-Pose medusa.glb",
+            "ext": "glb",
+            "rig": "unknown",
+            "rigged": "false",
+            "source": "local",
+            "tags": [
+                "female",
+                "non-human",
+                "t-pose"
+            ]
+        },
+        {
+            "id": "t-pose-minotaur",
+            "label": "T-Pose minotaur",
+            "path": "data/characters/T-Pose minotaur.glb",
+            "ext": "glb",
+            "rig": "unknown",
+            "rigged": "false",
+            "source": "local",
+            "tags": [
+                "male",
+                "non-human",
+                "t-pose"
+            ]
+        },
+        {
+            "id": "t-pose-mushroom-zombie",
+            "label": "T-Pose mushroom zombie",
+            "path": "data/characters/T-Pose mushroom zombie.glb",
+            "ext": "glb",
+            "rig": "unknown",
+            "rigged": "false",
+            "source": "local",
+            "tags": [
+                "non-human",
+                "t-pose"
+            ]
+        },
+        {
+            "id": "t-pose-normal-warrior-woman",
+            "label": "T-Pose normal warrior woman",
+            "path": "data/characters/T-Pose normal warrior woman.glb",
+            "ext": "glb",
+            "rig": "unknown",
+            "rigged": "false",
+            "source": "local",
+            "tags": [
+                "female",
+                "human",
+                "t-pose"
+            ]
+        },
+        {
+            "id": "t-pose-old-hag",
+            "label": "T-Pose old hag",
+            "path": "data/characters/T-Pose old hag.glb",
+            "ext": "glb",
+            "rig": "unknown",
+            "rigged": "false",
+            "source": "local",
+            "tags": [
+                "female",
+                "human",
+                "t-pose"
+            ],
+            "chunked": "true",
+            "chunks": 2
+        },
+        {
+            "id": "t-pose-skeleton",
+            "label": "T-Pose skeleton",
+            "path": "data/characters/T-Pose skeleton.glb",
+            "ext": "glb",
+            "rig": "unknown",
+            "rigged": "false",
+            "source": "local",
+            "tags": [
+                "non-human",
+                "t-pose"
+            ]
+        },
+        {
+            "id": "t-pose-slime-monster",
+            "label": "T-Pose slime monster",
+            "path": "data/characters/T-Pose slime monster.glb",
+            "ext": "glb",
+            "rig": "unknown",
+            "rigged": "false",
+            "source": "local",
+            "tags": [
+                "non-human",
+                "t-pose"
+            ]
+        },
+        {
+            "id": "tentacular-alien-woman",
+            "label": "Tentacular alien woman",
+            "path": "data/characters/Tentacular alien woman.glb",
+            "ext": "glb",
+            "rig": "unknown",
+            "rigged": "false",
+            "source": "local",
+            "tags": [
+                "female",
+                "non-human"
+            ]
+        },
+        {
+            "id": "wolf-man-warrior",
+            "label": "Wolf man warrior",
+            "path": "data/characters/Wolf man warrior.glb",
+            "ext": "glb",
+            "rig": "unknown",
+            "rigged": "false",
+            "source": "local",
+            "tags": [
+                "male",
+                "non-human"
+            ]
+        },
+        {
+            "id": "wolf-woman",
+            "label": "Wolf woman",
+            "path": "data/characters/Wolf woman.glb",
+            "ext": "glb",
+            "rig": "unknown",
+            "rigged": "false",
+            "source": "local",
+            "tags": [
+                "female",
+                "non-human"
+            ],
+            "chunked": "true",
+            "chunks": 2
+        }
+    ]
+}

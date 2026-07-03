@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./studio3D_scripts/support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Spline+Sans+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="theme.js"></script>
+<style>
+  html,body{margin:0;padding:0;height:100%;background:var(--gutter);}
+  *{box-sizing:border-box;}
+  @keyframes me-spin{to{transform:rotate(360deg);}}
+  @keyframes me-tin{from{transform:translateX(120%);opacity:0;}to{transform:translateX(0);opacity:1;}}
+  #me-root ::-webkit-scrollbar{width:10px;height:10px;}
+  #me-root ::-webkit-scrollbar-track{background:var(--gutter);}
+  #me-root ::-webkit-scrollbar-thumb{background:var(--panel-3);border:2px solid var(--gutter);border-radius:6px;}
+  #me-root input[type=range]{-webkit-appearance:none;height:4px;border-radius:2px;background:var(--panel);outline:none;}
+  #me-root input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--accent);cursor:pointer;border:2px solid var(--panel);}
+</style>
+</helmet>
+
+<div id="me-root" style=" display:flex;flex-direction:column;height:100vh;width:100%;overflow:hidden;background:var(--gutter);color:var(--text);font-family:var(--font-ui);font-size:13px;-webkit-font-smoothing:antialiased;user-select:none;">
+
+  <!-- TOP BAR -->
+  <header style="height:46px;flex:none;display:flex;align-items:center;gap:18px;padding:0 14px;background:var(--header);border-bottom:1px solid var(--seam);">
+    <div style="display:flex;align-items:center;gap:9px;">
+      <div style="width:26px;height:26px;border-radius:5px;display:flex;align-items:center;justify-content:center;background:var(--active);color:var(--on-accent);font-weight:700;font-size:15px;box-shadow:0 1px 2px rgba(0,0,0,.4),0 0 0 1px rgba(255,255,255,.08) inset;">✎</div>
+      <div>
+        <div style="font-weight:700;letter-spacing:.04em;font-size:14px;">MESHEDIT</div>
+        <div style="font-family:var(--font-mono);font-size:10px;color:var(--muted);letter-spacing:.1em;margin-top:1px;">SEPARATE · CUT · SIMULATE · LOCAL</div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:3px;background:var(--panel);border:1px solid var(--seam);border-radius:7px;padding:3px;">
+      <sc-for list="{{ modes }}" as="m" hint-placeholder-count="4">
+        <button style="{{ m.style }}" title="{{ m.tip }}" onClick="{{ m.onClick }}">{{ m.label }}</button>
+      </sc-for>
+    </div>
+    <div style="flex:1;"></div>
+    <button style="display:inline-flex;align-items:center;gap:7px;height:30px;padding:0 13px;border-radius:6px;font-size:11.5px;font-weight:600;background:var(--panel3);border:1px solid var(--edge);color:var(--text);cursor:pointer;" onClick="{{ pickFile }}">⬇ Import model…</button>
+    <div style="display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--text2);padding:4px 10px;background:var(--panel);border:1px solid var(--seam);border-radius:5px;">
+      <span style="width:7px;height:7px;border-radius:50%;flex:none;background:{{ dotColor }};"></span>
+      <span style="font-family:var(--font-mono);">{{ meshName }}</span>
+    </div>
+  </header>
+
+  <div style="flex:1;display:flex;min-height:0;">
+
+    <!-- LEFT : OUTLINER -->
+    <aside style="width:262px;flex:none;background:var(--panel);border-right:1px solid var(--seam);display:flex;flex-direction:column;min-height:0;">
+      <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--header);border-bottom:1px solid var(--seam);flex:none;">
+        <span style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);">Elements</span>
+        <span style="margin-left:auto;font-family:var(--font-mono);font-size:10px;color:var(--muted);background:var(--panel);padding:1px 7px;border-radius:9px;border:1px solid var(--seam);">{{ elemCount }}</span>
+      </div>
+      <div style="flex:1;min-height:0;overflow-y:auto;padding:6px 8px;">
+        <sc-if value="{{ hasModel }}" hint-placeholder-val="{{ false }}">
+          <sc-for list="{{ tree }}" as="g" hint-placeholder-count="4">
+            <div style="margin-bottom:7px;">
+              <div style="display:flex;align-items:center;gap:7px;padding:5px 6px;">
+                <span style="{{ g.dotStyle }}"></span>
+                <span style="font-size:10px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ g.group }}</span>
+                <span style="margin-left:auto;font-family:var(--font-mono);font-size:9px;color:var(--muted2);">{{ g.count }}</span>
+              </div>
+              <sc-for list="{{ g.parts }}" as="p" hint-placeholder-count="3">
+                <div style="{{ p.rowStyle }}" onClick="{{ p.onClick }}">
+                  <span style="{{ p.dotStyle }}"></span>
+                  <span style="flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:11.5px;">{{ p.label }}</span>
+                  <span style="font-family:var(--font-mono);font-size:8.5px;color:var(--muted2);">{{ p.tris }}</span>
+                  <span style="{{ p.tagStyle }}">{{ p.tag }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </sc-for>
+        </sc-if>
+        <sc-if value="{{ noModel }}" hint-placeholder-val="{{ true }}">
+          <div style="padding:18px 12px;color:var(--muted);font-size:11.5px;line-height:1.6;">No model loaded. Import a mesh, or open one from the Library / send it here from MoCap. It'll be auto-split into its real pieces.</div>
+        </sc-if>
+      </div>
+      <sc-if value="{{ hasModel }}" hint-placeholder-val="{{ false }}">
+        <div style="flex:none;padding:9px 10px;border-top:1px solid var(--seam);display:flex;gap:6px;">
+          <button style="flex:1;font-size:10.5px;padding:6px;border-radius:5px;cursor:pointer;background:var(--panel3);border:1px solid var(--edge);color:var(--text2);" onClick="{{ selectAll }}">Select all</button>
+          <button style="flex:1;font-size:10.5px;padding:6px;border-radius:5px;cursor:pointer;background:var(--panel3);border:1px solid var(--edge);color:var(--text2);" onClick="{{ frameSel }}">Frame</button>
+        </div>
+      </sc-if>
+    </aside>
+
+    <!-- VIEWPORT -->
+    <div style="flex:1;position:relative;min-width:0;min-height:0;background:var(--viewport);">
+      <canvas id="me-gl" style="position:absolute;inset:0;width:100%;height:100%;display:block;"></canvas>
+
+      <!-- empty / drop overlay -->
+      <sc-if value="{{ noModel }}" hint-placeholder-val="{{ true }}">
+        <div id="me-drop" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;background:rgba(18,20,24,.86);">
+          <div style="width:70px;height:70px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:30px;background:var(--activeDim);border:1px solid rgba(255,79,0,.3);color:var(--active);">✎</div>
+          <div style="text-align:center;">
+            <div style="font-size:16px;font-weight:700;margin-bottom:6px;">Edit an imported mesh</div>
+            <div style="font-size:12.5px;color:var(--text2);max-width:420px;line-height:1.6;">Drop a <b>.glb / .fbx / .obj</b> here, or import one. MeshEdit auto-splits it into every authored sub-mesh and disconnected island, then lets you paint, cut, and separate along the model's own edges.</div>
+          </div>
+          <div style="display:flex;gap:10px;">
+            <button style="padding:10px 18px;border-radius:7px;font-size:12.5px;font-weight:600;background:var(--active);border:1px solid var(--active);color:var(--on-accent);cursor:pointer;box-shadow:0 2px 12px rgba(255,79,0,.35);" onClick="{{ pickFile }}">⬇ Import file…</button>
+            <button style="padding:10px 18px;border-radius:7px;font-size:12.5px;font-weight:600;background:var(--panel3);border:1px solid var(--edge);color:var(--text);cursor:pointer;" onClick="{{ loadSample }}">Load sample figure</button>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- loading -->
+      <sc-if value="{{ loading }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:rgba(18,20,24,.8);color:var(--muted);">
+          <div style="width:38px;height:38px;border:3px solid var(--panel-3);border-top-color:var(--active);border-radius:50%;animation:me-spin .9s linear infinite;"></div>
+          <div style="font-size:12px;">{{ loadingMsg }}</div>
+        </div>
+      </sc-if>
+
+      <!-- top: views -->
+      <div style="position:absolute;left:50%;top:10px;transform:translateX(-50%);display:flex;align-items:center;gap:4px;background:rgba(15,15,15,.86);border:1px solid var(--edge);border-radius:8px;padding:5px 7px;">
+        <sc-for list="{{ views }}" as="v" hint-placeholder-count="5">
+          <button style="font-size:11px;font-weight:600;padding:5px 9px;border-radius:5px;cursor:pointer;background:transparent;border:none;color:var(--text2);" onClick="{{ v.onClick }}">{{ v.label }}</button>
+        </sc-for>
+      </div>
+      <div style="position:absolute;right:10px;top:10px;">
+        <button style="{{ xrayChipStyle }}" onClick="{{ toggleXray }}">◍ X-ray</button>
+      </div>
+      <div style="position:absolute;left:10px;top:10px;font-family:var(--font-mono);font-size:10px;letter-spacing:.1em;color:var(--text2);background:rgba(15,15,15,.6);padding:3px 7px;border-radius:3px;pointer-events:none;">{{ modeBadge }}</div>
+
+      <!-- bottom: explode -->
+      <sc-if value="{{ hasModel }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute;left:50%;bottom:12px;transform:translateX(-50%);display:flex;align-items:center;gap:11px;background:rgba(15,15,15,.86);border:1px solid var(--edge);border-radius:8px;padding:8px 14px;min-width:320px;">
+          <span style="font-family:var(--font-mono);font-size:9.5px;letter-spacing:.1em;color:var(--muted);">EXPLODE</span>
+          <input type="range" min="0" max="100" value="{{ explodeSlide }}" onInput="{{ onExplode }}" style="flex:1;">
+          <span style="font-family:var(--font-mono);font-size:10.5px;color:var(--text2);width:34px;text-align:right;">{{ explodeLabel }}</span>
+        </div>
+      </sc-if>
+      <div style="position:absolute;right:10px;bottom:12px;font-size:10.5px;color:var(--text2);background:rgba(15,15,15,.78);border:1px solid var(--edge);padding:6px 11px;border-radius:6px;pointer-events:none;max-width:240px;">{{ vpHint }}</div>
+    </div>
+
+    <!-- RIGHT : TOOL PANEL -->
+    <aside style="width:300px;flex:none;background:var(--panel);border-left:1px solid var(--seam);display:flex;flex-direction:column;min-height:0;overflow-y:auto;">
+
+      <!-- selection summary -->
+      <div style="border-bottom:1px solid var(--seam);">
+        <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--header);border-bottom:1px solid var(--seam);">
+          <span style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);">{{ selTitle }}</span>
+          <span style="margin-left:auto;font-family:var(--font-mono);font-size:10px;color:var(--active);background:var(--panel);padding:1px 7px;border-radius:9px;border:1px solid var(--seam);">{{ selBadge }}</span>
+        </div>
+        <div style="padding:11px 12px;">
+          <sc-if value="{{ showSel }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;justify-content:space-between;font-size:11px;padding:3px 0;"><span style="color:var(--muted);">Active</span><span style="font-family:var(--font-mono);color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:170px;">{{ selName }}</span></div>
+            <div style="display:flex;justify-content:space-between;font-size:11px;padding:3px 0;"><span style="color:var(--muted);">Triangles</span><span style="font-family:var(--font-mono);color:var(--text);">{{ selTris }}</span></div>
+          </sc-if>
+          <sc-if value="{{ emptySel }}" hint-placeholder-val="{{ true }}">
+            <div style="font-size:11px;line-height:1.5;color:var(--text2);">{{ emptySelHint }}</div>
+          </sc-if>
+        </div>
+      </div>
+
+      <!-- SELECT MODE -->
+      <sc-if value="{{ isSelect }}" hint-placeholder-val="{{ true }}">
+        <div style="border-bottom:1px solid var(--seam);">
+          <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--header);border-bottom:1px solid var(--seam);"><span style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);">Move &amp; separate</span></div>
+          <div style="padding:11px 12px;">
+            <div style="font-size:11px;line-height:1.5;color:var(--text2);margin-bottom:9px;">Nudge selected elements off the body, then separate them as standalone pieces.</div>
+            <sc-for list="{{ axes }}" as="ax" hint-placeholder-count="3">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:7px;">
+                <span style="width:14px;font-family:var(--font-mono);font-size:11px;color:{{ ax.col }};">{{ ax.label }}</span>
+                <button style="flex:1;padding:7px;border-radius:6px;background:var(--panel3);border:1px solid var(--edge);color:var(--text);cursor:pointer;font-weight:600;" onClick="{{ ax.minus }}">–</button>
+                <button style="flex:1;padding:7px;border-radius:6px;background:var(--panel3);border:1px solid var(--edge);color:var(--text);cursor:pointer;font-weight:600;" onClick="{{ ax.plus }}">+</button>
+              </div>
+            </sc-for>
+            <button style="display:flex;align-items:center;justify-content:center;gap:7px;padding:9px;border-radius:6px;font-size:12px;font-weight:600;background:var(--active);border:1px solid var(--active);color:var(--on-accent);width:100%;cursor:pointer;margin-top:6px;box-shadow:0 1px 0 rgba(255,255,255,.18) inset,0 2px 12px rgba(255,79,0,.35);" onClick="{{ doSeparate }}">⛶ Separate selected</button>
+            <button style="display:flex;align-items:center;justify-content:center;gap:7px;padding:8px;border-radius:6px;font-size:11.5px;font-weight:600;background:transparent;border:1px solid var(--edge);color:var(--text);width:100%;cursor:pointer;margin-top:7px;" onClick="{{ doMerge }}">⧉ Merge selected → one object</button>
+            <div style="display:flex;gap:7px;margin-top:7px;">
+              <button style="flex:1;padding:8px;border-radius:6px;font-size:11.5px;font-weight:600;background:transparent;border:1px solid var(--edge);color:var(--text);cursor:pointer;" onClick="{{ doReattach }}">↩ Re-attach</button>
+              <button style="flex:1;padding:8px;border-radius:6px;font-size:11.5px;font-weight:600;background:transparent;border:1px solid rgba(207,92,92,.5);color:#e79a9a;cursor:pointer;" onClick="{{ doDelete }}">🗑 Delete</button>
+            </div>
+          </div>
+        </div>
+        <div style="padding:12px;">
+          <div style="display:flex;gap:9px;padding:9px 11px;border-radius:7px;font-size:11px;line-height:1.5;background:var(--accentDim);border:1px solid rgba(255,79,0,.3);color:#ffd2bb;">
+            <span style="flex:none;">✦</span><span>Each authored sub-mesh and disconnected island is already its own element. If a finger is fused to the hand, switch to <b>Paint</b> to peel it off along the mesh lines.</span>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- MOVE MODE -->
+      <sc-if value="{{ isMove }}" hint-placeholder-val="{{ false }}">
+        <div style="border-bottom:1px solid var(--seam);">
+          <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--header);border-bottom:1px solid var(--seam);"><span style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);">Move &amp; merge</span></div>
+          <div style="padding:11px 12px;">
+            <div style="font-size:11px;line-height:1.5;color:var(--text2);margin-bottom:11px;"><b>Drag</b> a piece in the viewport to slide it through space. Rotate it below. When you're done, select it together with the body and <b>Merge</b> to weld everything back into one object.</div>
+            <label style="display:block;font-size:10.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:7px;">Rotate selected · 15°</label>
+            <sc-for list="{{ rotAxes }}" as="ax" hint-placeholder-count="3">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:7px;">
+                <span style="width:14px;font-family:var(--font-mono);font-size:11px;color:{{ ax.col }};">{{ ax.label }}</span>
+                <button style="flex:1;padding:7px;border-radius:6px;background:var(--panel3);border:1px solid var(--edge);color:var(--text);cursor:pointer;font-weight:600;" onClick="{{ ax.minus }}">⟲</button>
+                <button style="flex:1;padding:7px;border-radius:6px;background:var(--panel3);border:1px solid var(--edge);color:var(--text);cursor:pointer;font-weight:600;" onClick="{{ ax.plus }}">⟳</button>
+              </div>
+            </sc-for>
+            <label style="display:block;font-size:10.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:11px 0 7px;">Nudge selected</label>
+            <sc-for list="{{ axes }}" as="ax" hint-placeholder-count="3">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:7px;">
+                <span style="width:14px;font-family:var(--font-mono);font-size:11px;color:{{ ax.col }};">{{ ax.label }}</span>
+                <button style="flex:1;padding:7px;border-radius:6px;background:var(--panel3);border:1px solid var(--edge);color:var(--text);cursor:pointer;font-weight:600;" onClick="{{ ax.minus }}">–</button>
+                <button style="flex:1;padding:7px;border-radius:6px;background:var(--panel3);border:1px solid var(--edge);color:var(--text);cursor:pointer;font-weight:600;" onClick="{{ ax.plus }}">+</button>
+              </div>
+            </sc-for>
+            <button style="display:flex;align-items:center;justify-content:center;gap:7px;padding:9px;border-radius:6px;font-size:12px;font-weight:600;background:var(--active);border:1px solid var(--active);color:var(--on-accent);width:100%;cursor:pointer;margin-top:8px;box-shadow:0 1px 0 rgba(255,255,255,.18) inset,0 2px 12px rgba(255,79,0,.35);" onClick="{{ doMerge }}">⧉ Merge selected → one object</button>
+            <div style="display:flex;gap:7px;margin-top:7px;">
+              <button style="flex:1;padding:8px;border-radius:6px;font-size:11.5px;font-weight:600;background:transparent;border:1px solid var(--edge);color:var(--text);cursor:pointer;" onClick="{{ doReattach }}">↩ Snap home</button>
+              <button style="flex:1;padding:8px;border-radius:6px;font-size:11.5px;font-weight:600;background:transparent;border:1px solid var(--edge);color:var(--text);cursor:pointer;" onClick="{{ doMergeAll }}">⛶ Weld all</button>
+            </div>
+          </div>
+        </div>
+        <div style="padding:12px;"><div style="display:flex;gap:9px;padding:9px 11px;border-radius:7px;font-size:11px;line-height:1.5;background:var(--accentDim);border:1px solid rgba(255,79,0,.3);color:#ffd2bb;"><span style="flex:none;">✦</span><span>The loop: <b>Paint</b> or <b>Cut</b> a region off, come <b>here</b> to drag &amp; rotate the freed piece, then <b>Merge</b> it back with the body.</span></div></div>
+      </sc-if>
+
+      <!-- PAINT MODE -->
+      <sc-if value="{{ isPaint }}" hint-placeholder-val="{{ false }}">
+        <div style="border-bottom:1px solid var(--seam);">
+          <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--header);border-bottom:1px solid var(--seam);"><span style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);">Paint faces</span><span style="margin-left:auto;font-family:var(--font-mono);font-size:10px;color:var(--active);">{{ faceCount }} faces</span></div>
+          <div style="padding:11px 12px;">
+            <div style="font-size:11px;line-height:1.5;color:var(--text2);margin-bottom:11px;">Drag on the mesh to paint triangles. The brush grows along connected edges, so it follows the surface — paint a finger, a sleeve, a panel. <b>Alt-drag</b> erases.</div>
+            <label style="display:block;font-size:10.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">Brush size</label>
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;"><input type="range" min="0" max="6" value="{{ brushSlide }}" onInput="{{ onBrush }}" style="flex:1;"><span style="font-family:var(--font-mono);font-size:11px;color:var(--text2);width:34px;text-align:right;">{{ brushLabel }}</span></div>
+            <div style="display:flex;gap:7px;margin-bottom:9px;">
+              <button style="flex:1;padding:8px;border-radius:6px;font-size:11px;font-weight:600;background:var(--panel3);border:1px solid var(--edge);color:var(--text);cursor:pointer;" onClick="{{ growFaces }}">＋ Grow</button>
+              <button style="flex:1;padding:8px;border-radius:6px;font-size:11px;font-weight:600;background:var(--panel3);border:1px solid var(--edge);color:var(--text);cursor:pointer;" onClick="{{ shrinkFaces }}">－ Shrink</button>
+              <button style="flex:1;padding:8px;border-radius:6px;font-size:11px;font-weight:600;background:transparent;border:1px solid var(--edge);color:var(--text2);cursor:pointer;" onClick="{{ clearFaces }}">Clear</button>
+            </div>
+            <button style="display:flex;align-items:center;justify-content:center;gap:7px;padding:9px;border-radius:6px;font-size:12px;font-weight:600;background:var(--active);border:1px solid var(--active);color:var(--on-accent);width:100%;cursor:pointer;box-shadow:0 1px 0 rgba(255,255,255,.18) inset,0 2px 12px rgba(255,79,0,.35);" onClick="{{ separateFaces }}">⛶ Separate painted faces</button>
+            <button style="display:flex;align-items:center;justify-content:center;gap:7px;padding:8px;border-radius:6px;font-size:11.5px;font-weight:600;background:transparent;border:1px solid rgba(207,92,92,.5);color:#e79a9a;width:100%;cursor:pointer;margin-top:7px;" onClick="{{ deleteFaces }}">🗑 Delete painted faces</button>
+          </div>
+        </div>
+        <div style="padding:12px;"><div style="display:flex;gap:9px;padding:9px 11px;border-radius:7px;font-size:11px;line-height:1.5;background:var(--activeDim);border:1px solid rgba(255,79,0,.28);color:#ffd2bb;"><span style="flex:none;">✋</span><span>To split fingers: paint one finger, <b>Grow</b> until it reaches the knuckle seam, then Separate. Repeat per finger.</span></div></div>
+      </sc-if>
+
+      <!-- CUT MODE -->
+      <sc-if value="{{ isCut }}" hint-placeholder-val="{{ false }}">
+        <div style="border-bottom:1px solid var(--seam);">
+          <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--header);border-bottom:1px solid var(--seam);"><span style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);">Plane cut</span><span style="margin-left:auto;font-family:var(--font-mono);font-size:10px;color:var(--new);">slice</span></div>
+          <div style="padding:11px 12px;">
+            <sc-if value="{{ noCut }}" hint-placeholder-val="{{ true }}">
+              <div style="font-size:11px;line-height:1.5;color:var(--text2);margin-bottom:10px;">Click any element to drop a cut ring on it. Slide it to the seam, pick the axis, and slice it cleanly into two elements.</div>
+              <button style="display:flex;align-items:center;justify-content:center;gap:7px;padding:9px;border-radius:6px;font-size:12px;font-weight:600;background:var(--panel3);border:1px solid var(--edge);color:var(--text);width:100%;cursor:pointer;" onClick="{{ cutSelected }}">◴ Cut selected element</button>
+            </sc-if>
+            <sc-if value="{{ cutting }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;justify-content:space-between;font-size:11px;padding:3px 0;margin-bottom:9px;"><span style="color:var(--muted);">Cutting</span><span style="font-family:var(--font-mono);color:var(--new);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:160px;">{{ cutName }}</span></div>
+              <label style="display:block;font-size:10.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">Axis</label>
+              <div style="display:flex;gap:6px;margin-bottom:11px;">
+                <sc-for list="{{ cutAxes }}" as="a" hint-placeholder-count="3"><button style="{{ a.style }}" onClick="{{ a.onClick }}">{{ a.label }}</button></sc-for>
+              </div>
+              <label style="display:block;font-size:10.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:7px;">Loop position</label>
+              <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;"><input type="range" min="4" max="96" value="{{ cutSlide }}" onInput="{{ onCutT }}" style="flex:1;"><span style="font-family:var(--font-mono);font-size:11px;color:var(--text2);width:34px;text-align:right;">{{ cutLabel }}</span></div>
+              <button style="display:flex;align-items:center;justify-content:center;gap:7px;padding:9px;border-radius:6px;font-size:12px;font-weight:600;background:var(--active);border:1px solid var(--active);color:var(--on-accent);width:100%;cursor:pointer;box-shadow:0 1px 0 rgba(255,255,255,.18) inset,0 2px 12px rgba(255,79,0,.35);" onClick="{{ applyCut }}">✂ Slice here</button>
+              <button style="display:flex;align-items:center;justify-content:center;gap:7px;padding:8px;border-radius:6px;font-size:11.5px;font-weight:600;background:transparent;border:1px solid var(--edge);color:var(--text);width:100%;cursor:pointer;margin-top:7px;" onClick="{{ cancelCut }}">✕ Cancel</button>
+            </sc-if>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- REMESH MODE -->
+      <sc-if value="{{ isRemesh }}" hint-placeholder-val="{{ false }}">
+        <div style="border-bottom:1px solid var(--seam);">
+          <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--header);border-bottom:1px solid var(--seam);"><span style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);">Voxel remesh</span><span style="margin-left:auto;font-family:var(--font-mono);font-size:10px;color:var(--new);">watertight</span></div>
+          <div style="padding:11px 12px;">
+            <div style="font-size:11px;line-height:1.5;color:var(--text2);margin-bottom:11px;">Dissolve the mesh into a 3D distance field and re-extract <b>one clean, watertight surface</b> — seams welded, holes sealed, topology even. The fix for a messy single-object scan, or for fusing pieces you cut &amp; moved.</div>
+            <label style="display:flex;justify-content:space-between;font-size:10.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;"><span>Resolution</span><span style="font-family:var(--font-mono);color:var(--text2);">{{ remeshResLabel }}</span></label>
+            <input type="range" min="32" max="200" step="8" value="{{ remeshResSlide }}" onInput="{{ onRemeshRes }}" style="width:100%;margin-bottom:12px;">
+            <label style="display:flex;justify-content:space-between;font-size:10.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;"><span>Smoothing</span><span style="font-family:var(--font-mono);color:var(--text2);">{{ remeshSmoothLabel }}</span></label>
+            <input type="range" min="0" max="6" value="{{ remeshSmoothSlide }}" onInput="{{ onRemeshSmooth }}" style="width:100%;margin-bottom:13px;">
+            <button style="display:flex;align-items:center;justify-content:center;gap:7px;padding:9px;border-radius:6px;font-size:12px;font-weight:600;background:var(--active);border:1px solid var(--active);color:var(--on-accent);width:100%;cursor:pointer;box-shadow:0 1px 0 rgba(255,255,255,.18) inset,0 2px 12px rgba(255,79,0,.35);" onClick="{{ doRemeshAll }}">⬡ Fuse all → clean mesh</button>
+            <button style="display:flex;align-items:center;justify-content:center;gap:7px;padding:8px;border-radius:6px;font-size:11.5px;font-weight:600;background:transparent;border:1px solid var(--edge);color:var(--text);width:100%;cursor:pointer;margin-top:7px;" onClick="{{ doRemeshSel }}">⬡ Remesh selected only</button>
+          </div>
+        </div>
+        <div style="padding:12px;"><div style="display:flex;gap:9px;padding:9px 11px;border-radius:7px;font-size:11px;line-height:1.5;background:var(--activeDim);border:1px solid rgba(255,79,0,.28);color:#ffd2bb;"><span style="flex:none;">◆</span><span>Higher resolution keeps more detail but costs more time &amp; triangles. Start at 96; push to 160+ for faces &amp; fingers. The result is a single welded element you can keep editing.</span></div></div>
+      </sc-if>
+
+      <!-- CLOTH MODE -->
+      <sc-if value="{{ isCloth }}" hint-placeholder-val="{{ false }}">
+        <div style="border-bottom:1px solid var(--seam);">
+          <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--header);border-bottom:1px solid var(--seam);"><span style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);">Cloth-ify (lab)</span><span style="margin-left:auto;font-family:var(--font-mono);font-size:10px;color:var(--warn);">beta</span></div>
+          <div style="padding:11px 12px;">
+            <div style="display:flex;gap:9px;padding:9px 11px;border-radius:7px;font-size:11px;line-height:1.5;background:var(--activeDim);border:1px solid rgba(255,79,0,.28);color:#ffd2bb;margin-bottom:11px;"><span style="flex:none;">◆</span><span>Select a separated garment element (e.g. a jacket you split off), then turn it into a live cloth. It's pinned at the top and falls under gravity, colliding with the body — a real Verlet sim, on-device.</span></div>
+            <button style="display:flex;align-items:center;justify-content:center;gap:7px;padding:9px;border-radius:6px;font-size:12px;font-weight:600;background:var(--active);border:1px solid var(--active);color:var(--on-accent);width:100%;cursor:pointer;box-shadow:0 1px 0 rgba(255,255,255,.18) inset,0 2px 12px rgba(255,79,0,.35);" onClick="{{ doCloth }}">⊛ Make selection a cloth</button>
+            <div style="height:1px;background:var(--seam);margin:13px 0;"></div>
+            <label style="display:block;font-size:10.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">Wind</label>
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;"><input type="range" min="0" max="100" value="{{ windSlide }}" onInput="{{ onWind }}" style="flex:1;"><span style="font-family:var(--font-mono);font-size:11px;color:var(--text2);width:34px;text-align:right;">{{ windLabel }}</span></div>
+            <label style="display:block;font-size:10.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">Gravity</label>
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;"><input type="range" min="0" max="100" value="{{ gravSlide }}" onInput="{{ onGrav }}" style="flex:1;"><span style="font-family:var(--font-mono);font-size:11px;color:var(--text2);width:34px;text-align:right;">{{ gravLabel }}</span></div>
+            <label style="display:block;font-size:10.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">Stiffness</label>
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:11px;"><input type="range" min="0" max="100" value="{{ stiffSlide }}" onInput="{{ onStiff }}" style="flex:1;"><span style="font-family:var(--font-mono);font-size:11px;color:var(--text2);width:34px;text-align:right;">{{ stiffLabel }}</span></div>
+            <button style="display:flex;align-items:center;justify-content:center;gap:7px;padding:8px;border-radius:6px;font-size:11.5px;font-weight:600;background:transparent;border:1px solid var(--edge);color:var(--text);width:100%;cursor:pointer;" onClick="{{ resetCloth }}">↻ Reset drape</button>
+          </div>
+        </div>
+        <div style="padding:12px;"><div style="font-size:10.5px;line-height:1.6;color:var(--muted);">Auto-detecting & peeling worn clothing off a scan is a research problem — see the note in chat for the real WASM building blocks. This panel runs the solver half on whatever element you hand it.</div></div>
+      </sc-if>
+    </aside>
+  </div>
+
+  <input type="file" id="me-file" accept=".glb,.gltf,.fbx,.obj" style="display:none;">
+  <div id="me-toasts" style="position:fixed;bottom:16px;right:16px;z-index:300;display:flex;flex-direction:column;gap:8px;"></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = {
+    mode: 'select', meshName: 'no model', loading: false, loadingMsg: '',
+    tree: [], elemCount: 0, hasModel: false,
+    sel: [], selName: '—', selTris: 0, faceCount: 0,
+    explode: 0, xray: false, brush: 2,
+    cutInfo: null, cutT: 50, cutAxis: 'y',
+    wind: 40, grav: 100, stiff: 85,
+    remeshRes: 96, remeshSmooth: 3,
+  };
+
+  componentDidMount() { this.setupEmbed(); this.boot(); this.setupDrop(); }
+
+  async boot() {
+    try {
+      const canvas = document.getElementById('me-gl');
+      const mod = await import('./mesh-engine.js');
+      const eng = new mod.MEEngine(canvas); this._eng = eng;
+      eng.onSelect = (sel) => { const a = sel[0]; this.setState({ sel, selName: a ? a.label : '—', selTris: a ? a.tris : 0, faceCount: eng.faceCount() }); };
+      eng.onChange = () => this.refresh();
+      eng.onCut = (info) => this.setState({ cutInfo: info, cutT: 50, cutAxis: info ? (this._eng.cut ? this._eng.cut.axis : 'y') : 'y' });
+      eng.onStatus = (msg) => this.setState({ loading: !!msg, loadingMsg: msg || '' });
+      // honour a model queued before the engine finished booting
+      if (this._pending) { const p = this._pending; this._pending = null; p(); }
+    } catch (e) {
+      this.toast('Engine failed: ' + (e && e.message || e));
+      if (this._post) this._post('studio:error', { tool: 'edit', message: String(e && e.message || e) });
+    }
+  }
+
+  refresh() {
+    if (!this._eng) return;
+    const s = this._eng.stats();
+    this.setState({ tree: this._eng.getTree(), elemCount: s.elements, hasModel: this._eng.hasModel(), meshName: this._eng.hasModel() ? s.name : 'no model', faceCount: s.selFaces });
+  }
+
+  async loadVia(fn, label) {
+    if (!this._eng) { this._pending = () => this.loadVia(fn, label); return; }
+    this.setState({ loading: true, loadingMsg: 'Loading ' + (label || 'model') + '…' });
+    try { const r = await fn(); this.refresh(); this.setState({ loading: false }); this.toast('Loaded ' + r.name + ' — ' + r.elements + ' elements, ' + r.tris.toLocaleString() + ' tris'); }
+    catch (e) { this.setState({ loading: false }); this.toast('Load failed: ' + (e && e.message || e)); if (this._post) this._post('studio:error', { tool: 'edit', message: String(e && e.message || e) }); }
+  }
+
+  setupDrop() {
+    const root = document.getElementById('me-root'); if (!root) return;
+    root.addEventListener('dragover', e => { e.preventDefault(); });
+    root.addEventListener('drop', e => { e.preventDefault(); const f = e.dataTransfer.files && e.dataTransfer.files[0]; if (f) this.loadVia(() => this._eng.loadFile(f), f.name); });
+    const inp = document.getElementById('me-file');
+    if (inp) inp.addEventListener('change', e => { const f = e.target.files[0]; if (f) { this.loadVia(() => this._eng.loadFile(f), f.name); e.target.value = ''; } });
+  }
+
+  setupEmbed() {
+    const params = new URLSearchParams(location.search);
+    this._embedded = params.get('embed') === '1' || window.parent !== window;
+    this._post = (type, payload, transfer) => { try { window.parent && window.parent.postMessage(Object.assign({ __studio: true, type }, payload || {}), '*', transfer || []); } catch (e) {} };
+    if (this._embedded) { const hide = () => { const h = document.querySelector('#me-root > header'); if (h && h.firstElementChild) h.firstElementChild.style.display = 'none'; }; hide(); setTimeout(hide, 60); setTimeout(hide, 300); }
+    window.addEventListener('message', (e) => {
+      const d = e.data; if (!d || !d.__studio) return;
+      if (d.type === 'studio:loadCharUrl') this.loadVia(() => this._eng.loadUrl(d.url, d.ext, { chunked: d.chunked, chunks: d.chunks }), d.label || 'character');
+      else if (d.type === 'studio:loadCharBuffer') this.loadVia(() => this._eng.loadBuffer(d.buffer, d.name, (d.name || '').split('.').pop()), d.name || 'rig');
+    });
+    setTimeout(() => this._post('studio:ready', { tool: 'edit' }), 0);
+  }
+
+  toast(msg) {
+    const wrap = document.getElementById('me-toasts'); if (!wrap) return;
+    const el = document.createElement('div');
+    el.style.cssText = 'padding:11px 15px;border-radius:7px;font-size:12px;background:var(--panel-3);border:1px solid var(--edge);border-left:3px solid var(--accent);box-shadow:0 8px 24px rgba(0,0,0,.45);max-width:340px;color:var(--text);animation:me-tin .25s cubic-bezier(.2,1,.3,1);';
+    el.textContent = msg; wrap.appendChild(el);
+    setTimeout(() => { el.style.transition = 'opacity .3s'; el.style.opacity = '0'; setTimeout(() => el.remove(), 300); }, 2800);
+  }
+
+  async runRemesh(selectedOnly) {
+    const eng = this._eng;
+    if (!eng || !eng.hasModel()) { this.toast('Load a mesh first'); return; }
+    if (selectedOnly && !this.state.sel.length) { this.toast('Select element(s), or use Fuse all'); return; }
+    this.setState({ loading: true, loadingMsg: 'Remeshing…' });
+    try {
+      const r = await eng.remeshElements({ res: this.state.remeshRes, smooth: this.state.remeshSmooth, selectedOnly });
+      this.refresh(); this.setState({ loading: false });
+      if (!r) this.toast('Remesh produced nothing — try a higher resolution');
+      else if (r.tooBig) this.toast('Grid too large — lower the resolution');
+      else this.toast('Remeshed → ' + r.tris.toLocaleString() + ' tris · watertight · grid ' + r.grid.join('×'));
+    } catch (e) { this.setState({ loading: false }); this.toast('Remesh failed: ' + (e && e.message || e)); }
+  }
+  setMode(m) { this.setState({ mode: m }); if (this._eng) this._eng.setMode(m); }
+  seg(on) { return 'font-size:11px;font-weight:600;padding:6px 11px;border-radius:5px;cursor:pointer;border:none;background:' + (on ? 'var(--panel-3)' : 'transparent') + ';color:' + (on ? 'var(--text)' : 'var(--text-2)') + ';box-shadow:' + (on ? '0 1px 2px rgba(0,0,0,.3)' : 'none') + ';'; }
+  chip(on) { return 'font-family:IBM Plex Mono,monospace;font-size:10px;padding:5px 10px;border-radius:5px;cursor:pointer;background:rgba(15,15,15,.6);border:1px solid ' + (on ? 'var(--accent)' : 'var(--edge)') + ';color:' + (on ? '#ffd2bb' : 'var(--text-2)') + ';'; }
+
+  renderVals() {
+    const st = this.state, eng = this._eng;
+    const sel = new Set(st.sel.map(s => s.id));
+    const hasFaces = st.faceCount > 0;
+
+    const modes = [
+      { key: 'select', label: '◈ Select', tip: 'Select & move whole elements' },
+      { key: 'paint', label: '✋ Paint', tip: 'Paint triangles to separate' },
+      { key: 'cut', label: '✂ Cut', tip: 'Slice an element with a plane' },
+      { key: 'move', label: '✥ Move', tip: 'Drag cut pieces freely, then merge back' },
+      { key: 'remesh', label: '⬡ Remesh', tip: 'Voxel-fuse into one clean watertight skin' },
+      { key: 'cloth', label: '⊛ Cloth', tip: 'Turn an element into live cloth' },
+    ].map(m => ({ label: m.label, tip: m.tip, style: this.seg(st.mode === m.key), onClick: () => this.setMode(m.key) }));
+
+    const groupDot = g => 'width:8px;height:8px;border-radius:2px;flex:none;background:' + (g === 'Separated' ? 'var(--accent)' : g === 'Cloth' ? '#b06a4f' : '#5b636d') + ';';
+    const tree = (st.tree || []).map(g => ({
+      group: g.group, count: g.parts.length, dotStyle: groupDot(g.group),
+      parts: g.parts.map(p => {
+        const on = sel.has(p.id);
+        return {
+          label: p.label, tris: (p.tris >= 1000 ? (p.tris / 1000).toFixed(1) + 'k' : p.tris),
+          rowStyle: 'display:flex;align-items:center;gap:7px;padding:5px 8px;border-radius:5px;cursor:pointer;margin-left:4px;border:1px solid ' + (on ? 'var(--accent)' : 'transparent') + ';background:' + (on ? 'var(--accent-dim)' : 'transparent') + ';color:' + (on ? '#ffd2bb' : 'var(--text)') + ';',
+          dotStyle: 'width:7px;height:7px;border-radius:50%;flex:none;background:' + (on ? 'var(--accent)' : 'var(--muted-2)') + ';',
+          tag: p.isCloth ? 'cloth' : '', tagStyle: 'font-family:IBM Plex Mono,monospace;font-size:8.5px;color:#ffd2bb;',
+          onClick: (e) => eng && eng.select(p.id, e && (e.shiftKey || e.metaKey)),
+        };
+      }),
+    }));
+
+    const views = ['Persp', 'Front', 'Side', 'Top', 'Back'].map(v => ({ label: v, onClick: () => eng && eng.setView(v.toLowerCase()) }));
+    const ax = (label, axis, col) => ({ label, col, minus: () => eng && eng.nudgeSelected(axis, -0.03), plus: () => eng && eng.nudgeSelected(axis, 0.03) });
+    const cutAxes = ['x', 'y', 'z'].map(a => ({ label: a.toUpperCase(), style: 'flex:1;font-size:11px;font-weight:600;padding:7px;border-radius:5px;cursor:pointer;border:1px solid ' + (st.cutAxis === a ? 'var(--new)' : 'var(--edge)') + ';background:' + (st.cutAxis === a ? 'rgba(67,182,196,0.16)' : 'var(--panel-3)') + ';color:' + (st.cutAxis === a ? '#86d3dd' : 'var(--text)') + ';', onClick: () => { this.setState({ cutAxis: a }); if (eng) eng.setCutAxis(a); } }));
+
+    const modeLabel = st.mode === 'paint' ? 'PAINT — drag to select faces (alt erases)' : st.mode === 'cut' ? 'CUT — click an element' : st.mode === 'move' ? 'MOVE — drag pieces · merge to weld back' : st.mode === 'remesh' ? 'REMESH — voxel-fuse to one watertight skin' : st.mode === 'cloth' ? 'CLOTH' : 'SELECT — click element · shift adds';
+
+    return {
+      modes, tree, views, cutAxes,
+      meshName: st.meshName, elemCount: st.elemCount, hasModel: st.hasModel, noModel: !st.hasModel && !st.loading,
+      dotColor: st.hasModel ? 'var(--good)' : 'var(--muted)',
+      loading: st.loading, loadingMsg: st.loadingMsg,
+      modeBadge: st.hasModel ? modeLabel : 'IMPORT A MESH',
+      vpHint: st.mode === 'paint' ? 'drag paints · alt erases · scroll zoom' : st.mode === 'cut' ? 'click element → slice' : st.mode === 'move' ? 'drag a piece to reposition · empty space orbits' : st.mode === 'remesh' ? 'set resolution, then Fuse — orbit/zoom as normal' : 'click select · shift add · drag orbit',
+      pickFile: () => document.getElementById('me-file').click(),
+      loadSample: () => this.loadVia(() => this._eng.loadUrl('data/characters/Humanoid.fbx', 'fbx'), 'Humanoid'),
+      selectAll: () => eng && eng.selectAll(),
+      frameSel: () => eng && eng.frameSelected(),
+      // selection summary
+      selTitle: st.mode === 'paint' ? 'Painted faces' : 'Selection',
+      selBadge: st.mode === 'paint' ? (st.faceCount + ' tris') : (st.sel.length + (st.sel.length === 1 ? ' part' : ' parts')),
+      showSel: st.mode !== 'paint' && st.sel.length > 0,
+      emptySel: st.mode === 'paint' ? !hasFaces : st.sel.length === 0,
+      emptySelHint: st.mode === 'paint' ? 'Drag across the mesh to paint triangles to separate.' : 'Click an element in the viewport or outliner. Shift-click adds.',
+      selName: st.selName, selTris: st.selTris, faceCount: st.faceCount,
+      explodeSlide: st.explode, explodeLabel: st.explode + '%',
+      onExplode: (e) => { const v = +e.target.value; this.setState({ explode: v }); if (eng) eng.setExplode(v / 100); },
+      xrayChipStyle: this.chip(st.xray), toggleXray: () => { const x = !st.xray; this.setState({ xray: x }); if (eng) eng.setXray(x); },
+      isSelect: st.mode === 'select', isPaint: st.mode === 'paint', isCut: st.mode === 'cut', isMove: st.mode === 'move', isRemesh: st.mode === 'remesh', isCloth: st.mode === 'cloth',
+      // move/separate
+      axes: [ax('X', 'x', 'var(--danger)'), ax('Y', 'y', 'var(--good)'), ax('Z', 'z', 'var(--accent)')],
+      rotAxes: [
+        { label: 'X', col: 'var(--danger)', minus: () => eng && eng.rotateSelected('x', -15), plus: () => eng && eng.rotateSelected('x', 15) },
+        { label: 'Y', col: 'var(--good)', minus: () => eng && eng.rotateSelected('y', -15), plus: () => eng && eng.rotateSelected('y', 15) },
+        { label: 'Z', col: 'var(--accent)', minus: () => eng && eng.rotateSelected('z', -15), plus: () => eng && eng.rotateSelected('z', 15) },
+      ],
+      doMerge: () => { const n = eng ? eng.mergeSelected() : 0; this.toast(n ? ('Merged ' + n + ' pieces into one object') : 'Select 2+ pieces to merge'); },
+      doMergeAll: () => { const n = eng ? eng.mergeAll() : 0; this.toast(n ? ('Welded all ' + n + ' pieces into one object') : 'Nothing to merge'); },
+      remeshResSlide: st.remeshRes, remeshResLabel: st.remeshRes + '³',
+      onRemeshRes: (e) => this.setState({ remeshRes: +e.target.value }),
+      remeshSmoothSlide: st.remeshSmooth, remeshSmoothLabel: st.remeshSmooth + '×',
+      onRemeshSmooth: (e) => this.setState({ remeshSmooth: +e.target.value }),
+      doRemeshAll: () => this.runRemesh(false),
+      doRemeshSel: () => this.runRemesh(true),
+      doSeparate: () => { const n = eng ? eng.separateSelected() : 0; this.toast(n ? ('Separated ' + n + ' element' + (n > 1 ? 's' : '')) : 'Select an element first'); },
+      doReattach: () => { if (eng) eng.reattachSelected(); this.toast('Re-attached'); },
+      doDelete: () => { const n = eng ? eng.deleteSelected() : 0; this.toast(n ? ('Deleted ' + n) : 'Select an element first'); },
+      // paint
+      brushSlide: st.brush, brushLabel: st.brush === 0 ? '1 tri' : st.brush + ' rings',
+      onBrush: (e) => { const v = +e.target.value; this.setState({ brush: v }); if (eng) eng.setBrush(v); },
+      growFaces: () => { if (eng) eng.growFaces(); this.setState({ faceCount: eng.faceCount() }); },
+      shrinkFaces: () => { if (eng) eng.shrinkFaces(); this.setState({ faceCount: eng.faceCount() }); },
+      clearFaces: () => { if (eng) eng.clearFaces(); this.setState({ faceCount: 0 }); },
+      separateFaces: () => { if (!eng) return; if (!eng.faceCount()) { this.toast('Paint some faces first'); return; } const n = eng.separateFaces(); this.setState({ faceCount: 0 }); this.toast(n ? 'Separated painted faces into a new element' : 'Nothing to separate'); },
+      deleteFaces: () => { if (!eng) return; const n = eng.deleteFaces(); this.setState({ faceCount: 0 }); this.toast(n ? ('Deleted ' + n + ' faces') : 'Paint some faces first'); },
+      // cut
+      noCut: !st.cutInfo, cutting: !!st.cutInfo, cutName: st.cutInfo ? st.cutInfo.label : '—',
+      cutSlide: st.cutT, cutLabel: st.cutT + '%',
+      cutSelected: () => { if (!eng) return; if (!st.sel.length) { this.toast('Select an element to cut'); return; } eng.beginCut(); },
+      onCutT: (e) => { const v = +e.target.value; this.setState({ cutT: v }); if (eng) eng.setCutT(v / 100); },
+      applyCut: () => { if (!eng) return; const r = eng.applyCut(); this.toast(r ? 'Sliced into 2 elements' : 'Cut missed the geometry — move the loop'); },
+      cancelCut: () => { if (eng) eng.cancelCut(); this.setState({ cutInfo: null }); },
+      // cloth
+      doCloth: () => { const n = eng ? eng.convertSelectedToCloth() : 0; this.toast(n ? 'Cloth sim live — pinned at the top edge' : 'Select an element first'); },
+      windSlide: st.wind, windLabel: st.wind + '%', onWind: (e) => { const v = +e.target.value; this.setState({ wind: v }); if (eng) eng.setClothParams({ wind: v / 100 }); },
+      gravSlide: st.grav, gravLabel: st.grav + '%', onGrav: (e) => { const v = +e.target.value; this.setState({ grav: v }); if (eng) eng.setClothParams({ gravity: v / 100 }); },
+      stiffSlide: st.stiff, stiffLabel: st.stiff + '%', onStiff: (e) => { const v = +e.target.value; this.setState({ stiff: v }); if (eng) eng.setClothParams({ stiff: v / 100 }); },
+      resetCloth: () => { if (eng) eng.resetCloths(); this.toast('Drape reset'); },
+    };
+  }
+}
+</script>
+</body>
+</html>

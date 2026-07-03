@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    html, body { margin: 0; height: 100%; background: #16171b; overflow: hidden; }
+    * { box-sizing: border-box; font-family: 'Sora', system-ui, sans-serif; }
+    input[type="range"] { accent-color: #c98a5a; }
+    @keyframes bl-spin { to { transform: rotate(360deg); } }
+  </style>
+</helmet>
+
+<div style="display:flex;height:100vh;color:#e8e6e1;">
+
+  <!-- viewport -->
+  <div style="flex:1;position:relative;min-width:0;">
+    <canvas id="bl-canvas" style="position:absolute;inset:0;width:100%;height:100%;display:block;"></canvas>
+
+    <sc-if value="{{ noModel }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;pointer-events:none;">
+        <div style="font-size:34px;">⊘</div>
+        <div style="text-align:center;">
+          <div style="font-size:16px;font-weight:700;margin-bottom:6px;">Boolean surgery on any mesh</div>
+          <div style="font-size:12.5px;color:#8a8f98;max-width:420px;line-height:1.6;">Drop a <b>.glb / .fbx / .obj</b> here or open one from the Library, place the cutter, and run exact CSG — union, subtract, intersect — via Manifold WASM, all on-device.</div>
+        </div>
+        <button style="pointer-events:auto;padding:9px 16px;border-radius:7px;font-size:12px;font-weight:600;background:#26282e;border:1px solid #383b42;color:#e8e6e1;cursor:pointer;" onClick="{{ pickFile }}">Choose a file…</button>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ busy }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:rgba(18,20,24,.8);">
+        <div style="width:38px;height:38px;border:3px solid #33363d;border-top-color:#c98a5a;border-radius:50%;animation:bl-spin .9s linear infinite;"></div>
+        <div style="font-size:12px;color:#8a8f98;">{{ busyMsg }}</div>
+      </div>
+    </sc-if>
+
+    <div id="bl-toasts" style="position:absolute;left:14px;bottom:14px;display:flex;flex-direction:column;gap:8px;z-index:5;"></div>
+    <input id="bl-file" type="file" accept=".glb,.gltf,.fbx,.obj" style="display:none;" onChange="{{ onFile }}">
+  </div>
+
+  <!-- side panel -->
+  <aside style="width:272px;flex:none;background:#1d1f24;border-left:1px solid #2b2e34;overflow-y:auto;display:flex;flex-direction:column;">
+
+    <div style="padding:12px;border-bottom:1px solid #2b2e34;">
+      <div style="font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#8a8f98;margin-bottom:8px;">Model</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+        <div style="font-size:12.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ meshName }}</div>
+        <div style="font-family:ui-monospace,monospace;font-size:10.5px;color:#8a8f98;flex:none;">{{ triLabel }}</div>
+      </div>
+    </div>
+
+    <div style="padding:12px;border-bottom:1px solid #2b2e34;display:flex;flex-direction:column;gap:11px;">
+      <div style="font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#8a8f98;">Cutter</div>
+
+      <div style="display:flex;gap:6px;">
+        <sc-for list="{{ shapes }}" as="s" hint-placeholder-count="3">
+          <button style="{{ s.style }}" onClick="{{ s.onClick }}">{{ s.label }}</button>
+        </sc-for>
+      </div>
+
+      <sc-for list="{{ sliders }}" as="sl" hint-placeholder-count="5">
+        <div>
+          <label style="display:flex;justify-content:space-between;font-size:10.5px;font-weight:600;color:#8a8f98;margin-bottom:4px;"><span>{{ sl.label }}</span><span style="font-family:ui-monospace,monospace;color:#e8e6e1;">{{ sl.valLabel }}</span></label>
+          <input type="range" min="{{ sl.min }}" max="{{ sl.max }}" value="{{ sl.val }}" onInput="{{ sl.onInput }}" style="width:100%;">
+        </div>
+      </sc-for>
+    </div>
+
+    <div style="padding:12px;border-bottom:1px solid #2b2e34;display:flex;flex-direction:column;gap:7px;">
+      <div style="font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#8a8f98;">Apply</div>
+      <button style="padding:9px;border-radius:7px;font-size:12px;font-weight:700;background:#c98a5a;border:1px solid #c98a5a;color:#1a1206;cursor:pointer;" onClick="{{ opSubtract }}">⊖ Subtract cutter</button>
+      <div style="display:flex;gap:7px;">
+        <button style="flex:1;padding:8px;border-radius:7px;font-size:11.5px;font-weight:600;background:#26282e;border:1px solid #383b42;color:#e8e6e1;cursor:pointer;" onClick="{{ opUnion }}">⊕ Union</button>
+        <button style="flex:1;padding:8px;border-radius:7px;font-size:11.5px;font-weight:600;background:#26282e;border:1px solid #383b42;color:#e8e6e1;cursor:pointer;" onClick="{{ opIntersect }}">⊗ Intersect</button>
+      </div>
+      <button style="padding:8px;border-radius:7px;font-size:11.5px;font-weight:600;background:transparent;border:1px solid #383b42;color:{{ undoColor }};cursor:pointer;" onClick="{{ undo }}">↶ Undo ({{ undoCount }})</button>
+    </div>
+
+    <div style="padding:12px;border-bottom:1px solid #2b2e34;">
+      <button style="width:100%;padding:9px;border-radius:7px;font-size:12px;font-weight:600;background:#26282e;border:1px solid #383b42;color:#e8e6e1;cursor:pointer;" onClick="{{ exportGLB }}">⬇ Export .glb</button>
+    </div>
+
+    <div style="padding:12px;">
+      <div style="display:flex;gap:9px;padding:9px 11px;border-radius:7px;font-size:11px;line-height:1.5;background:rgba(201,138,90,.12);border:1px solid rgba(201,138,90,.3);color:#e8cbb0;"><span style="flex:none;">✂</span><span>Exact booleans run in <b>Manifold</b> (WASM) — the same kernel used in production CAD. The mesh must be watertight; results are always watertight, so ops chain cleanly.</span></div>
+    </div>
+  </aside>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = {
+    meshName: 'no model', tris: 0, hasModel: false, canUndo: false, undoCount: 0,
+    busy: false, busyMsg: '',
+    shape: 'box', posX: 0, posY: 0, posZ: 0, size: 45, rotY: 0,
+  };
+
+  componentDidMount() {
+    this._embedded = new URLSearchParams(location.search).get('embed') === '1' || window.parent !== window;
+    import('./studio3D_scripts/csg-engine.js').then(({ CSGEngine }) => {
+      const eng = this._eng = new CSGEngine(document.getElementById('bl-canvas'));
+      eng.onChange = () => this.refresh();
+      eng.onStatus = (m) => this.setState({ busyMsg: m });
+      this._post('studio:ready', { tool: 'csg' });
+    });
+
+    window.addEventListener('message', (e) => {
+      const d = e.data; if (!d || !d.__studio) return;
+      if (d.type === 'studio:loadCharUrl') this.loadVia(() => this._eng.loadUrl(d.url, d.ext, { chunked: d.chunked, chunks: d.chunks }, d.label), d.label || 'mesh');
+      else if (d.type === 'studio:loadCharBuffer') this.loadVia(() => this._eng.loadBuffer(d.buffer, d.name, (d.name || '').split('.').pop()), d.name || 'mesh');
+    });
+
+    window.addEventListener('dragover', (e) => e.preventDefault());
+    window.addEventListener('drop', (e) => {
+      e.preventDefault();
+      const f = e.dataTransfer.files && e.dataTransfer.files[0]; if (!f) return;
+      this.loadFile(f);
+    });
+    window.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'z' || e.key === 'Z')) { e.preventDefault(); this.doUndo(); }
+    });
+  }
+
+  _post(type, payload) {
+    if (this._embedded) window.parent.postMessage(Object.assign({ __studio: true, type }, payload || {}), '*');
+  }
+
+  refresh() {
+    const eng = this._eng; if (!eng) return;
+    const s = eng.stats();
+    this.setState({ hasModel: eng.hasModel(), meshName: eng.hasModel() ? s.name : 'no model', tris: s.tris, canUndo: s.canUndo, undoCount: eng._undo.length });
+  }
+
+  async loadVia(fn, label) {
+    this.setState({ busy: true, busyMsg: 'Loading ' + label + '…' });
+    try {
+      const r = await fn();
+      this.setState({ busy: false });
+      this.toast('Loaded ' + r.name + ' — ' + r.tris.toLocaleString() + ' tris');
+    } catch (e) {
+      this.setState({ busy: false });
+      this.toast(e.message || String(e));
+      this._post('studio:error', { tool: 'csg', message: e.message || String(e) });
+    }
+    this.refresh();
+  }
+
+  loadFile(f) {
+    const ext = (f.name.split('.').pop() || '').toLowerCase();
+    this.loadVia(() => f.arrayBuffer().then(b => this._eng.loadBuffer(b, f.name, ext)), f.name);
+  }
+
+  async runOp(op) {
+    const eng = this._eng;
+    if (!eng || !eng.hasModel()) { this.toast('Load a mesh first'); return; }
+    this.setState({ busy: true, busyMsg: 'Running ' + op + '…' });
+    try {
+      const r = await eng.apply(op);
+      this.setState({ busy: false });
+      this.toast(op.charAt(0).toUpperCase() + op.slice(1) + ' done — ' + r.tris.toLocaleString() + ' tris');
+    } catch (e) {
+      this.setState({ busy: false });
+      this.toast(e.message || String(e));
+    }
+    this.refresh();
+  }
+
+  doUndo() {
+    const ok = this._eng && this._eng.undo();
+    this.toast(ok ? 'Reverted last boolean' : 'Nothing to undo');
+    this.refresh();
+  }
+
+  toast(msg) {
+    const wrap = document.getElementById('bl-toasts'); if (!wrap) return;
+    const el = document.createElement('div');
+    el.style.cssText = 'padding:11px 15px;border-radius:7px;font-size:12px;background:#26282e;border:1px solid #383b42;border-left:3px solid #c98a5a;box-shadow:0 8px 24px rgba(0,0,0,.45);max-width:340px;color:#e8e6e1;';
+    el.textContent = msg; wrap.appendChild(el);
+    setTimeout(() => { el.style.transition = 'opacity .3s'; el.style.opacity = '0'; setTimeout(() => el.remove(), 300); }, 3200);
+  }
+
+  segStyle(on) {
+    return 'flex:1;padding:7px 0;border-radius:6px;font-size:11.5px;font-weight:600;cursor:pointer;' +
+      (on ? 'background:rgba(201,138,90,.18);border:1px solid #c98a5a;color:#e8cbb0;'
+          : 'background:#26282e;border:1px solid #383b42;color:#8a8f98;');
+  }
+
+  renderVals() {
+    const st = this.state, eng = this._eng;
+    const shapes = [['box', '▢ Box'], ['sphere', '◯ Sphere'], ['cylinder', '⬮ Cyl']].map(([id, label]) => ({
+      label, style: this.segStyle(st.shape === id),
+      onClick: () => { this.setState({ shape: id }); if (eng) eng.setCutter(id); },
+    }));
+    const mkPos = (axis, key) => ({
+      label: 'Position ' + axis.toUpperCase(), min: -140, max: 140, val: st[key],
+      valLabel: (st[key] / 100).toFixed(2),
+      onInput: (e) => { const v = +e.target.value; this.setState({ [key]: v }); if (eng) eng.setCutterPos(axis, v / 100); },
+    });
+    const sliders = [
+      mkPos('x', 'posX'), mkPos('y', 'posY'), mkPos('z', 'posZ'),
+      { label: 'Size', min: 5, max: 150, val: st.size, valLabel: st.size + '%',
+        onInput: (e) => { const v = +e.target.value; this.setState({ size: v }); if (eng) eng.setCutterSize(v / 100); } },
+      { label: 'Rotation Y', min: 0, max: 180, val: st.rotY, valLabel: st.rotY + '°',
+        onInput: (e) => { const v = +e.target.value; this.setState({ rotY: v }); if (eng) eng.setCutterRot(v); } },
+    ];
+    return {
+      meshName: st.meshName,
+      triLabel: st.tris ? st.tris.toLocaleString() + ' tris' : '—',
+      noModel: !st.hasModel && !st.busy,
+      busy: st.busy, busyMsg: st.busyMsg || 'Working…',
+      shapes, sliders,
+      opSubtract: () => this.runOp('subtract'),
+      opUnion: () => this.runOp('union'),
+      opIntersect: () => this.runOp('intersect'),
+      undo: () => this.doUndo(),
+      undoColor: st.canUndo ? '#e8e6e1' : '#5c6068',
+      undoCount: st.undoCount,
+      exportGLB: () => { if (eng && eng.hasModel()) eng.exportGLB(); else this.toast('Load a mesh first'); },
+      pickFile: () => document.getElementById('bl-file').click(),
+      onFile: (e) => { const f = e.target.files[0]; if (f) this.loadFile(f); e.target.value = ''; },
+    };
+  }
+}
+</script>
+</body>
+</html>

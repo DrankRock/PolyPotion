@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Spline+Sans+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="theme.js"></script>
+<script src="suggested_actions.js"></script>
+<style>
+  html,body{margin:0;padding:0;height:100%;background:var(--gutter);}
+  *{box-sizing:border-box;}
+  @keyframes tp-spin{to{transform:rotate(360deg);}}
+  @keyframes tp-tin{from{transform:translateX(120%);opacity:0;}to{transform:translateX(0);opacity:1;}}
+  #tp-root ::-webkit-scrollbar{width:10px;height:10px;}
+  #tp-root ::-webkit-scrollbar-track{background:var(--gutter);}
+  #tp-root ::-webkit-scrollbar-thumb{background:var(--panel-3);border:2px solid var(--gutter);border-radius:6px;}
+  #tp-root input[type=range]{-webkit-appearance:none;height:4px;border-radius:2px;background:var(--panel);outline:none;}
+  #tp-root input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:#c8743c;cursor:pointer;border:2px solid var(--panel);}
+  #tp-root input[type=color]{-webkit-appearance:none;border:none;padding:0;background:none;cursor:pointer;}
+  #tp-root input[type=color]::-webkit-color-swatch-wrapper{padding:0;}
+  #tp-root input[type=color]::-webkit-color-swatch{border:2px solid var(--edge);border-radius:6px;}
+</style>
+</helmet>
+
+<div id="tp-root" style="display:flex;flex-direction:column;height:100vh;width:100%;overflow:hidden;background:var(--gutter);color:var(--text);font-family:var(--font-ui);font-size:13px;-webkit-font-smoothing:antialiased;user-select:none;">
+
+  <!-- TOP BAR -->
+  <header style="height:46px;flex:none;display:flex;align-items:center;gap:14px;padding:0 14px;background:var(--header);border-bottom:1px solid var(--seam);">
+    <div style="display:flex;align-items:center;gap:9px;">
+      <div style="width:26px;height:26px;border-radius:5px;display:flex;align-items:center;justify-content:center;background:#c8743c;color:#fff6e0;font-weight:700;font-size:15px;">✎</div>
+      <div>
+        <div style="font-weight:700;letter-spacing:.04em;font-size:14px;">PAINT</div>
+        <div style="font-family:var(--font-mono);font-size:10px;color:var(--muted);letter-spacing:.1em;margin-top:1px;">TEXTURE STUDIO · LOCAL</div>
+      </div>
+    </div>
+    <div style="flex:1;"></div>
+    <button style="display:inline-flex;align-items:center;gap:7px;height:30px;padding:0 13px;border-radius:6px;font-size:11.5px;font-weight:600;background:var(--panel3);border:1px solid var(--edge);color:var(--text);cursor:pointer;" onClick="{{ pickFile }}">⬇ Import model…</button>
+    <div style="display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--text2);padding:4px 10px;background:var(--panel);border:1px solid var(--seam);border-radius:5px;">
+      <span style="width:7px;height:7px;border-radius:50%;flex:none;background:{{ dotColor }};"></span>
+      <span style="font-family:var(--font-mono);">{{ meshName }}</span>
+    </div>
+  </header>
+
+  <!-- NO-UV GATE -->
+  <sc-if value="{{ showUVGate }}" hint-placeholder-val="{{ false }}">
+    <div style="flex:none;display:flex;align-items:center;gap:13px;padding:11px 16px;background:rgba(90,118,184,.14);border-bottom:1px solid var(--seam);">
+      <span style="width:26px;height:26px;flex:none;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:15px;background:rgba(90,118,184,.28);color:var(--new);">⬚</span>
+      <div style="flex:1;min-width:0;">
+        <div style="font-weight:700;font-size:12.5px;color:var(--text);">No UV layout on this mesh</div>
+        <div style="font-size:11.5px;color:var(--text2);line-height:1.5;margin-top:1px;">{{ uvGateText }}</div>
+      </div>
+      <button style="flex:none;padding:8px 15px;border-radius:7px;font-size:12px;font-weight:700;background:var(--new);border:1px solid var(--new);color:#fff;cursor:pointer;" onClick="{{ routeToUV }}">⬚ Unwrap first</button>
+    </div>
+  </sc-if>
+
+  <div style="flex:1;display:flex;min-height:0;">
+
+    <!-- 3D VIEWPORT -->
+    <div style="flex:1.15;position:relative;min-width:0;min-height:0;background:var(--viewport);">
+      <canvas id="tp-gl" style="position:absolute;inset:0;width:100%;height:100%;display:block;"></canvas>
+
+      <sc-if value="{{ noModel }}" hint-placeholder-val="{{ true }}">
+        <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;background:rgba(18,20,24,.86);">
+          <div style="width:70px;height:70px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:30px;background:rgba(200,116,60,.16);border:1px solid rgba(200,116,60,.35);color:#c8743c;">✎</div>
+          <div style="text-align:center;">
+            <div style="font-size:16px;font-weight:700;margin-bottom:6px;">Paint straight onto the surface</div>
+            <div style="font-size:12.5px;color:var(--text2);max-width:440px;line-height:1.6;">Drop a <b>.glb / .fbx / .obj</b> here. If it already carries a texture you'll edit that map; if not, PolyPotion makes a fresh one. Paint on the model or on the flat map — they stay in sync.</div>
+          </div>
+          <div style="display:flex;gap:10px;">
+            <button style="padding:10px 18px;border-radius:7px;font-size:12.5px;font-weight:600;background:#c8743c;border:1px solid #c8743c;color:#fff6e0;cursor:pointer;box-shadow:0 2px 12px rgba(200,116,60,.35);" onClick="{{ pickFile }}">⬇ Import file…</button>
+            <button style="padding:10px 18px;border-radius:7px;font-size:12.5px;font-weight:600;background:var(--panel3);border:1px solid var(--edge);color:var(--text);cursor:pointer;" onClick="{{ loadSample }}">Load sample figure</button>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ loading }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:rgba(18,20,24,.8);color:var(--muted);z-index:5;">
+          <div style="width:38px;height:38px;border:3px solid var(--panel-3);border-top-color:#c8743c;border-radius:50%;animation:tp-spin .9s linear infinite;"></div>
+          <div style="font-size:12px;font-family:var(--font-mono);">{{ loadingMsg }}</div>
+        </div>
+      </sc-if>
+
+      <div style="position:absolute;left:50%;top:10px;transform:translateX(-50%);display:flex;align-items:center;gap:4px;background:rgba(15,15,15,.86);border:1px solid var(--edge);border-radius:8px;padding:5px 7px;">
+        <sc-for list="{{ views }}" as="v" hint-placeholder-count="5">
+          <button style="font-size:11px;font-weight:600;padding:5px 9px;border-radius:5px;cursor:pointer;background:transparent;border:none;color:var(--text2);" onClick="{{ v.onClick }}">{{ v.label }}</button>
+        </sc-for>
+      </div>
+
+      <div style="position:absolute;left:10px;top:10px;font-family:var(--font-mono);font-size:10px;letter-spacing:.1em;color:var(--text2);background:rgba(15,15,15,.6);padding:3px 7px;border-radius:3px;pointer-events:none;">{{ modeBadge }}</div>
+      <div style="position:absolute;right:10px;bottom:12px;font-size:10.5px;color:var(--text2);background:rgba(15,15,15,.78);border:1px solid var(--edge);padding:6px 11px;border-radius:6px;pointer-events:none;max-width:260px;">{{ hintText }}</div>
+    </div>
+
+    <!-- 2D TEXTURE EDITOR -->
+    <div style="flex:1;position:relative;min-width:240px;min-height:0;border-left:1px solid var(--seam);background:#0e0f12;">
+      <canvas id="tp-2d" style="position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none;cursor:crosshair;"></canvas>
+      <div style="position:absolute;left:10px;top:10px;font-family:var(--font-mono);font-size:10px;letter-spacing:.1em;color:var(--text2);background:rgba(15,15,15,.6);padding:3px 7px;border-radius:3px;pointer-events:none;">TEXTURE · {{ texRes }}</div>
+      <button style="position:absolute;right:10px;top:10px;font-family:var(--font-mono);font-size:10px;padding:4px 9px;border-radius:5px;cursor:pointer;background:rgba(15,15,15,.6);border:1px solid var(--edge);color:var(--text2);" onClick="{{ fitView }}">⌂ fit</button>
+    </div>
+
+    <!-- RIGHT : CONTROLS -->
+    <aside style="width:300px;flex:none;background:var(--panel);border-left:1px solid var(--seam);display:flex;flex-direction:column;min-height:0;overflow-y:auto;">
+
+      <!-- tools -->
+      <div style="border-bottom:1px solid var(--seam);">
+        <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--header);border-bottom:1px solid var(--seam);"><span style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);">Tools</span></div>
+        <div style="padding:11px 12px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;">
+          <sc-for list="{{ tools }}" as="t" hint-placeholder-count="7">
+            <button style="{{ t.style }}" onClick="{{ t.onClick }}" title="{{ t.title }}">{{ t.label }}</button>
+          </sc-for>
+        </div>
+        <sc-if value="{{ cloneHint }}" hint-placeholder-val="{{ false }}">
+          <div style="margin:0 12px 11px;font-size:10.5px;color:var(--text2);line-height:1.5;background:rgba(90,118,184,.12);border:1px solid rgba(90,118,184,.3);border-radius:6px;padding:7px 9px;">Alt-click (or right-click) the map or model to set the clone <b>source</b>, then paint to copy from it.</div>
+        </sc-if>
+      </div>
+
+      <!-- color -->
+      <div style="border-bottom:1px solid var(--seam);">
+        <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--header);border-bottom:1px solid var(--seam);"><span style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);">Colour</span></div>
+        <div style="padding:11px 12px;">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+            <input type="color" value="{{ color }}" onInput="{{ onColor }}" style="width:44px;height:34px;">
+            <span style="font-family:var(--font-mono);font-size:12px;color:var(--text);">{{ colorLabel }}</span>
+          </div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            <sc-for list="{{ swatches }}" as="s" hint-placeholder-count="8">
+              <button style="{{ s.style }}" onClick="{{ s.onClick }}" title="{{ s.hex }}"></button>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+
+      <!-- brush -->
+      <div style="border-bottom:1px solid var(--seam);">
+        <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--header);border-bottom:1px solid var(--seam);"><span style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);">Brush</span></div>
+        <div style="padding:11px 12px;display:flex;flex-direction:column;gap:12px;">
+          <div>
+            <label style="display:flex;justify-content:space-between;font-size:10.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:7px;"><span>Size</span><span style="font-family:var(--font-mono);color:var(--text);">{{ sizeLabel }}</span></label>
+            <input type="range" min="2" max="400" value="{{ size }}" onInput="{{ onSize }}" style="width:100%;">
+          </div>
+          <div>
+            <label style="display:flex;justify-content:space-between;font-size:10.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:7px;"><span>Opacity</span><span style="font-family:var(--font-mono);color:var(--text);">{{ opacityLabel }}</span></label>
+            <input type="range" min="4" max="100" value="{{ opacity }}" onInput="{{ onOpacity }}" style="width:100%;">
+          </div>
+          <div>
+            <label style="display:flex;justify-content:space-between;font-size:10.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:7px;"><span>Hardness</span><span style="font-family:var(--font-mono);color:var(--text);">{{ hardnessLabel }}</span></label>
+            <input type="range" min="0" max="100" value="{{ hardness }}" onInput="{{ onHardness }}" style="width:100%;">
+          </div>
+        </div>
+      </div>
+
+      <!-- history -->
+      <div style="border-bottom:1px solid var(--seam);">
+        <div style="padding:11px 12px;display:flex;gap:6px;">
+          <button style="flex:1;font-size:11.5px;font-weight:600;padding:8px;border-radius:6px;cursor:pointer;border:1px solid var(--edge);background:var(--panel3);color:var(--text);" onClick="{{ doUndo }}">↶ Undo</button>
+          <button style="flex:1;font-size:11.5px;font-weight:600;padding:8px;border-radius:6px;cursor:pointer;border:1px solid var(--edge);background:var(--panel3);color:var(--text);" onClick="{{ doRedo }}">↷ Redo</button>
+          <button style="flex:1;font-size:11.5px;font-weight:600;padding:8px;border-radius:6px;cursor:pointer;border:1px solid var(--edge);background:transparent;color:var(--text2);" onClick="{{ doClear }}">✕ Clear</button>
+        </div>
+      </div>
+
+      <!-- export -->
+      <div style="border-bottom:1px solid var(--seam);">
+        <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--header);border-bottom:1px solid var(--seam);"><span style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);">Export</span></div>
+        <div style="padding:11px 12px;display:flex;gap:7px;">
+          <button style="flex:1;display:flex;align-items:center;justify-content:center;gap:7px;padding:9px;border-radius:6px;font-size:12px;font-weight:600;background:var(--panel3);border:1px solid var(--edge);color:var(--text);cursor:pointer;" onClick="{{ doExportPNG }}">⬇ .png</button>
+          <button style="flex:1;display:flex;align-items:center;justify-content:center;gap:7px;padding:9px;border-radius:6px;font-size:12px;font-weight:600;background:var(--panel3);border:1px solid var(--edge);color:var(--text);cursor:pointer;" onClick="{{ doExportGLB }}">⬇ .glb</button>
+        </div>
+      </div>
+
+      <div style="padding:12px;">
+        <div style="display:flex;gap:9px;padding:9px 11px;border-radius:7px;font-size:11px;line-height:1.55;background:rgba(200,116,60,.10);border:1px solid rgba(200,116,60,.3);color:#e8cbb0;"><span style="flex:none;">✦</span><span>Hover the flat map to see the spot light up on the model. Paint on either side — the map is the texture, live. <b>Wheel</b> zooms the map, <b>middle-drag</b> pans it.</span></div>
+      </div>
+    </aside>
+  </div>
+
+  <input type="file" id="tp-file" accept=".glb,.gltf,.fbx,.obj" style="display:none;">
+  <div id="tp-toasts" style="position:fixed;bottom:16px;right:16px;z-index:300;display:flex;flex-direction:column;gap:8px;"></div>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = {
+    meshName: 'no model', loading: false, loadingMsg: '',
+    hasModel: false, hasUVs: false, hadTexture: false, tris: 0,
+    tool: 'brush', color: '#c8743c', size: 64, opacity: 100, hardness: 60,
+    texW: 1024, texH: 1024,
+  };
+
+  componentDidMount() { this.setupEmbed(); this.boot(); this.setupDrop(); }
+
+  async boot() {
+    try {
+      const canvas = document.getElementById('tp-gl');
+      let mod;
+      try { mod = await import('./studio3D_scripts/texture-engine.js'); }
+      catch (e) { mod = await import('./texture-engine.js'); }
+      const eng = new mod.TexEngine(canvas); this._eng = eng;
+      eng.onChange = () => this.refresh();
+      eng.onStatus = (msg) => { if (msg) this.toast(msg); };
+      eng.onPickColor = (hex) => this.setState({ color: hex });
+      this.setup2D();
+      if (this._pending) { const p = this._pending; this._pending = null; p(); }
+    } catch (e) {
+      this.toast('Engine failed: ' + (e && e.message || e));
+      if (this._post) this._post('studio:error', { tool: 'paint', message: String(e && e.message || e) });
+    }
+  }
+
+  refresh() {
+    const eng = this._eng; if (!eng) return;
+    const s = eng.stats();
+    this.setState({
+      hasModel: eng.hasModel(), hasUVs: eng.hasUVs, hadTexture: s.hadTexture,
+      tris: s.tris, texW: s.w, texH: s.h,
+      meshName: eng.hasModel() ? s.name : 'no model',
+      color: eng.color,
+    });
+  }
+
+  async loadVia(fn, label) {
+    if (!this._eng) { this._pending = () => this.loadVia(fn, label); return; }
+    this.setState({ loading: true, loadingMsg: 'Loading ' + (label || 'model') + '…' });
+    try {
+      const r = await fn();
+      this.refresh(); this.setState({ loading: false });
+      this.fitView();
+      const tx = r.hadTexture ? 'editing its texture' : 'fresh texture created';
+      this.toast('Loaded ' + r.name + ' — ' + (r.hasUVs ? tx : 'no UVs, unwrap it first'));
+    } catch (e) {
+      this.setState({ loading: false });
+      this.toast('Load failed: ' + (e && e.message || e));
+      if (this._post) this._post('studio:error', { tool: 'paint', message: String(e && e.message || e) });
+    }
+  }
+
+  // ---------- 2D texture editor ----------
+  setup2D() {
+    const cv = document.getElementById('tp-2d'); if (!cv) return;
+    this._2d = cv; this._ctx = cv.getContext('2d');
+    this._view = { scale: 1, ox: 0, oy: 0 };
+    this._hover = null; this._painting = false; this._panning = false;
+
+    const size = () => { const r = cv.getBoundingClientRect(); cv.width = Math.max(1, r.width | 0); cv.height = Math.max(1, r.height | 0); };
+    size(); this._ro2 = new ResizeObserver(() => { size(); this.fitView(); }); this._ro2.observe(cv);
+
+    const uvOf = (e) => {
+      const r = cv.getBoundingClientRect(); const sx = e.clientX - r.left, sy = e.clientY - r.top;
+      const V = this._view, eng = this._eng;
+      const tx = (sx - V.ox) / V.scale, ty = (sy - V.oy) / V.scale;
+      return { u: tx / eng.texW, v: 1 - ty / eng.texH, inside: tx >= 0 && tx <= eng.texW && ty >= 0 && ty <= eng.texH, sx, sy };
+    };
+
+    cv.addEventListener('contextmenu', (e) => e.preventDefault());
+    cv.addEventListener('pointerdown', (e) => {
+      const eng = this._eng; if (!eng || !eng.hasModel()) return;
+      if (e.button === 1) { this._panning = true; this._panStart = { x: e.clientX, y: e.clientY, ox: this._view.ox, oy: this._view.oy }; cv.setPointerCapture(e.pointerId); return; }
+      const p = uvOf(e); if (!p.inside) return;
+      if (eng.tool === 'clone' && (e.button === 2 || e.altKey)) { eng.setCloneSource(p.u, p.v); this.toast('Clone source set'); return; }
+      if (eng.tool === 'orbit') return;
+      this._painting = true; cv.setPointerCapture(e.pointerId); eng.paint2D(p.u, p.v, 'down', e);
+    });
+    cv.addEventListener('pointermove', (e) => {
+      const eng = this._eng; if (!eng || !eng.hasModel()) return;
+      if (this._panning) { this._view.ox = this._panStart.ox + (e.clientX - this._panStart.x); this._view.oy = this._panStart.oy + (e.clientY - this._panStart.y); return; }
+      const p = uvOf(e); this._hover = p.inside ? p : null;
+      if (p.inside) eng.showUVOnMesh(p.u, p.v); else eng.hideMarker();
+      if (this._painting) eng.paint2D(p.u, p.v, 'move', e);
+    });
+    const end = (e) => { const eng = this._eng; if (this._painting) { this._painting = false; eng && eng.paint2D(0, 0, 'up'); } this._panning = false; };
+    cv.addEventListener('pointerup', end);
+    cv.addEventListener('pointerleave', () => { this._hover = null; this._eng && this._eng.hideMarker(); });
+    cv.addEventListener('wheel', (e) => {
+      e.preventDefault(); const V = this._view; const r = cv.getBoundingClientRect(); const sx = e.clientX - r.left, sy = e.clientY - r.top;
+      const f = e.deltaY < 0 ? 1.12 : 1 / 1.12; const ns = Math.max(0.05, Math.min(20, V.scale * f));
+      V.ox = sx - (sx - V.ox) * (ns / V.scale); V.oy = sy - (sy - V.oy) * (ns / V.scale); V.scale = ns;
+    }, { passive: false });
+
+    this._draw2D = this._draw2D.bind(this); requestAnimationFrame(this._draw2D);
+  }
+
+  fitView() {
+    const cv = this._2d, eng = this._eng; if (!cv || !eng) return;
+    const W = cv.width, H = cv.height, m = 16;
+    const s = Math.min((W - m * 2) / eng.texW, (H - m * 2) / eng.texH);
+    this._view = { scale: s, ox: (W - eng.texW * s) / 2, oy: (H - eng.texH * s) / 2 };
+  }
+
+  _draw2D() {
+    requestAnimationFrame(this._draw2D);
+    const cv = this._2d, ctx = this._ctx, eng = this._eng; if (!cv || !ctx) return;
+    ctx.clearRect(0, 0, cv.width, cv.height);
+    ctx.fillStyle = '#0e0f12'; ctx.fillRect(0, 0, cv.width, cv.height);
+    if (!eng || !eng.hasModel()) return;
+    const V = this._view; const w = eng.texW * V.scale, h = eng.texH * V.scale;
+    // checker behind (transparency read-through)
+    ctx.save(); ctx.beginPath(); ctx.rect(V.ox, V.oy, w, h); ctx.clip();
+    const cs = 12; ctx.fillStyle = '#23252b';
+    for (let y = 0; y < h; y += cs) for (let x = 0; x < w; x += cs) { if (((x / cs | 0) + (y / cs | 0)) % 2) ctx.fillRect(V.ox + x, V.oy + y, cs, cs); }
+    ctx.restore();
+    ctx.imageSmoothingEnabled = V.scale < 2;
+    ctx.drawImage(eng.texCanvas, V.ox, V.oy, w, h);
+    ctx.strokeStyle = 'rgba(255,255,255,.25)'; ctx.lineWidth = 1; ctx.strokeRect(V.ox + .5, V.oy + .5, w, h);
+    // clone source marker
+    if (eng.tool === 'clone' && eng.cloneSrc) {
+      const cx = V.ox + eng.cloneSrc.u * w, cy = V.oy + (1 - eng.cloneSrc.v) * h;
+      ctx.strokeStyle = '#6bb6ff'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(cx, cy, 7, 0, Math.PI * 2); ctx.moveTo(cx - 10, cy); ctx.lineTo(cx + 10, cy); ctx.moveTo(cx, cy - 10); ctx.lineTo(cx, cy + 10); ctx.stroke();
+    }
+    // brush ring at hover
+    if (this._hover) {
+      const rr = (eng.size / 2) * V.scale;
+      ctx.strokeStyle = eng.tool === 'erase' ? 'rgba(255,107,107,.9)' : 'rgba(255,255,255,.9)'; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.arc(this._hover.sx, this._hover.sy, Math.max(2, rr), 0, Math.PI * 2); ctx.stroke();
+    }
+  }
+
+  download(data, name, mime) {
+    const blob = data instanceof Blob ? data : new Blob([data], { type: mime || 'application/octet-stream' });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name;
+    document.body.appendChild(a); a.click();
+    setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+    this.toast('Exported ' + name);
+  }
+
+  routeToUV() {
+    const eng = this._eng; if (!eng || !eng.hasModel()) return;
+    if (!this._embedded) { this.toast('Open the UV tool from the dock to unwrap this mesh first.'); return; }
+    eng.exportGLB().then(bin => {
+      const buf = bin instanceof ArrayBuffer ? bin : (bin.buffer ? bin.buffer.slice(bin.byteOffset, bin.byteOffset + bin.byteLength) : bin);
+      this._post('studio:routeBuffer', { tool: 'uv', buffer: buf, name: (eng.stats().name || 'mesh') + '.glb' }, [buf]);
+      this.toast('Sent to UV — unwrap it, then come back to Paint');
+    }).catch(e => this.toast('Hand-off failed: ' + (e && e.message || e)));
+  }
+
+  setupDrop() {
+    const root = document.getElementById('tp-root'); if (!root) return;
+    root.addEventListener('dragover', e => { e.preventDefault(); });
+    root.addEventListener('drop', e => { e.preventDefault(); const f = e.dataTransfer.files && e.dataTransfer.files[0]; if (f) this.loadVia(() => this._eng.loadFile(f), f.name); });
+    const inp = document.getElementById('tp-file');
+    if (inp) inp.addEventListener('change', e => { const f = e.target.files[0]; if (f) { this.loadVia(() => this._eng.loadFile(f), f.name); e.target.value = ''; } });
+  }
+
+  setupEmbed() {
+    const params = new URLSearchParams(location.search);
+    this._embedded = params.get('embed') === '1' || window.parent !== window;
+    this._post = (type, payload, transfer) => { try { window.parent && window.parent.postMessage(Object.assign({ __studio: true, type }, payload || {}), '*', transfer || []); } catch (e) {} };
+    if (this._embedded) { const hide = () => { const h = document.querySelector('#tp-root > header'); if (h && h.firstElementChild) h.firstElementChild.style.display = 'none'; }; hide(); setTimeout(hide, 60); setTimeout(hide, 300); }
+    window.addEventListener('message', (e) => {
+      const d = e.data; if (!d || !d.__studio) return;
+      if (d.type === 'studio:loadCharUrl') this.loadVia(() => this._eng.loadUrl(d.url, d.ext, { chunked: d.chunked, chunks: d.chunks }), d.label || 'character');
+      else if (d.type === 'studio:loadCharBuffer') this.loadVia(() => this._eng.loadBuffer(d.buffer, d.name, (d.name || '').split('.').pop()), d.name || 'mesh');
+    });
+    setTimeout(() => this._post('studio:ready', { tool: 'paint' }), 0);
+  }
+
+  toast(msg) {
+    const wrap = document.getElementById('tp-toasts'); if (!wrap) return;
+    const el = document.createElement('div');
+    el.style.cssText = 'padding:11px 15px;border-radius:7px;font-size:12px;background:var(--panel-3);border:1px solid var(--edge);border-left:3px solid #c8743c;box-shadow:0 8px 24px rgba(0,0,0,.45);max-width:340px;color:var(--text);animation:tp-tin .25s cubic-bezier(.2,1,.3,1);';
+    el.textContent = msg; wrap.appendChild(el);
+    setTimeout(() => { el.style.transition = 'opacity .3s'; el.style.opacity = '0'; setTimeout(() => el.remove(), 300); }, 3000);
+  }
+
+  toolStyle(on) { return 'display:flex;align-items:center;justify-content:center;gap:5px;font-size:11px;font-weight:600;padding:9px 6px;border-radius:6px;cursor:pointer;border:1px solid ' + (on ? '#c8743c' : 'var(--edge)') + ';background:' + (on ? 'rgba(200,116,60,.16)' : 'var(--panel-3)') + ';color:' + (on ? '#e6c3a3' : 'var(--text)') + ';'; }
+  swatchStyle(on) { return 'width:28px;height:24px;border-radius:5px;cursor:pointer;border:2px solid ' + (on ? '#fff6e0' : 'var(--edge)') + ';'; }
+
+  renderVals() {
+    const st = this.state, eng = this._eng;
+    const views = ['Persp', 'Front', 'Side', 'Back', 'Top'].map(v => ({ label: v, onClick: () => eng && eng.setView(v.toLowerCase()) }));
+    const setTool = (k) => { this.setState({ tool: k }); if (eng) eng.setTool(k); };
+    const toolDefs = [
+      ['brush', '✎ Brush', 'Paint with the colour'],
+      ['erase', '⌫ Erase', 'Erase to transparent'],
+      ['clone', '❖ Clone', 'Clone-stamp from a source point'],
+      ['fill', '⬖ Fill', 'Bucket fill a region'],
+      ['heal', '✚ Heal', 'Content-aware heal a disc'],
+      ['pick', '⛶ Pick', 'Pick a colour off the map'],
+      ['orbit', '✥ Orbit', 'Orbit only — no painting'],
+    ];
+    const tools = toolDefs.map(([k, label, title]) => ({ label, title, style: this.toolStyle(st.tool === k), onClick: () => setTool(k) }));
+    const palette = ['#3a2a1c', '#8a6a4a', '#c8743c', '#e0a93b', '#6e9355', '#5a76b8', '#b23b3b', '#f2ead4'];
+    const swatches = palette.map(hex => ({ hex, style: this.swatchStyle((st.color || '').toLowerCase() === hex) + 'background:' + hex + ';', onClick: () => { this.setState({ color: hex }); if (eng) eng.setColor(hex); } }));
+
+    return {
+      meshName: st.meshName, dotColor: st.hasModel ? 'var(--good)' : 'var(--muted)',
+      noModel: !st.hasModel && !st.loading, loading: st.loading, loadingMsg: st.loadingMsg,
+      showUVGate: st.hasModel && !st.hasUVs,
+      uvGateText: 'Textures need a UV layout to sit on. Send this mesh to UV Unwrap, unwrap it, then reopen Paint.',
+      modeBadge: !st.hasModel ? 'IMPORT A MESH' : (!st.hasUVs ? 'NO UVs — UNWRAP FIRST' : (st.tool === 'orbit' ? 'ORBIT' : 'PAINT — ' + st.tool.toUpperCase())),
+      hintText: !st.hasModel ? 'drop a model to start' : (st.tool === 'orbit' ? 'drag to orbit · scroll zooms' : 'paint on the model or the flat map · both stay in sync · pick Orbit to rotate freely'),
+      pickFile: () => document.getElementById('tp-file').click(),
+      loadSample: () => this.loadVia(() => this._eng.loadUrl('data/characters/Humanoid.fbx', 'fbx'), 'Humanoid'),
+      routeToUV: () => this.routeToUV(),
+      views, tools, cloneHint: st.tool === 'clone',
+      texRes: st.texW + '×' + st.texH,
+      color: st.color, colorLabel: (st.color || '').toUpperCase(),
+      onColor: (e) => { const c = e.target.value; this.setState({ color: c }); if (eng) eng.setColor(c); },
+      swatches,
+      size: st.size, sizeLabel: st.size + ' px', onSize: (e) => { const v = +e.target.value; this.setState({ size: v }); if (eng) eng.setSize(v); },
+      opacity: st.opacity, opacityLabel: st.opacity + '%', onOpacity: (e) => { const v = +e.target.value; this.setState({ opacity: v }); if (eng) eng.setOpacity(v / 100); },
+      hardness: st.hardness, hardnessLabel: st.hardness + '%', onHardness: (e) => { const v = +e.target.value; this.setState({ hardness: v }); if (eng) eng.setHardness(v / 100); },
+      doUndo: () => { if (eng && !eng.undo()) this.toast('Nothing to undo'); },
+      doRedo: () => { if (eng && !eng.redo()) this.toast('Nothing to redo'); },
+      doClear: () => { if (eng) eng.clearTexture(); },
+      fitView: () => this.fitView(),
+      doExportPNG: async () => { if (!eng || !eng.hasModel()) { this.toast('Load a mesh first'); return; } const b = await eng.exportPNG(); this.download(b, (eng.stats().name || 'texture') + '.png'); },
+      doExportGLB: async () => { if (!eng || !eng.hasModel()) { this.toast('Load a mesh first'); return; } try { const bin = await eng.exportGLB(); this.download(new Blob([bin], { type: 'model/gltf-binary' }), (eng.stats().name || 'mesh') + '_painted.glb'); } catch (e) { this.toast('GLB export failed: ' + (e && e.message || e)); } },
+    };
+  }
+}
+</script>
+</body>
+</html>

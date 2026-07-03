@@ -1,0 +1,1322 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./studio3D_scripts/support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Spline+Sans+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="theme.js"></script>
+<style>
+  html,body{margin:0;padding:0;height:100%;background:var(--gutter);}
+  *{box-sizing:border-box;}
+  @keyframes mc-spin{to{transform:rotate(360deg);}}
+  @keyframes mc-pulse{0%,100%{opacity:1;}50%{opacity:.25;}}
+  @keyframes mc-tin{from{transform:translateX(120%);opacity:0;}to{transform:translateX(0);opacity:1;}}
+  #mc-root ::-webkit-scrollbar{width:10px;height:10px;}
+  #mc-root ::-webkit-scrollbar-track{background:var(--gutter);}
+  #mc-root ::-webkit-scrollbar-thumb{background:var(--panel-3);border:2px solid var(--gutter);border-radius:6px;}
+  #mc-root input[type=range]{-webkit-appearance:none;height:4px;border-radius:2px;background:var(--panel);outline:none;}
+  #mc-root input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--accent);cursor:pointer;border:2px solid var(--panel);}
+  #mc-root select{font-family:var(--font-ui);font-size:11.5px;color:var(--text);background:var(--panel);border:1px solid var(--seam);border-radius:5px;padding:6px 8px;width:100%;outline:none;}
+</style>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
+</helmet>
+
+<div id="mc-root" style=" display:flex;flex-direction:column;height:100vh;width:100%;overflow:hidden;background:var(--gutter);color:var(--text);font-family:var(--font-ui);font-size:13px;-webkit-font-smoothing:antialiased;user-select:none;">
+
+  <!-- TOP BAR -->
+  <header style="height:46px;flex:none;display:flex;align-items:center;gap:18px;padding:0 14px;background:var(--header);border-bottom:1px solid var(--seam);">
+    <div style="display:flex;align-items:center;gap:9px;">
+      <div style="width:26px;height:26px;border-radius:5px;display:flex;align-items:center;justify-content:center;background:var(--active);color:var(--on-accent);font-weight:700;font-size:16px;box-shadow:0 1px 2px rgba(0,0,0,.4),0 0 0 1px rgba(255,255,255,.08) inset;">⦿</div>
+      <div>
+        <div style="font-weight:700;letter-spacing:.04em;font-size:14px;">MOCAP</div>
+        <div style="font-family:var(--font-mono);font-size:10px;color:var(--muted);letter-spacing:.1em;margin-top:1px;">CAPTURE → RETARGET · LOCAL</div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:4px;">
+      <sc-for list="{{ steps }}" as="s" hint-placeholder-count="4">
+        <div style="{{ s.rowStyle }}" onClick="{{ s.onClick }}">
+          <span style="{{ s.numStyle }}">{{ s.num }}</span>{{ s.label }}
+        </div>
+      </sc-for>
+    </div>
+    <div style="flex:1;"></div>
+    <button style="display:inline-flex;align-items:center;gap:7px;height:30px;padding:0 13px;border-radius:6px;font-size:11.5px;font-weight:600;background:var(--panel3);border:1px solid var(--edge);color:var(--text);cursor:pointer;" onClick="{{ importCharTop }}">⬇ Import character…</button>
+    <input id="mc-fileinput-top" type="file" accept=".fbx,.glb,.gltf" style="display:none;" onChange="{{ onFile }}">
+    <div style="display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--text2);padding:4px 10px;background:var(--panel);border:1px solid var(--seam);border-radius:5px;margin-left:8px;">
+      <span style="{{ sourceDotStyle }}"></span><span style="font-family:var(--font-mono);">{{ sourceChip }}</span>
+    </div>
+  </header>
+
+  <div style="flex:1;display:flex;min-height:0;">
+
+    <!-- LEFT RAIL -->
+    <aside style="width:284px;flex:none;background:var(--panel);border-right:1px solid var(--seam);display:flex;flex-direction:column;min-height:0;overflow-y:auto;">
+
+      <!-- SOURCE -->
+      <div style="border-bottom:1px solid var(--seam);">
+        <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--header);border-bottom:1px solid var(--seam);">
+          <span style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);">Source</span>
+          <span style="margin-left:auto;font-family:var(--font-mono);font-size:10px;color:var(--muted);background:var(--panel);padding:1px 7px;border-radius:9px;border:1px solid var(--seam);">{{ sourceBadge }}</span>
+        </div>
+        <div style="padding:11px 12px;">
+          <div style="display:flex;background:var(--panel);border:1px solid var(--seam);border-radius:6px;padding:2px;gap:2px;margin-bottom:11px;">
+            <button style="{{ segLiveStyle }}" onClick="{{ pickLive }}">◉ Live camera</button>
+            <button style="{{ segVideoStyle }}" onClick="{{ pickVideo }}">▶ Import video</button>
+          </div>
+          <sc-if value="{{ isLive }}" hint-placeholder-val="{{ true }}">
+            <div style="margin-bottom:10px;">
+              <label style="display:block;font-size:10.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">Device</label>
+              <select><option>FaceTime HD Camera (built-in)</option><option>Logitech BRIO 4K</option><option>OBS Virtual Camera</option></select>
+            </div>
+            <div>
+              <label style="display:block;font-size:10.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">Resolution</label>
+              <select><option>1280 × 720 · 30 fps</option><option>1920 × 1080 · 30 fps</option><option>640 × 480 · 60 fps</option></select>
+            </div>
+          </sc-if>
+          <sc-if value="{{ isVideo }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--text2);padding:7px 10px;background:var(--panel);border:1px solid var(--seam);border-radius:5px;">
+              <span style="{{ videoDotStyle }}"></span>
+              <span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ videoName }}</span>
+            </div>
+            <button style="display:flex;align-items:center;justify-content:center;gap:7px;padding:8px 12px;border-radius:6px;font-size:11.5px;font-weight:600;background:var(--panel3);border:1px solid var(--edge);color:var(--text);width:100%;cursor:pointer;margin-top:8px;" onClick="{{ pickVideoFile }}">⬇ {{ videoPickLabel }}</button>
+            <div style="font-size:11px;line-height:1.5;color:var(--text2);margin-top:7px;">Played through the tracker frame-by-frame, fully on-device. Loops while you dial in focus.</div>
+          </sc-if>
+        </div>
+      </div>
+
+      <!-- TRACKING -->
+      <div style="border-bottom:1px solid var(--seam);">
+        <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--header);border-bottom:1px solid var(--seam);">
+          <span style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);">Tracking</span>
+          <span style="margin-left:auto;font-family:var(--font-mono);font-size:10px;color:var(--muted);background:var(--panel);padding:1px 7px;border-radius:9px;border:1px solid var(--seam);">MediaPipe</span>
+        </div>
+        <div style="padding:11px 12px;">
+          <div style="display:flex;gap:9px;padding:9px 11px;border-radius:7px;font-size:11px;line-height:1.5;background:var(--accentDim);border:1px solid rgba(255,79,0,.3);color:#ffd2bb;margin-bottom:11px;">
+            <span style="flex:none;">✦</span><span>Three models run together client-side. More models = lower fps — disable face if you only need body + hands.</span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:7px;margin-bottom:12px;">
+            <sc-for list="{{ models }}" as="m" hint-placeholder-count="3">
+              <div style="display:flex;align-items:center;gap:10px;padding:8px 9px;border-radius:6px;background:var(--panel2);border:1px solid var(--seam);">
+                <span style="{{ m.dotStyle }}"></span>
+                <div style="flex:1;min-width:0;">
+                  <div style="font-size:11.5px;font-weight:600;">{{ m.label }}</div>
+                  <div style="font-family:var(--font-mono);font-size:9.5px;color:var(--muted);">{{ m.sub }}</div>
+                </div>
+                <div style="{{ m.swStyle }}" onClick="{{ m.toggle }}"><span style="{{ m.knobStyle }}"></span></div>
+              </div>
+            </sc-for>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:7px 9px;border-radius:6px;background:var(--panel2);border:1px solid var(--seam);margin-bottom:11px;">
+            <div><div style="font-size:11.5px;font-weight:600;">GPU delegation</div><div style="font-family:var(--font-mono);font-size:9.5px;color:var(--muted);">WebGL backend</div></div>
+            <div style="{{ gpuSwStyle }}" onClick="{{ toggleGpu }}"><span style="{{ gpuKnobStyle }}"></span></div>
+          </div>
+          <div style="margin-bottom:11px;">
+            <label style="display:block;font-size:10.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">Min tracking confidence</label>
+            <div style="display:flex;align-items:center;gap:10px;">
+              <input type="range" min="0" max="100" value="{{ confSlide }}" onInput="{{ onConf }}" style="flex:1;">
+              <span style="font-family:var(--font-mono);font-size:11px;color:var(--text2);width:34px;text-align:right;">{{ confLabel }}</span>
+            </div>
+          </div>
+          <div style="margin-bottom:11px;">
+            <label style="display:block;font-size:10.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">Detection rate</label>
+            <div style="display:flex;background:var(--panel);border:1px solid var(--seam);border-radius:6px;padding:2px;gap:2px;">
+              <button style="{{ thr1Style }}" onClick="{{ thr1 }}">Every</button>
+              <button style="{{ thr2Style }}" onClick="{{ thr2 }}">½</button>
+              <button style="{{ thr3Style }}" onClick="{{ thr3 }}">⅓</button>
+            </div>
+            <div style="font-size:10.5px;line-height:1.5;color:var(--muted);margin-top:6px;">{{ thrNote }}</div>
+          </div>
+          <div>
+            <label style="display:block;font-size:10.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">One-Euro smoothing</label>
+            <div style="display:flex;align-items:center;gap:10px;">
+              <input type="range" min="0" max="100" value="{{ smoothSlide }}" onInput="{{ onSmooth }}" style="flex:1;">
+              <span style="font-family:var(--font-mono);font-size:11px;color:var(--text2);width:34px;text-align:right;">{{ smoothLabel }}</span>
+            </div>
+            <div style="font-size:10.5px;line-height:1.5;color:var(--muted);margin-top:6px;">Kills jitter without adding lag. Higher = smoother, slightly softer on fast snaps.</div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- VIEWPORT -->
+    <div style="flex:1;display:flex;flex-direction:column;min-width:0;min-height:0;background:var(--gutter);position:relative;">
+
+      <div style="flex:1;display:flex;min-height:0;">
+        <!-- FEED PANEL -->
+        <div style="flex:1;position:relative;min-width:0;border-right:1px solid var(--seam);overflow:hidden;background:var(--viewport);">
+          <video id="mc-video" autoplay playsinline muted style="position:absolute;width:2px;height:2px;opacity:0;pointer-events:none;"></video>
+          <input id="mc-videoinput" type="file" accept="video/*" style="display:none;" onChange="{{ onVideoFile }}">
+          <canvas id="mc-feed" style="position:absolute;inset:0;width:100%;height:100%;display:block;"></canvas>
+          <div style="position:absolute;left:10px;top:10px;display:flex;gap:7px;align-items:center;pointer-events:none;">
+            <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:.12em;color:var(--text2);background:rgba(15,15,15,.6);padding:3px 7px;border-radius:3px;border:1px solid rgba(255,255,255,.05);">{{ feedLabel }}</div>
+            <sc-if value="{{ recording }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;align-items:center;gap:6px;font-family:var(--font-mono);font-size:10px;color:#fff;background:rgba(207,92,92,.9);padding:3px 8px;border-radius:3px;">
+                <span style="width:7px;height:7px;border-radius:50%;background:#fff;animation:mc-pulse 1s infinite;"></span>REC <span id="mc-tc">00:04:04</span>
+              </div>
+            </sc-if>
+          </div>
+          <div style="position:absolute;right:10px;top:10px;display:flex;gap:6px;">
+            <button style="{{ mirrorChipStyle }}" onClick="{{ toggleMirror }}">⇆ Mirror</button>
+          </div>
+          <!-- camera status overlays -->
+          <sc-if value="{{ camIdle }}" hint-placeholder-val="{{ true }}">
+            <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;text-align:center;background:rgba(14,16,19,.78);padding:24px;">
+              <div style="width:50px;height:50px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--activeDim);color:var(--active);font-size:24px;border:1px solid rgba(255,79,0,.32);margin-bottom:8px;">◉</div>
+              <div style="font-size:13px;font-weight:600;color:var(--text);">Enable your camera</div>
+              <div style="font-size:11px;line-height:1.5;color:var(--text2);max-width:250px;">Live pose tracking runs on your real webcam feed — entirely on-device. Showing a demo figure until you connect.</div>
+              <button style="margin-top:12px;padding:10px 20px;border-radius:7px;font-size:12.5px;font-weight:600;background:var(--active);border:1px solid var(--active);color:var(--on-accent);cursor:pointer;box-shadow:0 1px 0 rgba(255,255,255,.18) inset,0 2px 12px rgba(255,79,0,.35);" onClick="{{ enableCamera }}">◉ Connect webcam</button>
+            </div>
+          </sc-if>
+          <sc-if value="{{ camRequesting }}" hint-placeholder-val="{{ false }}">
+            <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:rgba(14,16,19,.7);">
+              <div style="width:42px;height:42px;border-radius:50%;border:3px solid var(--panel-3);border-top-color:var(--active);animation:mc-spin .9s linear infinite;"></div>
+              <div style="font-size:12px;color:var(--text2);">Requesting camera…</div>
+            </div>
+          </sc-if>
+          <sc-if value="{{ camDenied }}" hint-placeholder-val="{{ false }}">
+            <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;text-align:center;background:rgba(14,16,19,.82);padding:24px;">
+              <div style="width:46px;height:46px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(207,92,92,.16);color:var(--danger);font-size:22px;border:1px solid rgba(207,92,92,.35);margin-bottom:8px;">⃠</div>
+              <div style="font-size:13px;font-weight:600;color:var(--text);">{{ camDeniedMsg }}</div>
+              <div style="font-size:11px;line-height:1.5;color:var(--text2);max-width:240px;">Allow camera access in your browser, then retry. Showing the simulated figure as a stand-in.</div>
+              <button style="margin-top:10px;padding:8px 16px;border-radius:6px;font-size:12px;font-weight:600;background:var(--panel3);border:1px solid var(--edge);color:var(--text);cursor:pointer;" onClick="{{ retryCamera }}">↻ Retry camera</button>
+            </div>
+          </sc-if>
+          <sc-if value="{{ camTrackerLoading }}" hint-placeholder-val="{{ false }}">
+            <div style="position:absolute;left:50%;top:14px;transform:translateX(-50%);display:flex;align-items:center;gap:8px;font-family:var(--font-mono);font-size:10px;color:#ffd2bb;background:rgba(15,15,15,.8);border:1px solid rgba(255,79,0,.3);padding:5px 11px;border-radius:5px;">
+              <span style="width:7px;height:7px;border-radius:50%;background:var(--warn);animation:mc-pulse 1s infinite;"></span>loading pose model…
+            </div>
+          </sc-if>
+          <!-- HUD bottom-left -->
+          <div style="position:absolute;left:10px;bottom:10px;background:rgba(15,15,15,.78);border:1px solid var(--edge);border-radius:6px;padding:8px 11px;font-family:var(--font-mono);font-size:10px;color:var(--text2);min-width:160px;pointer-events:none;">
+            <div style="display:flex;justify-content:space-between;margin-bottom:5px;"><span style="color:var(--muted);">LANDMARKS</span><span id="mc-lm" style="color:var(--text);">75</span></div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:7px;"><span style="color:var(--muted);">INFER</span><span id="mc-fpsval" style="color:var(--new);">29.4 fps</span></div>
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;"><span style="color:var(--muted);width:34px;">BODY</span><div style="flex:1;height:4px;background:var(--panel);border-radius:2px;overflow:hidden;"><div id="mc-bar-body" style="height:100%;width:94%;background:var(--good);"></div></div></div>
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;"><span style="color:var(--muted);width:34px;">HANDS</span><div style="flex:1;height:4px;background:var(--panel);border-radius:2px;overflow:hidden;"><div id="mc-bar-hands" style="height:100%;width:71%;background:var(--warn);"></div></div></div>
+            <div style="display:flex;align-items:center;gap:6px;"><span style="color:var(--muted);width:34px;">FACE</span><div style="flex:1;height:4px;background:var(--panel);border-radius:2px;overflow:hidden;"><div id="mc-bar-face" style="height:100%;width:0%;background:var(--accent);"></div></div></div>
+          </div>
+        </div>
+
+        <!-- 3D PANEL -->
+        <div id="mc-3dpanel" style="flex:1;position:relative;min-width:0;overflow:hidden;background:var(--viewport);">
+          <canvas id="mc-3d" style="position:absolute;inset:0;width:100%;height:100%;display:block;"></canvas>
+          <canvas id="mc-gl" style="position:absolute;inset:0;width:100%;height:100%;display:{{ glDisplay }};"></canvas>
+          <div style="position:absolute;left:10px;bottom:10px;font-family:var(--font-mono);font-size:10px;letter-spacing:.12em;color:var(--text2);background:rgba(15,15,15,.6);padding:3px 7px;border-radius:3px;border:1px solid rgba(255,255,255,.05);pointer-events:none;">{{ previewLabel }}</div>
+          <div style="position:absolute;right:10px;top:10px;display:flex;gap:6px;">
+            <button style="{{ meshChipStyle }}" onClick="{{ toggleMesh }}">◍ Mesh</button>
+            <button style="{{ skelChipStyle }}" onClick="{{ toggleSkel }}">⦿ Skeleton</button>
+          </div>
+          <sc-if value="{{ charLoading }}" hint-placeholder-val="{{ false }}">
+            <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:13px;background:rgba(14,16,19,.72);pointer-events:none;">
+              <div style="width:40px;height:40px;border-radius:50%;border:3px solid var(--panel-3);border-top-color:var(--accent);animation:mc-spin .9s linear infinite;"></div>
+              <div style="font-size:11.5px;color:var(--text2);">Loading {{ charLoadingName }}…</div>
+            </div>
+          </sc-if>
+          <sc-if value="{{ charError }}" hint-placeholder-val="{{ false }}">
+            <div style="position:absolute;left:10px;bottom:36px;font-size:10.5px;color:#e89;background:rgba(207,92,92,.14);border:1px solid rgba(207,92,92,.35);padding:5px 9px;border-radius:5px;max-width:70%;">{{ charError }}</div>
+          </sc-if>
+        </div>
+      </div>
+
+      <!-- TRANSPORT -->
+      <div style="height:70px;flex:none;border-top:1px solid var(--seam);background:var(--panel);display:flex;align-items:center;gap:14px;padding:0 16px;">
+        <div style="display:flex;gap:7px;align-items:center;">
+          <button style="{{ recBtnStyle }}" onClick="{{ toggleRec }}">{{ recBtnLabel }}</button>
+          <button style="width:38px;height:38px;border-radius:7px;background:var(--panel3);border:1px solid var(--edge);color:var(--text);font-size:14px;display:flex;align-items:center;justify-content:center;cursor:pointer;" onClick="{{ togglePlay }}">{{ playIcon }}</button>
+          <button style="width:38px;height:38px;border-radius:7px;background:var(--panel3);border:1px solid var(--edge);color:var(--text);font-size:13px;display:flex;align-items:center;justify-content:center;cursor:pointer;" onClick="{{ rewind }}">⭯</button>
+        </div>
+        <div style="font-family:var(--font-mono);font-size:13px;color:var(--text);letter-spacing:.04em;width:118px;flex:none;"><span id="mc-tc2">00:04:04</span> <span style="color:var(--muted);font-size:11px;">/ {{ totalTc }}</span></div>
+        <div style="flex:1;position:relative;height:34px;display:flex;align-items:center;">
+          <div style="position:absolute;left:0;right:0;height:8px;background:var(--panel);border:1px solid var(--seam);border-radius:4px;overflow:hidden;">
+            <div style="position:absolute;left:6%;right:4%;top:0;bottom:0;background:linear-gradient(90deg,rgba(255,79,0,.25),rgba(255,79,0,.10));border-left:1px solid var(--active);border-right:1px solid var(--active);"></div>
+          </div>
+          <div id="mc-playhead" style="position:absolute;left:40%;top:-3px;bottom:-3px;width:2px;background:var(--active);pointer-events:none;">
+            <div style="position:absolute;top:-2px;left:-4px;width:10px;height:7px;background:var(--active);border-radius:2px;"></div>
+          </div>
+        </div>
+        <div style="font-family:var(--font-mono);font-size:10px;color:var(--muted);text-align:right;flex:none;">
+          <div id="mc-fpsval2" style="color:var(--new);">29.4 fps</div>
+          <div>{{ frameCount }} frames</div>
+        </div>
+      </div>
+
+      <!-- STEP 1 SOURCE OVERLAY -->
+      <sc-if value="{{ isSource }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute;inset:0;z-index:30;display:flex;align-items:center;justify-content:center;background:rgba(15,15,15,.92);">
+          <div style="width:min(620px,84%);padding:42px 40px;border:2px dashed var(--edge);border-radius:14px;text-align:center;background:var(--panel);">
+            <div style="width:58px;height:58px;margin:0 auto 18px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--activeDim);color:var(--active);font-size:26px;border:1px solid rgba(255,79,0,.3);">⦿</div>
+            <h2 style="margin:0 0 8px;font-size:21px;font-weight:700;">Pick a motion source</h2>
+            <p style="margin:0 0 24px;color:var(--text2);font-size:13px;line-height:1.6;">Use your webcam live, or drop a video to track frame-by-frame.<br>Everything runs locally — no footage leaves your machine.</p>
+            <div style="display:flex;gap:12px;justify-content:center;">
+              <button style="display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:11px 22px;border-radius:7px;font-size:13px;font-weight:600;background:var(--active);border:1px solid var(--active);color:var(--on-accent);cursor:pointer;box-shadow:0 1px 0 rgba(255,255,255,.18) inset,0 2px 12px rgba(255,79,0,.35);" onClick="{{ startLive }}">◉ Use webcam</button>
+              <button style="display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:11px 22px;border-radius:7px;font-size:13px;font-weight:600;background:var(--panel3);border:1px solid var(--edge);color:var(--text);cursor:pointer;" onClick="{{ startVideo }}">▶ Import video…</button>
+            </div>
+            <div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-top:22px;">
+              <span style="font-family:var(--font-mono);font-size:10px;padding:3px 8px;border-radius:4px;background:var(--panel);border:1px solid var(--seam);color:var(--muted);">MP4</span>
+              <span style="font-family:var(--font-mono);font-size:10px;padding:3px 8px;border-radius:4px;background:var(--panel);border:1px solid var(--seam);color:var(--muted);">MOV</span>
+              <span style="font-family:var(--font-mono);font-size:10px;padding:3px 8px;border-radius:4px;background:var(--panel);border:1px solid var(--seam);color:var(--muted);">WEBM</span>
+              <span style="font-family:var(--font-mono);font-size:10px;padding:3px 8px;border-radius:4px;background:var(--panel);border:1px solid rgba(255,79,0,.4);color:#ffd2bb;cursor:pointer;" onClick="{{ startLive }}">↳ load sample clip</span>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+    </div>
+
+    <!-- RIGHT RAIL -->
+    <aside style="width:296px;flex:none;background:var(--panel);border-left:1px solid var(--seam);display:flex;flex-direction:column;min-height:0;overflow-y:auto;">
+
+      <!-- CAPTURE PROPERTIES -->
+      <sc-if value="{{ isCapture }}" hint-placeholder-val="{{ true }}">
+        <!-- CAPTURE FOCUS -->
+        <div style="border-bottom:1px solid var(--seam);">
+          <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--header);border-bottom:1px solid var(--seam);">
+            <span style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);">Capture focus</span>
+            <span style="margin-left:auto;font-family:var(--font-mono);font-size:10px;color:var(--active);background:var(--panel);padding:1px 7px;border-radius:9px;border:1px solid var(--seam);">{{ focusBadge }}</span>
+          </div>
+          <div style="padding:11px 12px;">
+            <div style="display:flex;background:var(--panel);border:1px solid var(--seam);border-radius:6px;padding:2px;gap:2px;margin-bottom:9px;">
+              <button style="{{ focusBodyStyle }}" onClick="{{ setFocusBody }}">◆ Full body</button>
+              <button style="{{ focusHandsStyle }}" onClick="{{ setFocusHands }}">✋ Hands</button>
+              <button style="{{ focusFaceStyle }}" onClick="{{ setFocusFace }}">☻ Face</button>
+            </div>
+            <div style="font-size:11px;line-height:1.5;color:var(--text2);">{{ focusNote }}</div>
+            <div style="display:flex;gap:7px;margin-top:10px;">
+              <sc-for list="{{ focusChips }}" as="fc" hint-placeholder-count="3">
+                <div style="{{ fc.style }}">{{ fc.label }}</div>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+        <div style="border-bottom:1px solid var(--seam);">
+          <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--header);border-bottom:1px solid var(--seam);">
+            <span style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);">Take</span>
+          </div>
+          <div style="padding:11px 12px;">
+            <div style="display:flex;justify-content:space-between;font-size:11px;padding:3px 0;"><span style="color:var(--muted);">Name</span><span style="font-family:var(--font-mono);color:var(--text);">take_04</span></div>
+            <div style="display:flex;justify-content:space-between;font-size:11px;padding:3px 0;"><span style="color:var(--muted);">Duration</span><span style="font-family:var(--font-mono);color:var(--text);">{{ totalTc }}</span></div>
+            <div style="display:flex;justify-content:space-between;font-size:11px;padding:3px 0;"><span style="color:var(--muted);">Frames</span><span style="font-family:var(--font-mono);color:var(--text);">{{ frameCount }} @ 30fps</span></div>
+            <div style="display:flex;justify-content:space-between;font-size:11px;padding:3px 0;"><span style="color:var(--muted);">Source</span><span style="font-family:var(--font-mono);color:var(--text);">{{ sourceShort }}</span></div>
+          </div>
+        </div>
+        <div style="border-bottom:1px solid var(--seam);">
+          <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--header);border-bottom:1px solid var(--seam);">
+            <span style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);">Capture quality</span>
+          </div>
+          <div style="padding:11px 12px;">
+            <div style="margin-bottom:9px;"><div style="display:flex;justify-content:space-between;font-size:10.5px;margin-bottom:4px;"><span style="color:var(--muted);">Body solve</span><span style="font-family:var(--font-mono);color:var(--good);">94%</span></div><div style="height:5px;background:var(--panel);border-radius:3px;overflow:hidden;"><div style="height:100%;width:94%;background:var(--good);"></div></div></div>
+            <div style="margin-bottom:9px;"><div style="display:flex;justify-content:space-between;font-size:10.5px;margin-bottom:4px;"><span style="color:var(--muted);">Hand solve</span><span style="font-family:var(--font-mono);color:var(--warn);">71%</span></div><div style="height:5px;background:var(--panel);border-radius:3px;overflow:hidden;"><div style="height:100%;width:71%;background:var(--warn);"></div></div></div>
+            <div style="display:flex;justify-content:space-between;font-size:11px;padding:3px 0;"><span style="color:var(--muted);">Dropped frames</span><span style="font-family:var(--font-mono);color:var(--text);">3 · interpolated</span></div>
+          </div>
+        </div>
+        <!-- ANATOMICAL SANITY -->
+        <div style="border-bottom:1px solid var(--seam);">
+          <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--header);border-bottom:1px solid var(--seam);">
+            <span style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);">Anatomical solver</span>
+            <span style="margin-left:auto;font-family:var(--font-mono);font-size:10px;color:var(--muted);background:var(--panel);padding:1px 7px;border-radius:9px;border:1px solid var(--seam);">joints</span>
+          </div>
+          <div style="padding:11px 12px;">
+            <div style="display:flex;gap:9px;padding:9px 11px;border-radius:7px;font-size:11px;line-height:1.5;background:var(--activeDim);border:1px solid rgba(255,79,0,.28);color:#ffd2bb;margin-bottom:11px;">
+              <span style="flex:none;">◆</span><span>A single webcam can't tell a palm-up wrist from palm-down — depth is ambiguous. The solver clamps each joint to its real range of motion so hands never flip to impossible angles.</span>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 9px;border-radius:6px;background:var(--panel2);border:1px solid var(--seam);margin-bottom:11px;">
+              <div><div style="font-size:11.5px;font-weight:600;">Clamp to valid range</div><div style="font-family:var(--font-mono);font-size:9.5px;color:var(--muted);">elbow · wrist · knee · neck</div></div>
+              <div style="{{ clampSwStyle }}" onClick="{{ toggleClamp }}"><span style="{{ clampKnobStyle }}"></span></div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:6px;">
+              <sc-for list="{{ jointChecks }}" as="j" hint-placeholder-count="4">
+                <div style="display:flex;align-items:center;gap:9px;padding:7px 9px;border-radius:6px;background:var(--panel2);border:1px solid var(--seam);">
+                  <span style="{{ j.dotStyle }}"></span>
+                  <span style="flex:1;font-size:11px;">{{ j.label }}</span>
+                  <span style="{{ j.tagStyle }}">{{ j.tag }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- RETARGET -->
+      <sc-if value="{{ isRetarget }}" hint-placeholder-val="{{ false }}">
+        <div style="border-bottom:1px solid var(--seam);">
+          <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--header);border-bottom:1px solid var(--seam);">
+            <span style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);">Character</span>
+          </div>
+          <div style="padding:11px 12px;">
+            <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px;">
+              <sc-for list="{{ characters }}" as="ch" hint-placeholder-count="3">
+                <div style="{{ ch.rowStyle }}" onClick="{{ ch.onClick }}">
+                  <span style="{{ ch.dotStyle }}"></span>
+                  <span style="flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ ch.label }}</span>
+                  <span style="font-family:var(--font-mono);font-size:9px;color:var(--muted);text-transform:uppercase;">{{ ch.ext }}</span>
+                </div>
+              </sc-for>
+            </div>
+            <div id="mc-dropzone" style="{{ dropStyle }}" onClick="{{ pickFile }}">
+              <div style="font-size:18px;color:var(--muted);margin-bottom:4px;">⬇</div>
+              <div style="font-size:11px;font-weight:600;color:var(--text);">Import rigged FBX / GLB</div>
+              <div style="font-size:10px;color:var(--muted);margin-top:2px;">Click to browse, or drop a file here</div>
+            </div>
+            <input id="mc-fileinput" type="file" accept=".fbx,.glb,.gltf" style="display:none;" onChange="{{ onFile }}">
+            <div style="font-size:10.5px;line-height:1.5;color:var(--muted);margin-top:8px;">Files live in <span style="font-family:var(--font-mono);color:var(--text2);">./characters/</span>. Any FBX/GLB with a Mixamo-named skeleton retargets automatically.</div>
+            <button style="display:flex;align-items:center;justify-content:center;gap:7px;padding:8px 12px;border-radius:6px;font-size:11.5px;font-weight:600;background:transparent;border:1px solid var(--edge);color:var(--text);width:100%;cursor:pointer;margin-top:9px;" onClick="{{ openAutoRig }}">⊹ Bring in a rig from AutoRig…</button>
+          </div>
+        </div>
+        <sc-if value="{{ hasChar }}" hint-placeholder-val="{{ false }}">
+        <div style="border-bottom:1px solid var(--seam);">
+          <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--header);border-bottom:1px solid var(--seam);">
+            <span style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);">Loaded rig</span>
+            <span style="margin-left:auto;font-family:var(--font-mono);font-size:10px;color:var(--good);background:var(--panel);padding:1px 7px;border-radius:9px;border:1px solid var(--seam);">{{ charBones }} bones</span>
+          </div>
+          <div style="padding:9px 12px;">
+            <div style="display:flex;justify-content:space-between;font-size:11px;padding:3px 0;"><span style="color:var(--muted);">Rig type</span><span style="font-family:var(--font-mono);color:var(--text);">{{ charRigKind }}</span></div>
+            <div style="display:flex;justify-content:space-between;font-size:11px;padding:3px 0;"><span style="color:var(--muted);">Mesh</span><span style="font-family:var(--font-mono);color:var(--text);">{{ charMeshes }} parts</span></div>
+            <div style="display:flex;justify-content:space-between;font-size:11px;padding:3px 0;"><span style="color:var(--muted);">Driven bones</span><span style="font-family:var(--font-mono);color:var(--text);">{{ charDriven }}</span></div>
+            <div style="display:flex;justify-content:space-between;font-size:11px;padding:3px 0;"><span style="color:var(--muted);">Fingers</span><span style="{{ charFingersStyle }}">{{ charFingers }}</span></div>
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 9px;border-radius:6px;background:var(--panel2);border:1px solid var(--seam);margin-top:8px;"><div style="font-size:11.5px;font-weight:600;">Drive rig from capture</div><div style="{{ driveSwStyle }}" onClick="{{ toggleDrive }}"><span style="{{ driveKnobStyle }}"></span></div></div>
+            <div style="margin-top:9px;">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;"><span style="font-size:11.5px;font-weight:600;">Facing</span><span style="font-family:var(--font-mono);font-size:9.5px;color:var(--muted);">spin to face you</span></div>
+              <div style="display:flex;background:var(--panel);border:1px solid var(--seam);border-radius:6px;padding:2px;gap:2px;">
+                <button style="{{ face0Style }}" onClick="{{ setFace0 }}">Front</button>
+                <button style="{{ face180Style }}" onClick="{{ setFace180 }}">Back</button>
+                <button style="{{ faceLStyle }}" onClick="{{ setFaceL }}">◀ 90°</button>
+                <button style="{{ faceRStyle }}" onClick="{{ setFaceR }}">90° ▶</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        </sc-if>
+        <div style="border-bottom:1px solid var(--seam);">
+          <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--header);border-bottom:1px solid var(--seam);">
+            <span style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);">Bone map</span>
+            <span style="margin-left:auto;font-family:var(--font-mono);font-size:10px;color:var(--good);background:var(--panel);padding:1px 7px;border-radius:9px;border:1px solid var(--seam);">22 / 24 auto</span>
+          </div>
+          <div style="padding:8px 12px;">
+            <sc-for list="{{ boneMap }}" as="b" hint-placeholder-count="6">
+              <div style="display:flex;align-items:center;gap:8px;padding:6px 4px;border-bottom:1px solid rgba(255,255,255,.03);">
+                <span style="font-size:11px;color:var(--text2);width:64px;flex:none;">{{ b.src }}</span>
+                <span style="color:var(--muted);flex:none;">→</span>
+                <span style="font-family:var(--font-mono);font-size:10px;color:var(--text);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ b.dst }}</span>
+                <span style="{{ b.tagStyle }}">{{ b.tag }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+        <div style="border-bottom:1px solid var(--seam);">
+          <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--header);border-bottom:1px solid var(--seam);">
+            <span style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);">Retarget options</span>
+          </div>
+          <div style="padding:11px 12px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 9px;border-radius:6px;background:var(--panel2);border:1px solid var(--seam);margin-bottom:8px;"><div style="font-size:11.5px;font-weight:600;">Lock feet to ground</div><div style="{{ footSwStyle }}" onClick="{{ toggleFoot }}"><span style="{{ footKnobStyle }}"></span></div></div>
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 9px;border-radius:6px;background:var(--panel2);border:1px solid var(--seam);margin-bottom:11px;"><div style="font-size:11.5px;font-weight:600;">Preserve bone length</div><div style="{{ lenSwStyle }}" onClick="{{ toggleLen }}"><span style="{{ lenKnobStyle }}"></span></div></div>
+            <button style="display:flex;align-items:center;justify-content:center;gap:7px;padding:9px 12px;border-radius:6px;font-size:12px;font-weight:600;background:var(--active);border:1px solid var(--active);color:var(--on-accent);width:100%;cursor:pointer;box-shadow:0 1px 0 rgba(255,255,255,.18) inset,0 2px 12px rgba(255,79,0,.35);" onClick="{{ goExport }}">⟐ Bake & continue →</button>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- EXPORT -->
+      <sc-if value="{{ isExport }}" hint-placeholder-val="{{ false }}">
+        <div style="border-bottom:1px solid var(--seam);">
+          <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--header);border-bottom:1px solid var(--seam);">
+            <span style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);">Format</span>
+          </div>
+          <div style="padding:11px 12px;">
+            <div style="display:flex;background:var(--panel);border:1px solid var(--seam);border-radius:6px;padding:2px;gap:2px;margin-bottom:11px;">
+              <button style="{{ fbxSegStyle }}" onClick="{{ pickFbx }}">FBX</button>
+              <button style="{{ glbSegStyle }}" onClick="{{ pickGlb }}">glTF</button>
+              <button style="{{ bvhSegStyle }}" onClick="{{ pickBvh }}">BVH</button>
+            </div>
+            <div style="font-size:10.5px;line-height:1.5;color:var(--muted);">{{ fmtNote }}</div>
+          </div>
+        </div>
+        <div style="border-bottom:1px solid var(--seam);">
+          <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--header);border-bottom:1px solid var(--seam);">
+            <span style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);">Bake options</span>
+          </div>
+          <div style="padding:11px 12px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 9px;border-radius:6px;background:var(--panel2);border:1px solid var(--seam);margin-bottom:8px;"><div><div style="font-size:11.5px;font-weight:600;">Include mesh + skin</div><div style="font-family:var(--font-mono);font-size:9.5px;color:var(--muted);">vs. skeleton-only clip</div></div><div style="{{ meshExpSwStyle }}" onClick="{{ toggleMeshExp }}"><span style="{{ meshExpKnobStyle }}"></span></div></div>
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 9px;border-radius:6px;background:var(--panel2);border:1px solid var(--seam);margin-bottom:11px;"><div><div style="font-size:11.5px;font-weight:600;">Bake root motion</div><div style="font-family:var(--font-mono);font-size:9.5px;color:var(--muted);">hips translation in clip</div></div><div style="{{ rootSwStyle }}" onClick="{{ toggleRoot }}"><span style="{{ rootKnobStyle }}"></span></div></div>
+            <div style="margin-bottom:6px;"><label style="display:block;font-size:10.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">Frame rate</label>
+              <div style="display:flex;background:var(--panel);border:1px solid var(--seam);border-radius:6px;padding:2px;gap:2px;">
+                <button style="{{ fps24Style }}" onClick="{{ setFps24 }}">24</button>
+                <button style="{{ fps30Style }}" onClick="{{ setFps30 }}">30</button>
+                <button style="{{ fps60Style }}" onClick="{{ setFps60 }}">60</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div style="padding:12px;">
+          <div style="background:var(--panel2);border:1px solid var(--seam);border-radius:7px;padding:11px;margin-bottom:11px;">
+            <div style="display:flex;justify-content:space-between;font-size:11px;padding:3px 0;"><span style="color:var(--muted);">Clip</span><span style="font-family:var(--font-mono);color:var(--text);">take_04</span></div>
+            <div style="display:flex;justify-content:space-between;font-size:11px;padding:3px 0;"><span style="color:var(--muted);">Rig</span><span style="font-family:var(--font-mono);color:var(--text);">humanoid · 24 bones</span></div>
+            <div style="display:flex;justify-content:space-between;font-size:11px;padding:3px 0;"><span style="color:var(--muted);">Length</span><span style="font-family:var(--font-mono);color:var(--text);">{{ frameCount }} frames</span></div>
+            <div style="display:flex;justify-content:space-between;font-size:11px;padding:3px 0;"><span style="color:var(--muted);">Est. size</span><span style="font-family:var(--font-mono);color:var(--text);">{{ estSize }}</span></div>
+          </div>
+          <button style="display:flex;align-items:center;justify-content:center;gap:8px;padding:11px 12px;border-radius:7px;font-size:13px;font-weight:600;background:var(--accent);border:1px solid var(--accent);color:#fff;width:100%;cursor:pointer;box-shadow:0 1px 0 rgba(255,255,255,.12) inset,0 2px 8px rgba(255,79,0,.25);" onClick="{{ doExport }}">⬇ Export {{ fmtUpper }}</button>
+        </div>
+      </sc-if>
+
+      <!-- SOURCE STEP HINT -->
+      <sc-if value="{{ isSource }}" hint-placeholder-val="{{ false }}">
+        <div style="padding:14px;">
+          <div style="display:flex;gap:9px;padding:9px 11px;border-radius:7px;font-size:11px;line-height:1.5;background:var(--accentDim);border:1px solid rgba(255,79,0,.3);color:#ffd2bb;">
+            <span style="flex:none;">✦</span><span>Choose a source to begin. Tip: keep the camera still and roughly chest-height — single-cam depth is noisiest on full-body locomotion, best on upper body + hands.</span>
+          </div>
+        </div>
+      </sc-if>
+    </aside>
+  </div>
+
+  <div id="mc-toasts" style="position:fixed;bottom:16px;right:16px;z-index:300;display:flex;flex-direction:column;gap:8px;"></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = {
+    step: 2,
+    source: 'live',
+    captureFocus: 'body',   // 'body' | 'hands' | 'face' — which part the capture is dialled in on
+    models: { body: true, hands: true, face: false },
+    gpu: true, conf: 50, smooth: 62, throttle: 1,
+    recording: false, playing: true,
+    camState: 'idle', trackerReady: false, trackerFailed: false,
+    characters: [], activeChar: null, charLoading: false, charLoadingName: '', charError: '', charInfo: null, drive: true, dragOver: false, facing: 0,
+    frame: 122, total: 312,
+    mirror: true, clamp: true,
+    layers: { mesh: true, skel: true },
+    foot: true, len: true,
+    fmt: 'fbx', expMesh: true, root: true, expFps: 30,
+  };
+
+  componentDidMount() { this._ensureLoop(); this.loadManifest(); setTimeout(() => this.setupDrop(), 200); this.setupEmbed(); }
+
+  setupEmbed() {
+    const params = new URLSearchParams(location.search);
+    this._embedded = params.get('embed') === '1' || window.parent !== window;
+    const post = (type, payload, transfer) => { try { window.parent && window.parent.postMessage(Object.assign({ __studio: true, type }, payload || {}), '*', transfer || []); } catch (e) {} };
+    this._post = post;
+    if (this._embedded) {
+      const hide = () => { const h = document.querySelector('#mc-root > header'); if (h && h.firstElementChild) h.firstElementChild.style.display = 'none'; };
+      hide(); setTimeout(hide, 50); setTimeout(hide, 300);
+    }
+    window.addEventListener('message', async (e) => {
+      const d = e.data; if (!d || !d.__studio) return;
+      try {
+        if (d.type === 'studio:loadCharUrl') { this.setState({ step: 3 }); await this.loadCharacterUrl({ label: d.label || 'Character', path: d.url, ext: d.ext || (d.url.split('.').pop() || 'fbx').toLowerCase() }); }
+        else if (d.type === 'studio:loadCharBuffer') { this.setState({ step: 3 }); await this.loadCharacterBuffer(d.buffer, d.name || 'rigged.glb'); }
+        else if (d.type === 'studio:setVideoUrl') { this.setVideoFromUrl(d.url, d.label); }
+        else if (d.type === 'studio:goStep') { this.setState({ step: d.step }); }
+      } catch (err) { post('studio:error', { tool: 'mocap', message: String(err && err.message || err) }); }
+    });
+    setTimeout(() => post('studio:ready', { tool: 'mocap' }), 0);
+  }
+
+  async loadCharacterBuffer(buffer, name) {
+    const ext = (name.split('.').pop() || 'glb').toLowerCase();
+    const file = new File([buffer], name, { type: ext === 'glb' ? 'model/gltf-binary' : 'application/octet-stream' });
+    this.setState({ charLoading: true, charLoadingName: name, charError: '', activeChar: name });
+    try {
+      const eng = await this.ensureEngine();
+      const info = await eng.loadFile(file);
+      this.setState({ charLoading: false, charInfo: info, facing: eng.facingDeg, characters: [...this.state.characters, { label: name.replace(/\.(fbx|glb|gltf)$/i, ''), path: name, ext, session: true }] });
+      this.toast(name + ' received from Rig · ' + info.bones + ' bones');
+      if (this._post) this._post('studio:charLoaded', { name, bones: info.bones, rig: info.rigKind });
+    } catch (e) {
+      this.setState({ charLoading: false, charError: 'Could not load ' + name + ' — ' + (e && e.message || e) });
+    }
+  }
+
+  openVideoPicker() { setTimeout(() => { const i = document.getElementById('mc-videoinput'); if (i) i.click(); }, 30); }
+
+  loadVideoFile(file) {
+    if (this._videoObjUrl) { try { URL.revokeObjectURL(this._videoObjUrl); } catch (e) {} }
+    const url = URL.createObjectURL(file);
+    this._videoObjUrl = url; this._videoLabel = file.name;
+    this.stopCamera();
+    this.setState({ source: 'video', step: 2, playing: true });
+    const v = document.getElementById('mc-video');
+    if (v) {
+      try {
+        v.srcObject = null; v.src = url; v.loop = true; v.muted = true;
+        v.play().catch(() => {});
+        this.setState({ camState: 'live' });
+        this.initTracker();
+      } catch (e) {}
+    }
+    this.toast('Tracking video: ' + file.name);
+  }
+
+  setVideoFromUrl(url, label) {
+    this.setState({ source: 'video', step: 2 });
+    this._videoSrcUrl = url; this._videoLabel = label || (url.split('/').pop());
+    const v = document.getElementById('mc-video');
+    if (v) { try { v.srcObject = null; v.src = url; v.loop = true; v.muted = true; v.play().catch(() => {}); this.setState({ camState: 'live' }); this.initTracker(); } catch (e) {} }
+    this.toast('Loaded clip: ' + this._videoLabel);
+  }
+
+  async loadManifest() {
+    try {
+      let res = await fetch('data/characters/manifest.json');
+      const j = await res.json();
+      this.setState({ characters: j.characters || [] });
+    } catch (e) { this.setState({ characters: [] }); }
+  }
+
+  async ensureEngine() {
+    if (this._engine) return this._engine;
+    if (this._enginePromise) return this._enginePromise;
+    this._enginePromise = (async () => {
+      const mod = await import('./mc-engine.js');
+      const canvas = document.getElementById('mc-gl');
+      this._engine = new mod.MCEngine(canvas);
+      const st = this.state;
+      this._engine.setLayers(st.layers.mesh, st.layers.skel);
+      this._engine.setRetarget(st.drive);
+      this._engine.setSmooth(st.smooth / 100);
+      this._engine.setMirror(st.mirror);
+      this._engine.setFootLock(st.foot);
+      return this._engine;
+    })();
+    return this._enginePromise;
+  }
+
+  async loadCharacterUrl(ch) {
+    this.setState({ charLoading: true, charLoadingName: ch.label, charError: '', activeChar: ch.path });
+    try {
+      const eng = await this.ensureEngine();
+      const info = await eng.loadUrl(ch.path, ch.ext, { chunked: ch.chunked === 'true' || ch.chunked === true, chunks: ch.chunks });
+      this.setState({ charLoading: false, charInfo: info, facing: eng.facingDeg });
+      this.toast(ch.label + ' loaded · ' + info.bones + ' bones, ' + info.driven + ' driven');
+    } catch (e) {
+      this.setState({ charLoading: false, charError: 'Could not load ' + ch.label + ' — ' + (e && e.message || e) });
+    }
+  }
+
+  async importLocalFile(file) {
+    const ext = (file.name.split('.').pop() || '').toLowerCase();
+    if (!['fbx', 'glb', 'gltf'].includes(ext)) { this.setState({ charError: 'Unsupported file — use FBX or GLB' }); return; }
+    this.setState({ charLoading: true, charLoadingName: file.name, charError: '', activeChar: file.name });
+    try {
+      const eng = await this.ensureEngine();
+      const info = await eng.loadFile(file);
+      this.setState({ charLoading: false, charInfo: info, facing: eng.facingDeg, characters: [...this.state.characters, { label: file.name.replace(/\.(fbx|glb|gltf)$/i, ''), path: file.name, ext, local: true }] });
+      this.toast(file.name + ' imported · ' + info.bones + ' bones');
+    } catch (e) {
+      this.setState({ charLoading: false, charError: 'Could not parse ' + file.name + ' — ' + (e && e.message || e) });
+    }
+  }
+
+  setupDrop() {
+    const z = document.getElementById('mc-3dpanel');
+    if (!z || z._mcdrop) return; z._mcdrop = true;
+    const over = e => { e.preventDefault(); e.stopPropagation(); };
+    z.addEventListener('dragover', over);
+    z.addEventListener('drop', e => { e.preventDefault(); e.stopPropagation(); const f = e.dataTransfer.files && e.dataTransfer.files[0]; if (f) this.importLocalFile(f); });
+    const z2 = document.getElementById('mc-dropzone');
+    if (z2) { z2.addEventListener('dragover', over); z2.addEventListener('drop', e => { e.preventDefault(); e.stopPropagation(); const f = e.dataTransfer.files && e.dataTransfer.files[0]; if (f) this.importLocalFile(f); }); }
+  }
+
+  componentWillUnmount() {}
+
+  _ensureLoop() {
+    if (this._t0 == null) { this._t0 = performance.now(); this._last = 0; this._fphase = 0; }
+    window.__mcInst = this;
+    if (!window.__mcTimer) {
+      window.__mcTimer = setInterval(() => {
+        const inst = window.__mcInst;
+        if (inst && inst._tick) inst._tick();
+      }, 33);
+    }
+  }
+
+  base() {
+    return {
+      nose:[0,0.60,0.05], eyeL:[-0.028,0.62,0.06], eyeR:[0.028,0.62,0.06],
+      earL:[-0.058,0.595,0.0], earR:[0.058,0.595,0.0],
+      neck:[0,0.50,0.0], chest:[0,0.40,0.01],
+      shoulderL:[-0.16,0.47,0.0], shoulderR:[0.16,0.47,0.0],
+      elbowL:[-0.245,0.27,0.03], elbowR:[0.245,0.27,0.03],
+      wristL:[-0.30,0.075,0.07], wristR:[0.30,0.075,0.07],
+      hipC:[0,0.135,0.0], hipL:[-0.095,0.12,0.0], hipR:[0.095,0.12,0.0],
+      kneeL:[-0.105,-0.16,0.035], kneeR:[0.105,-0.16,0.035],
+      ankleL:[-0.115,-0.44,0.0], ankleR:[0.115,-0.44,0.0],
+      footL:[-0.115,-0.475,0.07], footR:[0.115,-0.475,0.07],
+    };
+  }
+
+  pose(t) {
+    const J = this.base();
+    const breath = Math.sin(t * 1.5) * 0.006;
+    const sway = Math.sin(t * 0.7) * 0.012;
+    const bob = Math.sin(t * 1.3) * 0.004;
+    const armS = Math.sin(t * 0.9) * 0.012;
+    // global idle
+    ['neck','chest','shoulderL','shoulderR','nose','eyeL','eyeR','earL','earR'].forEach(k=>{ J[k][1]+=breath; });
+    ['hipC','hipL','hipR'].forEach(k=>{ J[k][0]+=sway*0.4; });
+    J.nose[1]+=bob; J.nose[0]+=sway*0.5;
+    J.eyeL[1]+=bob; J.eyeR[1]+=bob;
+    // arm idle sway
+    J.elbowL[0]+=armS; J.wristL[0]+=armS*1.4; J.wristL[1]+=Math.cos(t*1.1)*0.01;
+    J.elbowR[0]-=armS; J.wristR[0]-=armS*1.4; J.wristR[1]-=Math.cos(t*1.0)*0.01;
+    // when recording, raise right arm in a wave to look "captured"
+    if (this.state.recording || this.state.playing) {
+      const w = (Math.sin(t * 1.6) * 0.5 + 0.5);
+      J.elbowR[1] += w * 0.10; J.elbowR[0] += w * 0.02;
+      J.wristR[1] += w * 0.30; J.wristR[0] += w * 0.05 + Math.sin(t*5)*0.01;
+      J.elbowL[1] += (1-w) * 0.04;
+    }
+    return J;
+  }
+
+  size(c) {
+    const r = c.getBoundingClientRect();
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    const w = Math.max(2, Math.round(r.width * dpr)), h = Math.max(2, Math.round(r.height * dpr));
+    if (c.width !== w || c.height !== h) { c.width = w; c.height = h; }
+    return { ctx: c.getContext('2d'), w, h };
+  }
+
+  bones() {
+    return [['neck','nose'],['neck','shoulderL'],['neck','shoulderR'],
+      ['shoulderL','elbowL'],['elbowL','wristL'],['shoulderR','elbowR'],['elbowR','wristR'],
+      ['neck','chest'],['chest','hipC'],['hipC','hipL'],['hipC','hipR'],
+      ['hipL','kneeL'],['kneeL','ankleL'],['ankleL','footL'],
+      ['hipR','kneeR'],['kneeR','ankleR'],['ankleR','footR']];
+  }
+
+  drawHand(ctx, x, y, side, s, col) {
+    // clean little hand: palm + 4 fingers + thumb, pointing down-out
+    ctx.strokeStyle = col; ctx.lineWidth = Math.max(1.2, s*0.011); ctx.lineCap='round'; ctx.lineJoin='round';
+    const dir = side === 'L' ? -1 : 1;
+    const fingers = [
+      { ang: 0.34, len: 0.085 },  // index
+      { ang: 0.12, len: 0.095 },  // middle
+      { ang: -0.10, len: 0.088 }, // ring
+      { ang: -0.30, len: 0.072 }, // pinky
+    ];
+    fingers.forEach(f => {
+      const a = f.ang * dir;
+      const mx = x + Math.sin(a) * s * f.len * 0.55 * dir, my = y + Math.cos(a) * s * f.len * 0.55;
+      const ex = x + Math.sin(a) * s * f.len * dir, ey = y + Math.cos(a) * s * f.len;
+      ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(mx, my); ctx.lineTo(ex, ey); ctx.stroke();
+      ctx.fillStyle = col; ctx.beginPath(); ctx.arc(ex, ey, Math.max(1, s*0.006), 0, 7); ctx.fill();
+    });
+    // thumb out to the side
+    const tx = x + dir * s * 0.06, ty = y + s * 0.012;
+    ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(tx, ty); ctx.stroke();
+    ctx.fillStyle = col; ctx.beginPath(); ctx.arc(tx, ty, Math.max(1, s*0.006), 0, 7); ctx.fill();
+  }
+
+  // ---- real webcam + MediaPipe pose tracking ----
+  maybeStartCamera() {
+    if (this.state.source === 'live' && this.state.step >= 2) this.startCamera();
+  }
+  async startCamera() {
+    if (this._camStarting || this._stream) return;
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { this.setState({ camState: 'error' }); return; }
+    this._camStarting = true;
+    this.setState({ camState: 'requesting' });
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 1280, height: 720 }, audio: false });
+      this._stream = stream;
+      const v = document.getElementById('mc-video');
+      if (v) { v.srcObject = stream; try { await v.play(); } catch (e) {} }
+      this.setState({ camState: 'live' });
+      this.initTracker();
+    } catch (e) {
+      this._camStarting = false;
+      this.setState({ camState: (e && (e.name === 'NotAllowedError' || e.name === 'SecurityError')) ? 'denied' : 'error' });
+    }
+  }
+  stopCamera() {
+    if (this._stream) { try { this._stream.getTracks().forEach(t => t.stop()); } catch (e) {} this._stream = null; }
+    this._camStarting = false; this._liveJoints = null; this._lastRes = null;
+    const v = document.getElementById('mc-video'); if (v) v.srcObject = null;
+    this.setState({ camState: 'idle' });
+  }
+  async initTracker() {
+    if (this._trackerStarting || this._pose) return;
+    this._trackerStarting = true;
+    try {
+      const vision = await import('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14');
+      const fileset = await vision.FilesetResolver.forVisionTasks('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm');
+      this._vision = vision; this._fileset = fileset;
+      this._pose = await vision.PoseLandmarker.createFromOptions(fileset, {
+        baseOptions: {
+          modelAssetPath: 'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task',
+          delegate: this.state.gpu ? 'GPU' : 'CPU'
+        },
+        runningMode: 'VIDEO', numPoses: 1
+      });
+      this.setState({ trackerReady: true });
+      // hands — real 21-point landmarker
+      try {
+        this._hands = await vision.HandLandmarker.createFromOptions(fileset, {
+          baseOptions: {
+            modelAssetPath: 'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task',
+            delegate: this.state.gpu ? 'GPU' : 'CPU'
+          },
+          runningMode: 'VIDEO', numHands: 2
+        });
+        this._handsReady = true;
+      } catch (e) { this._handsReady = false; }
+    } catch (e) {
+      this._trackerErr = String(e && e.message || e);
+      this.setState({ trackerReady: false, trackerFailed: true });
+    }
+  }
+  cover(vw, vh, cw, ch) {
+    const s = Math.max(cw / vw, ch / vh);
+    const dw = vw * s, dh = vh * s;
+    return { dx: (cw - dw) / 2, dy: (ch - dh) / 2, dw, dh };
+  }
+  // ---- capture focus: full body / hands / face ----
+  setFocus(mode) {
+    if (!['body', 'hands', 'face'].includes(mode)) mode = 'body';
+    const models = mode === 'face' ? { body: false, hands: false, face: true }
+                 : mode === 'hands' ? { body: true, hands: true, face: false }
+                 : { body: true, hands: true, face: false };
+    this.setState({ captureFocus: mode, models });
+    if (mode === 'face') this.ensureFace();
+    if (this._engine && this._engine.model) this._engine.focusOn(mode);
+    this.toast('Focus: ' + (mode === 'body' ? 'full body — head to toe' : mode === 'hands' ? 'hands — fingers in frame' : 'face — 468-point mesh'));
+  }
+  async ensureFace() {
+    if (this._face || this._faceStarting) return;
+    this._faceStarting = true;
+    try {
+      let vision = this._vision;
+      if (!vision) { vision = await import('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14'); this._vision = vision; }
+      let fileset = this._fileset;
+      if (!fileset) { fileset = await vision.FilesetResolver.forVisionTasks('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm'); this._fileset = fileset; }
+      this._face = await vision.FaceLandmarker.createFromOptions(fileset, {
+        baseOptions: { modelAssetPath: 'https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task', delegate: this.state.gpu ? 'GPU' : 'CPU' },
+        runningMode: 'VIDEO', numFaces: 1
+      });
+      this._faceReady = true;
+    } catch (e) { this._faceReady = false; }
+  }
+  // region-of-interest box (normalized image coords) for the current focus, or null = full frame
+  computeROI() {
+    const f = this.state.captureFocus;
+    if (f === 'body') return null;
+    let pts = null;
+    if (f === 'hands') {
+      const hs = this._lastHands;
+      if (hs && hs.length) { pts = []; hs.forEach(h => h.forEach(p => pts.push(p))); }
+      else if (this._lastL) { const L = this._lastL; pts = [L[15], L[16], L[17], L[18], L[19], L[20], L[21], L[22]].filter(Boolean); }
+    } else if (f === 'face') {
+      if (this._lastFace && this._lastFace.length) pts = this._lastFace;
+      else if (this._lastL) { const L = this._lastL; pts = [L[0], L[1], L[2], L[3], L[4], L[5], L[6], L[7], L[8], L[9], L[10]].filter(Boolean); }
+    }
+    if (!pts || !pts.length) return null;
+    let minx = 1, miny = 1, maxx = 0, maxy = 0;
+    pts.forEach(p => { if (p.x < minx) minx = p.x; if (p.x > maxx) maxx = p.x; if (p.y < miny) miny = p.y; if (p.y > maxy) maxy = p.y; });
+    let bw = maxx - minx, bh = maxy - miny;
+    const pad = f === 'face' ? 0.55 : 0.4;
+    const px = bw * pad + 0.03, py = bh * pad + 0.03;
+    minx -= px; maxx += px; miny -= py; maxy += py;
+    bw = Math.max(0.08, maxx - minx); bh = Math.max(0.08, maxy - miny);
+    return { cx: (minx + maxx) / 2, cy: (miny + maxy) / 2, bw, bh };
+  }
+  // draw rect that zooms a normalized ROI to fill the canvas (cover-style), capped zoom
+  focusRect(roi, vw, vh, w, h) {
+    const s = Math.max(w / vw, h / vh);
+    const zw = w / (Math.max(0.05, roi.bw) * vw * s);
+    const zh = h / (Math.max(0.05, roi.bh) * vh * s);
+    let z = Math.min(zw, zh) / 1.16;
+    z = Math.max(1, Math.min(6, z));
+    const dw = vw * s * z, dh = vh * s * z;
+    return { dx: w / 2 - roi.cx * dw, dy: h / 2 - roi.cy * dh, dw, dh };
+  }
+  drawFaceMesh(ctx, r, w, h) {
+    const lm = this._lastFace; if (!lm) return;
+    const mir = this.state.mirror;
+    const mp = p => { let x = r.dx + p.x * r.dw; const y = r.dy + p.y * r.dh; if (mir) x = w - x; return [x, y]; };
+    const P = lm.map(mp);
+    const V = this._vision, FL = V && V.FaceLandmarker;
+    const sets = FL ? [
+      [FL.FACE_LANDMARKS_TESSELATION, 'rgba(255,79,0,0.14)', Math.max(0.4, h * 0.0005)],
+      [FL.FACE_LANDMARKS_FACE_OVAL, 'rgba(90,160,224,0.9)', Math.max(1.1, h * 0.0016)],
+      [FL.FACE_LANDMARKS_LEFT_EYE, '#46c7c4', Math.max(1, h * 0.0014)],
+      [FL.FACE_LANDMARKS_RIGHT_EYE, '#46c7c4', Math.max(1, h * 0.0014)],
+      [FL.FACE_LANDMARKS_LEFT_EYEBROW, '#5aa0e0', Math.max(1, h * 0.0012)],
+      [FL.FACE_LANDMARKS_RIGHT_EYEBROW, '#5aa0e0', Math.max(1, h * 0.0012)],
+      [FL.FACE_LANDMARKS_LIPS, 'var(--accent)', Math.max(1.1, h * 0.0016)],
+    ] : [];
+    ctx.lineCap = 'round';
+    sets.forEach(([conn, col, lw]) => {
+      if (!conn) return;
+      ctx.strokeStyle = col; ctx.lineWidth = lw;
+      ctx.beginPath();
+      conn.forEach(c => { const a = P[c.start], b = P[c.end]; if (!a || !b) return; ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); });
+      ctx.stroke();
+    });
+  }
+  // MediaPipe pose index → my joint names
+  realJoints(L) {
+    const g = i => L[i] ? [L[i].x, L[i].y, L[i].z] : null;
+    const mid = (a, b) => [(a[0]+b[0])/2, (a[1]+b[1])/2, (a[2]+b[2])/2];
+    const sL = g(11), sR = g(12), hL = g(23), hR = g(24);
+    if (!sL || !sR || !hL || !hR) return null;
+    const neck = mid(sL, sR), hipC = mid(hL, hR);
+    const S = 0.62;
+    const cvt = p => [ (p[0]) * S, -(p[1]) * S, -(p[2]) * S ];
+    const J = {
+      nose: g(0), eyeL: g(2), eyeR: g(5), earL: g(7), earR: g(8),
+      shoulderL: sL, shoulderR: sR, elbowL: g(13), elbowR: g(14), wristL: g(15), wristR: g(16),
+      hipL: hL, hipR: hR, kneeL: g(25), kneeR: g(26), ankleL: g(27), ankleR: g(28), footL: g(31), footR: g(32),
+      neck, hipC, chest: mid(neck, hipC)
+    };
+    const out = {};
+    for (const k in J) { if (!J[k]) return null; out[k] = cvt(J[k]); }
+    // recenter on hips, lift to base hip height
+    const hy = out.hipC[1];
+    for (const k in out) out[k] = [out[k][0], out[k][1] - hy + 0.13, out[k][2]];
+    return out;
+  }
+  drawRealSkeleton(ctx, L, r, w, h) {
+    const mir = this.state.mirror;
+    const mp = p => { let x = r.dx + p.x * r.dw; const y = r.dy + p.y * r.dh; if (mir) x = w - x; return [x, y]; };
+    const idx = { nose:0, eyeL:2, eyeR:5, earL:7, earR:8, neckL:11, neckR:12, elbowL:13, elbowR:14, wristL:15, wristR:16, hipL:23, hipR:24, kneeL:25, kneeR:26, ankleL:27, ankleR:28, footL:31, footR:32 };
+    const P = {}; for (const k in idx) { const o = L[idx[k]]; if (o) P[k] = mp(o); }
+    const neck = (P.neckL && P.neckR) ? [(P.neckL[0]+P.neckR[0])/2,(P.neckL[1]+P.neckR[1])/2] : null;
+    const hipC = (P.hipL && P.hipR) ? [(P.hipL[0]+P.hipR[0])/2,(P.hipL[1]+P.hipR[1])/2] : null;
+    const bones = [['neckL','elbowL'],['elbowL','wristL'],['neckR','elbowR'],['elbowR','wristR'],
+      ['neckL','neckR'],['hipL','hipR'],['neckL','hipL'],['neckR','hipR'],
+      ['hipL','kneeL'],['kneeL','ankleL'],['ankleL','footL'],['hipR','kneeR'],['kneeR','ankleR'],['ankleR','footR']];
+    const scale = h;
+    ctx.lineCap = 'round';
+    bones.forEach(([a, b]) => { if (!P[a] || !P[b]) return;
+      const grad = ctx.createLinearGradient(P[a][0],P[a][1],P[b][0],P[b][1]);
+      grad.addColorStop(0,'#46c7c4'); grad.addColorStop(1,'#5aa0e0');
+      ctx.strokeStyle = grad; ctx.lineWidth = Math.max(2, scale*0.011);
+      ctx.beginPath(); ctx.moveTo(P[a][0],P[a][1]); ctx.lineTo(P[b][0],P[b][1]); ctx.stroke();
+    });
+    if (neck && P.nose) { ctx.strokeStyle = '#46c7c4'; ctx.lineWidth = Math.max(2,scale*0.011); ctx.beginPath(); ctx.moveTo(neck[0],neck[1]); ctx.lineTo(P.nose[0],P.nose[1]); ctx.stroke(); }
+    const face = ['nose','eyeL','eyeR','earL','earR'];
+    for (const k in P) {
+      if (!this.state.models.face && face.includes(k)) continue;
+      const isFace = face.includes(k);
+      ctx.fillStyle = isFace ? 'var(--accent)' : 'var(--accent)';
+      ctx.beginPath(); ctx.arc(P[k][0],P[k][1],Math.max(2.5,scale*(isFace?0.008:0.012)),0,7); ctx.fill();
+      ctx.lineWidth = 1; ctx.strokeStyle = 'rgba(0,0,0,0.4)'; ctx.stroke();
+    }
+    if (this.state.models.hands) this.drawRealHands(ctx, r, w, h);
+  }
+
+  drawRealHands(ctx, r, w, h) {
+    const hands = this._lastHands;
+    if (!hands || !hands.length) return;
+    const mir = this.state.mirror;
+    const mp = p => { let x = r.dx + p.x * r.dw; const y = r.dy + p.y * r.dh; if (mir) x = w - x; return [x, y]; };
+    // MediaPipe hand connections
+    const C = [[0,1],[1,2],[2,3],[3,4],[0,5],[5,6],[6,7],[7,8],[5,9],[9,10],[10,11],[11,12],[9,13],[13,14],[14,15],[15,16],[13,17],[17,18],[18,19],[19,20],[0,17]];
+    const sc = Math.max(1.4, h * 0.0045);
+    hands.forEach(lm => {
+      const P = lm.map(mp);
+      ctx.strokeStyle = '#e0a050'; ctx.lineWidth = sc; ctx.lineCap = 'round';
+      C.forEach(([a, b]) => { ctx.beginPath(); ctx.moveTo(P[a][0], P[a][1]); ctx.lineTo(P[b][0], P[b][1]); ctx.stroke(); });
+      ctx.fillStyle = '#f0c070';
+      P.forEach((p, i) => { ctx.beginPath(); ctx.arc(p[0], p[1], i === 0 ? sc * 1.6 : sc * 1.1, 0, 7); ctx.fill(); });
+    });
+  }
+
+  drawFeed(c, t) {
+    // both webcam (live) and an imported video file feed the same tracker/canvas
+    if (this.state.camState === 'live') {
+      const v = document.getElementById('mc-video');
+      if (v && v.videoWidth > 0) { this.drawLiveFeed(c, v); return; }
+    }
+    this._liveJoints = null;
+    this.drawSimFeed(c, t);
+  }
+
+  drawLiveFeed(c, v) {
+    const { ctx, w, h } = this.size(c);
+    // run detection (throttled)
+    this._dframe = (this._dframe || 0) + 1;
+    if (this._pose && this.state.trackerReady && (this._dframe % Math.max(1, this.state.throttle) === 0)) {
+      const ts = performance.now();
+      try {
+        const res = this._pose.detectForVideo(v, ts);
+        this._lastRes = res;
+        const L = res && res.landmarks && res.landmarks[0];
+        const W = res && res.worldLandmarks && res.worldLandmarks[0];
+        this._lastL = L || null;
+        this._liveWorld = W || null;
+        this._liveVis = L ? L.map(p => (p.visibility == null ? 1 : p.visibility)) : null;
+        this._liveJoints = W ? this.realJoints(W) : null;
+        if (this._hands && this._handsReady && this.state.models.hands) {
+          try {
+            const hr = this._hands.detectForVideo(v, ts);
+            this._lastHands = (hr && hr.landmarks) || null;
+            // build payload for retarget: world landmarks + anatomical side (nearest pose wrist)
+            const payload = [];
+            if (hr && hr.landmarks && hr.worldLandmarks && L) {
+              const lw = L[15], rw = L[16];
+              for (let hi = 0; hi < hr.landmarks.length; hi++) {
+                const wrist = hr.landmarks[hi][0];
+                let side = 'right';
+                if (lw && rw && wrist) side = (Math.abs(wrist.x - lw.x) < Math.abs(wrist.x - rw.x)) ? 'left' : 'right';
+                else if (hr.handedness && hr.handedness[hi] && hr.handedness[hi][0]) side = hr.handedness[hi][0].categoryName.toLowerCase();
+                payload.push({ world: hr.worldLandmarks[hi], side });
+              }
+            }
+            this._handPayload = payload;
+          } catch (e) {}
+        } else { this._lastHands = null; this._handPayload = null; }
+        if (this._face && this._faceReady && this.state.models.face) {
+          try { const fr = this._face.detectForVideo(v, ts); this._lastFace = (fr && fr.faceLandmarks && fr.faceLandmarks[0]) || null; } catch (e) {}
+        } else { this._lastFace = null; }
+      } catch (e) {}
+    }
+    ctx.clearRect(0,0,w,h);
+    ctx.fillStyle = '#0e1013'; ctx.fillRect(0,0,w,h);
+    // zoom into the focused region (hands / face); full frame for body
+    const targetROI = this.computeROI();
+    if (targetROI) {
+      const cur = this._roi || targetROI, k = 0.2;
+      this._roi = { cx: cur.cx + (targetROI.cx - cur.cx) * k, cy: cur.cy + (targetROI.cy - cur.cy) * k, bw: cur.bw + (targetROI.bw - cur.bw) * k, bh: cur.bh + (targetROI.bh - cur.bh) * k };
+    } else if (this.state.captureFocus === 'body') { this._roi = null; }
+    const r = this._roi ? this.focusRect(this._roi, v.videoWidth, v.videoHeight, w, h) : this.cover(v.videoWidth, v.videoHeight, w, h);
+    ctx.save();
+    if (this.state.mirror) { ctx.translate(w, 0); ctx.scale(-1, 1); ctx.drawImage(v, r.dx, r.dy, r.dw, r.dh); }
+    else ctx.drawImage(v, r.dx, r.dy, r.dw, r.dh);
+    ctx.restore();
+    // subtle darken for overlay legibility
+    ctx.fillStyle = 'rgba(10,12,15,0.18)'; ctx.fillRect(0,0,w,h);
+    if (this._lastL) this.drawRealSkeleton(ctx, this._lastL, r, w, h);
+  }
+
+  drawSimFeed(c, t) {
+    const { ctx, w, h } = this.size(c);
+    ctx.clearRect(0,0,w,h);
+    // studio bg
+    const g = ctx.createRadialGradient(w*0.5,h*0.42,h*0.1,w*0.5,h*0.5,h*0.9);
+    g.addColorStop(0,'#1c2026'); g.addColorStop(1,'#0e1013');
+    ctx.fillStyle=g; ctx.fillRect(0,0,w,h);
+    const J = this.pose(t);
+    const scale = h*0.60, cx=w*0.5, cy=h*0.52, mx=this.state.mirror?-1:1;
+    const P = {}; for (const k in J){ P[k]=[cx+J[k][0]*scale*mx, cy-(J[k][1]-0.06)*scale]; }
+    // segmentation silhouette (mask look)
+    ctx.lineCap='round'; ctx.lineJoin='round';
+    ctx.strokeStyle='var(--accent-dim)'; ctx.fillStyle='var(--accent-dim)';
+    const limb=(a,b,wd)=>{ctx.lineWidth=scale*wd;ctx.beginPath();ctx.moveTo(P[a][0],P[a][1]);ctx.lineTo(P[b][0],P[b][1]);ctx.stroke();};
+    // torso fill
+    ctx.beginPath();
+    ctx.moveTo(P.shoulderL[0],P.shoulderL[1]); ctx.lineTo(P.shoulderR[0],P.shoulderR[1]);
+    ctx.lineTo(P.hipR[0],P.hipR[1]); ctx.lineTo(P.hipL[0],P.hipL[1]); ctx.closePath(); ctx.fill();
+    limb('shoulderL','elbowL',0.075); limb('elbowL','wristL',0.058);
+    limb('shoulderR','elbowR',0.075); limb('elbowR','wristR',0.058);
+    limb('hipL','kneeL',0.085); limb('kneeL','ankleL',0.062);
+    limb('hipR','kneeR',0.085); limb('kneeR','ankleR',0.062);
+    ctx.beginPath(); ctx.arc(P.nose[0],P.nose[1]-scale*0.02,scale*0.075,0,7); ctx.fill();
+    // skeleton
+    this.bones().forEach(([a,b])=>{
+      const grad=ctx.createLinearGradient(P[a][0],P[a][1],P[b][0],P[b][1]);
+      grad.addColorStop(0,'#46c7c4'); grad.addColorStop(1,'#5aa0e0');
+      ctx.strokeStyle=grad; ctx.lineWidth=Math.max(1.5,scale*0.012);
+      ctx.beginPath(); ctx.moveTo(P[a][0],P[a][1]); ctx.lineTo(P[b][0],P[b][1]); ctx.stroke();
+    });
+    // joints
+    const face=['nose','eyeL','eyeR','earL','earR'];
+    for (const k in P){
+      if (!this.state.models.face && face.includes(k)) continue;
+      const isFace=face.includes(k);
+      ctx.fillStyle=isFace?'var(--accent)':'var(--accent)';
+      ctx.beginPath(); ctx.arc(P[k][0],P[k][1],Math.max(2,scale*(isFace?0.009:0.013)),0,7); ctx.fill();
+      ctx.lineWidth=1; ctx.strokeStyle='rgba(0,0,0,0.35)'; ctx.stroke();
+    }
+    // hands
+    if (this.state.models.hands){
+      this.drawHand(ctx,P.wristL[0],P.wristL[1],'L',scale, '#e0a050');
+      this.drawHand(ctx,P.wristR[0],P.wristR[1],'R',scale, '#e0a050');
+    }
+    // face mesh hint
+    if (this.state.models.face){
+      ctx.strokeStyle='rgba(255,79,0,0.5)'; ctx.lineWidth=1;
+      ctx.beginPath(); ctx.arc(P.nose[0],P.nose[1]-scale*0.02,scale*0.07,0,7); ctx.stroke();
+    }
+  }
+
+  draw3D(c, t) {
+    const { ctx, w, h } = this.size(c);
+    ctx.clearRect(0,0,w,h);
+    ctx.fillStyle='#15181c'; ctx.fillRect(0,0,w,h);
+    const J = this._liveJoints || this.pose(t);
+    const a=Math.sin(t*0.28)*0.5;
+    const scale=h*0.58, cx=w*0.5, cy=h*0.50;
+    const proj=(p)=>{ const xr=p[0]*Math.cos(a)+p[2]*Math.sin(a); const zr=-p[0]*Math.sin(a)+p[2]*Math.cos(a); const ds=1+zr*0.16; return [cx+xr*scale*ds, cy-(p[1]-0.06)*scale*ds, zr]; };
+    // floor grid
+    ctx.strokeStyle='rgba(120,140,160,0.10)'; ctx.lineWidth=1;
+    const fy=-0.50;
+    for (let i=-5;i<=5;i++){ const x=i*0.1;
+      const p1=proj([x,fy,-0.5]), p2=proj([x,fy,0.5]);
+      ctx.beginPath(); ctx.moveTo(p1[0],p1[1]); ctx.lineTo(p2[0],p2[1]); ctx.stroke();
+    }
+    for (let i=-5;i<=5;i++){ const z=i*0.1;
+      const p1=proj([-0.5,fy,z]), p2=proj([0.5,fy,z]);
+      ctx.beginPath(); ctx.moveTo(p1[0],p1[1]); ctx.lineTo(p2[0],p2[1]); ctx.stroke();
+    }
+    const P={}; for (const k in J){ P[k]=proj(J[k]); }
+    // shadow
+    const sf=proj([0,fy,0]); ctx.fillStyle='rgba(0,0,0,0.35)';
+    ctx.beginPath(); ctx.ellipse(sf[0],sf[1],scale*0.16,scale*0.04,0,0,7); ctx.fill();
+    // mannequin mesh
+    if (this.state.layers.mesh){
+      ctx.lineCap='round'; ctx.lineJoin='round';
+      const cap=(a2,b2,wd,col)=>{ctx.strokeStyle=col;ctx.lineWidth=scale*wd;ctx.beginPath();ctx.moveTo(P[a2][0],P[a2][1]);ctx.lineTo(P[b2][0],P[b2][1]);ctx.stroke();};
+      ctx.fillStyle='#3a4048';
+      ctx.beginPath(); ctx.moveTo(P.shoulderL[0],P.shoulderL[1]); ctx.lineTo(P.shoulderR[0],P.shoulderR[1]);
+      ctx.lineTo(P.hipR[0],P.hipR[1]); ctx.lineTo(P.hipL[0],P.hipL[1]); ctx.closePath(); ctx.fill();
+      cap('shoulderL','elbowL',0.07,'#363c44'); cap('elbowL','wristL',0.055,'#363c44');
+      cap('shoulderR','elbowR',0.07,'#3f454e'); cap('elbowR','wristR',0.055,'#3f454e');
+      cap('hipL','kneeL',0.082,'#363c44'); cap('kneeL','ankleL',0.06,'#363c44');
+      cap('hipR','kneeR',0.082,'#3f454e'); cap('kneeR','ankleR',0.06,'#3f454e');
+      ctx.fillStyle='#434a53'; ctx.beginPath(); ctx.arc(P.nose[0],P.nose[1]-scale*0.02,scale*0.072,0,7); ctx.fill();
+    }
+    // skeleton overlay
+    if (this.state.layers.skel){
+      this.bones().forEach(([b1,b2])=>{
+        ctx.strokeStyle='rgba(255,79,0,0.9)'; ctx.lineWidth=Math.max(1.5,scale*0.009);
+        ctx.beginPath(); ctx.moveTo(P[b1][0],P[b1][1]); ctx.lineTo(P[b2][0],P[b2][1]); ctx.stroke();
+      });
+      const face=['eyeL','eyeR','earL','earR'];
+      for (const k in P){ if(face.includes(k))continue;
+        ctx.fillStyle='#46c7c4'; ctx.beginPath(); ctx.arc(P[k][0],P[k][1],Math.max(1.5,scale*0.008),0,7); ctx.fill();
+      }
+    }
+  }
+
+  updateHUD(t) {
+    const m=this.state.models;
+    const lm=(m.body?33:0)+(m.hands?42:0)+(m.face?468:0);
+    const dropPenalty=(m.face?2.4:0)+(m.hands?1.0:0)+(this.state.throttle>1?(this.state.throttle-1)*-4:0);
+    let fps=30 - dropPenalty + Math.sin(t*3)*0.6;
+    if(this.state.throttle>1) fps=30; // throttle keeps fps but skips detect
+    const fpsT=fps.toFixed(1)+' fps';
+    const set=(id,v)=>{const e=document.getElementById(id); if(e)e.textContent=v;};
+    set('mc-lm', lm); set('mc-fpsval', fpsT); set('mc-fpsval2', fpsT);
+    const tc=this.tc(this.state.frame);
+    set('mc-tc', tc); set('mc-tc2', tc);
+    const bb=document.getElementById('mc-bar-body'); if(bb)bb.style.width=(m.body?94:0)+'%';
+    const bh=document.getElementById('mc-bar-hands'); if(bh)bh.style.width=(m.hands?71:0)+'%';
+    const bf=document.getElementById('mc-bar-face'); if(bf)bf.style.width=(m.face?88:0)+'%';
+    const ph=document.getElementById('mc-playhead'); if(ph)ph.style.left=(6+(this.state.frame/this.state.total)*90)+'%';
+  }
+
+  tc(f){ const fps=30; const s=Math.floor(f/fps); const mm=String(Math.floor(s/60)).padStart(2,'0'); const ss=String(s%60).padStart(2,'0'); const ff=String(f%fps).padStart(2,'0'); return mm+':'+ss+':'+ff; }
+
+  _tick(){
+    const now=performance.now();
+    const t=(now-this._t0)/1000;
+    if(this.state.playing||this.state.recording){
+      let f=this.state.frame+1; if(f>this.state.total) f=0;
+      this.state.frame=f;
+    }
+    try {
+      const feed=document.getElementById('mc-feed'); if(feed) this.drawFeed(feed,t);
+      if (this._engine && this._engine.model) {
+        this._engine.mirror = this.state.mirror;
+        if (this._liveWorld) this._engine.applyPose(this._liveWorld, this._liveVis);
+        if (this._handPayload && this._handPayload.length) this._engine.applyHands(this._handPayload);
+      } else {
+        const v3d=document.getElementById('mc-3d'); if(v3d) this.draw3D(v3d,t);
+      }
+      this.updateHUD(t);
+    } catch(e){}
+  }
+
+  toast(msg){
+    const wrap=document.getElementById('mc-toasts'); if(!wrap)return;
+    const el=document.createElement('div');
+    el.style.cssText='padding:11px 15px;border-radius:7px;font-size:12px;background:var(--panel-3);border:1px solid var(--edge);border-left:3px solid var(--good);box-shadow:0 8px 24px rgba(0,0,0,.45);max-width:340px;color:var(--text);animation:mc-tin .25s cubic-bezier(.2,1,.3,1);';
+    el.textContent=msg; wrap.appendChild(el);
+    setTimeout(()=>{el.style.transition='opacity .3s';el.style.opacity='0';setTimeout(()=>el.remove(),300);},2600);
+  }
+
+  go(n){ this.setState({ step:n, playing: n===2 }); }
+
+  // ---- style helpers ----
+  stepRow(n){ const s=this.state.step; const active=n===s; const done=n<s;
+    let bg='transparent',col='var(--muted)'; if(active){bg='var(--accent-dim)';col='#ffd2bb';} else if(done){col='var(--good)';}
+    return 'display:flex;align-items:center;gap:7px;padding:5px 11px;border-radius:5px;font-size:11.5px;font-weight:500;letter-spacing:.02em;cursor:pointer;background:'+bg+';color:'+col+';'; }
+  stepNum(n){ const s=this.state.step; const active=n===s; const done=n<s;
+    let bg='var(--panel)',col='var(--muted)',bd='var(--panel-3)'; if(active){bg='var(--accent)';col='#fff';bd='var(--accent)';} else if(done){bg='var(--good)';col='#10240f';bd='var(--good)';}
+    return 'width:17px;height:17px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;background:'+bg+';color:'+col+';border:1px solid '+bd+';flex:none;'; }
+  sw(on){ return 'width:30px;height:17px;border-radius:9px;flex:none;cursor:pointer;position:relative;transition:.18s;background:'+(on?'var(--accent-dim)':'var(--panel)')+';border:1px solid '+(on?'var(--accent)':'var(--seam)')+';'; }
+  knob(on){ return 'position:absolute;top:1px;left:'+(on?'14px':'1px')+';width:13px;height:13px;border-radius:50%;transition:.18s;background:'+(on?'var(--accent)':'#5a574f')+';'; }
+  seg(on){ return 'flex:1;padding:6px 8px;border-radius:4px;font-size:11px;font-weight:600;cursor:pointer;border:none;background:'+(on?'var(--panel-3)':'transparent')+';color:'+(on?'var(--text)':'var(--text-2)')+';box-shadow:'+(on?'0 1px 2px rgba(0,0,0,.3)':'none')+';'; }
+  segA(on){ return 'flex:1;padding:6px 8px;border-radius:4px;font-size:11px;font-weight:600;cursor:pointer;border:none;background:'+(on?'var(--accent)':'transparent')+';color:'+(on?'#fff':'var(--text-2)')+';'; }
+  chip(on){ return 'font-family:IBM Plex Mono,monospace;font-size:10px;padding:4px 9px;border-radius:5px;cursor:pointer;background:rgba(15,15,15,.6);border:1px solid '+(on?'var(--accent)':'var(--edge)')+';color:'+(on?'#ffd2bb':'var(--text-2)')+';'; }
+  modelDot(on,col){ return 'width:8px;height:8px;border-radius:50%;flex:none;background:'+(on?col:'var(--muted-2)')+';box-shadow:'+(on?'0 0 6px '+col:'none')+';'; }
+
+  renderVals(){
+    this._ensureLoop();
+    const st=this.state;
+    const steps=['Source','Capture','Retarget','Export'].map((label,i)=>({
+      label, num:String(i+1), rowStyle:this.stepRow(i+1), numStyle:this.stepNum(i+1), onClick:()=>this.go(i+1)
+    }));
+    const models=[
+      {key:'body',label:'Body pose',sub:'33 landmarks',col:'var(--good)'},
+      {key:'hands',label:'Hands',sub:'21 × 2 joints',col:'var(--accent)'},
+      {key:'face',label:'Face mesh',sub:'468 landmarks',col:'var(--accent)'},
+    ].map(m=>({ label:m.label, sub:m.sub, dotStyle:this.modelDot(st.models[m.key],m.col),
+      swStyle:this.sw(st.models[m.key]), knobStyle:this.knob(st.models[m.key]),
+      toggle:()=>this.setState(s=>({models:{...s.models,[m.key]:!s.models[m.key]}})) }));
+
+    const tag=(txt,kind)=>{ const c={ok:['var(--good)','rgba(90,168,107,0.14)'],warn:['var(--warn)','rgba(255,79,0,0.14)'],clamp:['var(--accent)','var(--accent-dim)']}[kind];
+      return {tag:txt, tagStyle:'font-family:IBM Plex Mono,monospace;font-size:9px;padding:2px 7px;border-radius:9px;color:'+c[0]+';background:'+c[1]+';',
+        dotStyle:'width:8px;height:8px;border-radius:50%;flex:none;background:'+c[0]+';'}; };
+    const jc=(label,txt,kind)=>{ const o=tag(txt,kind); return {label,tag:o.tag,tagStyle:o.tagStyle,dotStyle:o.dotStyle}; };
+    const jointChecks=[
+      jc('Elbows · flexion','in range','ok'),
+      jc('L Wrist · roll', st.clamp?'clamped':'±180° flip','ok'),
+      jc('R Wrist · roll', st.clamp?'clamped':'ambiguous', st.clamp?'clamp':'warn'),
+      jc('Knees · hyperext.', st.clamp?'blocked':'−6° flagged', st.clamp?'ok':'warn'),
+      jc('Neck · twist','in range','ok'),
+    ];
+
+    const bone=(src,dst,kind)=>{ const o=tag(kind==='ok'?'auto':'manual',kind); return {src,dst,tag:o.tag,tagStyle:o.tagStyle}; };
+    const boneMap=[
+      bone('Hips','mixamorig:Hips','ok'),
+      bone('Spine','mixamorig:Spine1','ok'),
+      bone('Head','mixamorig:Head','ok'),
+      bone('L Arm','mixamorig:LeftArm','ok'),
+      bone('R Hand','mixamorig:RightHand','ok'),
+      bone('L Toe','mixamorig:LeftToeBase','warn'),
+    ];
+
+    const fmtNote={fbx:'Native skeleton + animation track. Best for Unity / Unreal / Blender.',
+      gltf:'Open standard, web-friendly. Animation baked as a glTF clip.',
+      bvh:'Skeleton motion only — no mesh. Universal mocap interchange.'}[st.fmt];
+
+    return {
+      // stepper / steps
+      steps, models, jointChecks, boneMap,
+      // capture focus (full body / hands / face)
+      focusBadge: st.captureFocus === 'body' ? 'full body' : st.captureFocus,
+      focusBodyStyle: this.segA(st.captureFocus === 'body'),
+      focusHandsStyle: this.segA(st.captureFocus === 'hands'),
+      focusFaceStyle: this.segA(st.captureFocus === 'face'),
+      setFocusBody: () => this.setFocus('body'),
+      setFocusHands: () => this.setFocus('hands'),
+      setFocusFace: () => this.setFocus('face'),
+      focusNote: {
+        body: 'Tracking the whole figure, head to toe. Best with the full body in frame and the camera at chest height.',
+        hands: 'Zooms the feed onto your hands and runs the 21-point hand model per hand. Keep both hands up and open for a clean solve.',
+        face: 'Zooms onto your face and runs the 468-point mesh — brows, eyes, lips. Body + hands pause so all the budget goes to the face.',
+      }[st.captureFocus],
+      focusChips: [
+        { label: 'Body', on: st.models.body, col: 'var(--good)' },
+        { label: 'Hands', on: st.models.hands, col: 'var(--accent)' },
+        { label: 'Face', on: st.models.face, col: 'var(--accent)' },
+      ].map(c => ({ label: (c.on ? '● ' : '○ ') + c.label,
+        style: 'font-family:IBM Plex Mono,monospace;font-size:9.5px;padding:3px 9px;border-radius:9px;border:1px solid ' + (c.on ? c.col : 'var(--header)') + ';color:' + (c.on ? c.col : 'var(--muted-2)') + ';background:' + (c.on ? 'rgba(255,255,255,0.02)' : 'transparent') + ';' })),
+      // step booleans
+      isSource: st.step===1, isCapture: st.step===2, isRetarget: st.step===3, isExport: st.step===4,
+      // source
+      isLive: st.source==='live', isVideo: st.source==='video',
+      sourceChip: st.step===1 ? 'No source' : (st.source==='live'? (st.camState==='live'?'Webcam · live · 30fps':(st.camState==='requesting'?'Webcam · requesting…':(st.camState==='denied'||st.camState==='error'?'Webcam · blocked':'Webcam · 1280×720'))) : (this._videoLabel ? (this._videoLabel.length>22?this._videoLabel.slice(0,20)+'…':this._videoLabel)+' · 30fps' : 'No video — click Import')),
+      videoName: this._videoLabel || 'No video loaded',
+      videoLoaded: !!this._videoLabel,
+      videoPickLabel: this._videoLabel ? 'Replace video…' : 'Choose video…',
+      videoDotStyle: 'width:7px;height:7px;border-radius:50%;flex:none;background:' + (this._videoLabel ? 'var(--good)' : 'var(--muted-2)') + ';box-shadow:' + (this._videoLabel ? '0 0 7px var(--good)' : 'none') + ';',
+      pickVideoFile: () => this.openVideoPicker(),
+      sourceShort: st.source==='live'?'Webcam live':'Video file',
+      sourceBadge: st.source==='live'?'live':'file',
+      sourceDotStyle:'width:7px;height:7px;border-radius:50%;flex:none;background:'+(st.step===1?'var(--muted-2)':'var(--good)')+';box-shadow:'+(st.step===1?'none':'0 0 7px var(--good)')+';',
+      segLiveStyle:this.seg(st.source==='live'), segVideoStyle:this.seg(st.source==='video'),
+      pickLive:()=>{ this.setState({source:'live'}); this.startCamera(); }, pickVideo:()=>{ this.stopCamera(); this.setState({source:'video'}); this.openVideoPicker(); },
+      startLive:()=>{ this.setState({source:'live',step:2,playing:true}); this.startCamera(); },
+      startVideo:()=>{ this.stopCamera(); this.setState({source:'video',step:2,playing:true}); this.openVideoPicker(); },
+      onVideoFile:(e)=>{ const f=e.target.files&&e.target.files[0]; if(f)this.loadVideoFile(f); e.target.value=''; },
+      // camera status
+      camIdle: st.source==='live' && st.step>=2 && st.camState==='idle',
+      camRequesting: st.source==='live' && st.camState==='requesting',
+      camDenied: st.source==='live' && (st.camState==='denied' || st.camState==='error'),
+      camLive: st.source==='live' && st.camState==='live',
+      camTrackerLoading: st.source==='live' && st.camState==='live' && !st.trackerReady && !st.trackerFailed,
+      camDeniedMsg: st.camState==='denied' ? 'Camera permission denied' : 'No camera available',
+      retryCamera:()=>{ this._camStarting=false; this.setState({camState:'idle'}); this.startCamera(); },
+      enableCamera:()=>this.startCamera(),
+      // tracking
+      gpuSwStyle:this.sw(st.gpu), gpuKnobStyle:this.knob(st.gpu), toggleGpu:()=>this.setState(s=>({gpu:!s.gpu})),
+      confSlide:st.conf, confLabel:(st.conf/100).toFixed(2), onConf:(e)=>this.setState({conf:+e.target.value}),
+      smoothSlide:st.smooth, smoothLabel:(st.smooth/100).toFixed(2), onSmooth:(e)=>{ const v=+e.target.value; this.setState({smooth:v}); if(this._engine)this._engine.setSmooth(v/100); },
+      thr1Style:this.seg(st.throttle===1), thr2Style:this.seg(st.throttle===2), thr3Style:this.seg(st.throttle===3),
+      thr1:()=>this.setState({throttle:1}), thr2:()=>this.setState({throttle:2}), thr3:()=>this.setState({throttle:3}),
+      thrNote: st.throttle===1?'Detect every frame — most accurate, heaviest.':(st.throttle===2?'Detect every 2nd frame, interpolate between. ~1.7× faster.':'Detect every 3rd frame. Fastest; soft on fast motion.'),
+      // viewport labels
+      feedLabel: st.source==='live'? (st.camState==='live'? (st.trackerReady?'● LIVE · TRACKING':'● LIVE'):'SEGMENTED') :'VIDEO',
+      previewLabel: st.charInfo ? ('PERSPECTIVE · '+(st.charLoadingName||'rig').replace(/\.(fbx|glb|gltf)$/i,'')) : 'PERSPECTIVE',
+      rigName: st.step>=3?'humanoid.fbx':'live skeleton',
+      mirrorChipStyle:this.chip(st.mirror), toggleMirror:()=>this.setState(s=>({mirror:!s.mirror})),
+      meshChipStyle:this.chip(st.layers.mesh), skelChipStyle:this.chip(st.layers.skel),
+      toggleMesh:()=>this.setState(s=>{ const m=!s.layers.mesh; if(this._engine)this._engine.setLayers(m,s.layers.skel); return {layers:{...s.layers,mesh:m}}; }),
+      toggleSkel:()=>this.setState(s=>{ const k=!s.layers.skel; if(this._engine)this._engine.setLayers(s.layers.mesh,k); return {layers:{...s.layers,skel:k}}; }),
+      glDisplay: (st.charInfo? 'block':'none'),
+      // transport
+      recording: st.recording, playing: st.playing,
+      recBtnStyle: st.recording
+        ? 'display:inline-flex;align-items:center;gap:8px;height:38px;padding:0 16px;border-radius:7px;font-size:12px;font-weight:600;background:var(--danger);border:1px solid var(--danger);color:#fff;cursor:pointer;'
+        : 'display:inline-flex;align-items:center;gap:8px;height:38px;padding:0 16px;border-radius:7px;font-size:12px;font-weight:600;background:var(--panel-2);border:1px solid var(--danger);color:#e88;cursor:pointer;',
+      recBtnLabel: st.recording?'■ Stop':'● Record',
+      toggleRec:()=>{ const r=!st.recording; this.setState({recording:r, playing:r?true:st.playing}); this.toast(r?'Recording — capturing take_04…':'Take captured · 312 frames'); },
+      playIcon: st.playing?'❚❚':'▶', togglePlay:()=>this.setState(s=>({playing:!s.playing})),
+      rewind:()=>{ this.state.frame=0; },
+      totalTc:this.tc(st.total), frameCount:st.total,
+      // anatomical
+      clampSwStyle:this.sw(st.clamp), clampKnobStyle:this.knob(st.clamp), toggleClamp:()=>this.setState(s=>({clamp:!s.clamp})),
+      // retarget — characters
+      openAutoRig:()=>this.toast('Opening AutoRig handoff…'),
+      characters: (st.characters||[]).map(ch=>({
+        label:ch.label, ext:ch.ext,
+        rowStyle:'display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:6px;cursor:pointer;font-size:11.5px;border:1px solid '+(st.activeChar===ch.path?'var(--accent)':'var(--seam)')+';background:'+(st.activeChar===ch.path?'var(--accent-dim)':'var(--panel-2)')+';color:'+(st.activeChar===ch.path?'#ffd2bb':'var(--text)')+';',
+        dotStyle:'width:8px;height:8px;border-radius:50%;flex:none;background:'+(st.activeChar===ch.path?'var(--good)':'var(--muted-2)')+';box-shadow:'+(st.activeChar===ch.path?'0 0 7px var(--good)':'none')+';',
+        onClick:()=>this.loadCharacterUrl(ch),
+      })),
+      charLoading: st.charLoading, charLoadingName: st.charLoadingName, charError: st.charError,
+      hasChar: !!st.charInfo,
+      charBones: st.charInfo? st.charInfo.bones : 0,
+      charMeshes: st.charInfo? st.charInfo.meshes : 0,
+      charDriven: st.charInfo? st.charInfo.driven : 0,
+      charRigKind: st.charInfo? (st.charInfo.rigKind === 'autorig' ? 'AutoRig' : 'Mixamo') : '—',
+      charFingers: st.charInfo? (st.charInfo.hasFingers ? 'tracked' : 'no finger bones') : '—',
+      charFingersStyle: 'font-family:IBM Plex Mono,monospace;font-size:11px;color:'+(st.charInfo && st.charInfo.hasFingers ? 'var(--good)' : 'var(--muted)')+';',
+      driveSwStyle:this.sw(st.drive), driveKnobStyle:this.knob(st.drive),
+      face0Style:this.seg(st.facing===0), face180Style:this.seg(st.facing===180), faceLStyle:this.seg(st.facing===90), faceRStyle:this.seg(st.facing===270),
+      setFace0:()=>{ if(this._engine)this._engine.setFacing(0); this.setState({facing:0}); },
+      setFace180:()=>{ if(this._engine)this._engine.setFacing(180); this.setState({facing:180}); },
+      setFaceL:()=>{ if(this._engine)this._engine.setFacing(90); this.setState({facing:90}); },
+      setFaceR:()=>{ if(this._engine)this._engine.setFacing(270); this.setState({facing:270}); },
+      toggleDrive:()=>this.setState(s=>{ const d=!s.drive; if(this._engine)this._engine.setRetarget(d); return {drive:d}; }),
+      dropStyle:'display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:16px 12px;border:1.5px dashed '+(st.dragOver?'var(--accent)':'var(--edge)')+';border-radius:8px;cursor:pointer;background:'+(st.dragOver?'var(--accent-dim)':'transparent')+';',
+      pickFile:()=>{ const i=document.getElementById('mc-fileinput'); if(i)i.click(); },
+      importCharTop:()=>{ this.setState({step:3}); setTimeout(()=>{ const i=document.getElementById('mc-fileinput-top'); if(i)i.click(); },30); },
+      onFile:(e)=>{ const f=e.target.files&&e.target.files[0]; if(f)this.importLocalFile(f); e.target.value=''; },
+      footSwStyle:this.sw(st.foot), footKnobStyle:this.knob(st.foot), toggleFoot:()=>this.setState(s=>{ const f=!s.foot; if(this._engine)this._engine.setFootLock(f); return {foot:f}; }),
+      lenSwStyle:this.sw(st.len), lenKnobStyle:this.knob(st.len), toggleLen:()=>this.setState(s=>({len:!s.len})),
+      goExport:()=>{ this.setState({step:4}); this.toast('Motion baked onto humanoid.fbx'); },
+      // export
+      fbxSegStyle:this.seg(st.fmt==='fbx'), glbSegStyle:this.seg(st.fmt==='gltf'), bvhSegStyle:this.seg(st.fmt==='bvh'),
+      pickFbx:()=>this.setState({fmt:'fbx'}), pickGlb:()=>this.setState({fmt:'gltf'}), pickBvh:()=>this.setState({fmt:'bvh'}),
+      fmtNote, fmtUpper: st.fmt.toUpperCase(),
+      meshExpSwStyle:this.sw(st.expMesh), meshExpKnobStyle:this.knob(st.expMesh), toggleMeshExp:()=>this.setState(s=>({expMesh:!s.expMesh})),
+      rootSwStyle:this.sw(st.root), rootKnobStyle:this.knob(st.root), toggleRoot:()=>this.setState(s=>({root:!s.root})),
+      fps24Style:this.seg(st.expFps===24), fps30Style:this.seg(st.expFps===30), fps60Style:this.seg(st.expFps===60),
+      setFps24:()=>this.setState({expFps:24}), setFps30:()=>this.setState({expFps:30}), setFps60:()=>this.setState({expFps:60}),
+      estSize: st.expMesh? (st.fmt==='bvh'?'0.3 MB':'2.4 MB') : (st.fmt==='bvh'?'0.3 MB':'0.6 MB'),
+      doExport:()=>this.toast('Exporting take_04.'+(st.fmt==='gltf'?'glb':st.fmt)+' · '+st.total+' frames @ '+st.expFps+'fps'),
+    };
+  }
+}
+</script>
+</body>
+</html>

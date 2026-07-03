@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Spline+Sans+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="theme.js"></script>
+<style>
+  html{scroll-behavior:smooth;}
+  html,body{margin:0;padding:0;background:#141312;}
+  *{box-sizing:border-box;}
+  #hb ::-webkit-scrollbar{width:10px;height:10px;}
+  #hb ::-webkit-scrollbar-track{background:var(--gutter);}
+  #hb ::-webkit-scrollbar-thumb{background:var(--panel-3);border:2px solid var(--gutter);border-radius:6px;}
+  #hb section[id]{scroll-margin-top:22px;}
+  #hb a{color:inherit;}
+</style>
+</helmet>
+
+<div id="hb" style="display:flex;align-items:flex-start;min-height:100vh;width:100%;background:var(--bg);color:var(--text);font-family:var(--font-ui);font-size:14px;line-height:1.65;-webkit-font-smoothing:antialiased;">
+
+  <!-- SIDEBAR -->
+  <aside style="position:sticky;top:0;height:100vh;width:250px;flex:none;background:var(--panel);border-right:1px solid var(--seam);overflow-y:auto;padding:20px 14px 40px;">
+    <div style="display:flex;align-items:center;gap:9px;padding:0 6px 16px;">
+      <div style="width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--accent),#c44209);color:#fff;font-weight:700;font-size:15px;">⚗</div>
+      <div>
+        <div style="font-weight:700;letter-spacing:.05em;font-size:13px;">POLYPOTION</div>
+        <div style="font-family:var(--font-mono);font-size:9px;color:var(--muted);letter-spacing:.12em;">HANDBOOK</div>
+      </div>
+    </div>
+    <sc-for list="{{ nav }}" as="n" hint-placeholder-count="13">
+      <a href="{{ n.href }}" style="{{ n.style }}">
+        <span style="{{ n.dot }}"></span>
+        <span style="flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ n.label }}</span>
+      </a>
+    </sc-for>
+    <div style="margin-top:22px;padding:10px 8px;font-size:11px;line-height:1.6;color:var(--muted);border-top:1px solid var(--seam);">Everything here runs on your own machine. Nothing is uploaded.</div>
+  </aside>
+
+  <!-- MAIN -->
+  <main id="doc-main" style="flex:1;min-width:0;max-width:860px;padding:40px 56px 120px;">
+
+    <header style="margin-bottom:8px;">
+      <div style="font-family:var(--font-mono);font-size:11px;letter-spacing:.14em;color:var(--accent);margin-bottom:10px;">3D CHARACTER PIPELINE · LOCAL</div>
+      <h1 style="font-size:34px;font-weight:700;letter-spacing:-.01em;margin:0 0 14px;">PolyPotion Handbook</h1>
+      <p style="font-size:16px;color:var(--text2);margin:0;max-width:620px;">A plain-language tour of every tool in PolyPotion — what it's for, the buttons that matter, and a few tricks once you're comfortable. Skim the sidebar, jump to whatever you're using.</p>
+    </header>
+
+    <!-- OVERVIEW -->
+    <section id="overview" data-doc style="padding:30px 0 8px;">
+      <h2 style="font-size:21px;font-weight:700;margin:0 0 12px;">What this is</h2>
+      <p style="color:var(--text2);margin:0 0 14px;">PolyPotion is a set of small tools that share one job: take a 3D character from a raw mesh all the way to something rigged, posed, cleaned up and ready to use. Each tool does one thing well and hands off to the next. You move between them from the dock on the left.</p>
+      <p style="color:var(--text2);margin:0 0 14px;">Most tools open any <b style="color:var(--text);">.glb</b>, <b style="color:var(--text);">.fbx</b> or <b style="color:var(--text);">.obj</b> — drag a file onto the window, click <b>Import</b>, or open one from the Library. A typical run looks like this:</p>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:12.5px;color:var(--text2);margin-bottom:6px;">
+        <sc-for list="{{ flow }}" as="f" hint-placeholder-count="6">
+          <span style="display:inline-flex;align-items:center;gap:8px;"><span style="padding:5px 11px;border-radius:6px;background:var(--panel2);border:1px solid var(--edge);font-weight:600;color:var(--text);">{{ f.label }}</span><span style="color:var(--muted);">{{ f.arrow }}</span></span>
+        </sc-for>
+      </div>
+      <p style="color:var(--muted);font-size:12.5px;margin:10px 0 0;">You don't have to follow it in order — jump in wherever your model already is.</p>
+    </section>
+
+    <!-- GETTING AROUND -->
+    <section id="basics" data-doc style="padding:30px 0 8px;border-top:1px solid var(--seam);margin-top:24px;">
+      <h2 style="font-size:21px;font-weight:700;margin:0 0 12px;">Getting around</h2>
+      <p style="color:var(--text2);margin:0 0 16px;">A few things work the same everywhere, so they're worth learning once.</p>
+      <div style="display:flex;flex-direction:column;">
+        <sc-for list="{{ basics }}" as="b" hint-placeholder-count="6">
+          <div style="display:flex;gap:14px;padding:10px 0;border-bottom:1px solid var(--seam);">
+            <span style="flex:none;width:150px;font-weight:600;color:var(--text);">{{ b.k }}</span>
+            <span style="flex:1;color:var(--text2);">{{ b.v }}</span>
+          </div>
+        </sc-for>
+      </div>
+    </section>
+
+    <!-- TOOLS -->
+    <sc-for list="{{ tools }}" as="t" hint-placeholder-count="10">
+      <section id="{{ t.id }}" data-doc style="padding:34px 0 8px;border-top:1px solid var(--seam);margin-top:24px;">
+
+        <div style="display:flex;align-items:center;gap:13px;margin-bottom:16px;">
+          <div style="width:40px;height:40px;border-radius:9px;flex:none;display:flex;align-items:center;justify-content:center;font-size:20px;background:{{ t.glyphBg }};color:{{ t.color }};border:1px solid {{ t.glyphBorder }};">{{ t.glyph }}</div>
+          <div>
+            <h2 style="font-size:22px;font-weight:700;margin:0;">{{ t.name }}</h2>
+            <div style="font-family:var(--font-mono);font-size:10.5px;letter-spacing:.1em;color:var(--muted);margin-top:2px;">{{ t.tag }}</div>
+          </div>
+        </div>
+
+        <p style="font-size:15.5px;color:var(--text);margin:0 0 18px;">{{ t.what }}</p>
+
+        <!-- image placeholder -->
+        <div style="height:200px;border-radius:10px;border:1px solid var(--edge);background-image:repeating-linear-gradient(135deg,var(--panel),var(--panel) 11px,var(--panel) 11px,var(--panel) 22px);display:flex;align-items:center;justify-content:center;margin-bottom:22px;">
+          <span style="font-family:var(--font-mono);font-size:11px;color:var(--muted);background:rgba(20,20,20,.7);padding:5px 11px;border-radius:5px;border:1px solid var(--seam);">screenshot · {{ t.shot }}</span>
+        </div>
+
+        <h4 style="font-size:11px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);margin:0 0 9px;">Basics</h4>
+        <ol style="margin:0 0 20px;padding-left:20px;color:var(--text2);">
+          <sc-for list="{{ t.basics }}" as="step" hint-placeholder-count="3">
+            <li style="margin-bottom:6px;padding-left:4px;">{{ step }}</li>
+          </sc-for>
+        </ol>
+
+        <h4 style="font-size:11px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);margin:0 0 4px;">{{ t.ctrlLabel }}</h4>
+        <div style="display:flex;flex-direction:column;margin-bottom:20px;">
+          <sc-for list="{{ t.params }}" as="p" hint-placeholder-count="4">
+            <div style="display:flex;gap:14px;padding:9px 0;border-bottom:1px solid var(--seam);">
+              <span style="flex:none;width:140px;font-weight:600;color:var(--text);font-size:13.5px;">{{ p.k }}</span>
+              <span style="flex:1;color:var(--text2);font-size:13.5px;">{{ p.v }}</span>
+            </div>
+          </sc-for>
+        </div>
+
+        <div style="display:flex;gap:11px;padding:13px 15px;border-radius:9px;background:{{ t.tipBg }};border:1px solid {{ t.glyphBorder }};">
+          <span style="flex:none;color:{{ t.color }};">✦</span>
+          <div style="font-size:13.5px;color:var(--text2);line-height:1.6;">
+            <sc-for list="{{ t.advanced }}" as="a" hint-placeholder-count="2">
+              <div style="margin-bottom:5px;">{{ a }}</div>
+            </sc-for>
+          </div>
+        </div>
+      </section>
+    </sc-for>
+
+    <!-- SHORTCUTS -->
+    <section id="shortcuts" data-doc style="padding:34px 0 8px;border-top:1px solid var(--seam);margin-top:24px;">
+      <h2 style="font-size:21px;font-weight:700;margin:0 0 12px;">Tips &amp; shortcuts</h2>
+      <p style="color:var(--text2);margin:0 0 16px;">Small things that save time once the layout is familiar.</p>
+      <div style="display:flex;flex-direction:column;">
+        <sc-for list="{{ shortcuts }}" as="s" hint-placeholder-count="6">
+          <div style="display:flex;gap:14px;align-items:baseline;padding:9px 0;border-bottom:1px solid var(--seam);">
+            <span style="flex:none;width:150px;"><span style="font-family:var(--font-mono);font-size:11.5px;color:#ffd2bb;background:var(--panel2);border:1px solid var(--edge);border-radius:5px;padding:3px 9px;">{{ s.k }}</span></span>
+            <span style="flex:1;color:var(--text2);">{{ s.v }}</span>
+          </div>
+        </sc-for>
+      </div>
+      <p style="color:var(--muted);font-size:12.5px;margin:22px 0 0;">That's the whole of PolyPotion. Replace the striped boxes with real screenshots whenever you like.</p>
+    </section>
+
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { activeId: 'overview' };
+
+  componentDidMount() {
+    this._io = new IntersectionObserver((entries) => {
+      entries.forEach(e => { if (e.isIntersecting) this.setState({ activeId: e.target.id }); });
+    }, { rootMargin: '-8% 0px -82% 0px', threshold: 0 });
+    setTimeout(() => {
+      document.querySelectorAll('#doc-main section[id]').forEach(s => this._io.observe(s));
+    }, 80);
+  }
+  componentWillUnmount() { if (this._io) this._io.disconnect(); }
+
+  tools() {
+    return [
+      {
+        id: 'library', name: 'Library', glyph: '▤', color: 'var(--accent)', tag: 'YOUR SHELF',
+        shot: 'library grid of character cards',
+        what: 'Your shelf of characters and motion clips. Everything you import or make lands here, and every card can fire its model straight into any tool.',
+        basics: [
+          'Click Import (or drop a file on the window) to add a .glb / .fbx / .obj.',
+          'Switch between the Characters and Animations tabs to browse each kind.',
+          'On a card, click a tool button to open that model in that tool.',
+        ],
+        ctrlLabel: 'Controls',
+        params: [
+          { k: 'Import file', v: 'Add a model from your computer.' },
+          { k: 'Card buttons', v: 'Send the asset to Rig, Pose, Sculpt, Edit, Bake, Decimate or MoCap.' },
+          { k: 'session badge', v: 'A rig you made this session.' },
+          { k: 'saved badge', v: 'A rig kept in your browser and restored on reload.' },
+          { k: 'chunked badge', v: 'A large file split into parts for hosting — it reassembles automatically.' },
+        ],
+        advanced: [
+          'Rigs you bake stay in the Library between visits, so you can close the tab and come back to them.',
+        ],
+      },
+      {
+        id: 'rig', name: 'Rig', glyph: '⦿', color: 'var(--accent)', tag: 'SKELETON + SKIN',
+        shot: 'joint markers placed over a character in three views',
+        what: 'Turns a bare mesh into something you can pose. You place joint markers over the body, and it builds a skeleton and binds the mesh to it.',
+        basics: [
+          'Open a character, then drag the joint dots onto shoulders, elbows, hips, knees and so on.',
+          'Place them in Front, Side and Top so the depth is right, not just the front.',
+          'Hit Compute Skeleton + Skin to build the bones and weight the mesh.',
+        ],
+        ctrlLabel: 'Controls',
+        params: [
+          { k: 'Joint markers', v: 'Draggable dots you line up with the real joints.' },
+          { k: 'Front / Side / Top', v: 'Place joints from each angle so they sit inside the body.' },
+          { k: 'Compute Skeleton + Skin', v: 'Builds the rig and binds the mesh to it.' },
+          { k: 'Send rig to MoCap', v: 'Bakes the rigged character and hands it to MoCap.' },
+        ],
+        advanced: [
+          'Careful placement pays off — joints sitting slightly inside the limb bend much more naturally.',
+          'The handoff saves a rigged copy to your Library so other tools can use it too.',
+        ],
+      },
+      {
+        id: 'mocap', name: 'MoCap', glyph: '⛷', color: '#e0975a', tag: 'CAPTURE → RETARGET',
+        shot: 'webcam feed with pose tracking next to a character',
+        what: 'Records body motion — from your webcam or a video — and puts it onto a rigged character.',
+        basics: [
+          'Pick a Source: live Webcam, or Import a video file.',
+          'Capture watches the performer and tracks their pose.',
+          'Retarget onto a character, then Export the motion.',
+        ],
+        ctrlLabel: 'The four steps',
+        params: [
+          { k: 'Source', v: 'Webcam (live) or an imported video clip.' },
+          { k: 'Capture', v: 'Tracks the performer\u2019s pose frame by frame.' },
+          { k: 'Retarget', v: 'Choose the character and check the bone map.' },
+          { k: 'Export', v: 'Save the finished motion.' },
+        ],
+        advanced: [
+          'If the automatic bone match looks off, fix it in the bone-map list before exporting.',
+          'Good lighting and the whole body in frame make tracking far steadier.',
+        ],
+      },
+      {
+        id: 'motion', name: 'Motion', glyph: '⌗', color: '#5cc0cc', tag: 'EDIT · LAYER · MERGE',
+        shot: 'timeline with clips stacked on lanes',
+        what: 'Edits and combines animation clips. Drop them on a timeline, layer them together, trim takes and fix details like hands.',
+        basics: [
+          'Drag clips from the library onto the timeline lanes.',
+          'Layer and merge them into one motion.',
+          'Trim a take down to the part you want.',
+        ],
+        ctrlLabel: 'Controls',
+        params: [
+          { k: 'Clip library', v: 'Your animation clips, ready to drop in.' },
+          { k: 'Timeline', v: 'Lanes you stack and blend clips on.' },
+          { k: 'Trim', v: 'Cut a clip down to the useful range.' },
+          { k: 'Pose a hand / Hold over a span', v: 'Fix a hand, or freeze a pose across a range of frames.' },
+        ],
+        advanced: [
+          'Layering lets you keep the legs from one clip and the arms from another.',
+        ],
+      },
+      {
+        id: 'edit', name: 'Edit', glyph: '✎', color: '#e0975a', tag: 'SEPARATE · CUT · SIMULATE',
+        shot: 'a model exploded into its separate pieces',
+        what: 'Breaks a model into pieces and puts it back together. Separate parts, paint a region off, slice with a plane, or fuse everything into one clean skin.',
+        basics: [
+          'In Select, click a piece to grab it — then move, separate or delete it.',
+          'Use Paint or Cut to peel a new piece off along the surface.',
+          'Move freed pieces around, then Merge or Remesh to weld things back.',
+        ],
+        ctrlLabel: 'Modes',
+        params: [
+          { k: 'Select', v: 'Pick whole pieces; move, separate, merge, delete.' },
+          { k: 'Paint', v: 'Drag to paint triangles along the surface, then split or delete them.' },
+          { k: 'Cut', v: 'Drop a plane on a piece and slice it in two.' },
+          { k: 'Move', v: 'Drag a freed piece through space, then merge it back.' },
+          { k: 'Remesh', v: 'Voxel-fuse everything into one clean, watertight skin.' },
+          { k: 'Cloth', v: 'Turn a separated piece into live, falling cloth.' },
+          { k: 'Explode / X-ray', v: 'Spread the pieces apart / see through them.' },
+        ],
+        advanced: [
+          'The brush grows along connected edges, so it follows fingers, sleeves and panels instead of cutting straight across.',
+          'Cut a sleeve off, simulate it as cloth, or remesh a few rough pieces into one solid.',
+        ],
+      },
+      {
+        id: 'sculpt', name: 'Sculpt', glyph: '✺', color: '#5cc0cc', tag: 'DRAW · GRAB · SMOOTH',
+        shot: 'a brush pushing a region of the surface',
+        what: 'Pushes the actual surface around with brushes. Pull out a muscle, smooth a lumpy scan, sharpen a crease — it edits the real geometry.',
+        basics: [
+          'Pick a brush, set Radius and Strength, and drag on the surface.',
+          'Hold Shift to smooth, Alt to carve inward; use [ and ] to resize the brush.',
+          'Press Ctrl/Cmd-Z to undo a stroke.',
+        ],
+        ctrlLabel: 'Brushes & sliders',
+        params: [
+          { k: 'Draw', v: 'Push or pull the surface along its normals.' },
+          { k: 'Inflate', v: 'Puff the surface outward evenly.' },
+          { k: 'Smooth', v: 'Relax bumps toward the neighbour average.' },
+          { k: 'Grab', v: 'Drag a whole soft region through space.' },
+          { k: 'Pinch', v: 'Pull verts together to sharpen ridges and seams.' },
+          { k: 'Flatten', v: 'Push the surface onto a flat plane.' },
+          { k: 'Mask', v: 'Paint a protected area that brushes skip.' },
+          { k: 'Radius / Strength', v: 'Brush size, and how hard it pushes.' },
+          { k: 'Symmetry / Invert', v: 'Mirror strokes across the body / carve in.' },
+        ],
+        advanced: [
+          'Low-poly imports sculpt blocky — run Smooth Subdivide ×4 first to give yourself surface to work with.',
+          'Mask the parts you want to protect before doing big strokes nearby.',
+        ],
+      },
+      {
+        id: 'pose', name: 'Pose', glyph: '⟁', color: '#e0975a', tag: 'IK · FK · MIRROR',
+        shot: 'character with coloured joint handles',
+        what: 'Bends a rigged character by hand. Drag the handles on the joints to set a pose — wrists and ankles pull the whole limb along with them.',
+        basics: [
+          'Open a rigged character — handles appear on every joint.',
+          'Drag an orange wrist or ankle handle and the limb reaches to follow it.',
+          'Drag a blue handle to rotate just that joint.',
+        ],
+        ctrlLabel: 'Controls',
+        params: [
+          { k: 'Orange handles (IK)', v: 'Drag a wrist or ankle; the limb bends to reach.' },
+          { k: 'Blue handles (FK)', v: 'Drag to rotate that one joint directly.' },
+          { k: 'Pose presets', v: 'Snap the skeleton to a starting pose.' },
+          { k: 'Mirror / Symmetry', v: 'Copy one side to the other / mirror as you drag.' },
+          { k: 'Bind pose', v: 'Reset back to the neutral rig.' },
+        ],
+        advanced: [
+          'Turn on Symmetry to pose both arms at once, then finish one side and hit Mirror to copy it across.',
+        ],
+      },
+      {
+        id: 'physics', name: 'Physics', glyph: '≈', color: '#5cc0cc', tag: 'SOFT-BODY · CLOTH · WASM',
+        shot: 'a cloth draping over a sphere in wind',
+        what: 'Makes things move. Turn a character into a jiggling soft body, or drop a cloth and blow wind through it — a real solver running on your machine.',
+        basics: [
+          'Load a character to make it a soft body, or use a preset to drop a cloth.',
+          'Press Space to play or pause the simulation.',
+          'Tweak Material, Wind and Pins until it moves the way you want.',
+        ],
+        ctrlLabel: 'Controls',
+        params: [
+          { k: 'Material', v: 'How soft, stiff or bouncy it is.' },
+          { k: 'Wind', v: 'Strength of the breeze blowing through it.' },
+          { k: 'Pins', v: 'Points held in place — pin the top so cloth hangs.' },
+          { k: 'Space / F', v: 'Play-pause / flick it for a quick wobble.' },
+        ],
+        advanced: [
+          'Pin the top edge of a cloth and raise Wind for a flag; lower the Material stiffness for jiggly flesh.',
+        ],
+      },
+      {
+        id: 'decimate', name: 'Decimate', glyph: '◇', color: '#8e94ff', tag: 'QUADRIC LOD',
+        shot: 'wireframe before and after reduction',
+        what: 'Drops the triangle count while keeping the shape. Set how much to keep and it collapses edges where the surface is flat, so the silhouette survives.',
+        basics: [
+          'Set a Target percentage, or tap a preset.',
+          'Hit Decimate and watch the count fall.',
+          'Toggle Wireframe to see the new topology; Restore original anytime.',
+        ],
+        ctrlLabel: 'Controls',
+        params: [
+          { k: 'Target', v: 'How many triangles to keep, as a percentage.' },
+          { k: 'Presets', v: 'Quick jumps to 25 / 50 / 10 / 5%.' },
+          { k: 'Wireframe', v: 'Show the triangles so you can judge the reduction.' },
+          { k: 'Restore original', v: 'Snap back to the full-resolution mesh.' },
+          { k: 'Download .obj', v: 'Export the lightened mesh.' },
+        ],
+        advanced: [
+          'It always re-runs from the original, so the slider is predictable — there\u2019s no slow build-up of damage.',
+          'Great for making a light game-ready version of a heavy scan.',
+        ],
+      },
+      {
+        id: 'bake', name: 'Bake', glyph: '☀', color: 'var(--accent)', tag: 'RAYTRACED AO · CAVITY',
+        shot: 'flat scan vs the same scan with baked shadows',
+        what: 'Lights a flat scan. It fires rays against the mesh to work out soft contact shadows and dark creases, then paints them into the surface so a raw scan instantly reads as rendered.',
+        basics: [
+          'Open a model and set Strength, Radius and Cavity.',
+          'Pick a Quality and press Bake occlusion — a progress bar shows it tracing.',
+          'Switch between Shaded and Occlusion to compare; export when happy.',
+        ],
+        ctrlLabel: 'Controls',
+        params: [
+          { k: 'Strength', v: 'How dark the shadows get.' },
+          { k: 'Radius', v: 'How far shadows reach — small bites into creases, large gives soft contact shadows.' },
+          { k: 'Cavity', v: 'Extra darkening down in folds and seams.' },
+          { k: 'Quality', v: 'Rays per vertex (Draft \u2192 Ultra): more is smoother but slower.' },
+          { k: 'Shaded / Occlusion / Off', v: 'Lit with the bake / the raw bake / no bake.' },
+        ],
+        advanced: [
+          'The result lives in the mesh\u2019s vertex colours, so it travels with the model — no UVs needed.',
+          'Detail follows the mesh, so low-poly areas read soft. Remesh first for an even bake; on heavy scans use Draft or Good and watch the bar.',
+        ],
+      },
+    ];
+  }
+
+  navStyle(active) {
+    return 'display:flex;align-items:center;gap:10px;padding:7px 8px;border-radius:6px;font-size:12.5px;font-weight:' + (active ? '600' : '500')
+      + ';text-decoration:none;margin-bottom:1px;color:' + (active ? '#e8e8e8' : '#9a9a9a')
+      + ';background:' + (active ? 'rgba(255,79,0,0.14)' : 'transparent') + ';';
+  }
+  navDot(color, active) {
+    return 'width:7px;height:7px;border-radius:2px;flex:none;background:' + (active ? color : 'var(--edge)') + ';';
+  }
+
+  hexA(hex, a) {
+    const h = hex.replace('#', '');
+    const r = parseInt(h.slice(0, 2), 16), g = parseInt(h.slice(2, 4), 16), b = parseInt(h.slice(4, 6), 16);
+    return 'rgba(' + r + ',' + g + ',' + b + ',' + a + ')';
+  }
+
+  renderVals() {
+    const active = this.state.activeId;
+    const tools = this.tools().map(t => Object.assign({}, t, {
+      glyphBg: this.hexA(t.color, 0.14),
+      glyphBorder: this.hexA(t.color, 0.35),
+      tipBg: this.hexA(t.color, 0.07),
+    }));
+
+    const navItems = [
+      { id: 'overview', label: 'What this is', color: 'var(--accent)' },
+      { id: 'basics', label: 'Getting around', color: 'var(--accent)' },
+      ...this.tools().map(t => ({ id: t.id, label: t.name, color: t.color })),
+      { id: 'shortcuts', label: 'Tips & shortcuts', color: 'var(--accent)' },
+    ];
+    const nav = navItems.map(n => ({
+      href: '#' + n.id, label: n.label,
+      style: this.navStyle(active === n.id),
+      dot: this.navDot(n.color, active === n.id),
+    }));
+
+    const flow = [
+      { label: 'Import', arrow: '→' }, { label: 'Rig', arrow: '→' },
+      { label: 'MoCap / Pose', arrow: '→' }, { label: 'Edit / Sculpt / Bake', arrow: '→' },
+      { label: 'Decimate', arrow: '→' }, { label: 'Export', arrow: '' },
+    ];
+
+    const basics = [
+      { k: 'Move the camera', v: 'Drag to orbit, scroll to zoom. The Persp / Front / Side / Top / Back buttons snap to a clean angle.' },
+      { k: 'Load a model', v: 'Drop a .glb / .fbx / .obj on the window, click Import, or open one from the Library.' },
+      { k: 'The dock', v: 'The icons down the left switch tools. Number keys 0–8 do the same.' },
+      { k: 'Command palette', v: 'Press ⌘K (Ctrl K) to jump to any tool or run a command by name.' },
+      { k: 'Current mesh', v: 'The chip in the top-right always shows which model you\u2019re looking at.' },
+      { k: 'It\u2019s all local', v: 'Every tool runs in your browser. Nothing leaves your machine.' },
+    ];
+
+    const shortcuts = [
+      { k: '⌘K / Ctrl K', v: 'Open the command palette.' },
+      { k: '0 – 8', v: 'Jump straight to a tool (0 is the Library).' },
+      { k: 'Space', v: 'In Physics, play or pause the simulation.' },
+      { k: 'F', v: 'In Physics, flick the model for a quick wobble.' },
+      { k: 'Ctrl/Cmd-Z', v: 'In Sculpt, undo your last stroke.' },
+      { k: 'T', v: 'Cycle the colour theme.' },
+      { k: '?', v: 'Show the keyboard shortcuts overlay.' },
+    ];
+
+    return { nav, tools, flow, basics, shortcuts };
+  }
+}
+</script>
+</body>
+</html>

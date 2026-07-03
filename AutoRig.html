@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AUTORIG — In-Browser Auto-Rigger</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Spline+Sans+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="theme.js"></script>
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+<style>
+:root{
+   
+    
+    
+    
+     
+   
+   
+    
+  
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;height:100%;overflow:hidden;background:var(--gutter);
+  color:var(--text);font-family:var(--font-ui);font-size:13px;
+  -webkit-font-smoothing:antialiased;user-select:none;}
+.mono{font-family:var(--font-mono);}
+button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:none;}
+::-webkit-scrollbar{width:10px;height:10px;}
+::-webkit-scrollbar-track{background:var(--gutter);}
+::-webkit-scrollbar-thumb{background:var(--panel-3);border:2px solid var(--gutter);border-radius:6px;}
+::-webkit-scrollbar-thumb:hover{background:var(--edge);}
+
+/* ---------- app shell ---------- */
+#app{display:flex;flex-direction:column;height:100%;}
+.topbar{height:46px;flex:none;display:flex;align-items:center;gap:18px;
+  padding:0 14px;background:var(--header);
+  border-bottom:1px solid var(--seam);box-shadow:0 1px 0 rgba(255,255,255,0.03) inset;}
+.brand{display:flex;align-items:center;gap:9px;}
+.brand .glyph{width:26px;height:26px;border-radius:5px;display:flex;align-items:center;justify-content:center;
+  background:var(--accent);color:#fff;font-weight:700;font-size:15px;
+  box-shadow:0 1px 2px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.08) inset;}
+.brand .name{font-weight:700;letter-spacing:0.04em;font-size:14px;}
+.brand .ver{font-size:10px;color:var(--muted);letter-spacing:0.1em;margin-top:1px;}
+
+.stepper{display:flex;align-items:center;gap:2px;}
+.step{display:flex;align-items:center;gap:7px;padding:5px 11px;border-radius:5px;
+  color:var(--muted);font-size:11.5px;font-weight:500;letter-spacing:0.02em;transition:.18s;}
+.step .num{width:17px;height:17px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-size:10px;font-weight:700;background:var(--panel);color:var(--muted);border:1px solid var(--panel-3);flex:none;}
+.step.active{background:var(--accent-dim);color:#ffd2bb;}
+.step.active .num{background:var(--accent);color:#fff;border-color:var(--accent);}
+.step.done{color:var(--good);}
+.step.done .num{background:var(--good);color:#10240f;border-color:var(--good);}
+.step-sep{width:14px;height:1px;background:var(--panel-3);}
+
+.topbar .spacer{flex:1;}
+.filechip{display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--text-2);
+  padding:4px 10px;background:var(--panel);border:1px solid var(--seam);border-radius:5px;max-width:230px;}
+.filechip .dot{width:7px;height:7px;border-radius:50%;background:var(--muted-2);flex:none;}
+.filechip.loaded .dot{background:var(--good);}
+.filechip .nm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+
+/* ---------- body ---------- */
+.body{flex:1;display:flex;min-height:0;}
+.rail{width:288px;flex:none;background:var(--panel);border-right:1px solid var(--seam);
+  display:flex;flex-direction:column;min-height:0;overflow:hidden;}
+.rail.right{border-right:none;border-left:1px solid var(--seam);}
+.rail-scroll{overflow-y:auto;flex:1;min-height:0;}
+.viewport-wrap{flex:1;position:relative;min-width:0;background:var(--gutter);}
+#glcanvas{display:block;width:100%;height:100%;}
+.vp-labels{position:absolute;inset:0;pointer-events:none;}
+.vp-label{position:absolute;font-family:var(--font-mono);font-size:10px;letter-spacing:0.12em;
+  color:var(--text-2);background:rgba(15,15,15,0.55);padding:3px 7px;border-radius:3px;
+  border:1px solid rgba(255,255,255,0.05);}
+.vp-flip{pointer-events:auto;cursor:pointer;color:var(--text);}
+.vp-flip:hover{border-color:var(--accent);color:#ffd2bb;}
+.vp-flip .sub{color:var(--muted);font-weight:400;}
+.vp-max{pointer-events:auto;cursor:pointer;color:var(--text-2);font-size:12px;line-height:1;padding:3px 6px;}
+.vp-max:hover{border-color:var(--active);color:var(--active);}
+.vp-solo{position:absolute;top:10px;right:12px;display:flex;align-items:center;gap:10px;
+  background:rgba(15,15,15,0.82);border:1px solid var(--edge);border-radius:7px;padding:5px 7px 5px 12px;z-index:9;}
+.vp-solo .vp-solo-name{font-family:var(--font-mono);font-size:11px;letter-spacing:0.14em;color:var(--active);}
+.vp-solo button{font-family:var(--font-ui);font-size:11px;font-weight:600;color:var(--text);
+  background:var(--panel-3);border:1px solid var(--edge);border-radius:5px;padding:5px 10px;cursor:pointer;}
+.vp-solo button:hover{background:var(--row-hover);border-color:var(--accent);}
+.vp-hint{position:absolute;bottom:10px;left:50%;transform:translateX(-50%);
+  font-size:11px;color:var(--text-2);background:rgba(15,15,15,0.78);border:1px solid var(--edge);
+  padding:6px 13px;border-radius:6px;pointer-events:none;display:flex;gap:14px;align-items:center;}
+.vp-hint kbd{font-family:var(--font-mono);font-size:10px;background:var(--panel);border:1px solid var(--edge);
+  border-bottom-width:2px;border-radius:3px;padding:1px 5px;color:var(--text);}
+
+/* viewport display toolbar (opacity + isolate zone) */
+.vp-tools{position:absolute;top:10px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:11px;
+  background:rgba(15,15,15,0.86);border:1px solid var(--edge);border-radius:8px;padding:6px 11px;z-index:6;}
+.vp-tools .vt-lbl{font-family:var(--font-mono);font-size:9.5px;letter-spacing:0.12em;color:var(--muted);}
+.vp-tools input[type=range]{width:98px;height:4px;-webkit-appearance:none;appearance:none;background:var(--panel);border-radius:2px;outline:none;}
+.vp-tools input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;height:13px;border-radius:50%;background:var(--accent);border:2px solid var(--seam);cursor:pointer;}
+.vp-tools .vt-val{font-family:var(--font-mono);font-size:10.5px;color:var(--text-2);width:36px;text-align:right;}
+.vp-tsep{width:1px;height:18px;background:var(--edge);}
+.vt-btn{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:600;color:var(--text-2);
+  background:var(--panel-3);border:1px solid var(--edge);border-radius:5px;padding:5px 10px;cursor:pointer;}
+.vt-btn:hover{border-color:var(--accent);color:#ffd2bb;}
+.vt-btn.on{background:var(--active-dim);border-color:var(--active);color:var(--active);}
+.zone-marquee{position:absolute;border:1.5px dashed var(--active);background:rgba(255,79,0,0.12);
+  pointer-events:none;z-index:7;border-radius:2px;box-shadow:0 0 0 1px rgba(0,0,0,0.4);}
+
+/* section headers */
+.sec{border-bottom:1px solid var(--seam);}
+.sec-head{display:flex;align-items:center;gap:8px;padding:9px 12px;cursor:pointer;
+  background:var(--header);border-bottom:1px solid var(--seam);}
+.sec-head .tw{font-size:9px;color:var(--muted);transition:transform .15s;}
+.sec.collapsed .tw{transform:rotate(-90deg);}
+.sec-head .t{font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-2);}
+.sec-head .badge{margin-left:auto;font-family:var(--font-mono);font-size:10px;color:var(--muted);
+  background:var(--panel);padding:1px 7px;border-radius:9px;border:1px solid var(--seam);}
+.sec-body{padding:10px 12px;}
+.sec.collapsed .sec-body{display:none;}
+/* left rail must scroll so all joint groups (incl. fingers) are reachable */
+#leftRail{overflow:hidden;}
+#secJoints{display:flex;flex-direction:column;min-height:0;flex:1;}
+#secJoints > .sec-body{overflow-y:auto;min-height:0;flex:1;}
+
+/* group block */
+.grp{margin-bottom:9px;border:1px solid var(--seam);border-radius:6px;overflow:hidden;background:var(--panel-2);}
+.grp-head{display:flex;align-items:center;gap:9px;padding:7px 9px;background:var(--panel-3);}
+.grp-head .gname{font-size:11.5px;font-weight:600;flex:1;}
+.grp-head .gcount{font-family:var(--font-mono);font-size:10px;color:var(--muted);}
+.grp.off{opacity:0.45;}
+.grp.off .joint-row{pointer-events:none;}
+.joint-list{padding:3px;}
+.joint-row{display:flex;align-items:center;gap:8px;padding:5px 7px;border-radius:4px;cursor:pointer;}
+.joint-row:hover{background:var(--row-hover);}
+.joint-row.sel{background:var(--active-dim);box-shadow:inset 0 0 0 1px rgba(255,79,0,0.5);}
+.joint-row .jd{width:8px;height:8px;border-radius:50%;flex:none;background:var(--muted);}
+.joint-row.sel .jd{background:var(--active);}
+.joint-row.placed .jd{background:var(--good);}
+.joint-row .jl{font-size:11.5px;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.joint-row .js{font-family:var(--font-mono);font-size:9px;color:var(--muted-2);}
+
+/* toggle switch */
+.sw{width:30px;height:17px;border-radius:9px;background:var(--panel);border:1px solid var(--seam);
+  position:relative;flex:none;cursor:pointer;transition:.18s;}
+.sw::after{content:'';position:absolute;top:1px;left:1px;width:13px;height:13px;border-radius:50%;
+  background:#5a574f;transition:.18s;}
+.sw.on{background:var(--accent-dim);border-color:var(--accent);}
+.sw.on::after{left:14px;background:var(--accent);}
+.sw.locked{opacity:0.4;pointer-events:none;}
+
+/* controls */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;
+  padding:8px 12px;border-radius:6px;font-size:12px;font-weight:600;letter-spacing:0.01em;
+  background:var(--panel-3);border:1px solid var(--edge);color:var(--text);transition:.15s;width:100%;}
+.btn:hover{background:#404040;border-color:var(--edge-2);}
+.btn:active{transform:translateY(1px);}
+.btn:disabled{opacity:0.4;pointer-events:none;}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;
+  box-shadow:0 1px 0 rgba(255,255,255,0.12) inset, 0 2px 8px rgba(255,79,0,0.25);}
+.btn.primary:hover{background:#5a8ee0;}
+.btn.go{background:var(--active);border-color:var(--active);color:var(--on-accent);
+  box-shadow:0 1px 0 rgba(255,255,255,0.18) inset, 0 2px 12px rgba(255,79,0,0.35);}
+.btn.go:hover{background:#ee9646;}
+.btn.ghost{background:transparent;border-color:var(--edge);}
+.btn.sm{padding:5px 9px;font-size:11px;width:auto;}
+.btn-row{display:flex;gap:7px;}
+.btn-row .btn{width:auto;flex:1;}
+
+.field{margin-bottom:11px;}
+.field label{display:block;font-size:10.5px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;
+  color:var(--muted);margin-bottom:6px;}
+.seg{display:flex;background:var(--panel);border:1px solid var(--seam);border-radius:6px;padding:2px;gap:2px;}
+.seg button{flex:1;padding:6px 8px;border-radius:4px;font-size:11px;font-weight:600;color:var(--text-2);transition:.13s;}
+.seg button.on{background:var(--panel-3);color:var(--text);box-shadow:0 1px 2px rgba(0,0,0,0.3);}
+.seg.accent button.on{background:var(--accent);color:#fff;}
+
+.slider-row{display:flex;align-items:center;gap:10px;}
+input[type=range]{-webkit-appearance:none;flex:1;height:4px;border-radius:2px;background:var(--panel);}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;
+  background:var(--accent);cursor:pointer;border:2px solid var(--panel);}
+.slider-val{font-family:var(--font-mono);font-size:11px;color:var(--text-2);width:38px;text-align:right;}
+
+.note{font-size:11px;line-height:1.5;color:var(--text-2);}
+.kv{display:flex;justify-content:space-between;font-size:11px;padding:3px 0;}
+.kv .k{color:var(--muted);}
+.kv .v{font-family:var(--font-mono);color:var(--text);}
+
+.callout{display:flex;gap:9px;padding:9px 11px;border-radius:7px;font-size:11px;line-height:1.5;
+  background:rgba(255,79,0,0.09);border:1px solid rgba(255,79,0,0.28);color:#ffd2bb;margin-bottom:11px;}
+.callout .ic{flex:none;font-size:13px;}
+.callout.info{background:var(--accent-dim);border-color:rgba(255,79,0,0.3);color:#ffd2bb;}
+
+/* dropzone (initial) */
+.dz-stage{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:var(--gutter);z-index:30;}
+.dz{width:min(560px,80%);padding:48px 40px;border:2px dashed var(--edge);border-radius:14px;text-align:center;
+  background:var(--panel);transition:.22s;}
+.dz.drag{border-color:var(--accent);background:var(--panel-2);box-shadow:0 0 0 4px var(--accent-dim);}
+.dz .ic{width:62px;height:62px;margin:0 auto 18px;color:var(--accent);}
+.dz h2{margin:0 0 8px;font-size:20px;font-weight:700;letter-spacing:0.01em;}
+.dz p{margin:0 0 22px;color:var(--text-2);font-size:13px;line-height:1.6;}
+.dz .formats{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-top:20px;}
+.tag{font-family:var(--font-mono);font-size:10px;padding:3px 8px;border-radius:4px;
+  background:var(--panel);border:1px solid var(--seam);color:var(--muted);letter-spacing:0.05em;}
+
+/* loading overlay */
+.loading{position:absolute;inset:0;z-index:60;display:none;flex-direction:column;align-items:center;justify-content:center;
+  background:rgba(12,12,12,0.86);backdrop-filter:blur(3px);}
+.loading.show{display:flex;}
+.loading .ring{width:64px;height:64px;border-radius:50%;border:4px solid var(--panel-3);border-top-color:var(--active);
+  animation:spin 0.9s linear infinite;margin-bottom:22px;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.loading h3{margin:0 0 6px;font-size:16px;font-weight:700;letter-spacing:0.02em;}
+.loading .phase{font-family:var(--font-mono);font-size:12px;color:var(--active);margin-bottom:18px;
+  min-height:16px;letter-spacing:0.03em;}
+.loading .barwrap{width:340px;max-width:70vw;height:6px;border-radius:3px;background:var(--panel);overflow:hidden;}
+.loading .bar{height:100%;width:0%;background:var(--active);transition:width .25s;border-radius:3px;}
+.loading .sub{margin-top:14px;font-size:11px;color:var(--muted);max-width:380px;text-align:center;line-height:1.6;}
+.loading .pct{font-family:var(--font-mono);font-size:11px;color:var(--text-2);margin-top:8px;}
+
+/* modal */
+.modal-bg{position:fixed;inset:0;z-index:200;display:none;align-items:center;justify-content:center;
+  background:rgba(0,0,0,0.62);backdrop-filter:blur(4px);}
+.modal-bg.show{display:flex;}
+.modal{width:min(480px,90%);background:var(--panel);border:1px solid var(--edge);border-radius:12px;
+  box-shadow:0 24px 64px rgba(0,0,0,0.6);overflow:hidden;animation:pop .2s cubic-bezier(.2,1,.3,1);}
+@keyframes pop{from{transform:scale(.96);opacity:0;}to{transform:scale(1);opacity:1;}}
+.modal-head{padding:18px 20px 0;display:flex;gap:13px;align-items:flex-start;}
+.modal-head .wic{width:38px;height:38px;border-radius:9px;flex:none;display:flex;align-items:center;justify-content:center;
+  background:var(--active-dim);color:var(--active);font-size:20px;border:1px solid rgba(255,79,0,0.3);}
+.modal-head h3{margin:0 0 3px;font-size:16px;font-weight:700;}
+.modal-head p{margin:0;font-size:12px;color:var(--text-2);}
+.modal-body{padding:14px 20px;font-size:12.5px;line-height:1.65;color:var(--text-2);}
+.modal-body ul{margin:8px 0 0;padding-left:18px;}
+.modal-body li{margin-bottom:5px;}
+.modal-body b{color:var(--text);}
+.modal-foot{padding:14px 20px 18px;display:flex;gap:9px;justify-content:flex-end;border-top:1px solid var(--seam);background:var(--panel-2);}
+.modal-foot .btn{width:auto;}
+
+/* toast */
+#toasts{position:fixed;bottom:16px;right:16px;z-index:300;display:flex;flex-direction:column;gap:8px;}
+.toast{padding:11px 15px;border-radius:7px;font-size:12px;background:var(--panel-3);border:1px solid var(--edge);
+  border-left:3px solid var(--accent);box-shadow:0 8px 24px rgba(0,0,0,0.45);max-width:340px;
+  animation:tin .25s cubic-bezier(.2,1,.3,1);}
+.toast.error{border-left-color:var(--danger);}
+.toast.success{border-left-color:var(--good);}
+.toast.warn{border-left-color:var(--warn);}
+@keyframes tin{from{transform:translateX(120%);opacity:0;}to{transform:translateX(0);opacity:1;}}
+
+.divider{height:1px;background:var(--seam);margin:13px 0;}
+.placed-count{font-family:var(--font-mono);font-size:10px;}
+.hide{display:none!important;}
+</style>
+</head>
+<body>
+<div id="app">
+  <!-- TOP BAR -->
+  <header class="topbar">
+    <div class="brand">
+      <div class="glyph">⊹</div>
+      <div>
+        <div class="name">AUTORIG</div>
+        <div class="ver mono">SKELETON + SKIN · LOCAL</div>
+      </div>
+    </div>
+    <div class="stepper" id="stepper">
+      <div class="step active" data-step="1"><span class="num">1</span>Load</div>
+      <div class="step-sep"></div>
+      <div class="step" data-step="2"><span class="num">2</span>Place joints</div>
+      <div class="step-sep"></div>
+      <div class="step" data-step="3"><span class="num">3</span>Bind</div>
+      <div class="step-sep"></div>
+      <div class="step" data-step="4"><span class="num">4</span>Test &amp; export</div>
+    </div>
+    <div class="spacer"></div>
+    <div class="filechip" id="filechip"><span class="dot"></span><span class="nm">No mesh loaded</span></div>
+  </header>
+
+  <div class="body">
+    <!-- LEFT RAIL: joint outliner -->
+    <aside class="rail" id="leftRail">
+      <div class="sec" id="secJoints">
+        <div class="sec-head" data-sec="secJoints">
+          <span class="tw">▼</span><span class="t">Skeleton Joints</span>
+          <span class="badge" id="jointBadge">0 / 0</span>
+        </div>
+        <div class="sec-body" style="padding:9px;">
+          <div class="callout info" style="margin-bottom:9px;">
+            <span class="ic">✦</span>
+            <span>Toggle whole groups off if your mesh lacks them. Click a joint to select, then drag its handle in the <b>Front / Side / Top</b> views to push it inside the mesh.</span>
+          </div>
+          <div class="field" style="margin-bottom:10px;">
+            <label>Skeleton preset</label>
+            <select id="presetSel">
+              <option value="mixamo">Mixamo / Rokoko — humanoid (no fingers)</option>
+              <option value="mixamo_fingers">Mixamo / Rokoko — humanoid + fingers</option>
+              <option value="full">Full — body + fingers + toes</option>
+              <option value="basic">Basic — body only (no hands/feet/head)</option>
+            </select>
+            <div class="note" style="margin-top:5px;">Bone names follow Mixamo/Rokoko conventions so external clips retarget by name.</div>
+          </div>
+          <div class="field" style="margin-bottom:10px;">
+            <label>Focus — isolate what you're rigging</label>
+            <div class="seg" id="focusSeg">
+              <button data-focus="all" class="on">All</button>
+              <button data-focus="body">Body</button>
+              <button data-focus="hands">Hands</button>
+              <button data-focus="face">Face</button>
+            </div>
+            <div class="note" style="margin-top:6px;" id="focusNote">Showing every joint. Switch to <b>Hands</b> or <b>Face</b> to hide and lock the rest while you place fiddly joints.</div>
+          </div>
+          <div id="groupList"></div>
+          <div class="btn-row" style="margin-top:4px;">
+            <button class="btn ghost sm" id="btnAutoFit">⤢ Fit to mesh</button>
+            <button class="btn ghost sm" id="btnReset">↺ Reset poses</button>
+          </div><div class="btn-row" style="margin-top:7px;"><button class="btn ghost sm" id="btnMirrorRL" title="Place the RIGHT half carefully, then stamp it onto the left">⇋ Mirror R → L</button><button class="btn ghost sm" id="btnMirrorLR" title="Place the LEFT half carefully, then stamp it onto the right">⇋ Mirror L → R</button></div><button class="btn ghost sm" id="btnCenterAll" style="width:100%;margin-top:7px;" title="Snap every joint to the middle of the mesh volume around it (keeps its height)">◎ Auto-center all joints in mesh</button><a href="RigGuide.html" target="_blank" class="note" style="display:block;margin-top:10px;color:#ffd2bb;text-decoration:none;border:1px solid rgba(255,79,0,0.28);background:rgba(255,79,0,0.09);border-radius:7px;padding:8px 11px;">✦ Not sure where joints go? <b>Open the placement guide →</b></a>
+        </div>
+      </div>
+    </aside>
+
+    <!-- VIEWPORT -->
+    <div class="viewport-wrap" id="viewportWrap">
+      <canvas id="glcanvas"></canvas>
+      <div class="vp-labels" id="vpLabels">
+        <div class="vp-label" style="left:10px;top:10px;">PERSPECTIVE</div>
+        <button class="vp-label vp-flip" id="vpFront" style="right:10px;top:10px;">⇆ FRONT <span class="sub">· drag X/Y</span></button>
+        <button class="vp-label vp-flip" id="vpSide" style="left:10px;bottom:10px;">⇆ SIDE R <span class="sub">· drag Z/Y</span></button>
+        <button class="vp-label vp-flip" id="vpTop" style="right:10px;bottom:10px;">⇆ TOP <span class="sub">· drag X/Z</span></button>
+        <button class="vp-label vp-max" data-view="persp" style="left:10px;top:36px;" title="Maximize perspective">⛶</button>
+        <button class="vp-label vp-max" data-view="front" style="right:10px;top:36px;" title="Maximize front">⛶</button>
+        <button class="vp-label vp-max" data-view="side" style="left:10px;bottom:36px;" title="Maximize side">⛶</button>
+        <button class="vp-label vp-max" data-view="top" style="right:10px;bottom:36px;" title="Maximize top">⛶</button>
+      </div>
+      <div class="vp-solo" id="vpSolo" style="display:none;">
+        <span class="vp-solo-name" id="vpSoloName">TOP</span>
+        <button id="vpRestore">⊟ Restore quad</button>
+      </div>
+      <div class="vp-hint" id="vpHint">
+        <span><kbd>drag joint</kbd> move in ortho view</span>
+        <span><kbd>scroll</kbd> zoom</span>
+        <span><kbd>dbl-click</kbd> maximize view</span>
+        <span><kbd>▣ isolate zone</kbd> drag a box to zoom + hide the rest</span>
+      </div>
+
+      <!-- display toolbar: mesh opacity + isolate-zone -->
+      <div class="vp-tools hide" id="vpTools">
+        <span class="vt-lbl">MESH</span>
+        <input type="range" id="meshOpacity" min="8" max="100" value="42" title="Mesh opacity — crank up to 100% for solid hands">
+        <span class="vt-val" id="meshOpacityVal">42%</span>
+        <div class="vp-tsep"></div>
+        <button class="vt-btn" id="btnZone" title="Drag a box across Front / Side / Top to isolate that region and zoom in">▣ Isolate zone</button>
+        <button class="vt-btn hide" id="btnZoneClear">✕ Clear</button>
+      </div>
+      <div class="zone-marquee hide" id="zoneMarquee"></div>
+
+      <!-- initial dropzone -->
+      <div class="dz-stage" id="dzStage">
+        <label class="dz" id="dz">
+          <input type="file" id="fileInput" accept=".fbx,.glb,.gltf,.obj" style="display:none;">
+          <svg class="ic" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M32 40V12M32 12l-10 10M32 12l10 10"/>
+            <path d="M12 42v8a2 2 0 002 2h36a2 2 0 002-2v-8"/>
+          </svg>
+          <h2>Drop a character mesh to rig</h2>
+          <p>FBX, GLB/GLTF or OBJ. Everything runs locally in your browser —<br>nothing is uploaded. A humanoid joint template loads automatically.</p>
+          <button class="btn primary" style="width:auto;margin:0 auto;padding:10px 22px;" id="dzBtn">Choose file…</button>
+          <div class="formats">
+            <span class="tag">FBX</span><span class="tag">GLB</span><span class="tag">GLTF</span><span class="tag">OBJ</span>
+            <span class="tag" id="sampleTag" style="cursor:pointer;border-color:var(--accent);color:#ffd2bb;">↳ load sample humanoid</span>
+          </div>
+        </label>
+      </div>
+
+      <!-- loading overlay -->
+      <div class="loading" id="loading">
+        <div class="ring"></div>
+        <h3 id="loadTitle">Working…</h3>
+        <div class="phase mono" id="loadPhase">initialising</div>
+        <div class="barwrap"><div class="bar" id="loadBar"></div></div>
+        <div class="pct" id="loadPct">0%</div>
+        <div class="sub" id="loadSub"></div>
+      </div>
+    </div>
+
+    <!-- RIGHT RAIL: properties / bind / export -->
+    <aside class="rail right" id="rightRail">
+      <div class="rail-scroll">
+        <!-- selection -->
+        <div class="sec" id="secSel">
+          <div class="sec-head" data-sec="secSel"><span class="tw">▼</span><span class="t">Selection</span></div>
+          <div class="sec-body">
+            <div id="selEmpty" class="note">No joint selected. Click a joint in the outliner or a handle in the viewport.</div>
+            <div id="selInfo" class="hide">
+              <div class="kv"><span class="k">Joint</span><span class="v" id="selName">—</span></div>
+              <div class="kv"><span class="k">Parent</span><span class="v" id="selParent">—</span></div>
+              <div class="kv"><span class="k">Position</span><span class="v" id="selPos">—</span></div>
+              <div class="divider"></div>
+              <label style="font-size:10.5px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);">Depth nudge (Z)</label>
+              <div class="slider-row" style="margin-top:7px;">
+                <input type="range" id="depthSlide" min="-100" max="100" value="0">
+                <span class="slider-val mono" id="depthVal">0</span>
+              </div>
+              <button class="btn ghost sm" id="btnMirror" style="width:100%;margin-top:10px;">⇋ Mirror position to opposite side</button><button class="btn ghost sm" id="btnCenterSel" style="width:100%;margin-top:7px;" title="Snap this joint to the middle of the surrounding volume — inside the arm, finger, leg…">◎ Auto-center inside mesh</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- bind -->
+        <div class="sec" id="secBind">
+          <div class="sec-head" data-sec="secBind"><span class="tw">▼</span><span class="t">Auto-Rig &amp; Bind</span></div>
+          <div class="sec-body">
+            <div class="field">
+              <label>Skinning quality</label>
+              <div class="seg accent" id="qualitySeg">
+                <button data-q="fast" class="on">⚡ Fast preview</button>
+                <button data-q="hq">◆ High quality</button>
+              </div>
+              <div class="note" style="margin-top:8px;" id="qualityNote">
+                <b style="color:var(--text)">Fast</b> — bone-distance weights. Instant, good for blocking out the rig.
+              </div>
+            </div>
+            <div class="field" id="hqOpts" style="display:none;">
+              <label>Volume resolution</label>
+              <div class="slider-row">
+                <input type="range" id="resSlide" min="32" max="96" step="8" value="56">
+                <span class="slider-val mono" id="resVal">56³</span>
+              </div>
+              <div class="note" style="margin-top:6px;">Higher = cleaner joints, much slower. 56 is a good balance.</div>
+            </div>
+            <div class="field">
+              <label>Falloff smoothness</label>
+              <div class="slider-row">
+                <input type="range" id="falloffSlide" min="0" max="100" value="55">
+                <span class="slider-val mono" id="falloffVal">0.55</span>
+              </div>
+            </div>
+            <button class="btn go" id="btnBind" disabled>⟐ Compute Skeleton + Skin</button>
+            <button class="btn ghost sm" id="btnEditJoints" style="width:100%;margin-top:8px;display:none;">← Back to placing joints</button>
+            <div class="note" style="margin-top:9px;text-align:center;color:var(--muted);" id="bindStat"></div>
+            <div class="callout" style="margin-top:9px;" id="bleedTip">
+              <span class="ic">◆</span><span>Skin tearing / pulling across limbs in a pose? That's weight bleed — switch to <b>High quality</b> (geodesic) and re-bind. It routes weights <i>through</i> the body so an arm never grabs the torso or the other leg.</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- animate -->
+        <div class="sec collapsed" id="secAnim">
+          <div class="sec-head" data-sec="secAnim"><span class="tw">▼</span><span class="t">Test Animation</span></div>
+          <div class="sec-body">
+            <div class="field">
+              <label>Built-in clip</label>
+              <div class="seg" id="clipSeg">
+                <button data-clip="tpose" class="on">T-pose</button>
+                <button data-clip="wave">Wave</button>
+                <button data-clip="idle">Idle</button>
+                <button data-clip="walk">Walk</button>
+              </div>
+            </div>
+            <div class="field">
+              <label>Facing <span style="color:var(--muted-2);text-transform:none;letter-spacing:0;">— which way the mesh looks</span></label>
+              <div class="seg" id="faceSeg">
+                <button data-yaw="0" class="on">Front</button>
+                <button data-yaw="180">Back</button>
+                <button data-yaw="90">Left</button>
+                <button data-yaw="270">Right</button>
+              </div>
+            </div>
+            <div class="field">
+              <label>Rest pose fix <span style="color:var(--muted-2);text-transform:none;letter-spacing:0;">— auto-corrects A-pose meshes to the clip's T-pose</span></label>
+              <div class="seg" id="compSeg">
+                <button data-comp="1" class="on">Auto</button>
+                <button data-comp="0">Off</button>
+              </div>
+            </div>
+            <div class="field">
+              <label>Mirror <span style="color:var(--muted-2);text-transform:none;letter-spacing:0;">— swap left ↔ right if the clip plays on the wrong side</span></label>
+              <div class="seg" id="mirrorSeg">
+                <button data-mir="0" class="on">Normal</button>
+                <button data-mir="1">Mirrored L↔R</button>
+              </div>
+            </div>
+            <div class="field">
+              <label>Root motion <span style="color:var(--muted-2);text-transform:none;letter-spacing:0;">— hips travel through space</span></label>
+              <div class="seg" id="rootSeg">
+                <button data-rm="1" class="on">Travel</button>
+                <button data-rm="0">In place</button>
+              </div>
+            </div>
+            <div class="field">
+              <label>Loaded animations <span style="color:var(--muted-2);text-transform:none;letter-spacing:0;">— FBX clips</span></label>
+              <div id="extClips" style="display:flex;flex-direction:column;gap:6px;"></div>
+              <div id="animReport"></div>
+              <button class="btn ghost sm" id="btnImportAnim" style="width:100%;margin-top:6px;">＋ Import animation FBX…</button>
+              <input type="file" id="animInput" accept=".fbx" style="display:none;">
+            </div>
+            <div class="btn-row">
+              <button class="btn" id="btnPlay">▶ Play</button>
+              <button class="btn ghost" id="btnRebindPose">↺ Rest</button>
+            </div>
+            <div class="callout info" style="margin-top:11px;">
+              <span class="ic">✦</span><span>External clips are retargeted by bone name (Mixamo-style — <b>mixamorig</b> prefixes, numbered variants and plain names all work). Fingers, hips travel and facing are handled; if a clip faces the wrong way, switch <b>Facing</b>; if it plays on the wrong side, flip <b>Mirror</b>. Drop more FBX clips into <b>data/animations/</b> to list them here.</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- export -->
+        <div class="sec collapsed" id="secExport">
+          <div class="sec-head" data-sec="secExport"><span class="tw">▼</span><span class="t">Export Rigged Mesh</span></div>
+          <div class="sec-body">
+            <div class="btn-row" style="margin-bottom:8px;">
+              <button class="btn primary" id="btnExpFbx">⬇ FBX</button>
+              <button class="btn primary" id="btnExpGlb">⬇ GLB</button>
+            </div>
+            <button class="btn ghost sm" id="btnExpGltf" style="width:100%;">⬇ glTF (text)</button>
+            <div class="note" style="margin-top:9px;">Exports the original mesh with the new skeleton and skin weights baked in — ready for Blender, Unity or Unreal.</div>
+          </div>
+        </div>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<!-- HEAVY-CALC WARNING MODAL -->
+<div class="modal-bg" id="hqModal">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="wic">⚠</div>
+      <div>
+        <h3>High-quality bind is heavy</h3>
+        <p>Voxel-geodesic skinning — the good stuff</p>
+      </div>
+    </div>
+    <div class="modal-body">
+      This computes weights by flooding a solid voxel volume of your mesh and measuring geodesic distance from every bone. It's what keeps joints from bleeding through to the other limb — but it's <b>real number-crunching</b>:
+      <ul>
+        <li>Runs in a background thread so the tab stays alive, but expect <b>several seconds to a minute</b> depending on resolution and mesh size.</li>
+        <li>Your fans may spin up. A progress bar will show each phase.</li>
+        <li>If it's too slow, drop the volume resolution or use <b>Fast preview</b> instead.</li>
+      </ul>
+    </div>
+    <div class="modal-foot">
+      <button class="btn ghost" id="hqCancel" style="width:auto;">Use Fast instead</button>
+      <button class="btn go" id="hqProceed" style="width:auto;">Run it →</button>
+    </div>
+  </div>
+</div>
+
+<div id="toasts"></div>
+
+<script src="studio3D_scripts/template.js"></script>
+<script src="studio3D_scripts/presets.js"></script>
+<script src="studio3D_scripts/fbx-export.js"></script>
+<script type="module" src="studio3D_scripts/engine.js"></script>
+<script type="module" src="studio3D_scripts/app.js"></script>
+</body>
+</html>

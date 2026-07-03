@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Spline+Sans+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="theme.js"></script>
+<script src="suggested_actions.js"></script>
+<style>
+  html,body{margin:0;padding:0;height:100%;background:var(--gutter);}
+  *{box-sizing:border-box;}
+  @keyframes uv-spin{to{transform:rotate(360deg);}}
+  @keyframes uv-tin{from{transform:translateX(120%);opacity:0;}to{transform:translateX(0);opacity:1;}}
+  #uv-root ::-webkit-scrollbar{width:10px;height:10px;}
+  #uv-root ::-webkit-scrollbar-track{background:var(--gutter);}
+  #uv-root ::-webkit-scrollbar-thumb{background:var(--panel-3);border:2px solid var(--gutter);border-radius:6px;}
+  #uv-root input[type=range]{-webkit-appearance:none;height:4px;border-radius:2px;background:var(--panel);outline:none;}
+  #uv-root input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:#4fb6a2;cursor:pointer;border:2px solid var(--panel);}
+</style>
+</helmet>
+
+<div id="uv-root" style="display:flex;flex-direction:column;height:100vh;width:100%;overflow:hidden;background:var(--gutter);color:var(--text);font-family:var(--font-ui);font-size:13px;-webkit-font-smoothing:antialiased;user-select:none;">
+
+  <!-- TOP BAR -->
+  <header style="height:46px;flex:none;display:flex;align-items:center;gap:14px;padding:0 14px;background:var(--header);border-bottom:1px solid var(--seam);">
+    <div style="display:flex;align-items:center;gap:9px;">
+      <div style="width:26px;height:26px;border-radius:5px;display:flex;align-items:center;justify-content:center;background:#4fb6a2;color:#0d1f1c;font-weight:700;font-size:15px;box-shadow:0 1px 2px rgba(0,0,0,.4),0 0 0 1px rgba(255,255,255,.08) inset;">⬚</div>
+      <div>
+        <div style="font-weight:700;letter-spacing:.04em;font-size:14px;">UV UNWRAP</div>
+        <div style="font-family:var(--font-mono);font-size:10px;color:var(--muted);letter-spacing:.1em;margin-top:1px;">LSCM · WASM SOLVE · LOCAL</div>
+      </div>
+    </div>
+    <div style="flex:1;"></div>
+    <button style="display:inline-flex;align-items:center;gap:7px;height:30px;padding:0 13px;border-radius:6px;font-size:11.5px;font-weight:600;background:var(--panel3);border:1px solid var(--edge);color:var(--text);cursor:pointer;" onClick="{{ pickFile }}">⬇ Import model…</button>
+    <div style="display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--text2);padding:4px 10px;background:var(--panel);border:1px solid var(--seam);border-radius:5px;">
+      <span style="width:7px;height:7px;border-radius:50%;flex:none;background:{{ dotColor }};"></span>
+      <span style="font-family:var(--font-mono);">{{ meshName }}</span>
+    </div>
+  </header>
+
+  <!-- HEAVY-MESH GATE -->
+  <sc-if value="{{ showGate }}" hint-placeholder-val="{{ false }}">
+    <div style="flex:none;display:flex;align-items:center;gap:13px;padding:11px 16px;background:rgba(224,169,59,.14);border-bottom:1px solid var(--seam);">
+      <span style="width:26px;height:26px;flex:none;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:15px;background:rgba(224,169,59,.3);color:var(--warn);">⚠</span>
+      <div style="flex:1;min-width:0;">
+        <div style="font-weight:700;font-size:12.5px;color:var(--text);">{{ gateTitle }}</div>
+        <div style="font-size:11.5px;color:var(--text2);line-height:1.5;margin-top:1px;">{{ gateText }}</div>
+      </div>
+      <button style="flex:none;padding:8px 15px;border-radius:7px;font-size:12px;font-weight:700;background:var(--accent);border:1px solid var(--accent);color:var(--onAccent);cursor:pointer;" onClick="{{ doDecimate }}">◇ Decimate first</button>
+      <button style="flex:none;padding:8px 12px;border-radius:7px;font-size:11.5px;font-weight:600;background:transparent;border:1px solid var(--edge);color:var(--text2);cursor:pointer;" onClick="{{ dismissGate }}">Unwrap anyway</button>
+    </div>
+  </sc-if>
+
+  <div style="flex:1;display:flex;min-height:0;">
+
+    <!-- 3D VIEWPORT -->
+    <div style="flex:1.35;position:relative;min-width:0;min-height:0;background:var(--viewport);">
+      <canvas id="uv-gl" style="position:absolute;inset:0;width:100%;height:100%;display:block;"></canvas>
+
+      <sc-if value="{{ noModel }}" hint-placeholder-val="{{ true }}">
+        <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;background:rgba(18,20,24,.86);">
+          <div style="width:70px;height:70px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:30px;background:rgba(79,182,162,.14);border:1px solid rgba(79,182,162,.35);color:#4fb6a2;">⬚</div>
+          <div style="text-align:center;">
+            <div style="font-size:16px;font-weight:700;margin-bottom:6px;">Give a mesh real UVs</div>
+            <div style="font-size:12.5px;color:var(--text2);max-width:440px;line-height:1.6;">Drop a <b>.glb / .fbx / .obj</b> here, or open one from the Library. Auto-detect seams, refine them by hand, then unwrap every chart with a conformal (LSCM) solve — packed, previewed and exportable.</div>
+          </div>
+          <div style="display:flex;gap:10px;">
+            <button style="padding:10px 18px;border-radius:7px;font-size:12.5px;font-weight:600;background:#4fb6a2;border:1px solid #4fb6a2;color:#0d1f1c;cursor:pointer;box-shadow:0 2px 12px rgba(79,182,162,.35);" onClick="{{ pickFile }}">⬇ Import file…</button>
+            <button style="padding:10px 18px;border-radius:7px;font-size:12.5px;font-weight:600;background:var(--panel3);border:1px solid var(--edge);color:var(--text);cursor:pointer;" onClick="{{ loadSample }}">Load sample figure</button>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ loading }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:rgba(18,20,24,.8);color:var(--muted);z-index:5;">
+          <div style="width:38px;height:38px;border:3px solid var(--panel-3);border-top-color:#4fb6a2;border-radius:50%;animation:uv-spin .9s linear infinite;"></div>
+          <div style="font-size:12px;font-family:var(--font-mono);">{{ loadingMsg }}</div>
+        </div>
+      </sc-if>
+
+      <div style="position:absolute;left:50%;top:10px;transform:translateX(-50%);display:flex;align-items:center;gap:4px;background:rgba(15,15,15,.86);border:1px solid var(--edge);border-radius:8px;padding:5px 7px;">
+        <sc-for list="{{ views }}" as="v" hint-placeholder-count="5">
+          <button style="font-size:11px;font-weight:600;padding:5px 9px;border-radius:5px;cursor:pointer;background:transparent;border:none;color:var(--text2);" onClick="{{ v.onClick }}">{{ v.label }}</button>
+        </sc-for>
+      </div>
+
+      <div style="position:absolute;right:10px;top:10px;display:flex;gap:6px;">
+        <button style="{{ orbitChipStyle }}" onClick="{{ setOrbit }}">✥ Orbit</button>
+        <button style="{{ paintChipStyle }}" onClick="{{ setPaint }}">✂ Paint seams</button>
+      </div>
+
+      <div style="position:absolute;left:10px;top:10px;font-family:var(--font-mono);font-size:10px;letter-spacing:.1em;color:var(--text2);background:rgba(15,15,15,.6);padding:3px 7px;border-radius:3px;pointer-events:none;">{{ modeBadge }}</div>
+      <div style="position:absolute;right:10px;bottom:12px;font-size:10.5px;color:var(--text2);background:rgba(15,15,15,.78);border:1px solid var(--edge);padding:6px 11px;border-radius:6px;pointer-events:none;max-width:250px;">{{ hintText }}</div>
+    </div>
+
+    <!-- 2D UV VIEW -->
+    <div style="flex:1;position:relative;min-width:220px;min-height:0;border-left:1px solid var(--seam);background:var(--viewport);">
+      <canvas id="uv-2d" style="position:absolute;inset:0;width:100%;height:100%;display:block;cursor:grab;"></canvas>
+      <div style="position:absolute;left:10px;top:10px;font-family:var(--font-mono);font-size:10px;letter-spacing:.1em;color:var(--text2);background:rgba(15,15,15,.6);padding:3px 7px;border-radius:3px;pointer-events:none;">UV LAYOUT · 0–1</div>
+      <button style="position:absolute;right:10px;top:10px;font-family:var(--font-mono);font-size:10px;padding:4px 9px;border-radius:5px;cursor:pointer;background:rgba(15,15,15,.6);border:1px solid var(--edge);color:var(--text2);" onClick="{{ reset2D }}">⌂ fit</button>
+    </div>
+
+    <!-- RIGHT : CONTROLS -->
+    <aside style="width:292px;flex:none;background:var(--panel);border-left:1px solid var(--seam);display:flex;flex-direction:column;min-height:0;overflow-y:auto;">
+
+      <!-- mesh stats -->
+      <div style="border-bottom:1px solid var(--seam);">
+        <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--header);border-bottom:1px solid var(--seam);">
+          <span style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);">Mesh</span>
+          <span style="margin-left:auto;font-family:var(--font-mono);font-size:10px;color:#4fb6a2;background:var(--panel);padding:1px 7px;border-radius:9px;border:1px solid var(--seam);">{{ chartsBadge }}</span>
+        </div>
+        <div style="padding:11px 12px;display:flex;flex-direction:column;gap:5px;">
+          <div style="display:flex;justify-content:space-between;font-size:11.5px;"><span style="color:var(--muted);">Triangles</span><span style="font-family:var(--font-mono);color:var(--text);">{{ trisLabel }}</span></div>
+          <div style="display:flex;justify-content:space-between;font-size:11.5px;"><span style="color:var(--muted);">Seam edges</span><span style="font-family:var(--font-mono);color:var(--text);">{{ seamsLabel }}</span></div>
+          <div style="display:flex;justify-content:space-between;font-size:11.5px;"><span style="color:var(--muted);">UV coverage</span><span style="font-family:var(--font-mono);color:var(--text);">{{ coverageLabel }}</span></div>
+          <div style="display:flex;justify-content:space-between;font-size:11.5px;"><span style="color:var(--muted);">Avg distortion</span><span style="font-family:var(--font-mono);color:{{ stretchColor }};">{{ stretchLabel }}</span></div>
+        </div>
+      </div>
+
+      <!-- seams -->
+      <div style="border-bottom:1px solid var(--seam);">
+        <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--header);border-bottom:1px solid var(--seam);"><span style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);">1 · Seams</span></div>
+        <div style="padding:11px 12px;">
+          <label style="display:flex;justify-content:space-between;font-size:10.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:7px;"><span>Seam angle</span><span style="font-family:var(--font-mono);color:var(--text);">{{ angleLabel }}</span></label>
+          <input type="range" min="15" max="88" value="{{ angleSlide }}" onInput="{{ onAngle }}" style="width:100%;margin-bottom:4px;">
+          <div style="font-size:10.5px;color:var(--text2);margin-bottom:11px;">lower = more cuts, flatter charts, less stretch</div>
+          <button style="display:flex;align-items:center;justify-content:center;gap:7px;padding:9px;border-radius:6px;font-size:12px;font-weight:600;background:var(--panel3);border:1px solid var(--edge);color:var(--text);width:100%;cursor:pointer;" onClick="{{ doAutoSeams }}">⚡ Auto-detect seams</button>
+          <div style="display:flex;gap:6px;margin-top:7px;">
+            <button style="flex:1;font-size:11px;font-weight:600;padding:7px;border-radius:5px;cursor:pointer;border:1px solid var(--edge);background:transparent;color:var(--text2);" onClick="{{ doClearPainted }}">✕ painted</button>
+            <button style="flex:1;font-size:11px;font-weight:600;padding:7px;border-radius:5px;cursor:pointer;border:1px solid var(--edge);background:transparent;color:var(--text2);" onClick="{{ doClearAll }}">✕ all seams</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- unwrap -->
+      <div style="border-bottom:1px solid var(--seam);">
+        <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--header);border-bottom:1px solid var(--seam);"><span style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);">2 · Unwrap</span></div>
+        <div style="padding:11px 12px;">
+          <button style="display:flex;align-items:center;justify-content:center;gap:7px;padding:10px;border-radius:6px;font-size:12.5px;font-weight:700;background:#4fb6a2;border:1px solid #4fb6a2;color:#0d1f1c;width:100%;cursor:pointer;box-shadow:0 1px 0 rgba(255,255,255,.18) inset,0 2px 12px rgba(79,182,162,.35);" onClick="{{ doUnwrap }}">◱ Unwrap (LSCM)</button>
+          <div style="font-size:10.5px;color:var(--text2);margin-top:8px;line-height:1.55;">Conformal solve per chart, WASM-accelerated. Charts are area-matched and packed into the 0–1 square.</div>
+        </div>
+      </div>
+
+      <!-- display -->
+      <div style="border-bottom:1px solid var(--seam);">
+        <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--header);border-bottom:1px solid var(--seam);"><span style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);">Preview</span></div>
+        <div style="padding:11px 12px;">
+          <div style="display:flex;gap:6px;margin-bottom:11px;">
+            <sc-for list="{{ modes }}" as="m" hint-placeholder-count="3">
+              <button style="{{ m.style }}" onClick="{{ m.onClick }}">{{ m.label }}</button>
+            </sc-for>
+          </div>
+          <label style="display:flex;justify-content:space-between;font-size:10.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:7px;"><span>Checker density</span><span style="font-family:var(--font-mono);color:var(--text);">{{ checkerLabel }}</span></label>
+          <input type="range" min="4" max="64" step="4" value="{{ checkerSlide }}" onInput="{{ onChecker }}" style="width:100%;">
+        </div>
+      </div>
+
+      <!-- export -->
+      <div style="border-bottom:1px solid var(--seam);">
+        <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--header);border-bottom:1px solid var(--seam);"><span style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);">Export</span></div>
+        <div style="padding:11px 12px;display:flex;gap:7px;">
+          <button style="flex:1;display:flex;align-items:center;justify-content:center;gap:7px;padding:9px;border-radius:6px;font-size:12px;font-weight:600;background:var(--panel3);border:1px solid var(--edge);color:var(--text);cursor:pointer;" onClick="{{ doExportOBJ }}">⬇ .obj</button>
+          <button style="flex:1;display:flex;align-items:center;justify-content:center;gap:7px;padding:9px;border-radius:6px;font-size:12px;font-weight:600;background:var(--panel3);border:1px solid var(--edge);color:var(--text);cursor:pointer;" onClick="{{ doExportGLB }}">⬇ .glb</button>
+        </div>
+      </div>
+
+      <div style="padding:12px;">
+        <div style="display:flex;gap:9px;padding:9px 11px;border-radius:7px;font-size:11px;line-height:1.55;background:rgba(79,182,162,.10);border:1px solid rgba(79,182,162,.3);color:#bfe8df;"><span style="flex:none;">✦</span><span>In <b>Paint seams</b> mode, click an edge to cut there — <b>shift-click follows the whole edge loop</b>. Red = stretched, blue = compressed on the distortion view. Heavy mesh? Decimate first, unwrap faster.</span></div>
+      </div>
+    </aside>
+  </div>
+
+  <input type="file" id="uv-file" accept=".glb,.gltf,.fbx,.obj" style="display:none;">
+  <div id="uv-toasts" style="position:fixed;bottom:16px;right:16px;z-index:300;display:flex;flex-direction:column;gap:8px;"></div>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = {
+    meshName: 'no model', loading: false, loadingMsg: '',
+    hasModel: false, hasUVs: false, tris: 0, charts: 0, seams: 0, coverage: 0, stretch: 0,
+    angle: 62, mode: 'checker', paint: false, checkerN: 24, gateDismissed: false,
+  };
+
+  componentDidMount() { this.setupEmbed(); this.boot(); this.setupDrop(); }
+
+  async boot() {
+    try {
+      const canvas = document.getElementById('uv-gl');
+      let mod;
+      try { mod = await import('./uv-engine.js'); }
+      catch (e) { mod = await import('./studio3D_scripts/uv-engine.js'); }
+      const eng = new mod.UVEngine(canvas); this._eng = eng;
+      eng.attach2D(document.getElementById('uv-2d'));
+      eng.onChange = () => this.refresh();
+      eng.onStatus = (msg) => this.setState({ loading: !!msg, loadingMsg: msg || '' });
+      if (this._pending) { const p = this._pending; this._pending = null; p(); }
+    } catch (e) {
+      this.toast('Engine failed: ' + (e && e.message || e));
+      if (this._post) this._post('studio:error', { tool: 'uv', message: String(e && e.message || e) });
+    }
+  }
+
+  refresh() {
+    if (!this._eng) return;
+    const s = this._eng.stats();
+    this.setState({
+      hasModel: this._eng.hasModel(), hasUVs: this._eng.hasUVs(),
+      tris: s.tris, charts: s.charts, seams: s.seams,
+      coverage: s.coverage, stretch: s.stretch,
+      meshName: this._eng.hasModel() ? s.name : 'no model',
+    });
+  }
+
+  async loadVia(fn, label) {
+    if (!this._eng) { this._pending = () => this.loadVia(fn, label); return; }
+    this.setState({ loading: true, loadingMsg: 'Loading ' + (label || 'model') + '…' });
+    try {
+      const r = await fn();
+      this.refresh(); this.setState({ loading: false, gateDismissed: false });
+      this.toast('Loaded ' + r.name + ' — ' + r.tris.toLocaleString() + ' tris. Auto-detect seams, then Unwrap.');
+    } catch (e) {
+      this.setState({ loading: false });
+      this.toast('Load failed: ' + (e && e.message || e));
+      if (this._post) this._post('studio:error', { tool: 'uv', message: String(e && e.message || e) });
+    }
+  }
+
+  async runUnwrap() {
+    const eng = this._eng;
+    if (!eng || !eng.hasModel()) { this.toast('Load a mesh first'); return; }
+    if (!eng.painted.size && !eng.autoSeams.size) {
+      this.setState({ loading: true, loadingMsg: 'No seams yet — auto-detecting…' });
+      eng.runAutoSeams(this.state.angle);
+    }
+    this.setState({ loading: true, loadingMsg: 'Unwrapping…' });
+    try {
+      const r = await eng.unwrap();
+      this.refresh(); this.setState({ loading: false });
+      this.toast('Unwrapped into ' + r.charts + ' chart' + (r.charts > 1 ? 's' : '') + ' — ' + Math.round(r.coverage * 100) + '% coverage');
+    } catch (e) {
+      this.setState({ loading: false });
+      this.toast('Unwrap failed: ' + (e && e.message || e));
+    }
+  }
+
+  doAutoSeams() {
+    const eng = this._eng;
+    if (!eng || !eng.hasModel()) { this.toast('Load a mesh first'); return; }
+    const n = eng.runAutoSeams(this.state.angle);
+    this.refresh();
+    this.toast(n + ' chart' + (n > 1 ? 's' : '') + ' detected at ' + this.state.angle + '° — refine seams or hit Unwrap');
+  }
+
+  async routeToDecimate() {
+    const eng = this._eng;
+    if (!eng || !eng.hasModel()) { this.toast('Load a mesh first'); return; }
+    if (!this._embedded) { this.toast('Open the Decimate tool from the dock, reduce this mesh, then come back to unwrap.'); this.setState({ gateDismissed: true }); return; }
+    this.setState({ loading: true, loadingMsg: 'Handing off to Decimate…' });
+    try {
+      const bin = await eng.exportGLB();
+      const buf = bin instanceof ArrayBuffer ? bin : (bin.buffer ? bin.buffer.slice(bin.byteOffset, bin.byteOffset + bin.byteLength) : bin);
+      this.setState({ loading: false });
+      this._post('studio:routeBuffer', { tool: 'decimate', buffer: buf, name: (eng.stats().name || 'mesh') + '.glb' }, [buf]);
+      this.toast('Sent to Decimate — reduce it, then reopen UV to unwrap');
+    } catch (e) { this.setState({ loading: false }); this.toast('Hand-off failed: ' + (e && e.message || e)); }
+  }
+
+  download(data, name, mime) {
+    const blob = data instanceof Blob ? data : new Blob([data], { type: mime || 'application/octet-stream' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = name;
+    document.body.appendChild(a); a.click();
+    setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+    this.toast('Exported ' + name);
+  }
+
+  setupDrop() {
+    const root = document.getElementById('uv-root'); if (!root) return;
+    root.addEventListener('dragover', e => { e.preventDefault(); });
+    root.addEventListener('drop', e => { e.preventDefault(); const f = e.dataTransfer.files && e.dataTransfer.files[0]; if (f) this.loadVia(() => this._eng.loadFile(f), f.name); });
+    const inp = document.getElementById('uv-file');
+    if (inp) inp.addEventListener('change', e => { const f = e.target.files[0]; if (f) { this.loadVia(() => this._eng.loadFile(f), f.name); e.target.value = ''; } });
+  }
+
+  setupEmbed() {
+    const params = new URLSearchParams(location.search);
+    this._embedded = params.get('embed') === '1' || window.parent !== window;
+    this._post = (type, payload, transfer) => { try { window.parent && window.parent.postMessage(Object.assign({ __studio: true, type }, payload || {}), '*', transfer || []); } catch (e) {} };
+    if (this._embedded) { const hide = () => { const h = document.querySelector('#uv-root > header'); if (h && h.firstElementChild) h.firstElementChild.style.display = 'none'; }; hide(); setTimeout(hide, 60); setTimeout(hide, 300); }
+    window.addEventListener('message', (e) => {
+      const d = e.data; if (!d || !d.__studio) return;
+      if (d.type === 'studio:loadCharUrl') this.loadVia(() => this._eng.loadUrl(d.url, d.ext, { chunked: d.chunked, chunks: d.chunks }), d.label || 'character');
+      else if (d.type === 'studio:loadCharBuffer') this.loadVia(() => this._eng.loadBuffer(d.buffer, d.name, (d.name || '').split('.').pop()), d.name || 'mesh');
+    });
+    setTimeout(() => this._post('studio:ready', { tool: 'uv' }), 0);
+  }
+
+  toast(msg) {
+    const wrap = document.getElementById('uv-toasts'); if (!wrap) return;
+    const el = document.createElement('div');
+    el.style.cssText = 'padding:11px 15px;border-radius:7px;font-size:12px;background:var(--panel-3);border:1px solid var(--edge);border-left:3px solid #4fb6a2;box-shadow:0 8px 24px rgba(0,0,0,.45);max-width:340px;color:var(--text);animation:uv-tin .25s cubic-bezier(.2,1,.3,1);';
+    el.textContent = msg; wrap.appendChild(el);
+    setTimeout(() => { el.style.transition = 'opacity .3s'; el.style.opacity = '0'; setTimeout(() => el.remove(), 300); }, 3200);
+  }
+
+  chip(on) { return 'font-family:IBM Plex Mono,monospace;font-size:10px;padding:5px 10px;border-radius:5px;cursor:pointer;background:rgba(15,15,15,.6);border:1px solid ' + (on ? '#4fb6a2' : 'var(--edge)') + ';color:' + (on ? '#a8ded2' : 'var(--text-2)') + ';'; }
+  modeStyle(on) { return 'flex:1;font-size:11px;font-weight:600;padding:7px;border-radius:5px;cursor:pointer;border:1px solid ' + (on ? '#4fb6a2' : 'var(--edge)') + ';background:' + (on ? 'rgba(79,182,162,0.16)' : 'var(--panel-3)') + ';color:' + (on ? '#a8ded2' : 'var(--text)') + ';'; }
+
+  renderVals() {
+    const st = this.state, eng = this._eng;
+    const SA = window.SuggestedActions;
+    const heavyLimit = SA ? SA.HEAVY_TRIS : 250000;
+    const heavy = st.hasModel && st.tris > heavyLimit;
+    const gate = (heavy && SA) ? SA.suggest({ tris: st.tris, hasUVs: st.hasUVs }).find(s => s.id === 'decimate') : null;
+    const views = ['Persp', 'Front', 'Side', 'Top', 'Back'].map(v => ({ label: v, onClick: () => eng && eng.setView(v.toLowerCase()) }));
+    const modes = [['checker', '▦ Checker'], ['heat', '🔥 Distortion'], ['plain', '○ Plain']].map(([k, label]) => ({
+      label, style: this.modeStyle(st.mode === k),
+      onClick: () => { this.setState({ mode: k }); if (eng) eng.setMode(k); },
+    }));
+    return {
+      meshName: st.meshName, dotColor: st.hasModel ? 'var(--good)' : 'var(--muted)',
+      showGate: heavy && !st.gateDismissed,
+      gateTitle: 'Heavy mesh — ' + (st.tris ? st.tris.toLocaleString() : '0') + ' triangles',
+      gateText: gate ? gate.reason : 'Reduce the triangle count before unwrapping so the solve stays fast.',
+      doDecimate: () => this.routeToDecimate(),
+      dismissGate: () => this.setState({ gateDismissed: true }),
+      noModel: !st.hasModel && !st.loading, loading: st.loading, loadingMsg: st.loadingMsg,
+      modeBadge: !st.hasModel ? 'IMPORT A MESH' : (st.paint ? 'PAINT — click edge · shift-click edge loop' : (st.hasUVs ? 'UNWRAPPED — ' + st.charts + ' charts' : 'SEAMS — auto-detect or paint, then unwrap')),
+      hintText: st.paint ? 'click an edge to toggle a seam · shift-click cuts the whole edge loop · re-run Unwrap after' : 'drag orbits · scroll zooms · Paint seams to cut by hand',
+      pickFile: () => document.getElementById('uv-file').click(),
+      loadSample: () => this.loadVia(() => this._eng.loadUrl('data/characters/Humanoid.fbx', 'fbx'), 'Humanoid'),
+      views, modes,
+      orbitChipStyle: this.chip(!st.paint), paintChipStyle: this.chip(st.paint),
+      setOrbit: () => { this.setState({ paint: false }); if (eng) eng.setPaintMode(false); },
+      setPaint: () => { this.setState({ paint: true }); if (eng) eng.setPaintMode(true); this.toast('Paint mode: click an edge to cut · shift-click follows the loop'); },
+      trisLabel: st.tris ? st.tris.toLocaleString() : '—',
+      seamsLabel: st.seams ? st.seams.toLocaleString() : '—',
+      chartsBadge: st.hasUVs ? (st.charts + ' charts') : '—',
+      coverageLabel: st.hasUVs ? Math.round(st.coverage * 100) + '%' : '—',
+      stretchLabel: st.hasUVs ? ('×' + st.stretch.toFixed(2)) : '—',
+      stretchColor: !st.hasUVs ? 'var(--text)' : (st.stretch < 1.15 ? '#8fd3a0' : (st.stretch < 1.4 ? '#e8c76a' : '#e88a6a')),
+      angleSlide: st.angle, angleLabel: st.angle + '°',
+      onAngle: (e) => this.setState({ angle: +e.target.value }),
+      doAutoSeams: () => this.doAutoSeams(),
+      doClearPainted: () => { if (eng) { eng.clearPainted(); this.refresh(); this.toast('Painted seams cleared'); } },
+      doClearAll: () => { if (eng) { eng.clearAllSeams(); this.refresh(); this.toast('All seams cleared'); } },
+      doUnwrap: () => this.runUnwrap(),
+      checkerSlide: st.checkerN, checkerLabel: st.checkerN + '×' + st.checkerN,
+      onChecker: (e) => { const n = +e.target.value; this.setState({ checkerN: n }); if (eng) eng.setCheckerN(n); },
+      reset2D: () => { if (eng) eng.reset2D(); },
+      doExportOBJ: () => { if (!eng || !eng.hasModel()) { this.toast('Load a mesh first'); return; } this.download(eng.exportOBJ(), (eng.stats().name || 'mesh') + '_uv.obj', 'text/plain'); },
+      doExportGLB: async () => {
+        if (!eng || !eng.hasModel()) { this.toast('Load a mesh first'); return; }
+        try { const bin = await eng.exportGLB(); this.download(new Blob([bin], { type: 'model/gltf-binary' }), (eng.stats().name || 'mesh') + '_uv.glb'); }
+        catch (e) { this.toast('GLB export failed: ' + (e && e.message || e)); }
+      },
+    };
+  }
+}
+
+</script>
+</body>
+</html>

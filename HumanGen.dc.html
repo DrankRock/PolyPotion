@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    *{box-sizing:border-box}
+    html,body{margin:0;height:100%;background:#0e0f13;font-family:'Space Grotesk',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+    @keyframes hgspin{to{transform:rotate(360deg)}}
+    @keyframes hgfade{from{opacity:0}to{opacity:1}}
+  </style>
+</helmet>
+<div style="position:fixed;inset:0;display:flex;background:#0e0f13;color:#e9ecf1;overflow:hidden">
+
+  <!-- VIEWPORT -->
+  <div style="position:relative;flex:1;min-width:0;background:radial-gradient(120% 100% at 50% 20%, #2b303d 0%, #181b22 55%, #0f1116 100%)">
+    <div ref="{{ viewportRef }}" style="position:absolute;inset:0"></div>
+
+    <!-- title -->
+    <div style="position:absolute;top:22px;left:24px;pointer-events:none">
+      <div style="display:flex;align-items:center;gap:9px">
+        <div style="width:9px;height:9px;border-radius:50%;background:#5fe3c0;box-shadow:0 0 10px #5fe3c0"></div>
+        <span style="font:600 13px 'JetBrains Mono';letter-spacing:.22em;text-transform:uppercase;color:#e9ecf1">Human&nbsp;Gen</span>
+      </div>
+      <div style="margin-top:6px;font:400 12px 'JetBrains Mono';color:#7f8794;letter-spacing:.02em">procedural neutral mannequin · v1</div>
+    </div>
+
+    <!-- orbit hint -->
+    <div style="position:absolute;bottom:20px;left:24px;font:400 11px 'JetBrains Mono';color:#69707c;letter-spacing:.04em;pointer-events:none">drag to orbit · scroll to zoom</div>
+
+    <!-- rotate toggle -->
+    <button onClick="{{ toggleRotate }}" style="position:absolute;bottom:18px;right:20px;display:flex;align-items:center;gap:7px;padding:7px 12px;border-radius:8px;cursor:pointer;background:{{ rotateBg }};border:1px solid {{ rotateBorder }};color:{{ rotateColor }};font:500 11px 'JetBrains Mono';letter-spacing:.05em">
+      <span style="width:6px;height:6px;border-radius:50%;background:{{ rotateColor }}"></span>{{ rotateLabel }}
+    </button>
+
+    <!-- loading -->
+    <sc-if value="{{ loading }}" hint-placeholder-val="{{ true }}">
+      <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;background:rgba(14,15,19,.4)">
+        <div style="width:34px;height:34px;border-radius:50%;border:3px solid rgba(95,227,192,.2);border-top-color:#5fe3c0;animation:hgspin .8s linear infinite"></div>
+        <span style="font:500 12px 'JetBrains Mono';letter-spacing:.1em;color:#9aa1ad;text-transform:uppercase">building scene</span>
+      </div>
+    </sc-if>
+  </div>
+
+  <!-- PANEL -->
+  <aside style="width:336px;flex-shrink:0;height:100%;display:flex;flex-direction:column;background:#15171e;border-left:1px solid rgba(255,255,255,.07)">
+    <div style="padding:22px 22px 18px;border-bottom:1px solid rgba(255,255,255,.06)">
+      <div style="font:700 17px 'Space Grotesk';letter-spacing:-.01em">Generator</div>
+      <div style="margin-top:3px;font:400 12.5px 'Space Grotesk';color:#8b929e">Skin, hair & color — everything else stays neutral.</div>
+    </div>
+
+    <div style="flex:1;overflow-y:auto;padding:22px">
+
+      <!-- SKIN -->
+      <div style="font:500 11px 'JetBrains Mono';letter-spacing:.13em;text-transform:uppercase;color:#7f8794;margin-bottom:11px">Skin tone</div>
+      <div style="display:flex;flex-wrap:wrap;gap:9px;margin-bottom:26px">
+        <sc-for list="{{ skinSwatches }}" as="item" hint-placeholder-count="7">
+          <button onClick="{{ item.onClick }}" title="{{ item.label }}" style="width:34px;height:34px;border-radius:50%;border:none;cursor:pointer;padding:0;background:{{ item.color }};box-shadow:inset 0 0 0 2.5px {{ item.ring }}, 0 1px 3px rgba(0,0,0,.45);transition:transform .12s" style-hover="transform:scale(1.08)"></button>
+        </sc-for>
+      </div>
+
+      <!-- HAIR STYLE -->
+      <div style="font:500 11px 'JetBrains Mono';letter-spacing:.13em;text-transform:uppercase;color:#7f8794;margin-bottom:11px">Hair style</div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:26px">
+        <sc-for list="{{ hairStyles }}" as="item" hint-placeholder-count="8">
+          <button onClick="{{ item.onClick }}" style="display:flex;align-items:center;justify-content:center;padding:10px 4px;border-radius:9px;cursor:pointer;font:600 11.5px 'Space Grotesk';background:{{ item.bg }};color:{{ item.color }};border:1px solid {{ item.border }};transition:all .12s">{{ item.name }}</button>
+        </sc-for>
+      </div>
+
+      <!-- HAIR COLOR -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:11px">
+        <span style="font:500 11px 'JetBrains Mono';letter-spacing:.13em;text-transform:uppercase;color:#7f8794">Hair color</span>
+        <span style="font:400 11px 'JetBrains Mono';color:#5a616c">{{ hairColorName }}</span>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:9px">
+        <sc-for list="{{ hairColSwatches }}" as="item" hint-placeholder-count="7">
+          <button onClick="{{ item.onClick }}" title="{{ item.label }}" style="width:34px;height:34px;border-radius:9px;border:none;cursor:pointer;padding:0;background:{{ item.color }};box-shadow:inset 0 0 0 2.5px {{ item.ring }}, 0 1px 3px rgba(0,0,0,.45);transition:transform .12s" style-hover="transform:scale(1.08)"></button>
+        </sc-for>
+      </div>
+    </div>
+
+    <!-- ACTIONS -->
+    <div style="padding:18px 22px 22px;border-top:1px solid rgba(255,255,255,.06);display:flex;flex-direction:column;gap:10px">
+      <button onClick="{{ randomize }}" style="display:flex;align-items:center;justify-content:center;gap:9px;width:100%;padding:13px;border-radius:11px;border:none;cursor:pointer;background:#5fe3c0;color:#06231d;font:700 14px 'Space Grotesk';letter-spacing:.01em;box-shadow:0 4px 16px rgba(95,227,192,.22);transition:transform .1s" style-hover="transform:translateY(-1px)" style-active="transform:translateY(0)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#06231d" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3h5v5"/><path d="M4 20 21 3"/><path d="M21 16v5h-5"/><path d="m15 15 6 6"/><path d="M4 4l5 5"/></svg>
+        Randomize
+      </button>
+      <button onClick="{{ exportGLB }}" style="display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:12px;border-radius:11px;cursor:pointer;background:rgba(255,255,255,.04);color:#cfd4dc;border:1px solid rgba(255,255,255,.12);font:600 13px 'Space Grotesk';transition:background .12s" style-hover="background:rgba(255,255,255,.08)">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
+        {{ exportLabel }}
+      </button>
+    </div>
+  </aside>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { skin: 2, hstyle: 2, hcol: 1, rotate: true, loading: true, exporting: false };
+
+  SKIN = [
+    { c: '#f4ddca', n: 'Porcelain' }, { c: '#eec3a0', n: 'Light' },
+    { c: '#dca877', n: 'Medium' },   { c: '#c08a5a', n: 'Tan' },
+    { c: '#9a6440', n: 'Brown' },    { c: '#6e442b', n: 'Deep' },
+    { c: '#46291a', n: 'Espresso' },
+  ];
+  HAIRCOL = [
+    { c: '#15110e', n: 'Black' },    { c: '#3a2618', n: 'Dark brown' },
+    { c: '#6b4327', n: 'Brown' },    { c: '#9a5a2c', n: 'Auburn' },
+    { c: '#c9923f', n: 'Dark blonde' }, { c: '#e3c483', n: 'Blonde' },
+    { c: '#b9bcc2', n: 'Silver' },
+  ];
+  HAIRSTYLES = ['Bald', 'Buzz', 'Short', 'Side Part', 'Bob', 'Ponytail', 'Bun', 'Afro'];
+  ACCENT = '#5fe3c0';
+
+  viewportRef = (el) => { this.viewportEl = el; };
+
+  // ---------- lifecycle ----------
+  async componentDidMount() {
+    const T = await import('https://esm.sh/three@0.160.0');
+    const { OrbitControls } = await import('https://esm.sh/three@0.160.0/examples/jsm/controls/OrbitControls.js');
+    this.T = T; this.OrbitControls = OrbitControls;
+    if (!this.viewportEl) return;
+    this.initScene();
+    this.buildFigure();
+    this.applyAll();
+    this.animate();
+    this.ro = new ResizeObserver(() => this.resize());
+    this.ro.observe(this.viewportEl);
+    this.setState({ loading: false });
+  }
+  componentWillUnmount() {
+    cancelAnimationFrame(this.raf);
+    if (this.ro) this.ro.disconnect();
+    if (this.renderer) { this.renderer.dispose(); this.renderer.domElement.remove(); }
+  }
+  componentDidUpdate(_p, prev) {
+    if (!this.T || this.state.loading) return;
+    if (prev.skin !== this.state.skin) this.skinMat.color.set(this.SKIN[this.state.skin].c);
+    if (prev.hcol !== this.state.hcol) this.hairMat.color.set(this.HAIRCOL[this.state.hcol].c);
+    if (prev.hstyle !== this.state.hstyle) this.buildHair();
+    if (prev.rotate !== this.state.rotate && this.controls) this.controls.autoRotate = this.state.rotate;
+  }
+
+  // ---------- scene ----------
+  initScene() {
+    const T = this.T, el = this.viewportEl;
+    const w = el.clientWidth || 800, h = el.clientHeight || 600;
+    const r = new T.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
+    r.setPixelRatio(Math.min(devicePixelRatio, 2));
+    r.setSize(w, h);
+    r.shadowMap.enabled = true; r.shadowMap.type = T.PCFSoftShadowMap;
+    r.toneMapping = T.ACESFilmicToneMapping; r.toneMappingExposure = 1.05;
+    r.outputColorSpace = T.SRGBColorSpace;
+    el.appendChild(r.domElement);
+    this.renderer = r;
+
+    const scene = new T.Scene(); this.scene = scene;
+    const cam = new T.PerspectiveCamera(34, w / h, 0.1, 100);
+    cam.position.set(0.4, 1.05, 4.0); this.cam = cam;
+
+    const ctr = new this.OrbitControls(cam, r.domElement);
+    ctr.target.set(0, 0.98, 0);
+    ctr.enableDamping = true; ctr.dampingFactor = 0.08;
+    ctr.minDistance = 2.2; ctr.maxDistance = 7;
+    ctr.minPolarAngle = 0.35; ctr.maxPolarAngle = 1.62;
+    ctr.enablePan = false;
+    ctr.autoRotate = this.state.rotate; ctr.autoRotateSpeed = 1.1;
+    this.controls = ctr;
+
+    scene.add(new T.HemisphereLight(0xffffff, 0x3a3f4d, 0.95));
+    const key = new T.DirectionalLight(0xffffff, 1.7);
+    key.position.set(3, 6, 4); key.castShadow = true;
+    key.shadow.mapSize.set(1024, 1024);
+    key.shadow.camera.near = 1; key.shadow.camera.far = 14;
+    const sc = 2.2; const sh = key.shadow.camera;
+    sh.left = -sc; sh.right = sc; sh.top = sc * 1.6; sh.bottom = -0.3; sh.updateProjectionMatrix();
+    key.shadow.bias = -0.0007; scene.add(key);
+    const fill = new T.DirectionalLight(0xbcd2ff, 0.5); fill.position.set(-4, 2, -1); scene.add(fill);
+    const rim = new T.DirectionalLight(0xffffff, 0.7); rim.position.set(-1, 3, -4); scene.add(rim);
+
+    const ground = new T.Mesh(new T.CircleGeometry(3.2, 48), new T.ShadowMaterial({ opacity: 0.28 }));
+    ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true; scene.add(ground);
+  }
+
+  resize() {
+    const el = this.viewportEl; if (!el || !this.renderer) return;
+    const w = el.clientWidth, h = el.clientHeight; if (!w || !h) return;
+    this.renderer.setSize(w, h); this.cam.aspect = w / h; this.cam.updateProjectionMatrix();
+  }
+  animate = () => { this.raf = requestAnimationFrame(this.animate); if (this.controls) this.controls.update(); this.renderer.render(this.scene, this.cam); };
+
+  // ---------- figure ----------
+  _limb(rad, len) {
+    const T = this.T;
+    return new T.Mesh(new T.CapsuleGeometry(rad, Math.max(0.02, len - 2 * rad), 6, 18), this.skinMat);
+  }
+  _cast(o) { o.traverse(n => { if (n.isMesh) { n.castShadow = true; n.receiveShadow = true; } }); return o; }
+
+  buildFigure() {
+    const T = this.T;
+    this.skinMat = new T.MeshStandardMaterial({ color: this.SKIN[this.state.skin].c, roughness: 0.78, metalness: 0.02 });
+    this.hairMat = new T.MeshStandardMaterial({ color: this.HAIRCOL[this.state.hcol].c, roughness: 0.62, metalness: 0.04 });
+    const fig = new T.Group(); this.figure = fig; this.scene.add(fig);
+
+    // torso + pelvis
+    const pelvis = this._limb(0.135, 0.16); pelvis.position.y = 0.97; pelvis.scale.set(1.02, 1, 0.74); fig.add(pelvis);
+    const chest = this._limb(0.14, 0.30); chest.position.y = 1.24; chest.scale.set(1.08, 1, 0.72); fig.add(chest);
+    const neck = this._limb(0.046, 0.10); neck.position.y = 1.49; fig.add(neck);
+
+    // head
+    const headG = new T.Group(); headG.position.y = 1.62; this.headG = headG; fig.add(headG);
+    const head = new T.Mesh(new T.SphereGeometry(0.115, 32, 32), this.skinMat);
+    head.scale.set(0.96, 1.13, 1.0); headG.add(head);
+    this.hairGroup = new T.Group(); headG.add(this.hairGroup);
+
+    this.buildArm(1); this.buildArm(-1);
+    this.buildLeg(1); this.buildLeg(-1);
+    this._cast(fig);
+  }
+
+  buildArm(s) {
+    const T = this.T;
+    const sh = new T.Group(); sh.position.set(s * 0.205, 1.40, 0); sh.rotation.z = -s * 0.20;
+    const ua = this._limb(0.050, 0.30); ua.position.y = -0.15; sh.add(ua);
+    const elbow = new T.Group(); elbow.position.y = -0.30; elbow.rotation.z = -s * 0.06; sh.add(elbow);
+    const la = this._limb(0.044, 0.28); la.position.y = -0.14; elbow.add(la);
+    const hand = new T.Mesh(new T.SphereGeometry(0.052, 18, 16), this.skinMat);
+    hand.scale.set(0.85, 1.15, 0.5); hand.position.y = -0.31; elbow.add(hand);
+    this.figure.add(sh);
+  }
+  buildLeg(s) {
+    const T = this.T;
+    const hip = new T.Group(); hip.position.set(s * 0.095, 0.92, 0); hip.rotation.z = -s * 0.03;
+    const ul = this._limb(0.078, 0.44); ul.position.y = -0.22; hip.add(ul);
+    const knee = new T.Group(); knee.position.y = -0.44; hip.add(knee);
+    const ll = this._limb(0.060, 0.42); ll.position.y = -0.21; knee.add(ll);
+    const foot = new T.Mesh(new T.BoxGeometry(0.10, 0.055, 0.25), this.skinMat);
+    foot.position.set(0, -0.43, 0.055); foot.geometry.translate(0, 0, 0); knee.add(foot);
+    this.figure.add(hip);
+  }
+
+  buildHair() {
+    const T = this.T, g = this.hairGroup, name = this.HAIRSTYLES[this.state.hstyle];
+    while (g.children.length) g.remove(g.children[0]);
+    if (name === 'Bald') return;
+    const mat = this.hairMat;
+    const dome = (rad, phi, yoff) => {
+      const m = new T.Mesh(new T.SphereGeometry(rad, 30, 24, 0, Math.PI * 2, 0, phi), mat);
+      m.position.y = yoff || 0; m.castShadow = true; m.receiveShadow = true; return m;
+    };
+    if (name === 'Buzz') g.add(dome(0.119, Math.PI * 0.46, 0.004));
+    else if (name === 'Short') g.add(dome(0.127, Math.PI * 0.54, 0.006));
+    else if (name === 'Side Part') {
+      const c = dome(0.128, Math.PI * 0.56, 0.006); g.add(c);
+      const fr = new T.Mesh(new T.SphereGeometry(0.066, 18, 14), mat);
+      fr.scale.set(1.5, 0.5, 0.7); fr.position.set(0.05, 0.07, 0.085); fr.castShadow = true; g.add(fr);
+    } else if (name === 'Bob') {
+      const c = dome(0.132, Math.PI * 0.62, 0.004); c.scale.set(1, 1, 1.02); g.add(c);
+      [-1, 1].forEach(sx => {
+        const side = new T.Mesh(new T.CapsuleGeometry(0.044, 0.10, 4, 12), mat);
+        side.position.set(sx * 0.115, -0.05, -0.01); side.castShadow = true; g.add(side);
+      });
+    } else if (name === 'Ponytail') {
+      g.add(dome(0.126, Math.PI * 0.52, 0.006));
+      const tie = new T.Mesh(new T.SphereGeometry(0.034, 14, 12), mat); tie.position.set(0, 0.03, -0.12); g.add(tie);
+      const tail = new T.Mesh(new T.CapsuleGeometry(0.038, 0.22, 6, 14), mat);
+      tail.position.set(0, -0.10, -0.135); tail.rotation.x = -0.28; tail.castShadow = true; g.add(tail);
+    } else if (name === 'Bun') {
+      g.add(dome(0.124, Math.PI * 0.52, 0.006));
+      const bun = new T.Mesh(new T.SphereGeometry(0.058, 18, 16), mat); bun.position.set(0, 0.10, -0.085); bun.castShadow = true; g.add(bun);
+    } else if (name === 'Afro') {
+      const a = new T.Mesh(new T.SphereGeometry(0.165, 28, 24, 0, Math.PI * 2, 0, Math.PI * 0.82), mat);
+      a.position.y = 0.028; a.castShadow = true; a.receiveShadow = true; g.add(a);
+    }
+  }
+
+  applyAll() {
+    this.skinMat.color.set(this.SKIN[this.state.skin].c);
+    this.hairMat.color.set(this.HAIRCOL[this.state.hcol].c);
+    this.buildHair();
+  }
+
+  // ---------- actions ----------
+  randomize = () => {
+    const ri = n => Math.floor(Math.random() * n);
+    let h = ri(this.HAIRSTYLES.length);
+    if (h === this.state.hstyle) h = (h + 1) % this.HAIRSTYLES.length;
+    this.setState({ skin: ri(this.SKIN.length), hstyle: h, hcol: ri(this.HAIRCOL.length) });
+  };
+  toggleRotate = () => this.setState(s => ({ rotate: !s.rotate }));
+
+  exportGLB = async () => {
+    if (this.state.exporting || !this.figure) return;
+    this.setState({ exporting: true });
+    try {
+      const { GLTFExporter } = await import('https://esm.sh/three@0.160.0/examples/jsm/exporters/GLTFExporter.js');
+      const exp = new GLTFExporter();
+      exp.parse(this.figure, (buf) => {
+        const blob = new Blob([buf], { type: 'model/gltf-binary' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'human_' + this.HAIRSTYLES[this.state.hstyle].toLowerCase().replace(/ /g, '') + '.glb';
+        a.click(); URL.revokeObjectURL(a.href);
+        this.setState({ exporting: false });
+      }, (err) => { console.error(err); this.setState({ exporting: false }); }, { binary: true });
+    } catch (e) { console.error(e); this.setState({ exporting: false }); }
+  };
+
+  // ---------- render ----------
+  renderVals() {
+    const A = this.ACCENT, st = this.state;
+    const off = 'rgba(255,255,255,.10)';
+    const skinSwatches = this.SKIN.map((x, i) => ({ color: x.c, label: x.n, ring: i === st.skin ? A : off, onClick: () => this.setState({ skin: i }) }));
+    const hairColSwatches = this.HAIRCOL.map((x, i) => ({ color: x.c, label: x.n, ring: i === st.hcol ? A : off, onClick: () => this.setState({ hcol: i }) }));
+    const hairStyles = this.HAIRSTYLES.map((n, i) => ({
+      name: n,
+      bg: i === st.hstyle ? 'rgba(95,227,192,.13)' : 'rgba(255,255,255,.03)',
+      border: i === st.hstyle ? A : 'rgba(255,255,255,.09)',
+      color: i === st.hstyle ? A : '#cfd4dc',
+      onClick: () => this.setState({ hstyle: i }),
+    }));
+    return {
+      viewportRef: this.viewportRef,
+      loading: st.loading,
+      skinSwatches, hairColSwatches, hairStyles,
+      hairColorName: this.HAIRCOL[st.hcol].n,
+      randomize: this.randomize,
+      exportGLB: this.exportGLB,
+      exportLabel: st.exporting ? 'Exporting…' : 'Export GLB',
+      toggleRotate: this.toggleRotate,
+      rotateLabel: st.rotate ? 'Spin' : 'Static',
+      rotateColor: st.rotate ? A : '#8b929e',
+      rotateBg: st.rotate ? 'rgba(95,227,192,.10)' : 'rgba(255,255,255,.03)',
+      rotateBorder: st.rotate ? 'rgba(95,227,192,.4)' : 'rgba(255,255,255,.1)',
+    };
+  }
+}
+</script>
+</body>
+</html>

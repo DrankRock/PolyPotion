@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./studio3D_scripts/support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Spline+Sans+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="theme.js"></script>
+<style>
+  html,body{margin:0;padding:0;height:100%;background:var(--gutter);}
+  *{box-sizing:border-box;}
+  @keyframes ph-spin{to{transform:rotate(360deg);}}
+  @keyframes ph-tin{from{transform:translateX(120%);opacity:0;}to{transform:translateX(0);opacity:1;}}
+  #ph-root ::-webkit-scrollbar{width:10px;height:10px;}
+  #ph-root ::-webkit-scrollbar-track{background:var(--gutter);}
+  #ph-root ::-webkit-scrollbar-thumb{background:var(--panel-3);border:2px solid var(--gutter);border-radius:6px;}
+  #ph-root input[type=range]{-webkit-appearance:none;height:4px;border-radius:2px;background:var(--panel);outline:none;}
+  #ph-root input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--new);cursor:pointer;border:2px solid var(--panel);}
+</style>
+</helmet>
+
+<div id="ph-root" style="display:flex;flex-direction:column;height:100vh;width:100%;overflow:hidden;background:var(--gutter);color:var(--text);font-family:var(--font-ui);font-size:13px;-webkit-font-smoothing:antialiased;user-select:none;">
+
+  <header style="height:46px;flex:none;display:flex;align-items:center;gap:18px;padding:0 14px;background:var(--header);border-bottom:1px solid var(--seam);">
+    <div style="display:flex;align-items:center;gap:9px;">
+      <div style="width:26px;height:26px;border-radius:5px;display:flex;align-items:center;justify-content:center;background:var(--new);color:#04201f;font-weight:700;font-size:15px;box-shadow:0 1px 2px rgba(0,0,0,.4),0 0 0 1px rgba(255,255,255,.08) inset;">≈</div>
+      <div>
+        <div style="font-weight:700;letter-spacing:.04em;font-size:14px;">PHYSICS</div>
+        <div style="font-family:var(--font-mono);font-size:10px;color:var(--muted);letter-spacing:.1em;margin-top:1px;">SOFT-BODY · CLOTH · WASM XPBD</div>
+      </div>
+    </div>
+    <div style="flex:1;"></div>
+    <div style="display:flex;align-items:center;gap:8px;font-size:11px;color:var(--text2);padding:4px 10px;background:var(--panel);border:1px solid var(--seam);border-radius:5px;font-family:var(--font-mono);">
+      <span style="color:var(--new);">WASM</span><span style="color:var(--muted);">{{ kbLabel }}</span>
+    </div>
+    <button style="display:inline-flex;align-items:center;gap:7px;height:30px;padding:0 13px;border-radius:6px;font-size:11.5px;font-weight:600;background:var(--panel3);border:1px solid var(--edge);color:var(--text);cursor:pointer;" onClick="{{ pickFile }}">⬇ Import model…</button>
+    <div style="display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--text2);padding:4px 10px;background:var(--panel);border:1px solid var(--seam);border-radius:5px;">
+      <span style="width:7px;height:7px;border-radius:50%;flex:none;background:{{ dotColor }};"></span>
+      <span style="font-family:var(--font-mono);">{{ meshName }}</span>
+    </div>
+  </header>
+
+  <div style="flex:1;display:flex;min-height:0;">
+
+    <!-- LEFT PANEL -->
+    <aside style="width:260px;flex:none;background:var(--panel);border-right:1px solid var(--seam);display:flex;flex-direction:column;min-height:0;overflow-y:auto;">
+
+      <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--header);border-bottom:1px solid var(--seam);flex:none;">
+        <span style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);">Simulation</span>
+        <span style="margin-left:auto;font-family:var(--font-mono);font-size:10px;color:{{ fpsColor }};">{{ fpsLabel }}</span>
+      </div>
+      <div style="padding:12px;display:flex;flex-direction:column;gap:10px;">
+        <div style="display:flex;gap:8px;">
+          <button style="{{ playStyle }}" onClick="{{ togglePlay }}">{{ playLabel }}</button>
+          <button style="flex:none;width:46px;padding:9px 0;border-radius:6px;font-size:13px;background:var(--panel3);border:1px solid var(--edge);color:var(--text);cursor:pointer;" title="Reset to rest shape" onClick="{{ reset }}">↺</button>
+        </div>
+        <button style="display:flex;align-items:center;justify-content:center;gap:7px;padding:9px;border-radius:6px;font-size:12px;font-weight:600;background:var(--newDim);border:1px solid rgba(67,182,196,.35);color:#aee3ea;cursor:pointer;" title="Random impulse — watch it jiggle" onClick="{{ flick }}">✦ Flick it</button>
+      </div>
+
+      <div style="border-top:1px solid var(--seam);">
+        <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--header);border-bottom:1px solid var(--seam);">
+          <span style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);">Material</span>
+        </div>
+        <div style="padding:12px;">
+          <label style="display:block;font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:7px;">Gravity <span style="float:right;font-family:IBM Plex Mono,monospace;color:var(--text2);">{{ gravLabel }}</span></label>
+          <input type="range" min="0" max="200" value="{{ gravSlide }}" onInput="{{ onGrav }}" style="width:100%;margin-bottom:14px;">
+          <label style="display:block;font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:7px;">Stiffness <span style="float:right;font-family:IBM Plex Mono,monospace;color:var(--text2);">{{ stiffLabel }}</span></label>
+          <input type="range" min="1" max="24" value="{{ stiffSlide }}" onInput="{{ onStiff }}" style="width:100%;margin-bottom:14px;">
+          <label style="display:block;font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:7px;">Bounce <span style="float:right;font-family:IBM Plex Mono,monospace;color:var(--text2);">{{ dampLabel }}</span></label>
+          <input type="range" min="0" max="100" value="{{ dampSlide }}" onInput="{{ onDamp }}" style="width:100%;margin-bottom:4px;">
+        </div>
+      </div>
+
+      <div style="border-top:1px solid var(--seam);">
+        <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--header);border-bottom:1px solid var(--seam);">
+          <span style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);">Wind</span>
+          <span style="margin-left:auto;font-family:var(--font-mono);font-size:10px;color:var(--muted);">{{ windLabel }}</span>
+        </div>
+        <div style="padding:12px;">
+          <label style="display:block;font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:7px;">Strength</label>
+          <input type="range" min="0" max="100" value="{{ windSlide }}" onInput="{{ onWind }}" style="width:100%;margin-bottom:14px;">
+          <label style="display:block;font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:7px;">Direction <span style="float:right;font-family:IBM Plex Mono,monospace;color:var(--text2);">{{ angLabel }}</span></label>
+          <input type="range" min="0" max="360" value="{{ angSlide }}" onInput="{{ onAngle }}" style="width:100%;">
+        </div>
+      </div>
+
+      <div style="border-top:1px solid var(--seam);">
+        <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--header);border-bottom:1px solid var(--seam);">
+          <span style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);">Pins</span>
+          <span style="margin-left:auto;font-family:var(--font-mono);font-size:10px;color:var(--accent);">{{ pinLabel }}</span>
+        </div>
+        <div style="padding:12px;">
+          <div style="font-size:10.5px;line-height:1.55;color:var(--text2);margin-bottom:11px;">Pinned verts (blue) stay locked in space — everything else falls and swings from them.</div>
+          <div style="display:flex;gap:8px;">
+            <button style="{{ pinStyle }}" onClick="{{ togglePin }}">⊙ Paint pins</button>
+            <button style="flex:1;padding:8px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid var(--edge);background:var(--panel3);color:var(--text);" onClick="{{ clearPins }}">Clear</button>
+          </div>
+          <div style="font-size:10px;line-height:1.5;color:var(--muted);margin-top:8px;">Paint mode: drag to pin · <b style="color:var(--text2);">Alt</b> to unpin</div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- VIEWPORT -->
+    <div style="flex:1;position:relative;min-width:0;min-height:0;background:var(--viewport);">
+      <canvas id="ph-gl" style="position:absolute;inset:0;width:100%;height:100%;display:block;"></canvas>
+
+      <sc-if value="{{ noModel }}" hint-placeholder-val="{{ true }}">
+        <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;background:rgba(18,20,24,.86);">
+          <div style="width:70px;height:70px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:30px;background:var(--newDim);border:1px solid rgba(67,182,196,.3);color:var(--new);">≈</div>
+          <div style="text-align:center;">
+            <div style="font-size:16px;font-weight:700;margin-bottom:6px;">Make it move</div>
+            <div style="font-size:12.5px;color:var(--text2);max-width:440px;line-height:1.6;">Load a character to turn it into a <b>jiggling soft body</b>, or drop a <b>cloth</b> and blow wind through it. The whole simulation — every particle and constraint — runs in a hand-written <b>WebAssembly</b> solver, right here on your machine.</div>
+          </div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center;">
+            <button style="padding:10px 18px;border-radius:7px;font-size:12.5px;font-weight:600;background:var(--new);border:1px solid var(--new);color:#04201f;cursor:pointer;box-shadow:0 2px 12px rgba(67,182,196,.35);" onClick="{{ loadClothBig }}">≋ Drop a cloth</button>
+            <button style="padding:10px 18px;border-radius:7px;font-size:12.5px;font-weight:600;background:var(--panel3);border:1px solid var(--edge);color:var(--text);cursor:pointer;" onClick="{{ loadSample }}">Jiggle a figure</button>
+            <button style="padding:10px 18px;border-radius:7px;font-size:12.5px;font-weight:600;background:var(--panel3);border:1px solid var(--edge);color:var(--text);cursor:pointer;" onClick="{{ pickFile }}">⬇ Import…</button>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ loading }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:rgba(18,20,24,.8);color:var(--muted);">
+          <div style="width:38px;height:38px;border:3px solid var(--panel-3);border-top-color:var(--new);border-radius:50%;animation:ph-spin .9s linear infinite;"></div>
+          <div style="font-size:12px;">{{ loadingMsg }}</div>
+        </div>
+      </sc-if>
+
+      <!-- bottom presets -->
+      <div style="position:absolute;left:50%;bottom:12px;transform:translateX(-50%);display:flex;align-items:center;gap:5px;background:rgba(15,15,15,.86);border:1px solid var(--edge);border-radius:9px;padding:6px 8px;">
+        <span style="font-size:10px;font-family:IBM Plex Mono,monospace;color:var(--muted);padding:0 6px;">PRESETS</span>
+        <sc-for list="{{ presets }}" as="p" hint-placeholder-count="4">
+          <button style="font-size:11px;font-weight:600;padding:6px 11px;border-radius:6px;cursor:pointer;background:var(--panel3);border:1px solid var(--edge);color:var(--text);" onClick="{{ p.onClick }}">{{ p.label }}</button>
+        </sc-for>
+      </div>
+
+      <div style="position:absolute;left:12px;top:12px;display:flex;flex-direction:column;gap:6px;font-family:IBM Plex Mono,monospace;font-size:10px;color:var(--text2);background:rgba(15,15,15,.7);border:1px solid var(--seam);border-radius:7px;padding:9px 11px;">
+        <sc-for list="{{ stats }}" as="s" hint-placeholder-count="4">
+          <div style="display:flex;justify-content:space-between;gap:18px;"><span style="color:var(--muted);">{{ s.k }}</span><span>{{ s.v }}</span></div>
+        </sc-for>
+      </div>
+
+      <div style="position:absolute;right:12px;top:12px;font-size:11px;color:var(--text2);background:rgba(15,15,15,.7);border:1px solid var(--seam);border-radius:7px;padding:7px 11px;">{{ vpHint }}</div>
+    </div>
+  </div>
+
+  <input type="file" id="ph-file" accept=".fbx,.glb,.gltf,.obj" style="display:none;">
+  <div id="ph-toasts" style="position:fixed;bottom:16px;right:16px;z-index:300;display:flex;flex-direction:column;gap:8px;"></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = {
+    hasModel: false, meshName: 'no model', loading: false, loadingMsg: '',
+    sim: false, fps: 0, mode: 'soft',
+    grav: 60, stiff: 6, damp: 30, wind: 0, ang: 0,
+    pinMode: false, verts: 0, tris: 0, cons: 0, pins: 0, kb: 0,
+  };
+
+  componentDidMount() { this.setupEmbed(); this.boot(); this.setupDrop(); }
+
+  async boot() {
+    try {
+      const canvas = document.getElementById('ph-gl');
+      const mod = await import('./physics-engine.js');
+      const eng = new mod.PHEngine(canvas); this._eng = eng;
+      eng.onStatus = (msg) => this.setState({ loading: !!msg, loadingMsg: msg || '' });
+      eng.onChange = () => this.refresh();
+      eng.onStats = (s) => this.setState({ verts: s.verts, tris: s.tris, cons: s.constraints, pins: s.pins, mode: s.mode });
+      eng.onFps = (f) => this.setState({ fps: f });
+      // push initial tunables
+      eng.setGravity(-(this.state.grav / 10)); eng.setStiffness(this.state.stiff);
+      eng.setDamping(0.90 + (this.state.damp / 100) * 0.099);
+      try { const r = await fetch('studio3D_scripts/wasm-physics.js'); const t = await r.text(); this.setState({ kb: Math.round(t.length / 1024) }); } catch (e) {}
+      if (this._pending) { const p = this._pending; this._pending = null; p(); }
+    } catch (e) {
+      this.toast('Engine failed: ' + (e && e.message || e));
+      if (this._post) this._post('studio:error', { tool: 'physics', message: String(e && e.message || e) });
+    }
+  }
+
+  refresh() {
+    if (!this._eng) return;
+    const s = this._eng.stats();
+    this.setState({ hasModel: this._eng.hasModel(), meshName: this._eng.hasModel() ? s.name : 'no model', sim: s.sim, verts: s.verts, tris: s.tris, cons: s.constraints, pins: s.pins, mode: s.mode });
+  }
+
+  async loadVia(fn, label) {
+    if (!this._eng) { this._pending = () => this.loadVia(fn, label); return; }
+    this.setState({ loading: true, loadingMsg: 'Loading ' + (label || 'model') + '…' });
+    try { const r = await fn(); this._eng.rememberRest(); this.refresh(); this.setState({ loading: false }); this.toast('Loaded ' + r.name + ' — ' + r.verts.toLocaleString() + ' particles, ' + r.constraints.toLocaleString() + ' constraints'); }
+    catch (e) { this.setState({ loading: false }); this.toast('Load failed: ' + (e && e.message || e)); if (this._post) this._post('studio:error', { tool: 'physics', message: String(e && e.message || e) }); }
+  }
+
+  setupDrop() {
+    const root = document.getElementById('ph-root'); if (!root) return;
+    root.addEventListener('dragover', e => e.preventDefault());
+    root.addEventListener('drop', e => { e.preventDefault(); const f = e.dataTransfer.files && e.dataTransfer.files[0]; if (f) this.loadVia(() => this._eng.loadFile(f), f.name); });
+    const inp = document.getElementById('ph-file');
+    if (inp) inp.addEventListener('change', e => { const f = e.target.files[0]; if (f) { this.loadVia(() => this._eng.loadFile(f), f.name); e.target.value = ''; } });
+  }
+
+  setupEmbed() {
+    const params = new URLSearchParams(location.search);
+    this._embedded = params.get('embed') === '1' || window.parent !== window;
+    this._post = (type, payload, transfer) => { try { window.parent && window.parent.postMessage(Object.assign({ __studio: true, type }, payload || {}), '*', transfer || []); } catch (e) {} };
+    if (this._embedded) { const hide = () => { const h = document.querySelector('#ph-root > header'); if (h && h.firstElementChild) h.firstElementChild.style.display = 'none'; }; hide(); setTimeout(hide, 60); setTimeout(hide, 300); }
+    window.addEventListener('message', (e) => {
+      const d = e.data; if (!d || !d.__studio) return;
+      if (d.type === 'studio:loadCharUrl') this.loadVia(() => this._eng.loadUrl(d.url, d.ext, { chunked: d.chunked, chunks: d.chunks }), d.label || 'character');
+      else if (d.type === 'studio:loadCharBuffer') this.loadVia(() => this._eng.loadBuffer(d.buffer, d.name, (d.name || '').split('.').pop()), d.name || 'rig');
+      else if (d.type === 'studio:cmd') this.handleCmd(d.cmd);
+    });
+    setTimeout(() => this._post('studio:ready', { tool: 'physics' }), 0);
+  }
+
+  toast(msg) {
+    const wrap = document.getElementById('ph-toasts'); if (!wrap) return;
+    const el = document.createElement('div');
+    el.style.cssText = 'padding:11px 15px;border-radius:7px;font-size:12px;background:var(--panel-3);border:1px solid var(--edge);border-left:3px solid var(--new);box-shadow:0 8px 24px rgba(0,0,0,.45);max-width:340px;color:var(--text);animation:ph-tin .25s cubic-bezier(.2,1,.3,1);';
+    el.textContent = msg; wrap.appendChild(el);
+    setTimeout(() => { el.style.transition = 'opacity .3s'; el.style.opacity = '0'; setTimeout(() => el.remove(), 300); }, 2800);
+  }
+
+  pill(on) { return 'flex:1;padding:8px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid ' + (on ? 'var(--new)' : 'var(--edge)') + ';background:' + (on ? 'rgba(67,182,196,0.16)' : 'var(--panel-3)') + ';color:' + (on ? '#aee3ea' : 'var(--text)') + ';'; }
+
+  renderVals() {
+    const st = this.state, eng = this._eng;
+    const fmt = n => n >= 1000 ? (n / 1000).toFixed(n >= 10000 ? 0 : 1) + 'k' : ('' + n);
+    const presets = [
+      { label: '≋ Cloth', onClick: () => { if (eng) { eng.loadCloth(44, 30); this.refresh(); this.toast('Cloth dropped — try the wind'); } } },
+      { label: '🏳 Flag', onClick: () => { if (eng) { eng.loadCloth(50, 32); eng.setWind(0.45); eng.setWindAngle(0); this.setState({ wind: 45, ang: 0 }); this.refresh(); this.toast('Flag in the wind'); } } },
+      { label: '⛑ Figure', onClick: () => this.loadSampleRef() },
+      { label: '☂ Drape', onClick: () => { if (eng) { eng.loadDrape(46, 46); this.setState({ wind: 0 }); this.refresh(); this.toast('Sheet dropping onto the sphere — real WASM collision'); } } },
+      { label: '⬇ File', onClick: () => document.getElementById('ph-file').click() },
+    ];
+    return {
+      meshName: st.meshName, dotColor: st.hasModel ? 'var(--good)' : 'var(--muted)',
+      hasModel: st.hasModel, noModel: !st.hasModel && !st.loading, loading: st.loading, loadingMsg: st.loadingMsg,
+      kbLabel: st.kb ? st.kb + 'KB core' : 'core',
+      fpsLabel: st.sim ? (st.fps + ' fps') : 'paused', fpsColor: st.sim ? (st.fps >= 50 ? 'var(--good)' : (st.fps >= 30 ? 'var(--warn)' : 'var(--danger)')) : 'var(--muted)',
+      playLabel: st.sim ? '❚❚ Pause' : '▶ Simulate',
+      playStyle: 'flex:1;padding:9px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;border:1px solid ' + (st.sim ? 'var(--active)' : 'var(--new)') + ';background:' + (st.sim ? 'var(--active)' : 'var(--new)') + ';color:' + (st.sim ? 'var(--on-accent)' : '#04201f') + ';',
+      togglePlay: () => { if (!eng || !st.hasModel) { this.toast('Load something first'); return; } const on = eng.toggle(); this.setState({ sim: on }); },
+      reset: () => { if (eng) { eng.reset(); this.toast('Reset to rest shape'); } },
+      flick: () => { if (!eng || !st.hasModel) { this.toast('Load something first'); return; } eng.flick(this.state.mode === 'cloth' ? 0.04 : 0.08); this.setState({ sim: true }); },
+      gravSlide: st.grav, gravLabel: (st.grav / 10).toFixed(1) + ' g',
+      onGrav: e => { const v = +e.target.value; this.setState({ grav: v }); if (eng) eng.setGravity(-(v / 10)); },
+      stiffSlide: st.stiff, stiffLabel: st.stiff + ' iter',
+      onStiff: e => { const v = +e.target.value; this.setState({ stiff: v }); if (eng) eng.setStiffness(v); },
+      dampSlide: st.damp, dampLabel: st.damp + '%',
+      onDamp: e => { const v = +e.target.value; this.setState({ damp: v }); if (eng) eng.setDamping(0.90 + (v / 100) * 0.099); },
+      windSlide: st.wind, windLabel: st.wind > 0 ? st.wind + '%' : 'calm',
+      onWind: e => { const v = +e.target.value; this.setState({ wind: v }); if (eng) eng.setWind(v / 100); },
+      angSlide: st.ang, angLabel: st.ang + '°',
+      onAngle: e => { const v = +e.target.value; this.setState({ ang: v }); if (eng) eng.setWindAngle(v); },
+      pinLabel: st.pins ? st.pins.toLocaleString() + ' pinned' : 'none',
+      pinStyle: this.pill(st.pinMode),
+      togglePin: () => { const v = !st.pinMode; this.setState({ pinMode: v }); if (eng) eng.setPinMode(v); this.toast(v ? 'Pin paint on — drag to pin, Alt to unpin' : 'Pin paint off'); },
+      clearPins: () => { if (eng) { eng.clearPins(); this.refresh(); this.toast('Pins cleared'); } },
+      pickFile: () => document.getElementById('ph-file').click(),
+      loadClothBig: () => { if (eng) { eng.loadCloth(48, 32); eng.setWind(0.35); this.setState({ wind: 35 }); this.refresh(); this.toast('Cloth dropped — blow some wind through it'); } },
+      loadSample: () => this.loadSampleRef(),
+      presets,
+      vpHint: st.pinMode ? 'drag to pin · Alt to unpin' : (st.hasModel ? 'drag the body to grab & pull · scroll to zoom' : 'load a model or preset'),
+      stats: [
+        { k: 'type', v: st.mode === 'cloth' ? 'cloth' : 'soft-body' },
+        { k: 'particles', v: st.verts ? st.verts.toLocaleString() : '—' },
+        { k: 'constraints', v: st.cons ? fmt(st.cons) : '—' },
+        { k: 'pinned', v: st.pins ? st.pins.toLocaleString() : '—' },
+      ],
+    };
+  }
+
+  loadSampleRef() { this.loadVia(() => this._eng.loadUrl('data/characters/Humanoid.fbx', 'fbx'), 'Humanoid'); }
+
+  handleCmd(cmd) {
+    const eng = this._eng; if (!eng) return;
+    if (cmd === 'cloth') { eng.loadCloth(44, 30); this.refresh(); this.toast('Cloth dropped'); }
+    else if (cmd === 'drape') { eng.loadDrape(46, 46); this.setState({ wind: 0 }); this.refresh(); this.toast('Drape test — WASM collision'); }
+    else if (cmd === 'flag') { eng.loadCloth(50, 32); eng.setWind(0.45); eng.setWindAngle(0); this.setState({ wind: 45, ang: 0 }); this.refresh(); this.toast('Flag in the wind'); }
+    else if (cmd === 'toggleSim') { if (eng.hasModel()) { const on = eng.toggle(); this.setState({ sim: on }); } }
+    else if (cmd === 'flick') { if (eng.hasModel()) { eng.flick(this.state.mode === 'cloth' ? 0.04 : 0.08); this.setState({ sim: true }); } }
+  }
+}
+</script>
+</body>
+</html>

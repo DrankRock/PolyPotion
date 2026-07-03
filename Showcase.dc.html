@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./studio3D_scripts/support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Spline+Sans+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="theme.js"></script>
+<script src="suggested_actions.js"></script>
+<style>
+  html,body{margin:0;padding:0;height:100%;background:var(--gutter);}
+  *{box-sizing:border-box;}
+  @keyframes sc-spin{to{transform:rotate(360deg);}}
+  @keyframes sc-tin{from{transform:translateX(120%);opacity:0;}to{transform:translateX(0);opacity:1;}}
+  #sc-root ::-webkit-scrollbar{width:10px;height:10px;}
+  #sc-root ::-webkit-scrollbar-track{background:var(--gutter);}
+  #sc-root ::-webkit-scrollbar-thumb{background:var(--panel-3);border:2px solid var(--gutter);border-radius:6px;}
+  #sc-root input[type=range]{-webkit-appearance:none;height:4px;border-radius:2px;background:var(--panel);outline:none;}
+  #sc-root input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:#c98a5a;cursor:pointer;border:2px solid var(--panel);}
+</style>
+</helmet>
+
+<div id="sc-root" style="display:flex;flex-direction:column;height:100vh;width:100%;overflow:hidden;background:var(--gutter);color:var(--text);font-family:var(--font-ui);font-size:13px;-webkit-font-smoothing:antialiased;user-select:none;">
+
+  <!-- TOP BAR (hidden when embedded) -->
+  <header style="height:46px;flex:none;display:flex;align-items:center;gap:14px;padding:0 14px;background:var(--header);border-bottom:1px solid var(--seam);">
+    <div style="display:flex;align-items:center;gap:9px;">
+      <div style="width:26px;height:26px;border-radius:5px;display:flex;align-items:center;justify-content:center;background:var(--accent);color:#0d0f1f;font-weight:700;font-size:15px;">◈</div>
+      <div>
+        <div style="font-weight:700;letter-spacing:.04em;font-size:14px;">SHOWCASE</div>
+        <div style="font-family:var(--font-mono);font-size:10px;color:var(--muted);letter-spacing:.1em;margin-top:1px;">TURNTABLE VIEWER · LOCAL</div>
+      </div>
+    </div>
+    <div style="flex:1;"></div>
+    <button style="display:inline-flex;align-items:center;gap:7px;height:30px;padding:0 13px;border-radius:6px;font-size:11.5px;font-weight:600;background:var(--panel3);border:1px solid var(--edge);color:var(--text);cursor:pointer;" onClick="{{ pickFile }}">⬇ Open model…</button>
+  </header>
+
+  <!-- WHAT-NEXT SUGGESTION -->
+  <sc-if value="{{ showSuggest }}" hint-placeholder-val="{{ false }}">
+    <div style="flex:none;display:flex;align-items:center;gap:12px;padding:10px 16px;background:{{ suggestBg }};border-bottom:1px solid var(--seam);">
+      <span style="width:24px;height:24px;flex:none;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:13px;background:rgba(255,255,255,.14);color:{{ suggestColor }};">{{ suggestIcon }}</span>
+      <div style="flex:1;min-width:0;">
+        <span style="font-weight:700;font-size:12px;color:var(--text);">Next: </span>
+        <span style="font-size:11.5px;color:var(--text2);">{{ suggestReason }}</span>
+      </div>
+      <div style="display:flex;gap:6px;flex:none;">
+        <sc-for list="{{ suggestChips }}" as="c" hint-placeholder-count="1">
+          <button style="{{ c.style }}" onClick="{{ c.onClick }}">{{ c.label }}</button>
+        </sc-for>
+      </div>
+      <button style="flex:none;width:24px;height:24px;border-radius:5px;border:1px solid var(--edge);background:transparent;color:var(--text2);cursor:pointer;font-size:12px;" onClick="{{ dismissSuggest }}">✕</button>
+    </div>
+  </sc-if>
+
+  <div style="flex:1;display:flex;min-height:0;">
+
+    <!-- VIEWPORT -->
+    <div style="flex:1;position:relative;min-width:0;min-height:0;background:var(--viewport);">
+      <canvas id="sc-gl" style="position:absolute;inset:0;width:100%;height:100%;display:block;"></canvas>
+
+      <sc-if value="{{ noModel }}" hint-placeholder-val="{{ true }}">
+        <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;background:rgba(18,20,24,.86);">
+          <div style="width:70px;height:70px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:30px;background:var(--accentDim);border:1px solid rgba(201,138,90,.3);color:var(--accent);">◈</div>
+          <div style="text-align:center;">
+            <div style="font-size:16px;font-weight:700;margin-bottom:6px;">Show off a character</div>
+            <div style="font-size:12.5px;color:var(--text2);max-width:430px;line-height:1.6;">Pick anything from the Library and it lands here — orbit around it, spin the turntable, and play a motion clip on it if it's rigged. Drop a <b>.glb / .fbx / .obj</b> to view one directly.</div>
+          </div>
+          <button style="padding:10px 18px;border-radius:7px;font-size:12.5px;font-weight:600;background:var(--accent);border:1px solid var(--accent);color:#0d0f1f;cursor:pointer;" onClick="{{ pickFile }}">⬇ Open file…</button>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ loading }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:rgba(18,20,24,.8);color:var(--muted);">
+          <div style="width:38px;height:38px;border:3px solid var(--panel-3);border-top-color:var(--accent);border-radius:50%;animation:sc-spin .9s linear infinite;"></div>
+          <div style="font-size:12px;">{{ loadingMsg }}</div>
+        </div>
+      </sc-if>
+
+      <!-- view row -->
+      <div style="position:absolute;left:50%;top:10px;transform:translateX(-50%);display:flex;align-items:center;gap:4px;background:rgba(15,15,15,.86);border:1px solid var(--edge);border-radius:8px;padding:5px 7px;">
+        <sc-for list="{{ views }}" as="v" hint-placeholder-count="5">
+          <button style="font-size:11px;font-weight:600;padding:5px 9px;border-radius:5px;cursor:pointer;background:transparent;border:none;color:var(--text2);" onClick="{{ v.onClick }}">{{ v.label }}</button>
+        </sc-for>
+      </div>
+
+      <!-- top-right toggles -->
+      <div style="position:absolute;right:10px;top:10px;display:flex;gap:6px;">
+        <button style="{{ spinChipStyle }}" onClick="{{ toggleSpin }}">↻ Auto-spin</button>
+        <button style="{{ wireChipStyle }}" onClick="{{ toggleWire }}">▦ Wireframe</button>
+      </div>
+
+      <div style="position:absolute;left:10px;top:10px;font-family:var(--font-mono);font-size:10px;letter-spacing:.1em;color:var(--text2);background:rgba(15,15,15,.6);padding:3px 7px;border-radius:3px;pointer-events:none;">{{ modeBadge }}</div>
+      <div style="position:absolute;right:10px;bottom:12px;font-size:10.5px;color:var(--text2);background:rgba(15,15,15,.78);border:1px solid var(--edge);padding:6px 11px;border-radius:6px;pointer-events:none;max-width:250px;">drag orbits · right-drag pans · scroll zooms</div>
+
+      <!-- transport bar -->
+      <sc-if value="{{ hasAnim }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute;left:14px;right:14px;bottom:44px;display:flex;align-items:center;gap:12px;background:rgba(15,15,15,.86);border:1px solid var(--edge);border-radius:9px;padding:8px 13px;">
+          <button style="width:32px;height:32px;flex:none;border-radius:6px;border:1px solid var(--edge);background:var(--panel3);color:var(--text);font-size:13px;cursor:pointer;" onClick="{{ togglePlay }}">{{ playIcon }}</button>
+          <div style="font-family:var(--font-mono);font-size:10.5px;color:var(--text2);white-space:nowrap;">{{ timeLabel }}</div>
+          <input type="range" min="0" max="1000" value="{{ scrub }}" onInput="{{ onScrub }}" style="flex:1;">
+          <div style="font-size:10.5px;color:var(--text2);white-space:nowrap;">{{ clipName }}</div>
+        </div>
+      </sc-if>
+    </div>
+
+    <!-- RIGHT : CONTROLS -->
+    <aside style="width:308px;flex:none;background:var(--panel);border-left:1px solid var(--seam);display:flex;flex-direction:column;min-height:0;overflow-y:auto;">
+
+      <!-- character -->
+      <div style="border-bottom:1px solid var(--seam);">
+        <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--header);border-bottom:1px solid var(--seam);">
+          <span style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);">Character</span>
+          <span style="margin-left:auto;width:7px;height:7px;border-radius:50%;background:{{ dotColor }};"></span>
+        </div>
+        <div style="padding:11px 12px;display:flex;flex-direction:column;gap:5px;">
+          <div style="font-weight:600;font-size:13px;">{{ charName }}</div>
+          <div style="display:flex;justify-content:space-between;font-size:11.5px;"><span style="color:var(--muted);">Triangles</span><span style="font-family:var(--font-mono);">{{ trisLabel }}</span></div>
+          <div style="display:flex;justify-content:space-between;font-size:11.5px;"><span style="color:var(--muted);">Skeleton</span><span style="font-family:var(--font-mono);color:{{ skelColor }};">{{ skelLabel }}</span></div>
+        </div>
+      </div>
+
+      <!-- animation -->
+      <div style="border-bottom:1px solid var(--seam);">
+        <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--header);border-bottom:1px solid var(--seam);"><span style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);">Animation</span></div>
+        <div style="padding:11px 12px;display:flex;flex-direction:column;gap:11px;">
+
+          <sc-if value="{{ hasEmbedded }}" hint-placeholder-val="{{ false }}">
+            <div>
+              <div style="font-size:10.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:7px;">Built-in clips</div>
+              <div style="display:flex;flex-direction:column;gap:5px;">
+                <sc-for list="{{ embeddedClips }}" as="c" hint-placeholder-count="2">
+                  <button style="{{ c.style }}" onClick="{{ c.onClick }}"><span>▸ {{ c.name }}</span><span style="font-family:var(--font-mono);font-size:10px;color:var(--text2);">{{ c.dur }}s</span></button>
+                </sc-for>
+              </div>
+            </div>
+          </sc-if>
+
+          <div>
+            <div style="font-size:10.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:7px;">From the library</div>
+            <sc-if value="{{ skelOk }}" hint-placeholder-val="{{ true }}">
+              <sc-if value="{{ hasLibAnims }}" hint-placeholder-val="{{ false }}">
+                <div style="display:flex;flex-direction:column;gap:5px;max-height:190px;overflow-y:auto;">
+                  <sc-for list="{{ libAnims }}" as="a" hint-placeholder-count="3">
+                    <button style="{{ a.style }}" onClick="{{ a.onClick }}"><span>⛷ {{ a.label }}</span></button>
+                  </sc-for>
+                </div>
+              </sc-if>
+              <sc-if value="{{ noLibAnims }}" hint-placeholder-val="{{ false }}">
+                <div style="font-size:11px;color:var(--text2);line-height:1.5;">No motion clips in the library yet. Drop <b>.fbx / .glb</b> clips into <span style="font-family:var(--font-mono);">data/animations/</span>.</div>
+              </sc-if>
+            </sc-if>
+            <sc-if value="{{ noSkel }}" hint-placeholder-val="{{ false }}">
+              <div style="font-size:11px;color:var(--text2);line-height:1.5;">This model has no skeleton, so library clips can't drive it. Rig it first in the <b>Rig</b> tool.</div>
+            </sc-if>
+          </div>
+
+          <sc-if value="{{ hasAnim }}" hint-placeholder-val="{{ false }}">
+            <div>
+              <label style="display:flex;justify-content:space-between;font-size:10.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:7px;"><span>Speed</span><span style="font-family:var(--font-mono);color:var(--text);">{{ speedLabel }}</span></label>
+              <input type="range" min="10" max="200" value="{{ speedSlide }}" onInput="{{ onSpeed }}" style="width:100%;">
+              <sc-if value="{{ canBlend }}" hint-placeholder-val="{{ false }}">
+                <div style="margin-top:11px;">
+                  <label style="display:flex;justify-content:space-between;font-size:10.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:7px;"><span>Blend</span><span style="font-family:var(--font-mono);color:var(--text);">{{ blendLabel }}</span></label>
+                  <input type="range" min="0" max="100" value="{{ blendSlide }}" onInput="{{ onBlend }}" style="width:100%;">
+                  <div style="display:flex;justify-content:space-between;gap:8px;font-size:10px;color:var(--text2);margin-top:3px;"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">◂ {{ blendPrev }}</span><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ blendCur }} ▸</span></div>
+                </div>
+              </sc-if>
+              <button style="margin-top:9px;width:100%;padding:8px;border-radius:6px;font-size:11.5px;font-weight:600;background:transparent;border:1px solid var(--edge);color:var(--text);cursor:pointer;" onClick="{{ stopAnim }}">■ Stop · rest pose</button>
+            </div>
+          </sc-if>
+        </div>
+      </div>
+
+      <!-- display -->
+      <div style="border-bottom:1px solid var(--seam);">
+        <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--header);border-bottom:1px solid var(--seam);"><span style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);">Display</span></div>
+        <div style="padding:11px 12px;display:flex;flex-direction:column;gap:11px;">
+          <div>
+            <div style="font-size:10.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:7px;">Backdrop</div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;">
+              <sc-for list="{{ backgrounds }}" as="b" hint-placeholder-count="5">
+                <button style="{{ b.style }}" onClick="{{ b.onClick }}" title="{{ b.label }}"></button>
+              </sc-for>
+            </div>
+          </div>
+          <label style="display:flex;align-items:center;gap:9px;font-size:12px;cursor:pointer;">
+            <input type="checkbox" checked="{{ groundOn }}" onChange="{{ toggleGround }}" style="width:15px;height:15px;accent-color:#c98a5a;">
+            <span>Ground &amp; grid</span>
+          </label>
+          <button style="width:100%;padding:8px;border-radius:6px;font-size:11.5px;font-weight:600;background:var(--panel3);border:1px solid var(--edge);color:var(--text);cursor:pointer;" onClick="{{ reframe }}">⤢ Reframe</button>
+        </div>
+      </div>
+
+      <div style="padding:12px;">
+        <div style="display:flex;gap:9px;padding:9px 11px;border-radius:7px;font-size:11px;line-height:1.5;background:var(--accentDim);border:1px solid rgba(201,138,90,.3);color:#e8cbb0;"><span style="flex:none;">✦</span><span>Built-in clips play automatically for mocap'd characters. Library clips are retargeted onto the skeleton by matching bone names — motion only, applied in place.</span></div>
+      </div>
+    </aside>
+  </div>
+
+  <input type="file" id="sc-file" accept=".glb,.gltf,.fbx,.obj" style="display:none;">
+  <div id="sc-toasts" style="position:fixed;bottom:16px;right:16px;z-index:300;display:flex;flex-direction:column;gap:8px;"></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = {
+    meshName: 'no model', loading: false, loadingMsg: '',
+    hasModel: false, tris: 0, bones: 0, hasSkeleton: false,
+    clips: [], activeClip: -1, hasAnim: false, playing: false,
+    time: 0, duration: 0, clipName: '',
+    libAnims: [], activeLib: '',
+    spin: false, wire: false, bg: 'studio', ground: true, speed: 100,
+    hasUVs: false, hasTexture: false, suggestDismiss: false,
+  };
+
+  componentDidMount() { this.setupEmbed(); this.boot(); this.setupDrop(); }
+
+  async boot() {
+    try {
+      const canvas = document.getElementById('sc-gl');
+      const mod = await import('./showcase-engine.js');
+      const eng = new mod.SCEngine(canvas); this._eng = eng;
+      eng.onStatus = (msg) => this.setState({ loading: !!msg, loadingMsg: msg || '' });
+      eng.onChange = () => this.refresh();
+      eng.onTime = (info) => this.setState({ time: info.time, duration: info.duration });
+      if (this._pending) { const p = this._pending; this._pending = null; p(); }
+    } catch (e) {
+      this.toast('Engine failed: ' + (e && e.message || e));
+      if (this._post) this._post('studio:error', { tool: 'showcase', message: String(e && e.message || e) });
+    }
+  }
+
+  refresh() {
+    const eng = this._eng; if (!eng) return;
+    const s = eng.stats();
+    let hasUVs = false, hasTexture = false;
+    if (eng.model) eng.model.traverse(o => { if (o.isMesh && o.geometry) {
+      if (o.geometry.getAttribute('uv')) hasUVs = true;
+      const mats = Array.isArray(o.material) ? o.material : [o.material];
+      if (mats.some(m => m && m.map)) hasTexture = true;
+    } });
+    this.setState({
+      hasModel: eng.hasModel(), tris: s.tris, bones: s.bones, hasSkeleton: s.hasSkeleton,
+      hasUVs, hasTexture,
+      meshName: eng.hasModel() ? s.name : 'no model',
+      clips: eng.clips.map((c, i) => ({ i, name: c.name || ('Clip ' + (i + 1)), duration: c.duration || 0 })),
+      hasAnim: !!eng.activeAction, playing: eng.playing,
+      activeClip: eng.activeAction ? eng.actions.indexOf(eng.activeAction) : -1,
+      clipName: eng.activeAction ? (eng.activeAction.getClip().name || '') : '',
+    });
+  }
+
+  async loadVia(fn, label) {
+    if (!this._eng) { this._pending = () => this.loadVia(fn, label); return; }
+    this.setState({ loading: true, loadingMsg: 'Loading ' + (label || 'model') + '…', activeLib: '' });
+    try {
+      const r = await fn();
+      this.refresh(); this.setState({ loading: false, suggestDismiss: false });
+      const extra = r.clips && r.clips.length ? ' · ' + r.clips.length + ' clip' + (r.clips.length > 1 ? 's' : '') : (r.hasSkeleton ? ' · rigged' : '');
+      this.toast('Loaded ' + r.name + ' — ' + (r.tris ? r.tris.toLocaleString() + ' tris' : '') + extra);
+    } catch (e) {
+      this.setState({ loading: false });
+      this.toast('Load failed: ' + (e && e.message || e));
+      if (this._post) this._post('studio:error', { tool: 'showcase', message: String(e && e.message || e) });
+    }
+  }
+
+  async playLibAnim(a) {
+    const eng = this._eng; if (!eng || !eng.hasModel()) { this.toast('Load a character first'); return; }
+    if (!eng.hasSkeleton) { this.toast('This character has no skeleton to animate'); return; }
+    this.setState({ loading: true, loadingMsg: 'Retargeting ' + a.label + '…', activeLib: a.path });
+    try {
+      const r = await eng.loadAnimUrl(a.path, a.ext, { chunked: a.chunked, chunks: a.chunks }, a.label);
+      this.refresh(); this.setState({ loading: false, blend: 100 });
+      this.toast('Playing ' + r.name + ' — ' + r.matched + ' bones matched');
+    } catch (e) {
+      this.setState({ loading: false, activeLib: '' });
+      this.toast(String(e && e.message || e));
+    }
+  }
+
+  setupDrop() {
+    const root = document.getElementById('sc-root'); if (!root) return;
+    root.addEventListener('dragover', e => { e.preventDefault(); });
+    root.addEventListener('drop', e => { e.preventDefault(); const f = e.dataTransfer.files && e.dataTransfer.files[0]; if (f) this.loadVia(() => this._eng.loadFile(f), f.name); });
+    const inp = document.getElementById('sc-file');
+    if (inp) inp.addEventListener('change', e => { const f = e.target.files[0]; if (f) { this.loadVia(() => this._eng.loadFile(f), f.name); e.target.value = ''; } });
+  }
+
+  setupEmbed() {
+    const params = new URLSearchParams(location.search);
+    this._embedded = params.get('embed') === '1' || window.parent !== window;
+    this._post = (type, payload, transfer) => { try { window.parent && window.parent.postMessage(Object.assign({ __studio: true, type }, payload || {}), '*', transfer || []); } catch (e) {} };
+    if (this._embedded) { const hide = () => { const h = document.querySelector('#sc-root > header'); if (h) h.style.display = 'none'; }; hide(); setTimeout(hide, 60); setTimeout(hide, 300); }
+    window.addEventListener('message', (e) => {
+      const d = e.data; if (!d || !d.__studio) return;
+      if (d.type === 'studio:loadCharUrl') this.loadVia(() => this._eng.loadUrl(d.url, d.ext, { chunked: d.chunked, chunks: d.chunks }), d.label || 'character');
+      else if (d.type === 'studio:loadCharBuffer') this.loadVia(() => this._eng.loadBuffer(d.buffer, d.name, (d.name || '').split('.').pop()), d.name || 'mesh');
+      else if (d.type === 'studio:animLibrary') this.setState({ libAnims: d.animations || [] });
+    });
+    setTimeout(() => this._post('studio:ready', { tool: 'showcase' }), 0);
+  }
+
+  toast(msg) {
+    const wrap = document.getElementById('sc-toasts'); if (!wrap) return;
+    const el = document.createElement('div');
+    el.style.cssText = 'padding:11px 15px;border-radius:7px;font-size:12px;background:var(--panel-3);border:1px solid var(--edge);border-left:3px solid #c98a5a;box-shadow:0 8px 24px rgba(0,0,0,.45);max-width:340px;color:var(--text);animation:sc-tin .25s cubic-bezier(.2,1,.3,1);';
+    el.textContent = msg; wrap.appendChild(el);
+    setTimeout(() => { el.style.transition = 'opacity .3s'; el.style.opacity = '0'; setTimeout(() => el.remove(), 300); }, 2800);
+  }
+
+  fmtTime(t) { t = Math.max(0, t || 0); const s = Math.floor(t), cs = Math.floor((t - s) * 100); return s + '.' + String(cs).padStart(2, '0') + 's'; }
+  rowStyle(on) { return 'display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 10px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;text-align:left;border:1px solid ' + (on ? '#c98a5a' : 'var(--edge)') + ';background:' + (on ? 'rgba(201,138,90,.16)' : 'var(--panel-3)') + ';color:' + (on ? '#e6c3a3' : 'var(--text)') + ';'; }
+  chip(on) { return 'font-family:Spline Sans Mono,monospace;font-size:10px;padding:5px 10px;border-radius:5px;cursor:pointer;background:rgba(15,15,15,.6);border:1px solid ' + (on ? '#c98a5a' : 'var(--edge)') + ';color:' + (on ? '#e6c3a3' : 'var(--text-2)') + ';'; }
+  swatch(colors, on) { return 'width:30px;height:24px;border-radius:5px;cursor:pointer;border:2px solid ' + (on ? '#c98a5a' : 'var(--edge)') + ';background:linear-gradient(' + colors[0] + ',' + colors[1] + ');'; }
+
+  renderVals() {
+    const st = this.state, eng = this._eng;
+    const SA = window.SuggestedActions;
+    const suggestions = (SA && st.hasModel) ? SA.suggest({ tris: st.tris, hasSkeleton: st.hasSkeleton, hasUVs: st.hasUVs, hasTexture: st.hasTexture }) : [];
+    const actionable = suggestions.filter(s => s.level !== 'ok');
+    const lvlColor = { warn: '#e0a93b', info: '#5a76b8', ok: '#6e9355' };
+    const lvlIcon = { warn: '⚠', info: '✦', ok: '✓' };
+    const lvlBg = { warn: 'rgba(224,169,59,.14)', info: 'rgba(90,118,184,.13)', ok: 'rgba(110,147,85,.13)' };
+    const goTool = (tool) => { if (this._post) this._post('studio:goTool', { tool }); };
+    const suggestChips = actionable.slice(0, 2).map(s => ({
+      label: s.label,
+      onClick: () => goTool(s.tool),
+      style: 'padding:6px 12px;border-radius:6px;font-size:11.5px;font-weight:700;cursor:pointer;border:1px solid ' + (lvlColor[s.level] || '#5a76b8') + ';background:' + (lvlColor[s.level] || '#5a76b8') + ';color:#fff;',
+    }));
+    const topSug = actionable[0] || null;
+    const views = ['Persp', 'Front', 'Side', 'Back', 'Top'].map(v => ({ label: v, onClick: () => eng && eng.setView(v.toLowerCase()) }));
+    const embeddedClips = st.clips.map(c => ({
+      name: c.name, dur: (c.duration || 0).toFixed(1),
+      style: this.rowStyle(st.activeClip === c.i),
+      onClick: () => { if (eng) { eng.playClip(c.i); this.setState({ activeLib: '', blend: 100 }); this.refresh(); } },
+    }));
+    const libAnims = (st.libAnims || []).map(a => ({
+      label: a.label || (a.path || '').split('/').pop(),
+      style: this.rowStyle(st.activeLib === a.path),
+      onClick: () => this.playLibAnim(a),
+    }));
+    const bgDefs = [
+      ['studio', ['#2a2d33', '#141518'], 'Studio'],
+      ['slate', ['#3a4048', '#1b1e22'], 'Slate'],
+      ['void', ['#0c0c0e', '#0c0c0e'], 'Void'],
+      ['dusk', ['#3b2f4a', '#171320'], 'Dusk'],
+      ['paper', ['#e9e4d8', '#cfc7b4'], 'Paper'],
+    ];
+    const backgrounds = bgDefs.map(([k, cols, label]) => ({
+      label, style: this.swatch(cols, st.bg === k),
+      onClick: () => { this.setState({ bg: k }); if (eng) eng.setBackground(k); },
+    }));
+
+    const scrub = st.duration ? Math.round((st.time / st.duration) * 1000) : 0;
+
+    return {
+      charName: st.meshName, dotColor: st.hasModel ? 'var(--good)' : 'var(--muted)',
+      showSuggest: actionable.length > 0 && st.hasModel && !st.suggestDismiss,
+      suggestReason: topSug ? topSug.reason : '',
+      suggestIcon: topSug ? (lvlIcon[topSug.level] || '✦') : '✦',
+      suggestColor: topSug ? (lvlColor[topSug.level] || '#5a76b8') : '#5a76b8',
+      suggestBg: topSug ? (lvlBg[topSug.level] || lvlBg.info) : lvlBg.info,
+      suggestChips,
+      dismissSuggest: () => this.setState({ suggestDismiss: true }),
+      noModel: !st.hasModel && !st.loading, loading: st.loading, loadingMsg: st.loadingMsg,
+      modeBadge: st.hasModel ? 'SHOWCASE' : 'OPEN A CHARACTER',
+      pickFile: () => document.getElementById('sc-file').click(),
+      views,
+      trisLabel: st.tris ? st.tris.toLocaleString() : '—',
+      skelLabel: st.hasSkeleton ? (st.bones ? st.bones + ' bones' : 'rigged') : 'none',
+      skelColor: st.hasSkeleton ? '#8fd3a0' : 'var(--muted)',
+      hasEmbedded: st.clips.length > 0, embeddedClips,
+      skelOk: st.hasSkeleton, noSkel: st.hasModel && !st.hasSkeleton,
+      hasLibAnims: libAnims.length > 0, noLibAnims: libAnims.length === 0, libAnims,
+      hasAnim: st.hasAnim,
+      playIcon: st.playing ? '⏸' : '▶',
+      togglePlay: () => { if (eng) { eng.togglePlay(); this.refresh(); } },
+      timeLabel: this.fmtTime(st.time) + ' / ' + this.fmtTime(st.duration),
+      clipName: st.clipName || '',
+      scrub, onScrub: (e) => { if (eng && st.duration) eng.seek(+e.target.value / 1000 * st.duration); },
+      speedSlide: st.speed, speedLabel: (st.speed / 100).toFixed(2) + '×',
+      onSpeed: (e) => { const v = +e.target.value; this.setState({ speed: v }); if (eng) eng.setSpeed(v / 100); },
+      canBlend: !!(eng && eng.canBlend && eng.canBlend()),
+      blendSlide: st.blend == null ? 100 : st.blend,
+      blendLabel: (st.blend == null ? 100 : st.blend) + '%',
+      blendPrev: eng && eng.canBlend && eng.canBlend() ? eng.blendNames().prev : '',
+      blendCur: eng && eng.canBlend && eng.canBlend() ? eng.blendNames().cur : '',
+      onBlend: (e) => { const v = +e.target.value; this.setState({ blend: v }); if (eng) eng.setBlend(v / 100); },
+      stopAnim: () => { if (eng) { eng.stopAnim(); this.setState({ activeLib: '', blend: 100 }); this.refresh(); } },
+      backgrounds,
+      groundOn: st.ground, toggleGround: (e) => { const on = e.target.checked; this.setState({ ground: on }); if (eng) eng.setGround(on); },
+      spinChipStyle: this.chip(st.spin), toggleSpin: () => { const v = !st.spin; this.setState({ spin: v }); if (eng) eng.setAutoSpin(v); },
+      wireChipStyle: this.chip(st.wire), toggleWire: () => { const v = !st.wire; this.setState({ wire: v }); if (eng) eng.setWire(v); },
+      reframe: () => { if (eng) eng.frame(); },
+    };
+  }
+}
+</script>
+</body>
+</html>
