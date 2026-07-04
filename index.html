@@ -120,7 +120,7 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
 .dt{font-family:var(--font-mono);font-size:10.5px;color:var(--ink-soft);}
 .acts{display:flex;gap:7px;margin-top:auto;}
 .act{flex:1;padding:8px;border-radius:9px;font-family:var(--font-mono);font-size:11px;font-weight:600;text-align:center;
-  background:var(--cream-2);border:3px solid var(--wood-dark);color:var(--wood-dark);box-shadow:0 3px 0 rgba(107,74,43,.3);transition:transform .12s ease, box-shadow .12s ease, background .12s;}
+  background:var(--cream-2);border:3px solid var(--wood-dark);color:var(--text);box-shadow:0 3px 0 rgba(107,74,43,.3);transition:transform .12s ease, box-shadow .12s ease, background .12s;}
 .act:hover{transform:translateY(-2px);box-shadow:0 5px 0 rgba(107,74,43,.3);background:var(--cream);}
 .act:active{transform:translateY(2px);box-shadow:0 1px 0 rgba(107,74,43,.3);}
 .act.accent{background:var(--sage);border-color:var(--sage-deep);color:#fff6e0;}
@@ -173,6 +173,18 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
 @keyframes pp-slosh{0%,100%{transform:rotate(13deg) translateY(2px)}30%{transform:rotate(13deg)}50%{transform:rotate(0deg) translateY(0)}70%{transform:rotate(-13deg)}90%{transform:rotate(-13deg) translateY(2px)}}
 @keyframes pp-rise{0%{opacity:0;transform:translateY(0) scale(.6)}20%{opacity:.9}100%{opacity:0;transform:translateY(-58px) scale(1)}}
 
+/* theme picker popover */
+.theme-menu{position:fixed;z-index:400;min-width:216px;background:var(--cream-2);border:3px solid var(--wood-dark);border-radius:14px;box-shadow:var(--hard-lg);padding:7px;display:none;}
+.theme-menu .tm-head{font-family:var(--font-mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-soft);padding:5px 9px 7px;}
+.theme-row{display:flex;align-items:center;gap:10px;width:100%;padding:8px 9px;border-radius:9px;background:transparent;border:2px solid transparent;color:var(--ink);text-align:left;transition:background .12s ease, border-color .12s ease;}
+.theme-row:hover{background:var(--cream);border-color:var(--wood-dark);}
+.theme-row.on{background:var(--active-dim);border-color:var(--clay);}
+.theme-row .tm-sw{display:flex;gap:3px;flex:none;}
+.theme-row .tm-sw i{width:13px;height:20px;border-radius:4px;border:2px solid var(--wood-dark);}
+.theme-row .tm-lb{flex:1;font-family:var(--font-mono);font-size:13px;font-weight:600;}
+.theme-row .tm-tag{font-family:var(--font-mono);font-size:9px;letter-spacing:.05em;color:var(--ink-soft);text-transform:uppercase;}
+.theme-row .tm-ck{color:var(--clay);font-weight:700;margin-left:2px;}
+
 /* toasts */
 #toasts{position:fixed;bottom:42px;right:18px;z-index:300;display:flex;flex-direction:column;gap:10px;}
 .toast{padding:12px 16px;border-radius:12px;font-family:var(--font-ui);font-weight:700;font-size:12.5px;color:var(--ink);
@@ -187,7 +199,6 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
 <body>
 <div id="bootSplash">
   <div class="pp-stage">
-    <img class="pp-gif" src="loading.gif" alt="" onerror="this.remove()">
     <div class="pp-flask">
       <span class="pp-neck"></span>
       <span class="pp-body"><span class="pp-liquid"></span><span class="pp-bub b1"></span><span class="pp-bub b2"></span><span class="pp-bub b3"></span></span>
@@ -217,7 +228,7 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
     </div>
     <div class="spacer"></div>
     <button class="tbtn primary" id="btnHandoff" disabled title="Bake the rigged character and send it to MoCap">⟐ Send rig to MoCap →</button>
-    <button class="tbtn ghost" id="btnTheme" title="Switch theme (cute / dark)">◐ Cute</button>
+    <button class="tbtn ghost" id="btnTheme" title="Switch theme">◐ Cute Light</button>
     <button class="tbtn ghost" id="btnLib">▤ Library</button>
   </header>
 
@@ -353,6 +364,11 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
     <span class="mono" id="stAsset">no asset loaded</span>
     <div class="right">
       <span class="mono" id="stHint">Pick a character to rig, or jump straight to MoCap</span>
+      <span class="mono" style="display:flex;gap:9px;align-items:center;">
+        <a href="Privacy.html" target="_blank" rel="noopener" style="color:var(--ink-soft);text-decoration:none;border-bottom:1px dotted var(--wood);">Privacy</a>
+        <a href="Terms.html" target="_blank" rel="noopener" style="color:var(--ink-soft);text-decoration:none;border-bottom:1px dotted var(--wood);">Terms</a>
+        <a href="Notices.html" target="_blank" rel="noopener" style="color:var(--ink-soft);text-decoration:none;border-bottom:1px dotted var(--wood);">Notices</a>
+      </span>
       <span class="mono">⌥ local · nothing uploaded</span>
     </div>
   </footer>
@@ -907,8 +923,28 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
   });
   $('#btnLib').addEventListener('click', () => setTool('library'));
   const btnTheme = $('#btnTheme');
-  function updateThemeBtn(){ const n = window.StudioTheme ? window.StudioTheme.get() : 'cute'; if (btnTheme) btnTheme.textContent = (n === 'dark' ? '\u25D1 Dark' : '\u25D0 Cute'); }
-  if (btnTheme) btnTheme.addEventListener('click', () => { window.StudioTheme && window.StudioTheme.toggle(); updateThemeBtn(); });
+  function themeLabel(){ const ST = window.StudioTheme; if (!ST) return '◐ Theme'; const n = ST.get(); const m = (ST.META && ST.META[n]) || { label: n, dark: false }; return (m.dark ? '◑ ' : '◐ ') + m.label; }
+  function updateThemeBtn(){ if (btnTheme) btnTheme.textContent = themeLabel(); }
+  let themeMenu = null;
+  function buildThemeMenu(){
+    const ST = window.StudioTheme; if (!ST) return;
+    if (!themeMenu){ themeMenu = document.createElement('div'); themeMenu.className = 'theme-menu'; themeMenu.id = 'themeMenu'; document.body.appendChild(themeMenu);
+      document.addEventListener('click', e => { if (themeMenu.style.display === 'block' && !themeMenu.contains(e.target) && e.target !== btnTheme) themeMenu.style.display = 'none'; });
+    }
+    const cur = ST.get();
+    themeMenu.innerHTML = '<div class="tm-head">Theme</div>';
+    ST.list().forEach(t => {
+      const row = document.createElement('button'); row.className = 'theme-row' + (t.name === cur ? ' on' : '');
+      row.innerHTML = '<span class="tm-sw">' + t.swatch.map(c => '<i style="background:' + c + '"></i>').join('') + '</span>'
+        + '<span class="tm-lb">' + t.label + '</span>'
+        + '<span class="tm-tag">' + (t.dark ? 'dark' : 'light') + '</span>'
+        + (t.name === cur ? '<span class="tm-ck">✓</span>' : '');
+      row.addEventListener('click', () => { ST.set(t.name); updateThemeBtn(); themeMenu.style.display = 'none'; toast('Theme: ' + t.label, 'info'); });
+      themeMenu.appendChild(row);
+    });
+  }
+  function openThemeMenu(){ buildThemeMenu(); const r = btnTheme.getBoundingClientRect(); themeMenu.style.display = 'block'; themeMenu.style.top = (r.bottom + 8) + 'px'; themeMenu.style.right = (window.innerWidth - r.right) + 'px'; }
+  if (btnTheme) btnTheme.addEventListener('click', (e) => { e.stopPropagation(); if (themeMenu && themeMenu.style.display === 'block') themeMenu.style.display = 'none'; else openThemeMenu(); });
   window.addEventListener('studiothemechange', updateThemeBtn); updateThemeBtn();
   $$('#libTabs .lib-tab').forEach(t => t.addEventListener('click', () => {
     libTab = t.dataset.tab;

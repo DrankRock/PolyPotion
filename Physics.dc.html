@@ -3,10 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<script src="./studio3D_scripts/support.js"></script>
+<script src="./support.js"></script>
 </head>
 <body>
 <x-dc>
+
 <helmet>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -17,11 +18,14 @@
   *{box-sizing:border-box;}
   @keyframes ph-spin{to{transform:rotate(360deg);}}
   @keyframes ph-tin{from{transform:translateX(120%);opacity:0;}to{transform:translateX(0);opacity:1;}}
+  @keyframes ph-blink{0%,100%{opacity:1;}50%{opacity:.25;}}
   #ph-root ::-webkit-scrollbar{width:10px;height:10px;}
   #ph-root ::-webkit-scrollbar-track{background:var(--gutter);}
   #ph-root ::-webkit-scrollbar-thumb{background:var(--panel-3);border:2px solid var(--gutter);border-radius:6px;}
   #ph-root input[type=range]{-webkit-appearance:none;height:4px;border-radius:2px;background:var(--panel);outline:none;}
   #ph-root input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--new);cursor:pointer;border:2px solid var(--panel);}
+  #ph-root input[type=number]{background:var(--panel);border:1px solid var(--edge);color:var(--text);border-radius:5px;padding:5px 6px;font-family:var(--font-mono);font-size:11px;width:56px;}
+  #ph-root select{background:var(--panel);border:1px solid var(--edge);color:var(--text);border-radius:5px;padding:5px 6px;font-size:11px;flex:1;min-width:0;}
 </style>
 </helmet>
 
@@ -32,7 +36,7 @@
       <div style="width:26px;height:26px;border-radius:5px;display:flex;align-items:center;justify-content:center;background:var(--new);color:#04201f;font-weight:700;font-size:15px;box-shadow:0 1px 2px rgba(0,0,0,.4),0 0 0 1px rgba(255,255,255,.08) inset;">≈</div>
       <div>
         <div style="font-weight:700;letter-spacing:.04em;font-size:14px;">PHYSICS</div>
-        <div style="font-family:var(--font-mono);font-size:10px;color:var(--muted);letter-spacing:.1em;margin-top:1px;">SOFT-BODY · CLOTH · WASM XPBD</div>
+        <div style="font-family:var(--font-mono);font-size:10px;color:var(--muted);letter-spacing:.1em;margin-top:1px;">SOFT-BODY · CLOTH · LIQUID · WASM XPBD</div>
       </div>
     </div>
     <div style="flex:1;"></div>
@@ -49,7 +53,7 @@
   <div style="flex:1;display:flex;min-height:0;">
 
     <!-- LEFT PANEL -->
-    <aside style="width:260px;flex:none;background:var(--panel);border-right:1px solid var(--seam);display:flex;flex-direction:column;min-height:0;overflow-y:auto;">
+    <aside style="width:264px;flex:none;background:var(--panel);border-right:1px solid var(--seam);display:flex;flex-direction:column;min-height:0;overflow-y:auto;">
 
       <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--header);border-bottom:1px solid var(--seam);flex:none;">
         <span style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);">Simulation</span>
@@ -61,6 +65,134 @@
           <button style="flex:none;width:46px;padding:9px 0;border-radius:6px;font-size:13px;background:var(--panel3);border:1px solid var(--edge);color:var(--text);cursor:pointer;" title="Reset to rest shape" onClick="{{ reset }}">↺</button>
         </div>
         <button style="display:flex;align-items:center;justify-content:center;gap:7px;padding:9px;border-radius:6px;font-size:12px;font-weight:600;background:var(--newDim);border:1px solid rgba(67,182,196,.35);color:#aee3ea;cursor:pointer;" title="Random impulse — watch it jiggle" onClick="{{ flick }}">✦ Flick it</button>
+      </div>
+
+      <div style="border-top:1px solid var(--seam);">
+        <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--header);border-bottom:1px solid var(--seam);">
+          <span style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);">💧 Liquid</span>
+          <span style="margin-left:auto;font-family:var(--font-mono);font-size:10px;color:var(--new);">{{ liqCountLabel }}</span>
+        </div>
+        <div style="padding:12px;">
+          <div style="display:flex;gap:8px;margin-bottom:11px;">
+            <button style="flex:1;padding:8px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid rgba(67,182,196,.4);background:var(--newDim);color:#aee3ea;" title="Drop a ball of liquid (above the container if there is one)" onClick="{{ dropBall }}">💧 Drop ball</button>
+            <button style="{{ placeStyle }}" title="Then click anywhere in the viewport — inside a glass, on the floor…" onClick="{{ togglePlace }}">⊕ Place</button>
+          </div>
+
+          <label style="display:block;font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:7px;">Ball size <span style="float:right;font-family:IBM Plex Mono,monospace;color:var(--text2);">{{ liqRLabel }}</span></label>
+          <input type="range" min="12" max="45" value="{{ liqRSlide }}" onInput="{{ onLiqR }}" style="width:100%;margin-bottom:14px;">
+          <label style="display:block;font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:7px;">Detail <span style="float:right;font-family:IBM Plex Mono,monospace;color:var(--text2);">{{ liqPartsLabel }}</span></label>
+          <input type="range" min="6" max="16" value="{{ liqDetailSlide }}" onInput="{{ onLiqDetail }}" style="width:100%;margin-bottom:14px;">
+          <label style="display:block;font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:7px;">Viscosity <span style="float:right;font-family:IBM Plex Mono,monospace;color:var(--text2);">{{ viscLabel }}</span></label>
+          <input type="range" min="0" max="100" value="{{ viscSlide }}" onInput="{{ onVisc }}" style="width:100%;margin-bottom:14px;">
+          <label style="display:block;font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:7px;">Water color</label>
+          <div style="display:flex;gap:6px;align-items:center;margin-bottom:14px;">
+            <sc-for list="{{ waterSwatches }}" as="s" hint-placeholder-count="7">
+              <button style="{{ s.sw }}" title="{{ s.name }}" onClick="{{ s.onPick }}"></button>
+            </sc-for>
+            <input type="color" value="{{ waterColor }}" onInput="{{ onWaterColor }}" title="Custom color" style="width:30px;height:24px;padding:0;border:1px solid var(--edge);border-radius:5px;background:var(--panel);cursor:pointer;">
+          </div>
+          <label style="display:block;font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:7px;">Gloss <span style="float:right;font-family:IBM Plex Mono,monospace;color:var(--text2);">{{ glossLabel }}</span></label>
+          <input type="range" min="0" max="100" value="{{ glossSlide }}" onInput="{{ onGloss }}" style="width:100%;margin-bottom:14px;">
+          <label style="display:block;font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:7px;">Glow <span style="float:right;font-family:IBM Plex Mono,monospace;color:var(--text2);">{{ glowLabel }}</span></label>
+          <input type="range" min="0" max="100" value="{{ glowSlide }}" onInput="{{ onGlow }}" style="width:100%;margin-bottom:14px;">
+          <label style="display:block;font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:7px;">Transparency <span style="float:right;font-family:IBM Plex Mono,monospace;color:var(--text2);">{{ clarityLabel }}</span></label>
+          <input type="range" min="0" max="60" value="{{ claritySlide }}" onInput="{{ onClarity }}" style="width:100%;margin-bottom:11px;">
+          <button style="width:100%;padding:8px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid var(--edge);background:var(--panel3);color:var(--text);" onClick="{{ clearLiquid }}">Clear liquid</button>
+        </div>
+      </div>
+
+      <div style="border-top:1px solid var(--seam);">
+        <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--header);border-bottom:1px solid var(--seam);">
+          <span style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);">Container</span>
+        </div>
+        <div style="padding:12px;">
+          <div style="display:flex;gap:8px;">
+            <button style="flex:1;padding:8px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid var(--edge);background:var(--panel3);color:var(--text);" onClick="{{ addGlass }}">🥛 Glass preset</button>
+            <button style="flex:1;padding:8px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid var(--edge);background:var(--panel3);color:var(--text);" title="Import a glass / bowl / mug mesh — it becomes a rigid vessel the liquid collides with" onClick="{{ pickContainer }}">⬇ Import…</button>
+          </div>
+          <sc-if value="{{ hasContainer }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;align-items:center;gap:8px;margin-top:10px;padding:7px 10px;background:var(--panel-2);border:1px solid var(--seam);border-radius:6px;">
+              <span style="font-family:var(--font-mono);font-size:11px;color:var(--text2);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ containerName }}</span>
+              <button style="flex:none;width:22px;height:22px;border-radius:5px;border:1px solid var(--edge);background:var(--panel3);color:var(--muted);cursor:pointer;font-size:11px;" title="Remove container" onClick="{{ removeContainer }}">✕</button>
+            </div>
+            <div style="font-size:10px;line-height:1.5;color:var(--muted);margin-top:8px;">Drag the vessel in the viewport — the liquid inside follows.</div>
+          </sc-if>
+        </div>
+      </div>
+
+      <div style="border-top:1px solid var(--seam);">
+        <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--header);border-bottom:1px solid var(--seam);">
+          <span style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);">Motion program</span>
+          <span style="margin-left:auto;font-family:var(--font-mono);font-size:10px;color:{{ progStatColor }};">{{ progStatLabel }}</span>
+        </div>
+        <div style="padding:12px;">
+          <sc-for list="{{ progRows }}" as="r" hint-placeholder-count="0">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;padding:6px 9px;background:var(--panel-2);border:1px solid var(--seam);border-radius:6px;">
+              <span style="font-family:var(--font-mono);font-size:10px;color:var(--muted);flex:none;">{{ r.num }}</span>
+              <span style="font-size:11px;color:var(--text2);flex:1;">{{ r.label }}</span>
+              <button style="flex:none;width:20px;height:20px;border-radius:4px;border:1px solid var(--edge);background:var(--panel3);color:var(--muted);cursor:pointer;font-size:10px;" onClick="{{ r.onDel }}">✕</button>
+            </div>
+          </sc-for>
+          <div style="display:flex;gap:6px;margin:8px 0 6px;">
+            <select value="{{ progActionVal }}" onChange="{{ onProgAction }}">
+              <option value="rotate-x">Rotate X</option>
+              <option value="rotate-y">Rotate Y</option>
+              <option value="rotate-z">Rotate Z</option>
+              <option value="move-x">Move X</option>
+              <option value="move-y">Move Y</option>
+              <option value="move-z">Move Z</option>
+              <option value="wait">Wait</option>
+            </select>
+            <input type="number" value="{{ progAmount }}" onInput="{{ onProgAmount }}" title="degrees (rotate) or scene units (move)">
+          </div>
+          <div style="display:flex;gap:6px;align-items:center;margin-bottom:10px;">
+            <input type="number" value="{{ progSecs }}" onInput="{{ onProgSecs }}" min="0.1" step="0.5" title="duration in seconds">
+            <span style="font-size:10px;color:var(--muted);flex:1;">sec · {{ amountHint }}</span>
+            <button style="flex:none;padding:6px 13px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;border:1px solid var(--edge);background:var(--panel3);color:var(--text);" onClick="{{ addStep }}">＋ Add</button>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button style="{{ runStyle }}" onClick="{{ toggleProg }}">{{ runLabel }}</button>
+            <button style="{{ loopStyle }}" title="Repeat the program forever" onClick="{{ toggleLoop }}">⟳ Loop</button>
+            <button style="flex:none;width:38px;padding:8px 0;border-radius:6px;font-size:12px;cursor:pointer;border:1px solid var(--edge);background:var(--panel3);color:var(--text);" title="Reset the container's position & rotation" onClick="{{ resetPose }}">↺</button>
+          </div>
+        </div>
+      </div>
+
+      <div style="border-top:1px solid var(--seam);">
+        <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--header);border-bottom:1px solid var(--seam);">
+          <span style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);">Export</span>
+          <sc-if value="{{ recOn }}" hint-placeholder-val="{{ false }}">
+            <span style="margin-left:auto;display:flex;align-items:center;gap:6px;font-family:var(--font-mono);font-size:10px;color:#ff6b6b;"><span style="width:7px;height:7px;border-radius:50%;background:#ff4949;animation:ph-blink 1s infinite;"></span>REC</span>
+          </sc-if>
+        </div>
+        <div style="padding:12px;">
+          <label style="display:block;font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:7px;">Scene</label>
+          <div style="display:flex;gap:8px;margin-bottom:10px;">
+            <button style="{{ gridStyle }}" title="Show / hide the ground grid" onClick="{{ toggleGrid }}">▦ Grid</button>
+            <button style="{{ shadowStyle }}" title="Show / hide the ground shadow" onClick="{{ toggleShadow }}">◐ Shadow</button>
+          </div>
+          <label style="display:block;font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:7px;">Background</label>
+          <div style="display:flex;gap:6px;align-items:center;margin-bottom:14px;">
+            <sc-for list="{{ bgSwatches }}" as="s" hint-placeholder-count="5">
+              <button style="{{ s.sw }}" title="{{ s.name }}" onClick="{{ s.onPick }}">{{ s.txt }}</button>
+            </sc-for>
+            <input type="color" value="{{ bgCustom }}" onInput="{{ onBgCustom }}" title="Custom background" style="width:30px;height:24px;padding:0;border:1px solid var(--edge);border-radius:5px;background:var(--panel);cursor:pointer;">
+          </div>
+          <div style="display:flex;gap:8px;margin-bottom:12px;">
+            <button style="{{ fmtMp4Style }}" onClick="{{ setMp4 }}">🎬 MP4</button>
+            <button style="{{ fmtGifStyle }}" onClick="{{ setGif }}">🖼 GIF</button>
+          </div>
+          <label style="display:block;font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:7px;">Water in the export</label>
+          <div style="display:flex;gap:8px;margin-bottom:8px;">
+            <button style="{{ waterFluidStyle }}" title="Bake the motion live (cheap balls on screen), then render a smooth metaball water surface frame-by-frame offline" onClick="{{ setWaterFluid }}">≈ Fluid</button>
+            <button style="{{ waterLiveStyle }}" title="Record the screen as-is — balls stay balls" onClick="{{ setWaterLive }}">● Balls</button>
+          </div>
+          <div style="font-size:10px;line-height:1.5;color:var(--muted);margin-bottom:12px;">{{ waterNote }}</div>
+          <label style="display:block;font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:7px;">Length <span style="float:right;font-family:IBM Plex Mono,monospace;color:var(--text2);">{{ recSecsLabel }}</span></label>
+          <input type="range" min="1" max="12" value="{{ recSecsSlide }}" onInput="{{ onRecSecs }}" style="width:100%;margin-bottom:11px;">
+          <button style="width:100%;padding:9px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;border:1px solid var(--edge);background:var(--panel3);color:var(--text);margin-bottom:7px;" onClick="{{ record }}">{{ recordLabel }}</button>
+          <button style="width:100%;padding:9px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid rgba(67,182,196,.4);background:var(--newDim);color:#aee3ea;" title="Reset, run the motion program from the start, and record exactly its length" onClick="{{ progRecord }}">▶ Run program + record</button>
+        </div>
       </div>
 
       <div style="border-top:1px solid var(--seam);">
@@ -115,10 +247,11 @@
           <div style="width:70px;height:70px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:30px;background:var(--newDim);border:1px solid rgba(67,182,196,.3);color:var(--new);">≈</div>
           <div style="text-align:center;">
             <div style="font-size:16px;font-weight:700;margin-bottom:6px;">Make it move</div>
-            <div style="font-size:12.5px;color:var(--text2);max-width:440px;line-height:1.6;">Load a character to turn it into a <b>jiggling soft body</b>, or drop a <b>cloth</b> and blow wind through it. The whole simulation — every particle and constraint — runs in a hand-written <b>WebAssembly</b> solver, right here on your machine.</div>
+            <div style="font-size:12.5px;color:var(--text2);max-width:460px;line-height:1.6;">Pour <b>liquid into a glass</b> and slosh it around, turn a character into a <b>jiggling soft body</b>, or drop a <b>cloth</b> and blow wind through it. Everything runs right here on your machine — and you can record the result as an <b>MP4 or GIF</b>.</div>
           </div>
           <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center;">
-            <button style="padding:10px 18px;border-radius:7px;font-size:12.5px;font-weight:600;background:var(--new);border:1px solid var(--new);color:#04201f;cursor:pointer;box-shadow:0 2px 12px rgba(67,182,196,.35);" onClick="{{ loadClothBig }}">≋ Drop a cloth</button>
+            <button style="padding:10px 18px;border-radius:7px;font-size:12.5px;font-weight:600;background:var(--new);border:1px solid var(--new);color:#04201f;cursor:pointer;box-shadow:0 2px 12px rgba(67,182,196,.35);" onClick="{{ loadSplash }}">💦 Water in a glass</button>
+            <button style="padding:10px 18px;border-radius:7px;font-size:12.5px;font-weight:600;background:var(--panel3);border:1px solid var(--edge);color:var(--text);cursor:pointer;" onClick="{{ loadClothBig }}">≋ Drop a cloth</button>
             <button style="padding:10px 18px;border-radius:7px;font-size:12.5px;font-weight:600;background:var(--panel3);border:1px solid var(--edge);color:var(--text);cursor:pointer;" onClick="{{ loadSample }}">Jiggle a figure</button>
             <button style="padding:10px 18px;border-radius:7px;font-size:12.5px;font-weight:600;background:var(--panel3);border:1px solid var(--edge);color:var(--text);cursor:pointer;" onClick="{{ pickFile }}">⬇ Import…</button>
           </div>
@@ -135,13 +268,13 @@
       <!-- bottom presets -->
       <div style="position:absolute;left:50%;bottom:12px;transform:translateX(-50%);display:flex;align-items:center;gap:5px;background:rgba(15,15,15,.86);border:1px solid var(--edge);border-radius:9px;padding:6px 8px;">
         <span style="font-size:10px;font-family:IBM Plex Mono,monospace;color:var(--muted);padding:0 6px;">PRESETS</span>
-        <sc-for list="{{ presets }}" as="p" hint-placeholder-count="4">
+        <sc-for list="{{ presets }}" as="p" hint-placeholder-count="5">
           <button style="font-size:11px;font-weight:600;padding:6px 11px;border-radius:6px;cursor:pointer;background:var(--panel3);border:1px solid var(--edge);color:var(--text);" onClick="{{ p.onClick }}">{{ p.label }}</button>
         </sc-for>
       </div>
 
       <div style="position:absolute;left:12px;top:12px;display:flex;flex-direction:column;gap:6px;font-family:IBM Plex Mono,monospace;font-size:10px;color:var(--text2);background:rgba(15,15,15,.7);border:1px solid var(--seam);border-radius:7px;padding:9px 11px;">
-        <sc-for list="{{ stats }}" as="s" hint-placeholder-count="4">
+        <sc-for list="{{ stats }}" as="s" hint-placeholder-count="5">
           <div style="display:flex;justify-content:space-between;gap:18px;"><span style="color:var(--muted);">{{ s.k }}</span><span>{{ s.v }}</span></div>
         </sc-for>
       </div>
@@ -151,8 +284,10 @@
   </div>
 
   <input type="file" id="ph-file" accept=".fbx,.glb,.gltf,.obj" style="display:none;">
+  <input type="file" id="ph-cfile" accept=".fbx,.glb,.gltf,.obj" style="display:none;">
   <div id="ph-toasts" style="position:fixed;bottom:16px;right:16px;z-index:300;display:flex;flex-direction:column;gap:8px;"></div>
 </div>
+
 </x-dc>
 <script type="text/x-dc" data-dc-script>
 class Component extends DCLogic {
@@ -161,6 +296,12 @@ class Component extends DCLogic {
     sim: false, fps: 0, mode: 'soft',
     grav: 60, stiff: 6, damp: 30, wind: 0, ang: 0,
     pinMode: false, verts: 0, tris: 0, cons: 0, pins: 0, kb: 0,
+    fluid: 0, placeMode: false, containerName: '',
+    liqR: 26, liqDetail: 10, visc: 8, waterMode: 'fluid',
+    waterColor: '#3f9df8', gloss: 75, glow: 0, clarity: 0,
+    gridOn: true, shadowOn: true, bg: '', bgCustom: '#101216',
+    steps: [], progAction: 'rotate-x', progAmount: 360, progSecs: 5, progLoop: false, progOn: false,
+    recFmt: 'mp4', recSecs: 5, rec: '',
   };
 
   componentDidMount() { this.setupEmbed(); this.boot(); this.setupDrop(); }
@@ -168,15 +309,19 @@ class Component extends DCLogic {
   async boot() {
     try {
       const canvas = document.getElementById('ph-gl');
-      const mod = await import('./physics-engine.js');
+      let mod;
+      try { mod = await import('./studio3D_scripts/physics-engine.js'); }
+      catch (e) { mod = await import('./physics-engine.js'); }
       const eng = new mod.PHEngine(canvas); this._eng = eng;
       eng.onStatus = (msg) => this.setState({ loading: !!msg, loadingMsg: msg || '' });
       eng.onChange = () => this.refresh();
-      eng.onStats = (s) => this.setState({ verts: s.verts, tris: s.tris, cons: s.constraints, pins: s.pins, mode: s.mode });
+      eng.onStats = (s) => this.setState({ verts: s.verts, tris: s.tris, cons: s.constraints, pins: s.pins, mode: s.mode, fluid: s.fluid || 0, placeMode: !!s.placeMode, containerName: s.container || '' });
       eng.onFps = (f) => this.setState({ fps: f });
       // push initial tunables
       eng.setGravity(-(this.state.grav / 10)); eng.setStiffness(this.state.stiff);
       eng.setDamping(0.90 + (this.state.damp / 100) * 0.099);
+      eng.setLiquidViscosity(this.state.visc / 100);
+      this._syncBall();
       try { const r = await fetch('studio3D_scripts/wasm-physics.js'); const t = await r.text(); this.setState({ kb: Math.round(t.length / 1024) }); } catch (e) {}
       if (this._pending) { const p = this._pending; this._pending = null; p(); }
     } catch (e) {
@@ -188,7 +333,50 @@ class Component extends DCLogic {
   refresh() {
     if (!this._eng) return;
     const s = this._eng.stats();
-    this.setState({ hasModel: this._eng.hasModel(), meshName: this._eng.hasModel() ? s.name : 'no model', sim: s.sim, verts: s.verts, tris: s.tris, cons: s.constraints, pins: s.pins, mode: s.mode });
+    this.setState({ hasModel: this._eng.hasModel(), meshName: this._eng.hasModel() ? (s.name || 'scene') : 'no model', sim: s.sim,
+      verts: s.verts, tris: s.tris, cons: s.constraints, pins: s.pins, mode: s.mode,
+      fluid: s.fluid || 0, placeMode: !!s.placeMode, containerName: s.container || '', progOn: !!s.program });
+  }
+
+  _syncBall() {
+    const R = this.state.liqR / 100, sp = (2 * R) / this.state.liqDetail;
+    if (this._eng) this._eng.setLiquidBall(R, sp);
+  }
+  _syncWater(patch) {
+    const st = Object.assign({}, this.state, patch || {});
+    if (this._eng) this._eng.setWaterStyle({ color: st.waterColor, gloss: st.gloss / 100, glow: st.glow / 100, opacity: 1 - st.clarity / 100 });
+  }
+  _swatch(color, selected) {
+    return 'width:24px;height:24px;flex:none;border-radius:6px;cursor:pointer;padding:0;font-size:10px;font-weight:700;color:var(--muted);background:' + color + ';border:2px solid ' + (selected ? 'var(--new)' : 'var(--edge)') + ';';
+  }
+  _syncProg(list) {
+    if (!this._eng) return;
+    this._eng.setProgram((list || this.state.steps).map(s => ({ type: s.type, axis: s.axis, amount: s.amount, dur: s.dur })));
+  }
+  stepLabel(s) {
+    if (s.type === 'wait') return '⏸ Wait · ' + s.dur + 's';
+    if (s.type === 'rotate') return '↻ Rotate ' + s.axis.toUpperCase() + ' ' + s.amount + '° · ' + s.dur + 's';
+    return '→ Move ' + s.axis.toUpperCase() + ' ' + s.amount + ' · ' + s.dur + 's';
+  }
+  _dl(out, wantedMp4) {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(out.blob);
+    a.download = 'physics-' + new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-') + '.' + out.ext;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+    this.toast('Saved .' + out.ext + (wantedMp4 && out.ext === 'webm' ? ' — this browser can\u2019t record MP4, so you got WebM (plays everywhere modern)' : ''));
+  }
+  async _capture(seconds) {
+    const eng = this._eng, fmt = this.state.recFmt;
+    const offline = this.state.waterMode === 'fluid' && eng.liquidCount() > 0;
+    this.setState({ rec: 'rec' });
+    try {
+      const out = offline
+        ? await eng.recordOffline(seconds, fmt === 'gif' ? 14 : 30, fmt)
+        : (fmt === 'gif' ? await eng.recordGif(seconds, 14, 480) : await eng.recordVideo(seconds));
+      this._dl(out, fmt === 'mp4');
+    } catch (e) { this.toast('Recording failed: ' + (e && e.message || e)); }
+    this.setState({ rec: '' });
   }
 
   async loadVia(fn, label) {
@@ -198,12 +386,24 @@ class Component extends DCLogic {
     catch (e) { this.setState({ loading: false }); this.toast('Load failed: ' + (e && e.message || e)); if (this._post) this._post('studio:error', { tool: 'physics', message: String(e && e.message || e) }); }
   }
 
+  async loadContainerFile(f) {
+    if (!this._eng) { this._pending = () => this.loadContainerFile(f); return; }
+    try {
+      const buf = await f.arrayBuffer();
+      const r = await this._eng.importContainer(buf, (f.name.split('.').pop() || 'glb').toLowerCase(), f.name);
+      this.refresh();
+      this.toast('Container ready: ' + r.name + ' — drop some liquid in it');
+    } catch (e) { this.setState({ loading: false }); this.toast('Container failed: ' + (e && e.message || e)); }
+  }
+
   setupDrop() {
     const root = document.getElementById('ph-root'); if (!root) return;
     root.addEventListener('dragover', e => e.preventDefault());
     root.addEventListener('drop', e => { e.preventDefault(); const f = e.dataTransfer.files && e.dataTransfer.files[0]; if (f) this.loadVia(() => this._eng.loadFile(f), f.name); });
     const inp = document.getElementById('ph-file');
     if (inp) inp.addEventListener('change', e => { const f = e.target.files[0]; if (f) { this.loadVia(() => this._eng.loadFile(f), f.name); e.target.value = ''; } });
+    const cinp = document.getElementById('ph-cfile');
+    if (cinp) cinp.addEventListener('change', e => { const f = e.target.files[0]; if (f) { this.loadContainerFile(f); e.target.value = ''; } });
   }
 
   setupEmbed() {
@@ -225,21 +425,33 @@ class Component extends DCLogic {
     const el = document.createElement('div');
     el.style.cssText = 'padding:11px 15px;border-radius:7px;font-size:12px;background:var(--panel-3);border:1px solid var(--edge);border-left:3px solid var(--new);box-shadow:0 8px 24px rgba(0,0,0,.45);max-width:340px;color:var(--text);animation:ph-tin .25s cubic-bezier(.2,1,.3,1);';
     el.textContent = msg; wrap.appendChild(el);
-    setTimeout(() => { el.style.transition = 'opacity .3s'; el.style.opacity = '0'; setTimeout(() => el.remove(), 300); }, 2800);
+    setTimeout(() => { el.style.transition = 'opacity .3s'; el.style.opacity = '0'; setTimeout(() => el.remove(), 300); }, 3200);
   }
 
   pill(on) { return 'flex:1;padding:8px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid ' + (on ? 'var(--new)' : 'var(--edge)') + ';background:' + (on ? 'rgba(67,182,196,0.16)' : 'var(--panel-3)') + ';color:' + (on ? '#aee3ea' : 'var(--text)') + ';'; }
+
+  loadSplashRef() {
+    const eng = this._eng; if (!eng) return;
+    eng.addGlass();
+    this.setState({ liqR: 24, liqDetail: 10 });
+    eng.setLiquidBall(0.24, 0.048);
+    const r = eng.spawnLiquid(null);
+    this.refresh();
+    this.toast(r.ok ? 'Water pouring into the glass — drag the glass around' : r.reason);
+  }
 
   renderVals() {
     const st = this.state, eng = this._eng;
     const fmt = n => n >= 1000 ? (n / 1000).toFixed(n >= 10000 ? 0 : 1) + 'k' : ('' + n);
     const presets = [
+      { label: '💦 Splash', onClick: () => this.loadSplashRef() },
       { label: '≋ Cloth', onClick: () => { if (eng) { eng.loadCloth(44, 30); this.refresh(); this.toast('Cloth dropped — try the wind'); } } },
       { label: '🏳 Flag', onClick: () => { if (eng) { eng.loadCloth(50, 32); eng.setWind(0.45); eng.setWindAngle(0); this.setState({ wind: 45, ang: 0 }); this.refresh(); this.toast('Flag in the wind'); } } },
       { label: '⛑ Figure', onClick: () => this.loadSampleRef() },
       { label: '☂ Drape', onClick: () => { if (eng) { eng.loadDrape(46, 46); this.setState({ wind: 0 }); this.refresh(); this.toast('Sheet dropping onto the sphere — real WASM collision'); } } },
       { label: '⬇ File', onClick: () => document.getElementById('ph-file').click() },
     ];
+    const recBusy = !!st.rec;
     return {
       meshName: st.meshName, dotColor: st.hasModel ? 'var(--good)' : 'var(--muted)',
       hasModel: st.hasModel, noModel: !st.hasModel && !st.loading, loading: st.loading, loadingMsg: st.loadingMsg,
@@ -247,8 +459,8 @@ class Component extends DCLogic {
       fpsLabel: st.sim ? (st.fps + ' fps') : 'paused', fpsColor: st.sim ? (st.fps >= 50 ? 'var(--good)' : (st.fps >= 30 ? 'var(--warn)' : 'var(--danger)')) : 'var(--muted)',
       playLabel: st.sim ? '❚❚ Pause' : '▶ Simulate',
       playStyle: 'flex:1;padding:9px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;border:1px solid ' + (st.sim ? 'var(--active)' : 'var(--new)') + ';background:' + (st.sim ? 'var(--active)' : 'var(--new)') + ';color:' + (st.sim ? 'var(--on-accent)' : '#04201f') + ';',
-      togglePlay: () => { if (!eng || !st.hasModel) { this.toast('Load something first'); return; } const on = eng.toggle(); this.setState({ sim: on }); },
-      reset: () => { if (eng) { eng.reset(); this.toast('Reset to rest shape'); } },
+      togglePlay: () => { if (!eng || !eng.hasModel()) { this.toast('Load something first'); return; } const on = eng.toggle(); this.setState({ sim: on }); },
+      reset: () => { if (eng) { eng.reset(); this.refresh(); this.toast('Reset to rest'); } },
       flick: () => { if (!eng || !st.hasModel) { this.toast('Load something first'); return; } eng.flick(this.state.mode === 'cloth' ? 0.04 : 0.08); this.setState({ sim: true }); },
       gravSlide: st.grav, gravLabel: (st.grav / 10).toFixed(1) + ' g',
       onGrav: e => { const v = +e.target.value; this.setState({ grav: v }); if (eng) eng.setGravity(-(v / 10)); },
@@ -267,11 +479,134 @@ class Component extends DCLogic {
       pickFile: () => document.getElementById('ph-file').click(),
       loadClothBig: () => { if (eng) { eng.loadCloth(48, 32); eng.setWind(0.35); this.setState({ wind: 35 }); this.refresh(); this.toast('Cloth dropped — blow some wind through it'); } },
       loadSample: () => this.loadSampleRef(),
+      loadSplash: () => this.loadSplashRef(),
       presets,
-      vpHint: st.pinMode ? 'drag to pin · Alt to unpin' : (st.hasModel ? 'drag the body to grab & pull · scroll to zoom' : 'load a model or preset'),
+
+      // ---- liquid ----
+      liqCountLabel: st.fluid ? st.fluid.toLocaleString() + ' pts' : '—',
+      dropBall: () => { if (!eng) return; this._syncBall(); const r = eng.spawnLiquid(null); this.refresh(); this.toast(r.ok ? 'Liquid ball dropped — ' + r.added.toLocaleString() + ' particles' : r.reason); },
+      placeStyle: this.pill(st.placeMode),
+      togglePlace: () => { if (!eng) return; const v = !st.placeMode; this._syncBall(); eng.setPlaceMode(v); this.setState({ placeMode: v }); if (v) this.toast('Click anywhere in the viewport — the ball spawns there (inside a glass works)'); },
+      liqRSlide: st.liqR, liqRLabel: (st.liqR / 100).toFixed(2) + ' r',
+      onLiqR: e => { this.setState({ liqR: +e.target.value }); this._syncBall(); },
+      liqDetailSlide: st.liqDetail, liqPartsLabel: '~' + Math.round(4.19 * Math.pow(st.liqDetail / 2, 3)) + ' pts/ball',
+      onLiqDetail: e => { this.setState({ liqDetail: +e.target.value }); this._syncBall(); },
+      viscSlide: st.visc, viscLabel: st.visc + '%',
+      onVisc: e => { const v = +e.target.value; this.setState({ visc: v }); if (eng) eng.setLiquidViscosity(v / 100); },
+      clearLiquid: () => { if (eng) { eng.clearLiquid(); this.refresh(); this.toast('Liquid cleared'); } },
+      waterColor: st.waterColor,
+      waterSwatches: [
+        ['#3f9df8', 'Water'], ['#38d6d0', 'Cyan'], ['#49c26b', 'Slime'], ['#f2a33c', 'Lava'],
+        ['#d9435f', 'Punch'], ['#7c3aed', 'Potion'], ['#e8f1f7', 'Milk'],
+      ].map(([c, name]) => ({
+        sw: this._swatch(c, st.waterColor === c), name,
+        onPick: () => { this.setState({ waterColor: c }); this._syncWater({ waterColor: c }); },
+      })),
+      onWaterColor: e => { const c = e.target.value; this.setState({ waterColor: c }); this._syncWater({ waterColor: c }); },
+      glossSlide: st.gloss, glossLabel: st.gloss + '%',
+      onGloss: e => { const v = +e.target.value; this.setState({ gloss: v }); this._syncWater({ gloss: v }); },
+      glowSlide: st.glow, glowLabel: st.glow ? st.glow + '%' : 'off',
+      onGlow: e => { const v = +e.target.value; this.setState({ glow: v }); this._syncWater({ glow: v }); },
+      claritySlide: st.clarity, clarityLabel: st.clarity ? st.clarity + '%' : 'solid',
+      onClarity: e => { const v = +e.target.value; this.setState({ clarity: v }); this._syncWater({ clarity: v }); },
+
+      // ---- container ----
+      addGlass: () => { if (eng) { eng.addGlass(); this.refresh(); this.toast('Glass added — drag it in the viewport, the water follows'); } },
+      pickContainer: () => document.getElementById('ph-cfile').click(),
+      hasContainer: !!st.containerName,
+      containerName: st.containerName,
+      removeContainer: () => { if (eng) { eng.removeContainer(); this.refresh(); } },
+
+      // ---- motion program ----
+      progRows: st.steps.map((s, i) => ({
+        num: String(i + 1).padStart(2, '0'),
+        label: this.stepLabel(s),
+        onDel: () => { const steps = st.steps.slice(); steps.splice(i, 1); this.setState({ steps }); this._syncProg(steps); },
+      })),
+      progStatLabel: st.progOn ? 'running' : (st.steps.length ? st.steps.length + ' steps · ' + st.steps.reduce((a, s) => a + (+s.dur || 0), 0).toFixed(1) + 's' : 'empty'),
+      progStatColor: st.progOn ? 'var(--good)' : 'var(--muted)',
+      progActionVal: st.progAction,
+      onProgAction: e => this.setState({ progAction: e.target.value, progAmount: e.target.value.startsWith('rotate') ? 360 : (e.target.value === 'wait' ? 0 : 0.5) }),
+      progAmount: st.progAmount,
+      onProgAmount: e => this.setState({ progAmount: e.target.value }),
+      progSecs: st.progSecs,
+      onProgSecs: e => this.setState({ progSecs: e.target.value }),
+      amountHint: st.progAction === 'wait' ? 'amount ignored' : (st.progAction.startsWith('rotate') ? 'amount = degrees' : 'amount = units'),
+      addStep: () => {
+        const a = st.progAction;
+        const step = a === 'wait'
+          ? { type: 'wait', axis: 'x', amount: 0, dur: Math.max(0.1, +st.progSecs || 1) }
+          : { type: a.split('-')[0], axis: a.split('-')[1], amount: +st.progAmount || 0, dur: Math.max(0.1, +st.progSecs || 1) };
+        const steps = st.steps.concat([step]);
+        this.setState({ steps }); this._syncProg(steps);
+      },
+      runStyle: 'flex:1;padding:8px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;border:1px solid ' + (st.progOn ? 'var(--active)' : 'var(--edge)') + ';background:' + (st.progOn ? 'var(--active)' : 'var(--panel-3)') + ';color:' + (st.progOn ? 'var(--on-accent)' : 'var(--text)') + ';',
+      runLabel: st.progOn ? '⏹ Stop' : '▶ Run',
+      toggleProg: () => {
+        if (!eng) return;
+        if (st.progOn) { eng.stopProgram(); this.refresh(); return; }
+        if (!eng.hasContainer()) { this.toast('Add a container first (Glass preset or Import)'); return; }
+        if (!st.steps.length) { this.toast('Add at least one step — e.g. Rotate X · 360° · 5s'); return; }
+        this._syncProg();
+        eng.runProgram(st.progLoop);
+        this.refresh();
+      },
+      loopStyle: this.pill(st.progLoop),
+      toggleLoop: () => this.setState({ progLoop: !st.progLoop }),
+      resetPose: () => { if (eng) { eng.resetContainerPose(); this.toast('Container back to its home pose'); } },
+
+      // ---- export ----
+      recOn: recBusy,
+      fmtMp4Style: this.pill(st.recFmt === 'mp4'),
+      fmtGifStyle: this.pill(st.recFmt === 'gif'),
+      setMp4: () => this.setState({ recFmt: 'mp4' }),
+      setGif: () => this.setState({ recFmt: 'gif' }),
+      gridStyle: this.pill(st.gridOn),
+      shadowStyle: this.pill(st.shadowOn),
+      toggleGrid: () => { const v = !st.gridOn; this.setState({ gridOn: v }); if (eng) eng.setGridVisible(v); },
+      toggleShadow: () => { const v = !st.shadowOn; this.setState({ shadowOn: v }); if (eng) eng.setShadowVisible(v); },
+      bgCustom: st.bgCustom,
+      bgSwatches: [
+        ['', 'Theme default', 'T'], ['#000000', 'Black', ''], ['#ffffff', 'White', ''], ['#00b140', 'Green screen', ''], ['#1c2740', 'Night', ''],
+      ].map(([c, name, txt]) => ({
+        sw: this._swatch(c || 'var(--viewport)', st.bg === c), name, txt,
+        onPick: () => { this.setState({ bg: c }); if (eng) eng.setBackground(c || null); },
+      })),
+      onBgCustom: e => { const c = e.target.value; this.setState({ bgCustom: c, bg: c }); if (eng) eng.setBackground(c); },
+      waterFluidStyle: this.pill(st.waterMode === 'fluid'),
+      waterLiveStyle: this.pill(st.waterMode === 'live'),
+      setWaterFluid: () => this.setState({ waterMode: 'fluid' }),
+      setWaterLive: () => this.setState({ waterMode: 'live' }),
+      waterNote: st.waterMode === 'fluid'
+        ? 'Motion is captured live with cheap balls, then the smooth water surface is rendered offline — expect a wait after the ⏺ countdown, but the viewport never lags.'
+        : 'Records the screen exactly as you see it.',
+      recSecsSlide: st.recSecs, recSecsLabel: st.recSecs + 's',
+      onRecSecs: e => this.setState({ recSecs: +e.target.value }),
+      recordLabel: recBusy ? '⏺ Recording…' : ('⏺ Record ' + st.recSecs + 's now'),
+      record: () => {
+        if (recBusy || !eng) return;
+        if (!eng.hasModel()) { this.toast('Nothing to record — load or spawn something first'); return; }
+        this._capture(st.recSecs);
+      },
+      progRecord: async () => {
+        if (recBusy || !eng) return;
+        if (!eng.hasContainer() || !st.steps.length) { this.toast('Needs a container and at least one program step'); return; }
+        eng.reset();
+        this._syncProg();
+        eng.runProgram(false);
+        this.refresh();
+        await this._capture(eng.programDuration() + 0.6);
+        this.refresh();
+      },
+
+      vpHint: st.placeMode ? 'click to drop the liquid ball right there'
+        : (st.pinMode ? 'drag to pin · Alt to unpin'
+        : (st.containerName ? 'drag the vessel — the liquid follows · drag empty space to orbit'
+        : (st.hasModel ? 'drag the body to grab & pull · scroll to zoom' : 'load a model or preset'))),
       stats: [
-        { k: 'type', v: st.mode === 'cloth' ? 'cloth' : 'soft-body' },
+        { k: 'type', v: st.mode || '—' },
         { k: 'particles', v: st.verts ? st.verts.toLocaleString() : '—' },
+        { k: 'liquid', v: st.fluid ? st.fluid.toLocaleString() : '—' },
         { k: 'constraints', v: st.cons ? fmt(st.cons) : '—' },
         { k: 'pinned', v: st.pins ? st.pins.toLocaleString() : '—' },
       ],
@@ -285,6 +620,7 @@ class Component extends DCLogic {
     if (cmd === 'cloth') { eng.loadCloth(44, 30); this.refresh(); this.toast('Cloth dropped'); }
     else if (cmd === 'drape') { eng.loadDrape(46, 46); this.setState({ wind: 0 }); this.refresh(); this.toast('Drape test — WASM collision'); }
     else if (cmd === 'flag') { eng.loadCloth(50, 32); eng.setWind(0.45); eng.setWindAngle(0); this.setState({ wind: 45, ang: 0 }); this.refresh(); this.toast('Flag in the wind'); }
+    else if (cmd === 'splash') { this.loadSplashRef(); }
     else if (cmd === 'toggleSim') { if (eng.hasModel()) { const on = eng.toggle(); this.setState({ sim: on }); } }
     else if (cmd === 'flick') { if (eng.hasModel()) { eng.flick(this.state.mode === 'cloth' ? 0.04 : 0.08); this.setState({ sim: true }); } }
   }

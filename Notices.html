@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PolyPotion — Legal Notices &amp; Credits</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;500;600;700&family=Nunito:ital,wght@0,400;0,600;0,700;0,800;1,600&display=swap" rel="stylesheet">
+<script src="theme.js"></script>
+<style>
+:root{
+  --ink:#5a3e28; --ink-soft:#8a6a4a;
+  --cream:#fbf1d9; --cream-2:#fff7e3; --parchment:#f6e7c9;
+  --wood:#9c6b3f; --wood-dark:#6b4a2b;
+  --clay:#c8743c; --sage:#6e9355; --sage-deep:#527040; --honey:#e0a93b;
+  --bg:#f6e7c9; --panel:#fbf1d9; --panel-2:#fff7e3;
+  --text:#5a3e28; --text-2:#8a6a4a;
+  --hard:0 4px 0 rgba(107,74,43,.28);
+  --hard-lg:0 8px 0 rgba(107,74,43,.22), 0 14px 24px rgba(107,74,43,.18);
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{margin:0;padding:0;min-height:100vh;display:flex;flex-direction:column;
+  background:radial-gradient(circle at 18% -12%, rgba(224,169,59,.20), transparent 46%), var(--bg);
+  color:var(--text);font-family:var(--font-ui, 'Nunito', system-ui, sans-serif);font-size:15px;line-height:1.7;font-weight:500;
+  -webkit-font-smoothing:antialiased;}
+.mono{font-family:var(--font-mono, 'Pixelify Sans', monospace);}
+a{color:var(--clay);text-decoration:none;font-weight:700;}
+a:hover{text-decoration:underline;}
+::-webkit-scrollbar{width:12px;height:12px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--wood);border:3px solid var(--bg);border-radius:8px;}
+
+.topbar{height:60px;flex:none;display:flex;align-items:center;gap:16px;padding:0 18px;position:sticky;top:0;z-index:20;
+  background:linear-gradient(180deg,var(--wood),var(--wood-dark));
+  border-bottom:5px solid var(--wood-dark);
+  box-shadow:inset 0 4px 0 rgba(255,255,255,.16), inset 0 -5px 0 rgba(0,0,0,.12);}
+.brand{display:flex;align-items:center;gap:11px;text-decoration:none;}
+.brand .glyph{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;
+  background:var(--cream-2);color:var(--clay);font-size:18px;border:3px solid var(--wood-dark);box-shadow:0 3px 0 rgba(0,0,0,.18);}
+.brand .name{font-family:var(--font-mono, 'Pixelify Sans', monospace);font-weight:700;font-size:20px;letter-spacing:1px;color:#fff6e0;text-shadow:2px 2px 0 var(--wood-dark);}
+.brand .ver{font-family:var(--font-mono, 'Pixelify Sans', monospace);font-size:10px;color:#ffe7b8;letter-spacing:.05em;margin-top:2px;}
+.spacer{flex:1;}
+.tbtn{display:inline-flex;align-items:center;gap:7px;height:38px;padding:0 15px;border-radius:12px;
+  font-family:var(--font-mono, 'Pixelify Sans', monospace);font-size:13px;font-weight:600;letter-spacing:.02em;text-decoration:none;
+  background:var(--cream-2);border:3px solid var(--wood-dark);color:var(--wood-dark);box-shadow:0 4px 0 rgba(107,74,43,.30);
+  transition:transform .12s ease, box-shadow .12s ease;}
+.tbtn:hover{transform:translateY(-2px);box-shadow:0 6px 0 rgba(107,74,43,.30);text-decoration:none;}
+.tbtn:active{transform:translateY(2px);box-shadow:0 2px 0 rgba(107,74,43,.30);}
+
+main{flex:1;width:100%;max-width:820px;margin:0 auto;padding:46px 26px 30px;}
+.eyebrow{font-family:var(--font-mono, 'Pixelify Sans', monospace);font-size:12px;letter-spacing:.16em;color:var(--clay);margin-bottom:12px;}
+h1{font-family:var(--font-mono, 'Pixelify Sans', monospace);font-size:40px;font-weight:700;letter-spacing:.5px;margin:0 0 10px;color:var(--ink);line-height:1.05;text-shadow:2px 2px 0 rgba(107,74,43,.12);}
+.effdate{display:inline-flex;align-items:center;gap:8px;font-family:var(--font-mono, 'Pixelify Sans', monospace);font-size:12px;color:var(--ink-soft);
+  background:var(--cream-2);border:3px solid var(--wood-dark);border-radius:11px;padding:6px 13px;box-shadow:0 3px 0 rgba(107,74,43,.22);margin:4px 0 30px;}
+.lede{font-size:16px;color:var(--text-2);margin:0 0 34px;}
+
+.card{background:var(--cream-2);border:4px solid var(--wood-dark);border-radius:20px;padding:14px 32px 30px;box-shadow:var(--hard-lg);margin-bottom:26px;}
+section{padding:26px 0 4px;border-top:3px dotted rgba(107,74,43,.28);}
+section:first-of-type{border-top:none;}
+h2{font-family:var(--font-mono, 'Pixelify Sans', monospace);font-size:20px;font-weight:700;margin:0 0 14px;color:var(--ink);display:flex;align-items:center;gap:10px;}
+h2 .mk{width:26px;height:26px;flex:none;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;
+  background:var(--clay);color:#fff6e0;border:2px solid var(--wood-dark);box-shadow:0 2px 0 rgba(107,74,43,.3);}
+p{margin:0 0 13px;color:var(--text);}
+strong{color:var(--ink);font-weight:800;}
+
+/* identity rows */
+.idrow{display:flex;gap:14px;padding:9px 0;border-bottom:2px dotted rgba(107,74,43,.25);}
+.idrow:last-child{border-bottom:none;}
+.idrow .k{flex:none;width:180px;font-weight:800;color:var(--ink);}
+.idrow .v{flex:1;color:var(--text);}
+.fill{background:rgba(224,169,59,.28);border:2px dashed var(--honey);border-radius:6px;padding:1px 7px;font-family:var(--font-mono, 'Pixelify Sans', monospace);font-size:12.5px;color:var(--wood-dark);}
+
+/* library table */
+.libtable{display:flex;flex-direction:column;gap:0;margin:2px 0 8px;}
+.libitem{display:grid;grid-template-columns:1fr auto;gap:4px 14px;align-items:baseline;padding:13px 0;border-bottom:2px dotted rgba(107,74,43,.25);}
+.libitem:last-child{border-bottom:none;}
+.libitem .nm{font-family:var(--font-mono, 'Pixelify Sans', monospace);font-weight:700;font-size:15px;color:var(--ink);}
+.libitem .lic{justify-self:end;font-family:var(--font-mono, 'Pixelify Sans', monospace);font-size:11px;font-weight:600;color:var(--sage-deep);
+  background:var(--cream);border:2px solid var(--sage);border-radius:8px;padding:3px 9px;white-space:nowrap;}
+.libitem .lic.apache{color:var(--wood-dark);border-color:var(--wood);}
+.libitem .desc{grid-column:1 / -1;font-size:13px;color:var(--text-2);margin-top:2px;}
+
+.callout{display:flex;gap:14px;align-items:flex-start;background:var(--cream);border:3px solid var(--wood-dark);border-left:8px solid var(--honey);
+  border-radius:14px;padding:15px 18px;margin:6px 0 8px;box-shadow:var(--hard);}
+.callout.clay{border-left-color:var(--clay);}
+.callout .ic{flex:none;font-size:20px;color:var(--honey);line-height:1.3;}
+.callout.clay .ic{color:var(--clay);}
+.callout p{margin:0;font-size:14px;}
+.callout strong{display:block;margin-bottom:3px;}
+.small{font-size:13px;color:var(--text-2);}
+
+footer{flex:none;background:var(--cream-2);border-top:5px solid var(--wood-dark);margin-top:20px;}
+.foot-in{max-width:820px;margin:0 auto;padding:26px;display:flex;flex-wrap:wrap;align-items:center;gap:14px 22px;}
+.foot-brand{display:flex;align-items:center;gap:9px;font-family:var(--font-mono, 'Pixelify Sans', monospace);font-weight:700;color:var(--ink);}
+.foot-brand .g{width:26px;height:26px;border-radius:7px;display:flex;align-items:center;justify-content:center;background:var(--clay);color:#fff6e0;border:2px solid var(--wood-dark);font-size:14px;}
+.foot-links{display:flex;flex-wrap:wrap;gap:8px 10px;margin-left:auto;}
+.foot-links a{font-family:var(--font-mono, 'Pixelify Sans', monospace);font-size:12px;font-weight:600;color:var(--wood-dark);
+  background:var(--cream);border:3px solid var(--wood-dark);border-radius:10px;padding:6px 12px;box-shadow:0 3px 0 rgba(107,74,43,.22);
+  transition:transform .12s ease, box-shadow .12s ease;}
+.foot-links a:hover{text-decoration:none;transform:translateY(-2px);box-shadow:0 5px 0 rgba(107,74,43,.22);}
+.foot-note{width:100%;font-size:11.5px;color:var(--ink-soft);border-top:2px dotted rgba(107,74,43,.3);padding-top:14px;margin-top:4px;}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="index.html" title="Back to PolyPotion">
+    <div class="glyph">⚗</div>
+    <div>
+      <div class="name">PolyPotion</div>
+      <div class="ver">3D CHARACTER PIPELINE · LOCAL</div>
+    </div>
+  </a>
+  <div class="spacer"></div>
+  <a class="tbtn" href="Terms.html">📜 Terms</a>
+  <a class="tbtn" href="index.html">← Back to Studio</a>
+</header>
+
+<main>
+  <div class="eyebrow">LEGAL NOTICES &amp; CREDITS</div>
+  <h1>Legal Notices &amp; Credits</h1>
+  <div class="effdate mono">✿ Last updated 2026-07-04</div>
+  <p class="lede">PolyPotion’s own code is source-available with all rights reserved (see the <a href="Terms.html#source">Terms</a>). It also stands on open-source software and third-party assets, whose licenses and attribution are set out below.</p>
+
+  <!-- ===== MENTIONS LÉGALES ===== -->
+  <div class="card">
+    <section>
+      <h2><span class="mk">§</span>Mentions légales</h2>
+      <p class="small">Published in accordance with Article 6 of the French <em>Loi n° 2004-575 du 21 juin 2004 pour la confiance dans l’économie numérique</em> (LCEN).</p>
+      <div class="idrow"><span class="k">Éditeur du site</span><span class="v">Matvei Pavlov (individual publisher)</span></div>
+      <div class="idrow"><span class="k">Directeur de la publication</span><span class="v">Matvei Pavlov</span></div>
+      <div class="idrow"><span class="k">Contact</span><span class="v"><a href="mailto:mat.github.vei@gmail.com">mat.github.vei@gmail.com</a></span></div>
+      <div class="idrow"><span class="k">Pays d’établissement</span><span class="v">France</span></div>
+      <div class="idrow"><span class="k">Nom de domaine</span><span class="v">Registered via Namecheap, Inc.</span></div>
+      <div class="idrow"><span class="k">Hébergeur</span><span class="v">Cloudflare, Inc. — 101 Townsend Street, San Francisco, CA 94107, USA (CDN, DNS &amp; edge hosting), in front of GitHub, Inc. — 88 Colin P. Kelly Jr Street, San Francisco, CA 94107, USA (origin hosting via GitHub Pages).</span></div>
+      <div class="idrow"><span class="k">Nature du service</span><span class="v">Free, non-commercial web application, run entirely on the user’s device.</span></div>
+      <div class="callout clay">
+        <span class="ic">✉</span>
+        <p><strong>Something missing or incorrect?</strong>If you believe any attribution, license, credit, or legal detail on this page is missing, out of date, or wrong, please let me know at <a href="mailto:mat.github.vei@gmail.com">mat.github.vei@gmail.com</a> and I will update it as soon as possible.</p>
+      </div>
+      <div class="callout">
+        <span class="ic">ℹ</span>
+        <p><strong>Note for an individual, non-professional publisher</strong>Under the LCEN, a non-professional publisher may withhold their personal address from the public <em>provided</em> full identifying details (including a postal address) are given to the hosting provider, who can disclose them to the authorities on request. If you publish under a company or as a professional, replace this block with your full legal name/company, SIREN/SIRET, and postal address.</p>
+      </div>
+    </section>
+  </div>
+
+  <!-- ===== OPEN-SOURCE SOFTWARE ===== -->
+  <div class="card">
+    <section>
+      <h2><span class="mk">⚙</span>Open-source software</h2>
+      <p>PolyPotion loads the following third-party libraries at runtime. Their copyright and license notices are preserved as required. Each library remains the property of its respective authors and is used under the license shown.</p>
+      <div class="libtable">
+        <div class="libitem">
+          <span class="nm">three.js <span class="small">v0.160.0</span></span><span class="lic">MIT</span>
+          <span class="desc">3D rendering engine used across every workspace. © 2010–2024 three.js authors.</span>
+        </div>
+        <div class="libitem">
+          <span class="nm">React &amp; React-DOM <span class="small">v18.3.1</span></span><span class="lic">MIT</span>
+          <span class="desc">UI runtime for the tool interfaces. © Meta Platforms, Inc. and affiliates.</span>
+        </div>
+        <div class="libitem">
+          <span class="nm">@babel/standalone <span class="small">v7.29.0</span></span><span class="lic">MIT</span>
+          <span class="desc">In-browser JSX compilation. © Sebastian McKenzie and the Babel contributors.</span>
+        </div>
+        <div class="libitem">
+          <span class="nm">@mediapipe/tasks-vision <span class="small">v0.10.14</span></span><span class="lic apache">Apache-2.0</span>
+          <span class="desc">On-device pose, hand, and face landmark tracking for MoCap (with the Pose / Hand / Face Landmarker models). © Google LLC.</span>
+        </div>
+        <div class="libitem">
+          <span class="nm">manifold-3d <span class="small">v3.2.1</span></span><span class="lic apache">Apache-2.0</span>
+          <span class="desc">Exact mesh boolean (CSG) WASM solver used by the Boolean tool. © The Manifold Authors.</span>
+        </div>
+        <div class="libitem">
+          <span class="nm">gifenc <span class="small">v1.0.3</span></span><span class="lic">MIT</span>
+          <span class="desc">GIF encoding for animation export. © Matt DesLauriers.</span>
+        </div>
+        <div class="libitem">
+          <span class="nm">mp4-muxer <span class="small">v5.0.1</span></span><span class="lic">MIT</span>
+          <span class="desc">MP4 muxing for video export. © Vanilagy.</span>
+        </div>
+      </div>
+      <p class="small">Full license texts for the MIT- and Apache-2.0-licensed components above are available from each project’s repository; copies can be requested at <a href="mailto:mat.github.vei@gmail.com">mat.github.vei@gmail.com</a>.</p>
+    </section>
+  </div>
+
+  <!-- ===== BUNDLED ASSETS ===== -->
+  <div class="card">
+    <section>
+      <h2><span class="mk">◈</span>Bundled assets</h2>
+
+      <p><strong>Animation clips — Adobe Mixamo.</strong> The motion library includes animation clips obtained from Adobe Mixamo. These are provided royalty-free by Adobe for use in creative projects under the Mixamo terms, but they are not PolyPotion’s property and are not covered by PolyPotion’s license.</p>
+      <div class="callout clay">
+        <span class="ic">⚠</span>
+        <p><strong>Heads-up on redistribution</strong>Adobe’s Mixamo terms let you <em>use</em> the animations in your projects, but generally do <em>not</em> allow redistributing the raw clips as a standalone downloadable library or asset pack. If PolyPotion serves the original Mixamo files for download or re-use, confirm this is permitted under the current Mixamo terms — otherwise keep them as in-app motion data only, or replace them with clips you have the right to redistribute.</p>
+      </div>
+
+      <p style="margin-top:18px;"><strong>3D meshes — Meshy AI.</strong> Sample characters and meshes were generated privately with <a href="https://www.meshy.ai" target="_blank" rel="noopener">Meshy AI</a>. Rights to generated 3D assets depend on the Meshy plan they were created under (paid plans typically grant the creator commercial rights; free-tier output may carry attribution or non-commercial conditions). Because these were generated on a private plan, the publisher believes redistribution within PolyPotion is permitted, but users should not assume any rights over these meshes beyond using the app.</p>
+      <div class="callout">
+        <span class="ic">ℹ</span>
+        <p>If you intend to let users download or reuse the bundled meshes, verify the ownership and licensing terms of your Meshy plan for each asset, and keep a record of which plan produced them.</p>
+      </div>
+
+      <p style="margin-top:18px;" class="small">Any trademarks named here (Adobe, Mixamo, Meshy, and the software libraries above) belong to their respective owners and are referenced for identification only.</p>
+    </section>
+  </div>
+
+  <!-- ===== CAMERA NOTE ===== -->
+  <div class="card">
+    <section>
+      <h2><span class="mk">◉</span>Camera use (MoCap)</h2>
+      <p>The MoCap and Motion tools can use your device’s camera for pose, hand, and face tracking. The camera feed is processed <strong>entirely on your device</strong> — it is never recorded, stored, or transmitted to the Service Provider or any third party. Camera access is only requested when you start a live capture and stops when you leave the tool.</p>
+    </section>
+  </div>
+</main>
+
+<footer>
+  <div class="foot-in">
+    <div class="foot-brand"><span class="g">⚗</span> PolyPotion</div>
+    <div class="foot-links">
+      <a href="index.html">Studio</a>
+      <a href="Handbook.dc.html">Handbook</a>
+      <a href="Privacy.html">Privacy</a>
+      <a href="Terms.html">Terms</a>
+      <a href="Notices.html">Notices</a>
+      <a href="mailto:mat.github.vei@gmail.com">Contact</a>
+    </div>
+    <div class="foot-note">© 2026 Matvei Pavlov · PolyPotion. Source-available for transparency — all rights reserved. Runs locally in your browser; nothing is uploaded.</div>
+  </div>
+</footer>
+</body>
+</html>

@@ -523,39 +523,68 @@ E.mirrorSide = function (from) {
 };
 
 // ---- auto-center: snap a joint to the middle of the mesh volume around it ----
-// Casts a ray through the mesh along depth (Z) then side (X) at the joint's
-// height, pairs the surface crossings into inside-intervals, and moves the
-// joint to the midpoint of the interval it's in (or the nearest one — so a
-// roughly-placed joint gets pulled INTO the arm/finger/leg). Y is preserved:
-// that's the joint's anatomical height, which only the user knows.
+// The slice plane is PERPENDICULAR to the local limb axis (estimated from the
+// joint's parent / child directions), so an elbow in a T-pose arm centers in
+// the arm's vertical circular cross-section instead of sliding sideways. The
+// joint is never moved ALONG the limb axis — that's its anatomical position,
+// which only the user knows. Torso joints (vertical axis) fall back to the
+// old horizontal X/Z slice automatically.
 const _centerRay = new THREE.Raycaster();
+function limbAxis(j) {
+  const p = j.marker.position;
+  const dir = new THREE.Vector3();
+  const minD2 = (modelR * 1e-3) ** 2;
+  const par = enabledParent(j);
+  if (par) {
+    const d = p.clone().sub(par.marker.position);
+    if (d.lengthSq() > minD2) dir.add(d.normalize());
+  }
+  joints.forEach(c => {
+    if (!c.enabled || c.parent !== j.id) return;
+    const d = c.marker.position.clone().sub(p);
+    if (d.lengthSq() > minD2) dir.add(d.normalize());
+  });
+  // no clear axis (isolated joint, or parent/child directions cancel) →
+  // treat as vertical, i.e. center in the horizontal plane like before
+  if (dir.lengthSq() < 0.25) return new THREE.Vector3(0, 1, 0);
+  return dir.normalize();
+}
 function centerJointInMesh(j) {
   if (!modelMeshes.length) return false;
   const pos = j.marker.position;
+  const axis = limbAxis(j);
+  // orthonormal basis (u, v) spanning the slice plane perpendicular to the limb
+  const ref = Math.abs(axis.y) > 0.9 ? new THREE.Vector3(1, 0, 0) : new THREE.Vector3(0, 1, 0);
+  const u = new THREE.Vector3().crossVectors(axis, ref).normalize();
+  const v = new THREE.Vector3().crossVectors(axis, u).normalize();
   let moved = false;
-  const axes = [new THREE.Vector3(0, 0, 1), new THREE.Vector3(1, 0, 0)];
-  for (const axis of axes) {
-    const L = modelR * 4;
-    const start = pos.clone().addScaledVector(axis, -L);
-    _centerRay.set(start, axis);
-    _centerRay.near = 0; _centerRay.far = L * 2;
-    const raw = _centerRay.intersectObjects(modelMeshes, false).map(h => h.distance).sort((a, b) => a - b);
-    // dedupe near-coincident hits (shared edges / double-sided duplicates)
-    const hits = [];
-    for (const d of raw) { if (!hits.length || d - hits[hits.length - 1] > modelR * 5e-4) hits.push(d); }
-    if (hits.length < 2) continue;
-    const jd = L;                               // joint's coordinate along the ray
-    let best = null, bestScore = Infinity;
-    for (let i = 0; i + 1 < hits.length; i += 2) {
-      const a = hits[i], b = hits[i + 1];
-      const score = (jd >= a && jd <= b) ? 0 : Math.min(Math.abs(jd - a), Math.abs(jd - b));
-      if (score < bestScore) { bestScore = score; best = (a + b) / 2; }
+  for (let pass = 0; pass < 2; pass++) {        // 2nd pass refines after the 1st shift
+    let passMoved = false;
+    for (const rayDir of [u, v]) {
+      const L = modelR * 4;
+      const start = pos.clone().addScaledVector(rayDir, -L);
+      _centerRay.set(start, rayDir);
+      _centerRay.near = 0; _centerRay.far = L * 2;
+      const raw = _centerRay.intersectObjects(modelMeshes, false).map(h => h.distance).sort((a, b) => a - b);
+      // dedupe near-coincident hits (shared edges / double-sided duplicates)
+      const hits = [];
+      for (const d of raw) { if (!hits.length || d - hits[hits.length - 1] > modelR * 5e-4) hits.push(d); }
+      if (hits.length < 2) continue;
+      const jd = L;                             // joint's coordinate along the ray
+      let best = null, bestScore = Infinity;
+      for (let i = 0; i + 1 < hits.length; i += 2) {
+        const a = hits[i], b = hits[i + 1];
+        const score = (jd >= a && jd <= b) ? 0 : Math.min(Math.abs(jd - a), Math.abs(jd - b));
+        if (score < bestScore) { bestScore = score; best = (a + b) / 2; }
+      }
+      // accept only the enclosing interval or one CLOSE by — never teleport
+      // across the body because a stray ray found the other leg
+      if (best === null || bestScore > modelR * 0.2) continue;
+      if (Math.abs(best - jd) < modelR * 1e-5) continue;
+      pos.addScaledVector(rayDir, best - jd);
+      moved = true; passMoved = true;
     }
-    // accept only the enclosing interval or one CLOSE by — never teleport
-    // across the body because a stray ray found the other leg
-    if (best === null || bestScore > modelR * 0.2) continue;
-    pos.addScaledVector(axis, best - jd);
-    moved = true;
+    if (!passMoved) break;
   }
   if (moved) j._moved = true;
   return moved;
