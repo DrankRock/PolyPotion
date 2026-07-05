@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./studio3D_scripts/support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Spline+Sans+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="theme.js"></script>
+<style>
+  html,body{margin:0;padding:0;height:100%;background:var(--gutter);}
+  *{box-sizing:border-box;}
+  @keyframes cv-spin{to{transform:rotate(360deg);}}
+  @keyframes cv-tin{from{transform:translateX(120%);opacity:0;}to{transform:translateX(0);opacity:1;}}
+  #cv-root ::-webkit-scrollbar{width:10px;height:10px;}
+  #cv-root ::-webkit-scrollbar-track{background:var(--gutter);}
+  #cv-root ::-webkit-scrollbar-thumb{background:var(--panel-3);border:2px solid var(--gutter);border-radius:6px;}
+  #cv-root input[type=range]{-webkit-appearance:none;height:4px;border-radius:2px;background:var(--panel-3);outline:none;}
+  #cv-root input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--accent);cursor:pointer;border:2px solid var(--panel);}
+</style>
+</helmet>
+
+<div id="cv-root" style="display:flex;flex-direction:column;height:100vh;width:100%;overflow:hidden;background:var(--gutter);color:var(--text);font-family:var(--font-ui);font-size:13px;-webkit-font-smoothing:antialiased;user-select:none;">
+
+  <header style="height:46px;flex:none;display:flex;align-items:center;gap:14px;padding:0 14px;background:var(--header);border-bottom:1px solid var(--seam);">
+    <div style="display:flex;align-items:center;gap:9px;">
+      <div style="width:26px;height:26px;border-radius:5px;display:flex;align-items:center;justify-content:center;background:var(--accent);color:#0d0f1f;font-weight:700;font-size:15px;">∿</div>
+      <div>
+        <div style="font-weight:700;letter-spacing:.04em;font-size:14px;">CURVES</div>
+        <div style="font-family:var(--font-mono);font-size:10px;color:var(--muted);letter-spacing:.1em;margin-top:1px;">F-CURVES · DOPE SHEET · ONION SKIN</div>
+      </div>
+    </div>
+    <div style="flex:1;"></div>
+    <button style="display:inline-flex;align-items:center;gap:7px;height:30px;padding:0 13px;border-radius:6px;font-size:11.5px;font-weight:600;background:var(--panel-3);border:1px solid var(--edge);color:var(--text);cursor:pointer;" onClick="{{ pickFile }}">⬇ Import animation…</button>
+    <div style="display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--text2);padding:4px 10px;background:var(--panel);border:1px solid var(--seam);border-radius:5px;">
+      <span style="width:7px;height:7px;border-radius:50%;flex:none;background:{{ dotColor }};"></span>
+      <span style="font-family:var(--font-mono);">{{ meshName }}</span>
+    </div>
+  </header>
+
+  <div style="flex:1;display:flex;min-height:0;">
+
+    <!-- LEFT : clips + tracks -->
+    <aside style="width:220px;flex:none;background:var(--panel);border-right:1px solid var(--seam);display:flex;flex-direction:column;min-height:0;">
+      <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--header);border-bottom:1px solid var(--seam);"><span style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);">Clips</span></div>
+      <div style="max-height:130px;overflow-y:auto;padding:7px;border-bottom:1px solid var(--seam);display:flex;flex-direction:column;gap:4px;">
+        <sc-if value="{{ noClips }}" hint-placeholder-val="{{ true }}"><div style="color:var(--muted);font-size:11px;padding:8px;">No clips loaded</div></sc-if>
+        <sc-for list="{{ clips }}" as="c" hint-placeholder-count="2"><button style="{{ c.style }}" onClick="{{ c.onClick }}"><span style="flex:1;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ c.name }}</span><span style="font-family:var(--font-mono);font-size:9px;color:var(--muted);">{{ c.dur }}</span></button></sc-for>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--header);border-bottom:1px solid var(--seam);"><span style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);">Tracks</span><span style="margin-left:auto;font-family:var(--font-mono);font-size:10px;color:var(--muted);">{{ trackCount }}</span></div>
+      <div style="padding:6px 8px;border-bottom:1px solid var(--seam);"><input id="cv-tracksearch" placeholder="filter bones…" oninput="{{ onSearch }}" style="width:100%;background:var(--panel-3);border:1px solid var(--edge);border-radius:6px;color:var(--text);font-family:var(--font-mono);font-size:11px;padding:6px 9px;outline:none;"></div>
+      <div style="flex:1;overflow-y:auto;padding:6px;">
+        <sc-for list="{{ tracks }}" as="t" hint-placeholder-count="12"><button style="{{ t.style }}" onClick="{{ t.onClick }}"><span style="flex:1;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ t.node }}</span><span style="font-family:var(--font-mono);font-size:9px;color:var(--muted);">{{ t.prop }}</span></button></sc-for>
+      </div>
+    </aside>
+
+    <!-- CENTER : viewport (top) + curve canvas (bottom) -->
+    <div style="flex:1;display:flex;flex-direction:column;min-width:0;min-height:0;">
+      <div style="flex:1;position:relative;min-height:0;background:var(--viewport);">
+        <canvas id="cv-gl" style="position:absolute;inset:0;width:100%;height:100%;display:block;"></canvas>
+        <sc-if value="{{ noModel }}" hint-placeholder-val="{{ true }}">
+          <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;background:rgba(18,20,24,.86);">
+            <div style="width:70px;height:70px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:30px;background:var(--accentDim);border:1px solid var(--edge2);color:var(--accent);">∿</div>
+            <div style="text-align:center;">
+              <div style="font-size:16px;font-weight:700;margin-bottom:6px;">Hand-edit the motion</div>
+              <div style="font-size:12.5px;color:var(--text2);max-width:450px;line-height:1.6;">Open an <b>animated</b> character (retarget one in MoCap first). Scrub, trim the loop, drag keyframes on the F-curve, and turn on onion skinning to feel the arc.</div>
+            </div>
+            <button style="padding:10px 18px;border-radius:7px;font-size:12.5px;font-weight:600;background:var(--accent);border:1px solid var(--accent);color:#0d0f1f;cursor:pointer;" onClick="{{ pickFile }}">⬇ Import file…</button>
+          </div>
+        </sc-if>
+        <sc-if value="{{ loading }}" hint-placeholder-val="{{ false }}">
+          <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:rgba(18,20,24,.8);color:var(--muted);"><div style="width:38px;height:38px;border:3px solid var(--panel-3);border-top-color:var(--accent);border-radius:50%;animation:cv-spin .9s linear infinite;"></div><div style="font-size:12px;">{{ loadingMsg }}</div></div>
+        </sc-if>
+        <div style="position:absolute;left:10px;top:10px;display:flex;align-items:center;gap:6px;">
+          <sc-for list="{{ views }}" as="v" hint-placeholder-count="4"><button style="font-size:11px;font-weight:600;padding:5px 9px;border-radius:5px;cursor:pointer;background:rgba(15,15,15,.7);border:1px solid var(--edge);color:var(--text2);" onClick="{{ v.onClick }}">{{ v.label }}</button></sc-for>
+        </div>
+        <div style="position:absolute;right:10px;top:10px;display:flex;align-items:center;gap:6px;background:rgba(15,15,15,.78);border:1px solid var(--edge);border-radius:7px;padding:5px 9px;">
+          <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text);cursor:pointer;"><input type="checkbox" checked="{{ onionOn }}" onChange="{{ onOnion }}" style="accent-color:var(--accent);">Onion skin</label>
+          <sc-if value="{{ onionOn }}" hint-placeholder-val="{{ false }}"><input type="range" min="1" max="5" value="{{ onionStep }}" onInput="{{ onOnionStep }}" style="width:64px;" title="frame spacing"></sc-if>
+        </div>
+      </div>
+
+      <!-- transport -->
+      <div style="flex:none;height:44px;display:flex;align-items:center;gap:12px;padding:0 14px;background:var(--panel);border-top:1px solid var(--seam);border-bottom:1px solid var(--seam);">
+        <button style="width:34px;height:28px;border-radius:6px;font-size:14px;background:var(--accent);border:1px solid var(--accent);color:#0d0f1f;cursor:pointer;" onClick="{{ togglePlay }}">{{ playIcon }}</button>
+        <button style="width:30px;height:28px;border-radius:6px;font-size:12px;background:var(--panel-3);border:1px solid var(--edge);color:var(--text);cursor:pointer;" onClick="{{ toStart }}">⏮</button>
+        <div style="font-family:var(--font-mono);font-size:11.5px;color:var(--text);min-width:120px;">{{ timeLabel }}</div>
+        <div style="flex:1;"></div>
+        <div style="display:flex;align-items:center;gap:5px;">
+          <span style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;">Loop</span>
+          <sc-for list="{{ loopModes }}" as="l" hint-placeholder-count="2"><button style="{{ l.style }}" onClick="{{ l.onClick }}">{{ l.label }}</button></sc-for>
+        </div>
+        <button style="font-size:11px;font-weight:600;padding:6px 11px;border-radius:6px;background:var(--panel-3);border:1px solid var(--edge);color:var(--text);cursor:pointer;" onClick="{{ doTrim }}">✂ Trim to loop</button>
+      </div>
+
+      <!-- curve editor -->
+      <div style="flex:none;height:200px;position:relative;background:var(--panel);display:flex;flex-direction:column;">
+        <div style="display:flex;align-items:center;gap:9px;padding:6px 12px;border-bottom:1px solid var(--seam);">
+          <span style="font-size:10.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--text2);">{{ curveTitle }}</span>
+          <div style="flex:1;"></div>
+          <sc-for list="{{ comps }}" as="c" hint-placeholder-count="4"><button style="{{ c.style }}" onClick="{{ c.onClick }}">{{ c.label }}</button></sc-for>
+        </div>
+        <div style="flex:1;position:relative;min-height:0;"><canvas id="cv-curve" style="position:absolute;inset:0;width:100%;height:100%;display:block;cursor:crosshair;"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <input type="file" id="cv-file" accept=".glb,.gltf,.fbx" style="display:none;">
+  <div id="cv-toasts" style="position:fixed;bottom:16px;right:16px;z-index:300;display:flex;flex-direction:column;gap:8px;"></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = {
+    meshName: 'no model', hasModel: false, loading: false, loadingMsg: '',
+    clips: [], clipIndex: -1, tracks: [], selTrack: -1, comps: [], search: '',
+    playing: false, time: 0, dur: 1, loopMode: 'loop',
+    onionOn: false, onionStep: 3, tick: 0,
+  };
+
+  componentDidMount() { this.setupEmbed(); this.boot(); this.setupDrop(); }
+
+  async boot() {
+    try {
+      const glc = document.getElementById('cv-gl'); const cc = document.getElementById('cv-curve');
+      const mod = await import('./curve-engine.js');
+      const eng = new mod.CurveEngine(glc, cc); this._eng = eng;
+      eng.onChange = () => this.refresh();
+      eng.onStatus = (msg) => this.setState({ loading: !!msg, loadingMsg: msg || '' });
+      eng.onTime = (t, d) => this.setState({ time: t, dur: d });
+      eng.onLoaded = () => this.refresh();
+      if (this._pending) { const p = this._pending; this._pending = null; p(); }
+    } catch (e) { this.toast('Engine failed: ' + (e && e.message || e)); if (this._post) this._post('studio:error', { tool: 'curves', message: String(e && e.message || e) }); }
+  }
+
+  refresh() {
+    if (!this._eng) return; const s = this._eng.stats();
+    this.setState({ hasModel: this._eng.hasModel(), meshName: this._eng.hasModel() ? s.name : 'no model', clips: this._eng.clipList(), clipIndex: s.clip, tracks: this._eng.trackList(), selTrack: this._eng.selTrack, comps: this._eng.compState(), playing: this._eng.playing, time: s.time, dur: s.dur, loopMode: this._eng.loopMode, onionOn: this._eng.onion.on, onionStep: this._eng.onion.step, tick: this.state.tick + 1 });
+  }
+
+  async loadVia(fn, label) {
+    if (!this._eng) { this._pending = () => this.loadVia(fn, label); return; }
+    this.setState({ loading: true, loadingMsg: 'Loading ' + (label || 'clip') + '…' });
+    try { const r = await fn(); this.refresh(); this.setState({ loading: false }); this.toast('Loaded ' + r.name + ' — ' + r.clips + ' clip' + (r.clips > 1 ? 's' : '')); }
+    catch (e) { this.setState({ loading: false }); this.toast('Load failed: ' + (e && e.message || e)); if (this._post) this._post('studio:error', { tool: 'curves', message: String(e && e.message || e) }); }
+  }
+
+  setupDrop() {
+    const root = document.getElementById('cv-root'); if (!root) return;
+    root.addEventListener('dragover', e => e.preventDefault());
+    root.addEventListener('drop', e => { e.preventDefault(); const f = e.dataTransfer.files && e.dataTransfer.files[0]; if (f) this.loadVia(() => this._eng.loadFile(f), f.name); });
+    document.getElementById('cv-file').addEventListener('change', e => { const f = e.target.files[0]; if (f) { this.loadVia(() => this._eng.loadFile(f), f.name); e.target.value = ''; } });
+    window.addEventListener('keydown', e => { if (/input|textarea/i.test((e.target && e.target.tagName) || '')) return; if (e.key === ' ') { e.preventDefault(); if (this._eng) { this._eng.toggle(); this.refresh(); } } });
+  }
+
+  setupEmbed() {
+    const params = new URLSearchParams(location.search);
+    this._embedded = params.get('embed') === '1' || window.parent !== window;
+    this._post = (type, payload, transfer) => { try { window.parent && window.parent.postMessage(Object.assign({ __studio: true, type }, payload || {}), '*', transfer || []); } catch (e) {} };
+    if (this._embedded) { const hide = () => { const h = document.querySelector('#cv-root > header'); if (h && h.firstElementChild) h.firstElementChild.style.display = 'none'; }; hide(); setTimeout(hide, 60); setTimeout(hide, 300); }
+    window.addEventListener('message', (e) => { const d = e.data; if (!d || !d.__studio) return; if (d.type === 'studio:loadCharUrl') this.loadVia(() => this._eng.loadUrl(d.url, d.ext, { chunked: d.chunked, chunks: d.chunks }), d.label || 'character'); else if (d.type === 'studio:loadCharBuffer') this.loadVia(() => this._eng.loadBuffer(d.buffer, d.name, (d.name || '').split('.').pop()), d.name || 'clip'); });
+    setTimeout(() => this._post('studio:ready', { tool: 'curves' }), 0);
+  }
+
+  toast(msg) { const wrap = document.getElementById('cv-toasts'); if (!wrap) return; const el = document.createElement('div'); el.style.cssText = 'padding:11px 15px;border-radius:7px;font-size:12px;background:var(--panel-3);border:1px solid var(--edge);border-left:3px solid var(--accent);box-shadow:0 8px 24px rgba(0,0,0,.45);max-width:340px;color:var(--text);animation:cv-tin .25s cubic-bezier(.2,1,.3,1);'; el.textContent = msg; wrap.appendChild(el); setTimeout(() => { el.style.transition = 'opacity .3s'; el.style.opacity = '0'; setTimeout(() => el.remove(), 300); }, 2600); }
+
+  itemBtn(on) { return 'display:flex;align-items:center;gap:6px;width:100%;font-size:11.5px;font-family:var(--font-mono);padding:6px 8px;border-radius:5px;cursor:pointer;border:1px solid ' + (on ? 'var(--accent)' : 'transparent') + ';background:' + (on ? 'var(--accentDim)' : 'transparent') + ';color:' + (on ? 'var(--accent)' : 'var(--text)') + ';'; }
+  segBtn(on) { return 'font-size:10.5px;font-weight:600;padding:5px 10px;border-radius:5px;cursor:pointer;border:1px solid ' + (on ? 'var(--accent)' : 'var(--edge)') + ';background:' + (on ? 'var(--accentDim)' : 'var(--panel-3)') + ';color:' + (on ? 'var(--accent)' : 'var(--text)') + ';'; }
+  compBtn(on, col) { return 'font-size:10.5px;font-weight:700;padding:4px 9px;border-radius:5px;cursor:pointer;border:1px solid ' + (on ? col : 'var(--edge)') + ';background:' + (on ? col : 'transparent') + ';color:' + (on ? '#0d0f1f' : 'var(--text2)') + ';'; }
+  fmt(t) { return (t || 0).toFixed(2) + 's'; }
+
+  renderVals() {
+    const st = this.state, eng = this._eng;
+    const clips = (st.clips || []).map(c => ({ name: c.name, dur: c.dur.toFixed(1) + 's', style: this.itemBtn(c.index === st.clipIndex), onClick: () => { if (eng) eng.selectClip(c.index); } }));
+    let tl = st.tracks || []; const q = (st.search || '').toLowerCase();
+    if (q) tl = tl.filter(t => (t.node + t.prop).toLowerCase().includes(q));
+    const tracks = tl.slice(0, 500).map(t => ({ node: t.node, prop: t.prop, style: this.itemBtn(t.index === st.selTrack), onClick: () => { if (eng) eng.selectTrack(t.index); } }));
+
+    const compCols = ['#e0714f', '#6ee08a', '#6bb6d8', '#e0c14f'];
+    const curTrack = (st.tracks || []).find(t => t.index === st.selTrack);
+    const comps = curTrack ? curTrack.comps.map((lb, k) => ({ label: lb, style: this.compBtn(st.comps[k], compCols[k % 4]), onClick: () => { if (eng) { eng.toggleComp(k); this.refresh(); } } })) : [];
+    const curveTitle = curTrack ? (curTrack.node + ' · ' + curTrack.prop) : 'F-curve';
+
+    const views = [{ k: 'persp', l: '3/4' }, { k: 'front', l: 'Front' }, { k: 'side', l: 'Side' }, { k: 'back', l: 'Back' }].map(v => ({ label: v.l, onClick: () => eng && eng.setView(v.k) }));
+    const loopModes = [{ k: 'loop', l: '⟲ Loop' }, { k: 'once', l: '→ Once' }].map(l => ({ label: l.l, style: this.segBtn(st.loopMode === l.k), onClick: () => { if (eng) { eng.setLoop(l.k); this.refresh(); } } }));
+
+    return {
+      dotColor: st.hasModel ? 'var(--good)' : 'var(--muted)', meshName: st.meshName,
+      noModel: !st.hasModel && !st.loading, loading: st.loading, loadingMsg: st.loadingMsg,
+      pickFile: () => document.getElementById('cv-file').click(),
+      noClips: !(st.clips || []).length, clips, trackCount: (st.tracks || []).length + '', tracks,
+      onSearch: (e) => this.setState({ search: e.target.value }),
+      views,
+      playIcon: st.playing ? '⏸' : '▶', togglePlay: () => { if (eng) { eng.toggle(); this.refresh(); } },
+      toStart: () => { if (eng) { eng.seek(eng.inT); this.refresh(); } },
+      timeLabel: this.fmt(st.time) + ' / ' + this.fmt(st.dur),
+      loopModes, doTrim: () => { if (eng) { eng.trimToRange(); this.toast('Trimmed clip to the loop range'); } },
+      onionOn: st.onionOn, onOnion: (e) => { if (eng) { eng.setOnion({ on: e.target.checked }); this.refresh(); } },
+      onionStep: st.onionStep, onOnionStep: (e) => { if (eng) eng.setOnion({ step: +e.target.value }); },
+      curveTitle, comps,
+    };
+  }
+}
+</script>
+</body>
+</html>

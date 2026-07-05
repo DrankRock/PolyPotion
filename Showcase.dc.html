@@ -177,6 +177,31 @@
         </div>
       </div>
 
+      <!-- lighting -->
+      <div style="border-bottom:1px solid var(--seam);">
+        <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--header);border-bottom:1px solid var(--seam);"><span style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);">Lighting</span></div>
+        <div style="padding:11px 12px;display:flex;flex-direction:column;gap:11px;">
+          <div>
+            <div style="font-size:10.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:7px;">Environment (IBL)</div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;">
+              <sc-for list="{{ envOpts }}" as="e" hint-placeholder-count="6"><button style="{{ e.style }}" onClick="{{ e.onClick }}">{{ e.label }}</button></sc-for>
+            </div>
+          </div>
+          <div>
+            <label style="display:flex;justify-content:space-between;font-size:10.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:7px;"><span>Light strength</span><span style="font-family:var(--font-mono);color:var(--text);">{{ envIntLabel }}</span></label>
+            <input type="range" min="0" max="200" value="{{ envIntSlide }}" onInput="{{ onEnvInt }}" style="width:100%;">
+          </div>
+          <div>
+            <label style="display:flex;justify-content:space-between;font-size:10.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:7px;"><span>Contact shadow</span><span style="font-family:var(--font-mono);color:var(--text);">{{ shadowLabel }}</span></label>
+            <input type="range" min="0" max="80" value="{{ shadowSlide }}" onInput="{{ onShadow }}" style="width:100%;">
+          </div>
+          <label style="display:flex;align-items:center;gap:9px;font-size:12px;cursor:pointer;">
+            <input type="checkbox" checked="{{ envBgOn }}" onChange="{{ toggleEnvBg }}" style="width:15px;height:15px;accent-color:#c98a5a;">
+            <span>Show environment as backdrop</span>
+          </label>
+        </div>
+      </div>
+
       <!-- display -->
       <div style="border-bottom:1px solid var(--seam);">
         <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--header);border-bottom:1px solid var(--seam);"><span style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);">Display</span></div>
@@ -216,6 +241,7 @@ class Component extends DCLogic {
     time: 0, duration: 0, clipName: '',
     libAnims: [], activeLib: '',
     spin: false, wire: false, bg: 'studio', ground: true, speed: 100,
+    env: 'studio', envInt: 75, envBg: false, shadow: 34,
     hasUVs: false, hasTexture: false, suggestDismiss: false,
   };
 
@@ -364,6 +390,10 @@ class Component extends DCLogic {
       onClick: () => { this.setState({ bg: k }); if (eng) eng.setBackground(k); },
     }));
 
+    const envDefs = [['studio', 'Studio'], ['sunset', 'Sunset'], ['overcast', 'Overcast'], ['night', 'Night'], ['rim', 'Rim'], ['none', 'Off']];
+    const envBtn = (on) => 'font-size:10.5px;font-weight:600;padding:6px 11px;border-radius:6px;cursor:pointer;border:1px solid ' + (on ? '#c98a5a' : 'var(--edge)') + ';background:' + (on ? 'rgba(201,138,90,.16)' : 'var(--panel-3)') + ';color:' + (on ? '#e6c3a3' : 'var(--text)') + ';';
+    const envOpts = envDefs.map(([k, label]) => ({ label, style: envBtn(st.env === k), onClick: () => { this.setState({ env: k }); if (eng) eng.setEnvironment(k); } }));
+
     const scrub = st.duration ? Math.round((st.time / st.duration) * 1000) : 0;
 
     return {
@@ -401,6 +431,12 @@ class Component extends DCLogic {
       onBlend: (e) => { const v = +e.target.value; this.setState({ blend: v }); if (eng) eng.setBlend(v / 100); },
       stopAnim: () => { if (eng) { eng.stopAnim(); this.setState({ activeLib: '', blend: 100 }); this.refresh(); } },
       backgrounds,
+      envOpts,
+      envIntSlide: st.envInt, envIntLabel: (st.envInt / 100).toFixed(2) + '×',
+      onEnvInt: (e) => { const v = +e.target.value; this.setState({ envInt: v }); if (eng) eng.setEnvIntensity(v / 100); },
+      shadowSlide: st.shadow, shadowLabel: (st.shadow / 100).toFixed(2),
+      onShadow: (e) => { const v = +e.target.value; this.setState({ shadow: v }); if (eng) eng.setShadowStrength(v / 100); },
+      envBgOn: st.envBg, toggleEnvBg: (e) => { const on = e.target.checked; this.setState({ envBg: on }); if (eng) eng.setEnvBackground(on); },
       groundOn: st.ground, toggleGround: (e) => { const on = e.target.checked; this.setState({ ground: on }); if (eng) eng.setGround(on); },
       spinChipStyle: this.chip(st.spin), toggleSpin: () => { const v = !st.spin; this.setState({ spin: v }); if (eng) eng.setAutoSpin(v); },
       wireChipStyle: this.chip(st.wire), toggleWire: () => { const v = !st.wire; this.setState({ wire: v }); if (eng) eng.setWire(v); },

@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<script src="theme.js"></script>
+<style>
+  html{scroll-behavior:smooth;}
+  html,body{margin:0;padding:0;background:var(--bg);}
+  *{box-sizing:border-box;}
+  #au ::-webkit-scrollbar{width:10px;height:10px;}
+  #au ::-webkit-scrollbar-track{background:var(--gutter);}
+  #au ::-webkit-scrollbar-thumb{background:var(--edge);border:2px solid var(--gutter);border-radius:6px;}
+  #au section[id]{scroll-margin-top:22px;}
+  #au a{color:inherit;}
+</style>
+</helmet>
+
+<div id="au" style="display:flex;align-items:flex-start;min-height:100vh;width:100%;background:var(--bg);color:var(--text);font-family:var(--font-ui);font-size:14px;line-height:1.65;-webkit-font-smoothing:antialiased;">
+
+  <!-- SIDEBAR -->
+  <aside style="position:sticky;top:0;height:100vh;width:262px;flex:none;background:var(--panel);border-right:1px solid var(--seam);overflow-y:auto;padding:20px 14px 40px;">
+    <div style="display:flex;align-items:center;gap:9px;padding:0 6px 14px;">
+      <div style="width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--accent),var(--wood-dark));color:var(--on-accent);font-weight:700;font-size:15px;">⚗</div>
+      <div>
+        <div style="font-weight:700;letter-spacing:.05em;font-size:13px;">POLYPOTION</div>
+        <div style="font-family:var(--font-mono);font-size:9px;color:var(--muted);letter-spacing:.12em;">PRODUCT AUDIT</div>
+      </div>
+    </div>
+
+    <sc-for list="{{ nav }}" as="n" hint-placeholder-count="9">
+      <a href="{{ n.href }}" style="{{ n.style }}">
+        <span style="{{ n.dot }}"></span>
+        <span style="flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ n.label }}</span>
+        <span style="font-family:var(--font-mono);font-size:9.5px;color:var(--muted);">{{ n.count }}</span>
+      </a>
+    </sc-for>
+
+    <div style="margin-top:20px;padding:12px 10px;border-top:1px solid var(--seam);">
+      <div style="font-family:var(--font-mono);font-size:9.5px;letter-spacing:.12em;color:var(--muted);margin-bottom:9px;">PRIORITY KEY</div>
+      <sc-for list="{{ legend }}" as="l" hint-placeholder-count="3">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:7px;">
+          <span style="flex:none;width:26px;text-align:center;font-family:var(--font-mono);font-size:9.5px;font-weight:700;padding:2px 0;border-radius:5px;color:{{ l.color }};background:{{ l.bg }};border:1px solid {{ l.border }};">{{ l.tag }}</span>
+          <span style="font-size:11.5px;color:var(--text-2);">{{ l.label }}</span>
+        </div>
+      </sc-for>
+    </div>
+    <div style="margin-top:12px;padding:10px 8px;font-size:11px;line-height:1.6;color:var(--muted);border-top:1px solid var(--seam);">An outside read of the current build — what's strong, what blocks adoption, what to brew next.</div>
+  </aside>
+
+  <!-- MAIN -->
+  <main id="doc-main" style="flex:1;min-width:0;max-width:900px;padding:40px 56px 140px;">
+
+    <a href="index.html" style="display:inline-flex;align-items:center;gap:8px;font-size:12.5px;font-weight:700;color:var(--accent);text-decoration:none;margin-bottom:22px;padding:8px 14px;border:1px solid var(--seam);border-radius:8px;background:var(--panel);">← Back to Studio</a>
+
+    <header style="margin-bottom:10px;">
+      <div style="font-family:var(--font-mono);font-size:11px;letter-spacing:.14em;color:var(--accent);margin-bottom:10px;">FULL-SUITE AUDIT · CLIENT-SIDE · FREE FOREVER</div>
+      <h1 style="font-size:36px;font-weight:700;letter-spacing:-.01em;margin:0 0 14px;">What PolyPotion needs to become the tool everyone reaches for</h1>
+      <p style="font-size:16px;color:var(--text-2);margin:0;max-width:660px;">You've already built something rare: a 14-tool character pipeline that runs entirely in the browser, brews nothing to a server, and holds together under one cozy theme. This report is the honest gap between <i>that</i> and <i>the default tool a hobbyist or indie dev opens without thinking</i>. Findings are tagged by priority; the five that matter most are pulled out at the end.</p>
+    </header>
+
+    <!-- VERDICT -->
+    <section style="margin:26px 0 8px;padding:20px 22px;border:1px solid var(--seam);border-radius:12px;background:var(--panel);">
+      <div style="font-family:var(--font-mono);font-size:11px;letter-spacing:.14em;color:var(--accent);margin-bottom:12px;">⚗ THE ONE-LINE VERDICT</div>
+      <p style="margin:0 0 12px;font-size:15.5px;color:var(--text);line-height:1.7;">The <b>tools</b> are further along than the <b>product</b>. The craft inside each workspace is impressive; what's thin is everything <i>around</i> the craft — getting in (onboarding), getting out (export), not losing work (safety), staying alive offline (distribution), and letting others extend it (the module contract). Fix those five rings and the feature set you already have becomes a tool people evangelize.</p>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;">
+        <sc-for list="{{ verdictChips }}" as="c" hint-placeholder-count="5">
+          <span style="font-family:var(--font-mono);font-size:11px;padding:5px 11px;border-radius:20px;background:var(--panel-2);border:1px solid var(--edge);color:var(--text-2);">{{ c }}</span>
+        </sc-for>
+      </div>
+    </section>
+
+    <!-- WHAT'S ALREADY GREAT -->
+    <section id="strengths" data-doc style="padding:34px 0 8px;border-top:1px solid var(--seam);margin-top:28px;">
+      <h2 style="font-size:22px;font-weight:700;margin:0 0 8px;">What's already excellent</h2>
+      <p style="color:var(--text-2);margin:0 0 18px;max-width:640px;">So the critique lands in context — none of the below is broken, and several choices are genuinely smart. Keep them.</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <sc-for list="{{ wins }}" as="w" hint-placeholder-count="6">
+          <div style="padding:14px 16px;border:1px solid var(--seam);border-radius:10px;background:var(--panel);">
+            <div style="display:flex;align-items:center;gap:9px;margin-bottom:6px;">
+              <span style="color:var(--good);font-size:15px;">✔</span>
+              <span style="font-weight:700;color:var(--text);font-size:14px;">{{ w.t }}</span>
+            </div>
+            <div style="font-size:12.5px;color:var(--text-2);line-height:1.6;">{{ w.d }}</div>
+          </div>
+        </sc-for>
+      </div>
+    </section>
+
+    <!-- SECTIONS -->
+    <sc-for list="{{ sections }}" as="s" hint-placeholder-count="8">
+      <section id="{{ s.id }}" data-doc style="padding:38px 0 8px;border-top:1px solid var(--seam);margin-top:30px;">
+        <div style="display:flex;align-items:center;gap:13px;margin-bottom:8px;">
+          <div style="width:40px;height:40px;border-radius:9px;flex:none;display:flex;align-items:center;justify-content:center;font-size:20px;background:var(--accent-dim);color:var(--accent);border:1px solid var(--edge);">{{ s.glyph }}</div>
+          <div>
+            <div style="font-family:var(--font-mono);font-size:10.5px;letter-spacing:.12em;color:var(--muted);margin-bottom:2px;">{{ s.kicker }}</div>
+            <h2 style="font-size:23px;font-weight:700;margin:0;">{{ s.title }}</h2>
+          </div>
+        </div>
+        <p style="font-size:15px;color:var(--text-2);margin:0 0 20px;max-width:680px;">{{ s.intro }}</p>
+
+        <div style="display:flex;flex-direction:column;gap:13px;">
+          <sc-for list="{{ s.findings }}" as="f" hint-placeholder-count="4">
+            <div style="border:1px solid var(--seam);border-radius:11px;background:var(--panel);overflow:hidden;">
+              <div style="display:flex;align-items:flex-start;gap:13px;padding:15px 17px 6px;">
+                <span style="flex:none;margin-top:1px;width:30px;text-align:center;font-family:var(--font-mono);font-size:10px;font-weight:700;padding:3px 0;border-radius:6px;color:{{ f.color }};background:{{ f.bg }};border:1px solid {{ f.border }};">{{ f.tag }}</span>
+                <div style="flex:1;">
+                  <div style="font-weight:700;font-size:15px;color:var(--text);margin-bottom:5px;">{{ f.title }}</div>
+                  <div style="font-size:13.5px;color:var(--text-2);line-height:1.62;">{{ f.why }}</div>
+                </div>
+              </div>
+              <div style="display:flex;gap:10px;padding:9px 17px 14px 60px;">
+                <span style="flex:none;font-family:var(--font-mono);font-size:9.5px;letter-spacing:.1em;color:var(--accent);padding-top:2px;">DO →</span>
+                <div style="font-size:13px;color:var(--text);line-height:1.6;">{{ f.todo }}</div>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </section>
+    </sc-for>
+
+    <!-- FIVE THINGS FIRST -->
+    <section id="first-five" data-doc style="padding:38px 0 8px;border-top:1px solid var(--seam);margin-top:30px;">
+      <div style="display:flex;align-items:center;gap:13px;margin-bottom:8px;">
+        <div style="width:40px;height:40px;border-radius:9px;flex:none;display:flex;align-items:center;justify-content:center;font-size:20px;background:var(--accent);color:var(--on-accent);">★</div>
+        <div>
+          <div style="font-family:var(--font-mono);font-size:10.5px;letter-spacing:.12em;color:var(--muted);margin-bottom:2px;">IF YOU ONLY TOUCH FIVE THINGS</div>
+          <h2 style="font-size:23px;font-weight:700;margin:0;">The order I'd brew them in</h2>
+        </div>
+      </div>
+      <p style="font-size:15px;color:var(--text-2);margin:0 0 20px;max-width:680px;">Each one removes a reason a first-time visitor bounces or a returning user gives up. Roughly ascending effort.</p>
+      <div style="display:flex;flex-direction:column;">
+        <sc-for list="{{ firstFive }}" as="p" hint-placeholder-count="5">
+          <div style="display:flex;gap:16px;padding:15px 0;border-bottom:1px solid var(--seam);">
+            <div style="flex:none;width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-weight:700;font-size:16px;background:var(--accent-dim);color:var(--accent);border:1px solid var(--edge);">{{ p.n }}</div>
+            <div style="flex:1;">
+              <div style="font-weight:700;font-size:15.5px;color:var(--text);margin-bottom:3px;">{{ p.t }}</div>
+              <div style="font-size:13px;color:var(--text-2);line-height:1.6;">{{ p.d }}</div>
+            </div>
+            <span style="flex:none;align-self:flex-start;font-family:var(--font-mono);font-size:10px;color:var(--muted);padding:3px 9px;border:1px solid var(--edge);border-radius:20px;">{{ p.effort }}</span>
+          </div>
+        </sc-for>
+      </div>
+    </section>
+
+    <!-- CLOSING -->
+    <section style="padding:34px 0 0;border-top:1px solid var(--seam);margin-top:30px;">
+      <p style="color:var(--text-2);font-size:14px;line-height:1.7;max-width:680px;margin:0 0 10px;">One honest naming note, because it shapes who shows up to help: a custom "no-SaaS" licence makes this <b style="color:var(--text);">source-available</b>, not OSI "open source." That's a legitimate choice — but calling it precisely (or moving to <span style="font-family:var(--font-mono);">AGPL-3.0</span>, which already blocks closed SaaS resale while staying contributor-familiar) will bring more module authors than a bespoke licence they have to read carefully first.</p>
+      <p style="color:var(--muted);font-size:12.5px;margin:14px 0 0;">Audit based on the shipped shell, the tool bridge, the theme engine and the Handbook. Swap any striped assumption for what you know is already coded — a few tools may already do what's listed as missing.</p>
+    </section>
+
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { activeId: 'strengths' };
+
+  componentDidMount() {
+    this._io = new IntersectionObserver((entries) => {
+      entries.forEach(e => { if (e.isIntersecting) this.setState({ activeId: e.target.id }); });
+    }, { rootMargin: '-6% 0px -84% 0px', threshold: 0 });
+    setTimeout(() => {
+      document.querySelectorAll('#doc-main section[id]').forEach(s => this._io.observe(s));
+    }, 80);
+  }
+  componentWillUnmount() { if (this._io) this._io.disconnect(); }
+
+  tagStyle(tag) {
+    if (tag === 'P0') return { color: 'var(--danger)', bg: 'rgba(200,86,47,.14)', border: 'rgba(200,86,47,.4)' };
+    if (tag === 'P1') return { color: 'var(--accent)', bg: 'var(--accent-dim)', border: 'var(--edge-2)' };
+    return { color: 'var(--new)', bg: 'rgba(90,118,184,.14)', border: 'rgba(90,118,184,.4)' };
+  }
+
+  sectionsData() {
+    return [
+      {
+        id: 'distribution', glyph: '⛓', kicker: 'THE "FOREVER" PROMISE',
+        title: 'Distribution &amp; staying alive offline',
+        intro: 'A tool that promises "free forever, on your machine" cannot depend on someone else\u2019s uptime. Right now the whole suite quietly does.',
+        findings: [
+          { tag: 'P0', title: 'three.js and loaders stream from the esm.sh CDN at runtime', why: 'Every tool imports three@0.160 and its GLTF/FBX/OBJ loaders from esm.sh on open. If esm.sh is down, rate-limits, or the user is on a plane, the entire app is a blank potion bottle. For a "runs on your machine" promise this is the single biggest contradiction — the machine can\u2019t run it alone.', todo: 'Vendor three.js, every loader, and all WASM (.wasm/.js) into the repo and import them with relative paths. No third-party origin in the critical path. Pin the version so a future three.js break can\u2019t brick old characters.' },
+          { tag: 'P0', title: 'No offline shell / no installability', why: 'There\u2019s no service worker and no web app manifest. Close the tab on a train and there\u2019s nothing to reopen; the app can\u2019t be installed to the dock/Start menu like a real creative tool.', todo: 'Add a service worker that precaches the shell + all tools + vendored deps, and a manifest.webmanifest with icons. It becomes an installable, launch-from-OS, fully-offline PWA — which is exactly the identity this project wants.' },
+          { tag: 'P1', title: 'Cross-origin isolation for WASM threads is unverified', why: 'Physics, Decimate, Bake, the UV solve and Manifold all benefit from SIMD + threads, which need SharedArrayBuffer, which needs COOP/COEP headers. You have a SECURITY_HEADERS.md, but if the hosting doesn\u2019t actually send them, those solvers silently fall back to single-thread and feel slow.', todo: 'Ship the headers with the static host (and document a one-liner for GitHub Pages/Netlify). Add a tiny in-app check that warns when crossOriginIsolated is false so slow solves are explained, not mysterious.' },
+        ],
+      },
+      {
+        id: 'export', glyph: '⇥', kicker: 'THE PIPELINE\u2019S EXIT DOOR',
+        title: 'Interop &amp; export',
+        intro: 'A pipeline is only as useful as what leaves it. Import is broad (glb/gltf/fbx/obj); export is the weakest, most scattered part of the whole product — and it\u2019s the thing that decides whether people actually adopt it.',
+        findings: [
+          { tag: 'P0', title: 'There is no single, prominent "Export character" everywhere', why: 'Only Decimate advertises a Download, and Rig bakes a GLB internally for handoff. A user who sculpted, rigged, posed and painted has no obvious, consistent way to get the finished character — mesh + skeleton + skin weights + animations + textures — out to Blender, Unity, Unreal or Godot. That is the exact moment they were going to tell a friend about the tool.', todo: 'One Export dialog reachable from the top bar in every tool. Emit glTF/GLB (textures embedded or alongside) as the default, plus FBX (Unity/Maya), OBJ, USDZ (Apple/AR) and STL (print). Include rig + animation tracks. Offer Draco/meshopt compression on the way out.' },
+          { tag: 'P1', title: 'Up-axis, scale and units aren\u2019t settable', why: 'FBX/Blender is Z-up, glTF is Y-up, engines disagree on 1 unit = 1 cm vs 1 m. Without controls, exports land sideways or 100\u00d7 too big in the target app — the classic reason a "great tool" gets abandoned after one bad import.', todo: 'A small Settings panel: up-axis (Y/Z), unit scale, and target-app presets (Blender / Unity / Unreal / Godot) that set both automatically. Bake the choice into every exporter.' },
+          { tag: 'P1', title: 'No portable project file', why: 'Characters persist as GLB buffers in IndexedDB on one browser, on one machine. There\u2019s no way to back up the whole library, move it to another computer, or hand a work-in-progress to a collaborator.', todo: 'A .polypotion bundle (just a zip of meshes + manifest + edit metadata) with Export project / Import project. Instantly gives you backup, machine-to-machine transfer, and shareable work — no server required.' },
+        ],
+      },
+      {
+        id: 'safety', glyph: '⎌', kicker: 'DON\u2019T LOSE MY WORK',
+        title: 'History, undo &amp; data safety',
+        intro: 'Trust is built on two things: I can undo my mistakes, and the tool won\u2019t eat my work. Both have gaps today.',
+        findings: [
+          { tag: 'P1', title: 'Undo is per-tool and inconsistent', why: 'Sculpt has stroke undo; it\u2019s unclear the others do, and nothing is uniform. Every creative app trains users to press Ctrl-Z anywhere and see a history. When that reflex fails in Pose or Edit, the tool feels fragile even if the math is perfect.', todo: 'A uniform Ctrl-Z / Ctrl-Shift-Z contract every tool implements, plus a visible history/undo stack. Even 20 steps of local history per tool would change how safe the app feels.' },
+          { tag: 'P0', title: 'IndexedDB can be silently evicted', why: 'All saved characters live in IndexedDB, which browsers evict under storage pressure and Safari clears after 7 days of inactivity. The beforeunload guard is good, but a returning user can find their library simply gone — and the only recovery path is "Reset storage," which deletes more.', todo: 'Call navigator.storage.persist() on first save to opt into durable storage. Show a storage-quota meter in the Library. Keep 2\u20133 rolling snapshots instead of one overwritable record, and add a one-click "Download backup of everything."' },
+          { tag: 'P2', title: 'Large buffers in IndexedDB are slower than they need to be', why: 'Storing big ArrayBuffers via IDB pays structured-clone cost and competes with quota. The Origin Private File System (OPFS) is faster and roomier for exactly this — raw mesh blobs.', todo: 'Move mesh payloads to OPFS files, keep the light manifest in IndexedDB. Faster restores, fewer quota walls.' },
+        ],
+      },
+      {
+        id: 'onboarding', glyph: '✦', kicker: 'THE FIRST NINETY SECONDS',
+        title: 'Onboarding &amp; first run',
+        intro: 'The most common review of a powerful tool is "I opened it and didn\u2019t know what to do." A first-timer lands on an empty Library with a dropzone and 14 unfamiliar glyphs.',
+        findings: [
+          { tag: 'P0', title: 'Empty first run — nothing to play with', why: 'With no bundled assets, the very first screen is an empty shelf. The single strongest predictor of adoption for a creative tool is "could I make something cool in the first two minutes without hunting for a file?"', todo: 'Bundle 2\u20133 CC-licensed sample characters and a handful of clips so the suite is explorable on first paint. A "Load a sample" button right in the empty state.' },
+          { tag: 'P1', title: 'HumanGen and HairStudio exist but aren\u2019t wired into the dock', why: 'There\u2019s a character generator sitting in the repo and it\u2019s not surfaced. That\u2019s the perfect zero-asset on-ramp: generate a base human, then rig \u2192 pose \u2192 dress it. It solves the empty-library problem for free.', todo: 'Add HumanGen to the dock as the natural "start here" tool, and fold HairStudio in beside Hair Extract. An empty Library should point straight at "Generate a character."' },
+          { tag: 'P1', title: 'No guided first brew', why: 'The Handbook is thorough but it\u2019s a separate document; nobody reads docs before touching a toy. There\u2019s no in-app coaching the first time you open Rig or Sculpt.', todo: 'A dismissible 4-step "first brew" tour (drop a mesh \u2192 rig it \u2192 pose it \u2192 export) and per-tool empty-state hints. Keep it skippable and one-time.' },
+        ],
+      },
+      {
+        id: 'privacy', glyph: '◈', kicker: 'KEEP THE PROMISE HONEST',
+        title: 'The AI / privacy tension',
+        intro: 'The app says "nothing is uploaded" in three places — and then Text-to-Pose ships your prompt to Claude / DeepSeek / Gemini. Both can be true, but only if you\u2019re precise about it.',
+        findings: [
+          { tag: 'P1', title: 'Text-to-Pose contradicts the loud local promise', why: 'A privacy-motivated user (your core audience) will feel misled the first time a "100% local" tool asks for an API key and phones out. That erodes the exact trust that makes this project special.', todo: 'Label any networked feature unmistakably ("sends text to a third-party API"), keep it opt-in, and make the local promise read "nothing leaves your machine except the AI features you explicitly turn on."' },
+          { tag: 'P2', title: 'No on-device pose option', why: 'The feature is currently cloud-only, so privacy-strict users lose it entirely.', todo: 'Offer a fully-local fallback: semantic search over a bundled pose library (embeddings computed on-device), or a small WebGPU model. Even non-AI "search poses by words" preserves the promise and still feels magic.' },
+        ],
+      },
+      {
+        id: 'craft', glyph: '✺', kicker: 'THE MISSING WORKFLOW LINKS',
+        title: 'Craft tools people will expect',
+        intro: 'The toolset is broad, but a few gaps break well-known workflows. These are the "wait, it can\u2019t do X?" moments that send character artists back to Blender.',
+        findings: [
+          { tag: 'P1', title: 'Manual skin-weight painting', why: 'Auto-skin is great until an elbow collapses or a skirt tears — and it always eventually does. Hand weight-painting is the single most-requested rigging fix, and there\u2019s no sign of it.', todo: 'A weight-paint mode on the rigged mesh: pick a bone, brush influence, normalize, mirror. This is the difference between "cute auto-rig demo" and "I finished a character in this."' },
+          { tag: 'P1', title: 'Normal-map bake (high\u2192low)', why: 'You bake AO into vertex colours (lovely), but the classic game-art loop is sculpt \u2192 decimate/retopo \u2192 UV \u2192 bake normals \u2192 paint. Without normal/height baking, the detail from Sculpt can\u2019t travel onto a light game mesh.', todo: 'Add a bake-from-high-res pass in Bake: project normal + AO + curvature from the sculpted mesh onto the low-poly UV. You already own UV and Decimate \u2014 this closes the loop.' },
+          { tag: 'P1', title: 'Facial rig / blendshapes', why: 'Characters need faces. There\u2019s body rig + mocap but no blendshape/morph editor, no visemes/expressions, no webcam face capture. For avatars and stylized characters that\u2019s a hard stop.', todo: 'A morph-target editor (create/sculpt shapes, drive with sliders) and, later, webcam face-cap feeding those shapes. Even blink/smile/jaw shapes unlock a lot.' },
+          { tag: 'P2', title: 'Animation curve editor + onion skinning', why: 'Motion can layer and trim, but serious animators need F-curve editing, looping controls and onion skinning to hand-key. Retarget-only limits it to found motion.', todo: 'A curve/dope-sheet view in Motion with easing handles, loop authoring, and onion-skin ghosting.' },
+          { tag: 'P2', title: 'HDRI / IBL lighting in Showcase', why: 'Painted materials and bakes only sell themselves under real lighting. A flat viewport undersells the work and the screenshots people would share.', todo: 'Bundle a couple of HDRIs and add environment lighting + a ground/contact shadow toggle to Showcase. Instantly better-looking results and share images.' },
+        ],
+      },
+      {
+        id: 'architecture', glyph: '≋', kicker: 'UNDER THE HOOD',
+        title: 'Performance &amp; the iframe architecture',
+        intro: 'The one-iframe-per-tool design is a clever isolation trick, and lazy-mount + cache-warming show real care. But it has ceilings worth planning around before they bite low-end machines.',
+        findings: [
+          { tag: 'P1', title: 'Every tool spins its own WebGL context; none are ever released', why: 'Browsers cap live WebGL contexts (~16). Fourteen tools, each mounting three.js and never disposing, can hit context loss on modest laptops \u2014 the dreaded black viewport. Frames are created lazily (good) but stay forever.', todo: 'Dispose or release a tool\u2019s renderer/context when it\u2019s been idle and off-screen for a while, and handle webglcontextlost with a graceful "reload this workspace" instead of a crash.' },
+          { tag: 'P2', title: 'Big-file loading and solves can block the main thread', why: 'FBX/GLTF parsing and heavy solves on the UI thread cause the beachball on large scans. Bake shows a progress bar; confirm the rest do, and that nothing janky runs on main.', todo: 'Parse and solve in Web Workers with OffscreenCanvas where possible; give every long op a progress bar AND a cancel button. "It froze" is indistinguishable from "it\u2019s working" without them.' },
+          { tag: 'P2', title: 'Consider a shared mesh core rather than buffer-passing', why: 'Handoffs copy whole GLB buffers between iframes and there\u2019s no shared selection/camera/undo. It works, but it\u2019s memory-heavy and makes cross-tool consistency hard.', todo: 'Longer-term: a shared worker that owns the active mesh/scene, with tools as views onto it. Enables one undo stack, synced camera, and no per-handoff copies. Big change \u2014 plan, don\u2019t rush.' },
+        ],
+      },
+      {
+        id: 'community', glyph: '⊞', kicker: 'THE OPEN-SOURCE ENGINE',
+        title: 'Sharing, community &amp; extensibility',
+        intro: 'The README\u2019s dream is "anyone can add modules, characters, animations." That only happens if the seams are documented and results are easy to show off. Both are currently implicit.',
+        findings: [
+          { tag: 'P0', title: 'No documented tool/module contract', why: 'Adding a dock tool today means reverse-engineering the studio:* postMessage protocol (ready, loadCharBuffer, riggedGLB, routeBuffer\u2026) from index.html. That\u2019s the whole extensibility promise, gated behind reading source. Contributors won\u2019t.', todo: 'Publish the Tool Contract: the message list, the iframe lifecycle, and a copy-paste "Hello Tool" template that appears in the dock. This one doc is the highest-leverage thing for the open-source vision.' },
+          { tag: 'P1', title: 'Results are hard to show off', why: 'Sharing drives adoption more than any feature. There\u2019s no export of a turntable video/GIF or a render still \u2014 the artifacts people post that make others ask "what did you make that in?"', todo: 'A "Render turntable" in Showcase \u2192 MP4 (WebCodecs) / GIF / PNG. Watermark-free, one click. Every shared clip is a free ad.' },
+          { tag: 'P1', title: 'No community asset index', why: 'The manifest system is local-only. Since it\u2019s open source, a static, opt-in catalogue of CC characters/animations on GitHub Pages could be browsed and pulled in-app \u2014 without breaking the offline/local default.', todo: 'An optional "Community" tab that reads a static JSON index from the project\u2019s own GitHub Pages. Clearly separate from local, clearly opt-in, so the privacy stance holds.' },
+          { tag: 'P2', title: 'Thin contributor + landing docs', why: 'README says "website to come" and is honest about being incomplete. New contributors need an architecture map and a build/run guide; new users need a landing page with a 30-second demo video.', todo: 'A short ARCHITECTURE.md + CONTRIBUTING.md, and a one-page landing (the social-card is already referenced) with a looping demo. This is where "everyone wants to use it" actually starts.' },
+        ],
+      },
+      {
+        id: 'qol', glyph: '✿', kicker: 'THE HUNDRED SMALL THINGS',
+        title: 'Quality-of-life grab-bag',
+        intro: 'None of these is a headline, but together they\u2019re the difference between "impressive" and "pleasant to live in." Cheap wins, mostly.',
+        findings: [
+          { tag: 'P2', title: 'Auto-generated thumbnails, rename, and text search', why: 'Cards fall back to a glyph, assets can\u2019t be renamed or searched by name, and there are filters but no search box. Libraries get unwieldy fast.', todo: 'Render a thumbnail offscreen on import; add rename/duplicate/collections; add a search field beside the filter chips. Bulk/folder import too.' },
+          { tag: 'P2', title: 'Accessibility on the chrome', why: 'Icon buttons are bare glyphs (⦿ ⛷ ⟁\u2026) with title tooltips only \u2014 thin for screen readers and keyboard focus. The canvas is hard to make accessible, but the dock, library, palette and dialogs can be ARIA-correct.', todo: 'aria-label every icon control, visible focus rings, and full keyboard nav for the shell. Cheap credibility, real inclusion.' },
+          { tag: 'P2', title: 'Stylus pressure + tablet input', why: 'Sculpting and weight-painting beg for pen pressure (PointerEvent.pressure) and tilt. Without it, artists on a tablet feel second-class.', todo: 'Wire brush radius/strength to pen pressure across Sculpt, Hair, Paint and future weight-paint. A big draw for the exact crowd who\u2019d love this tool.' },
+          { tag: 'P2', title: 'Surface "Recently brewed" + version in the shell', why: 'The changelog lives only in the Handbook. Returning users don\u2019t see what\u2019s new, and there\u2019s no in-app version badge for bug reports.', todo: 'A small "what\u2019s new" popover on the version chip, and show the build version in the status bar so issue reports are pinnable.' },
+        ],
+      },
+    ];
+  }
+
+  navStyle(active) {
+    return 'display:flex;align-items:center;gap:10px;padding:7px 8px;border-radius:6px;font-size:12.5px;font-weight:' + (active ? '700' : '500')
+      + ';text-decoration:none;margin-bottom:1px;color:' + (active ? 'var(--text)' : 'var(--muted)')
+      + ';background:' + (active ? 'var(--accent-dim)' : 'transparent') + ';';
+  }
+  navDot(active) {
+    return 'width:7px;height:7px;border-radius:2px;flex:none;background:' + (active ? 'var(--accent)' : 'var(--edge)') + ';';
+  }
+
+  renderVals() {
+    const active = this.state.activeId;
+    const sectionsRaw = this.sectionsData();
+    const sections = sectionsRaw.map(s => Object.assign({}, s, {
+      findings: s.findings.map(f => Object.assign({}, f, this.tagStyle(f.tag))),
+    }));
+
+    const navMeta = [
+      { id: 'strengths', label: 'What\u2019s excellent' },
+      ...sectionsRaw.map(s => ({ id: s.id, label: s.title.replace(/&amp;/g, '&').replace(/\s*\&.*$/, s.navShort ? '' : '') })),
+      { id: 'first-five', label: 'Five things first' },
+    ];
+    // clean labels for nav (shorter)
+    const navLabels = {
+      strengths: 'What\u2019s excellent', distribution: 'Distribution', export: 'Interop & export',
+      safety: 'History & safety', onboarding: 'Onboarding', privacy: 'AI / privacy',
+      craft: 'Craft tools', architecture: 'Perf & architecture', community: 'Community & OSS',
+      qol: 'Quality of life', 'first-five': 'Five things first',
+    };
+    const countFor = (id) => { const s = sectionsRaw.find(x => x.id === id); return s ? s.findings.length : ''; };
+    const nav = navMeta.map(n => ({
+      href: '#' + n.id, label: navLabels[n.id] || n.label,
+      count: countFor(n.id),
+      style: this.navStyle(active === n.id),
+      dot: this.navDot(active === n.id),
+    }));
+
+    const legend = [
+      { tag: 'P0', label: 'Blocks adoption or breaks a core promise', color: 'var(--danger)', bg: 'rgba(200,86,47,.14)', border: 'rgba(200,86,47,.4)' },
+      { tag: 'P1', label: 'Expected feature / big QoL gap', color: 'var(--accent)', bg: 'var(--accent-dim)', border: 'var(--edge-2)' },
+      { tag: 'P2', label: 'Delight, polish &amp; growth', color: 'var(--new)', bg: 'rgba(90,118,184,.14)', border: 'rgba(90,118,184,.4)' },
+    ];
+
+    const verdictChips = ['Getting in', 'Getting out', 'Not losing work', 'Working offline', 'Letting others extend'];
+
+    const wins = [
+      { t: 'Genuinely all-local craft', d: '14 real workspaces \u2014 rig, sculpt, UV, bake, Manifold boolean, WASM physics \u2014 running in a browser tab with nothing uploaded. That\u2019s the whole pitch, and it works.' },
+      { t: '\u201cActive character follows you\u201d', d: 'The shared-state bridge that carries the current mesh into each tool once, with a toast, is a lovely bit of flow design most desktop suites don\u2019t manage.' },
+      { t: 'Lazy mounts + cache-warming', d: 'Tools mount on first use and the three.js module graph is pre-warmed so the first workspace opens fast. Real performance thinking.' },
+      { t: 'One cohesive theme engine', d: 'Five hand-tuned themes, synced across every iframe over one localStorage key + postMessage. Consistent, characterful, and easy to extend.' },
+      { t: 'Restore-on-reload + guardrails', d: 'IndexedDB restore, corrupted-record skipping, a beforeunload guard and a "reset storage" escape hatch show you\u2019ve thought about real failure modes.' },
+      { t: 'Command palette + filters + toasts', d: '\u2318K, tag filters with live counts, chunked large-file hosting, keyboard shortcuts \u2014 the connective tissue of a mature app is already here.' },
+    ];
+
+    const firstFive = [
+      { n: '1', t: 'Vendor every dependency + add a service worker', d: 'Kills the CDN single-point-of-failure and makes it a true offline, installable PWA. Without this, "free forever on your machine" isn\u2019t true yet.', effort: 'M' },
+      { n: '2', t: 'Bundle samples + wire HumanGen into the dock', d: 'Turns the empty first run into "make something in 90 seconds." Mostly plumbing you already have.', effort: 'S' },
+      { n: '3', t: 'One universal Export (glTF/FBX/OBJ/USDZ) with axis + scale', d: 'Opens the exit door so work can actually reach Blender/Unity/Godot. The moment people decide to keep using it.', effort: 'M' },
+      { n: '4', t: 'Durable storage + \u201cDownload backup of everything\u201d', d: 'persist() + rolling snapshots + a project bundle so a browser eviction never wipes someone\u2019s library. Trust.', effort: 'M' },
+      { n: '5', t: 'Publish the Tool Contract + a \u201cHello Tool\u201d template', d: 'Unlocks the open-source promise \u2014 lets other people build the modules you don\u2019t have time for.', effort: 'S' },
+    ];
+
+    return { nav, sections, legend, verdictChips, wins, firstFive };
+  }
+}
+</script>
+</body>
+</html>

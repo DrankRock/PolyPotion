@@ -13,6 +13,7 @@ import { OrbitControls } from 'https://esm.sh/three@0.160.0/examples/jsm/control
 import { FBXLoader } from 'https://esm.sh/three@0.160.0/examples/jsm/loaders/FBXLoader.js';
 import { GLTFLoader } from 'https://esm.sh/three@0.160.0/examples/jsm/loaders/GLTFLoader.js';
 import { OBJLoader } from 'https://esm.sh/three@0.160.0/examples/jsm/loaders/OBJLoader.js';
+import { RoomEnvironment } from 'https://esm.sh/three@0.160.0/examples/jsm/environments/RoomEnvironment.js';
 import { fetchAssetBuffer } from './chunk-loader.js';
 
 const readVar = (name, fb) => {
@@ -143,6 +144,17 @@ export class SCEngine {
 
     this.setBackground('studio');
 
+    // ---------- image-based lighting (IBL) ----------
+    // Procedural HDRI-style environments, generated on-device (no external
+    // files → stays offline). Feeds scene.environment so PBR materials pick up
+    // real reflections + soft ambient — painted skin and bakes finally read as
+    // lit, not flat. 'studio' uses three's RoomEnvironment (a softbox room).
+    this._pmrem = new THREE.PMREMGenerator(this.renderer);
+    this._pmrem.compileEquirectangularShader();
+    this.envName = 'studio'; this.envIntensity = 0.75; this._envAsBg = false; this._envRT = null;
+    this._shadowStrength = 0.34;
+    this.setEnvironment('studio');
+
     this._ro = new ResizeObserver(() => this.resize());
     this._ro.observe(canvas.parentElement || canvas);
     this.resize();
@@ -245,7 +257,7 @@ export class SCEngine {
         const pos = o.geometry.getAttribute('position');
         if (pos) tris += o.geometry.index ? o.geometry.index.count / 3 : pos.count / 3;
         const mats = Array.isArray(o.material) ? o.material : [o.material];
-        mats.forEach(m => { if (m) { m.side = THREE.DoubleSide; if ('wireframe' in m) m.wireframe = this.wire; } });
+        mats.forEach(m => { if (m) { m.side = THREE.DoubleSide; if ('wireframe' in m) m.wireframe = this.wire; if ('envMapIntensity' in m) m.envMapIntensity = this.envIntensity; } });
       }
       if (o.isBone) bones++;
       if (o.isSkinnedMesh && o.skeleton && !skeleton) skeleton = o.skeleton;
@@ -568,8 +580,51 @@ export class SCEngine {
     return { retargeted: new THREE.AnimationClip(clipName, clip.duration, tracks), matched };
   }
 
+  // ---------- environment / IBL ----------
+  ENV_LIST = ['studio', 'sunset', 'overcast', 'night', 'rim', 'none'];
+  setEnvironment(name) {
+    this.envName = name;
+    if (this._envRT) { try { this._envRT.dispose(); } catch (e) {} this._envRT = null; }
+    if (name === 'none') { this.scene.environment = null; if (this._envAsBg) this.setBackground(this.bgName); this._applyEnvIntensity(); this._changed && this._changed(); return; }
+    let rt;
+    try {
+      if (name === 'studio') { rt = this._pmrem.fromScene(new RoomEnvironment(), 0.04); }
+      else { const tex = this._equirect(name); rt = this._pmrem.fromEquirectangular(tex); tex.dispose(); }
+    } catch (e) { this.scene.environment = null; return; }
+    this._envRT = rt; this.scene.environment = rt.texture;
+    if (this._envAsBg) this.scene.background = rt.texture;
+    this._applyEnvIntensity();
+    this._changed && this._changed();
+  }
+  // build a small equirectangular sky (gradient + sun/moon disc) for PMREM
+  _equirect(name) {
+    const W = 512, H = 256; const c = document.createElement('canvas'); c.width = W; c.height = H; const g = c.getContext('2d');
+    const P = {
+      sunset:   { top: '#2a1e40', mid: '#c8532a', bot: '#f0a24a', horizon: '#ffb057', sun: '#fff2c8', sunX: 0.28, sunY: 0.62, sunR: 26, ground: '#241a12' },
+      overcast: { top: '#c8ced6', mid: '#d9dee4', bot: '#e6e9ee', horizon: '#eef1f5', sun: '#ffffff', sunX: 0.7, sunY: 0.4, sunR: 60, ground: '#9aa0a6' },
+      night:    { top: '#070b18', mid: '#0e1630', bot: '#1a2340', horizon: '#243056', sun: '#dfe6ff', sunX: 0.66, sunY: 0.3, sunR: 16, ground: '#0a0e18' },
+      rim:      { top: '#0c0e12', mid: '#14171d', bot: '#191d24', horizon: '#2a3038', sun: '#bcd0ff', sunX: 0.9, sunY: 0.5, sunR: 40, ground: '#0a0c10' },
+    }[name] || { top: '#334', mid: '#556', bot: '#778', horizon: '#99a', sun: '#fff', sunX: 0.5, sunY: 0.4, sunR: 40, ground: '#223' };
+    const grad = g.createLinearGradient(0, 0, 0, H);
+    grad.addColorStop(0, P.top); grad.addColorStop(0.42, P.mid); grad.addColorStop(0.5, P.horizon); grad.addColorStop(0.52, P.ground); grad.addColorStop(1, P.ground);
+    g.fillStyle = grad; g.fillRect(0, 0, W, H);
+    // sun/moon glow
+    const sx = P.sunX * W, sy = P.sunY * H;
+    const rg = g.createRadialGradient(sx, sy, 0, sx, sy, P.sunR * 3);
+    rg.addColorStop(0, P.sun); rg.addColorStop(0.25, P.sun); rg.addColorStop(1, 'rgba(0,0,0,0)');
+    g.globalCompositeOperation = 'lighter'; g.fillStyle = rg; g.beginPath(); g.arc(sx, sy, P.sunR * 3, 0, 7); g.fill();
+    if (name === 'rim') { const rg2 = g.createRadialGradient(0.08 * W, sy, 0, 0.08 * W, sy, P.sunR * 3); rg2.addColorStop(0, '#ffd2a8'); rg2.addColorStop(1, 'rgba(0,0,0,0)'); g.fillStyle = rg2; g.beginPath(); g.arc(0.08 * W, sy, P.sunR * 3, 0, 7); g.fill(); }
+    g.globalCompositeOperation = 'source-over';
+    const tex = new THREE.CanvasTexture(c); tex.mapping = THREE.EquirectangularReflectionMapping; tex.colorSpace = THREE.SRGBColorSpace; tex.needsUpdate = true;
+    return tex;
+  }
+  setEnvIntensity(v) { this.envIntensity = v; this._applyEnvIntensity(); }
+  _applyEnvIntensity() { if (!this.wrap) return; this.wrap.traverse(o => { if (o.isMesh && o.material) { (Array.isArray(o.material) ? o.material : [o.material]).forEach(m => { if ('envMapIntensity' in m) { m.envMapIntensity = this.envIntensity; m.needsUpdate = true; } }); } }); }
+  setEnvBackground(on) { this._envAsBg = !!on; if (on && this._envRT) this.scene.background = this._envRT.texture; else this.setBackground(this.bgName); }
+  setShadowStrength(v) { this._shadowStrength = v; if (this.floor && this.floor.material) this.floor.material.opacity = v; }
+
   stats() {
-    return { name: this.modelName, tris: this.tris, bones: this.boneCount, hasSkeleton: this.hasSkeleton };
+    return { name: this.modelName, tris: this.tris, bones: this.boneCount, hasSkeleton: this.hasSkeleton, env: this.envName, envIntensity: this.envIntensity, envBg: this._envAsBg, shadow: this._shadowStrength };
   }
   hasModel() { return !!this.model; }
 

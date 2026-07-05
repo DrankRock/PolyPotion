@@ -261,6 +261,10 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
       <div class="dock-item" data-tool="csg" title="Boolean — exact cut / union / intersect (Manifold WASM)"><span class="ic">⊘</span><span class="lb">Boolean</span></div>
       <div class="dock-item" data-tool="uv" title="UV Unwrap — seams, LSCM conformal unwrap, pack (WASM)"><span class="ic">⬚</span><span class="lb">UV</span></div>
       <div class="dock-item" data-tool="paint" title="Paint — texture painting, clone stamp, live surface preview"><span class="ic">▧</span><span class="lb">Paint</span></div>
+      <div class="dock-item" data-tool="weightpaint" title="Weight Paint — hand-paint skin influence per bone"><span class="ic">✋</span><span class="lb">Weight</span></div>
+      <div class="dock-item" data-tool="morph" title="Morph — blendshape / expression editor"><span class="ic">◕</span><span class="lb">Morph</span></div>
+      <div class="dock-item" data-tool="bakemaps" title="Bake Maps — normal / AO / curvature high→low"><span class="ic">☰</span><span class="lb">Bake+</span></div>
+      <div class="dock-item" data-tool="curves" title="Curves — F-curve editor + onion skinning"><span class="ic">∿</span><span class="lb">Curves</span></div>
       <div class="dock-spacer"></div>
       <div class="dock-sep"></div>
       <div class="dock-item disabled" title="Scene assembly — coming soon"><span class="ic">⊞</span><span class="lb">Scene</span></div>
@@ -364,6 +368,26 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
       <div class="tool-pane" id="pane-paint">
         <div class="tool-loading" id="load-paint"><div class="ring"></div><div>Loading Paint workspace…</div></div>
       </div>
+
+      <!-- Weight Paint tool -->
+      <div class="tool-pane" id="pane-weightpaint">
+        <div class="tool-loading" id="load-weightpaint"><div class="ring"></div><div>Loading Weight Paint workspace…</div></div>
+      </div>
+
+      <!-- Morph tool -->
+      <div class="tool-pane" id="pane-morph">
+        <div class="tool-loading" id="load-morph"><div class="ring"></div><div>Loading Morph workspace…</div></div>
+      </div>
+
+      <!-- Bake Maps tool -->
+      <div class="tool-pane" id="pane-bakemaps">
+        <div class="tool-loading" id="load-bakemaps"><div class="ring"></div><div>Loading Bake Maps workspace…</div></div>
+      </div>
+
+      <!-- Curves tool -->
+      <div class="tool-pane" id="pane-curves">
+        <div class="tool-loading" id="load-curves"><div class="ring"></div><div>Loading Curves workspace…</div></div>
+      </div>
     </div>
   </div>
 
@@ -374,6 +398,7 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
     <span class="mono" id="stAsset">no asset loaded</span>
     <div class="right">
       <span class="mono" id="stHint">Pick a character to rig, or jump straight to MoCap</span>
+      <span class="mono" id="stCtx" title="Live 3D workspaces held in GPU memory" style="display:flex;align-items:center;gap:6px;cursor:default;"></span>
       <span class="mono" style="display:flex;gap:9px;align-items:center;">
         <a href="Handbook.dc.html" target="_blank" rel="noopener" style="color:var(--ink-soft);text-decoration:none;border-bottom:1px dotted var(--wood);">Handbook</a>
         <a href="Privacy.html" target="_blank" rel="noopener" style="color:var(--ink-soft);text-decoration:none;border-bottom:1px dotted var(--wood);">Privacy</a>
@@ -439,6 +464,10 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
       { k:'bake', label:'Bake', icon:'☀', key:'8' },
       { k:'uv', label:'UV Unwrap', icon:'⬚', key:'' },
       { k:'paint', label:'Paint', icon:'▧', key:'' },
+      { k:'weightpaint', label:'Weight Paint', icon:'✋', key:'' },
+      { k:'morph', label:'Morph', icon:'◕', key:'' },
+      { k:'bakemaps', label:'Bake Maps', icon:'☰', key:'' },
+      { k:'curves', label:'Curves', icon:'∿', key:'' },
     ];
     const COMMANDS = [
       ...TOOLDEFS.map(t => ({ id:'go:'+t.k, title:'Go to ' + t.label, hint:t.icon + '  ·  ' + t.key, run:() => S.setTool(t.k) })),
@@ -543,6 +572,10 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
     csg:   { src: 'Boolean.dc.html?embed=1', frame: null, ready: false, label: 'Boolean' },
     uv:    { src: 'UVUnwrap.dc.html?embed=1', frame: null, ready: false, label: 'UV Unwrap' },
     paint: { src: 'TexturePaint.dc.html?embed=1', frame: null, ready: false, label: 'Paint' },
+    weightpaint: { src: 'WeightPaint.dc.html?embed=1', frame: null, ready: false, label: 'Weight Paint' },
+    morph: { src: 'Morph.dc.html?embed=1', frame: null, ready: false, label: 'Morph' },
+    bakemaps: { src: 'BakeMaps.dc.html?embed=1', frame: null, ready: false, label: 'Bake Maps' },
+    curves: { src: 'Curves.dc.html?embed=1', frame: null, ready: false, label: 'Curves' },
   };
   let activeTool = 'library';
   let session = { characters: [], animations: [] };  // rigged-this-session
@@ -550,7 +583,7 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
   let libTab = 'characters';
   let libFilters = new Set();   // active category filters (AND-combined)
   let activeChar = null;        // shared character state — { it, deliveredTo:Set } follows you across tools
-  const CHAR_TOOLS = ['showcase', 'mocap', 'pose', 'edit', 'sculpt', 'physics', 'decimate', 'bake', 'hair', 'csg', 'uv', 'paint'];
+  const CHAR_TOOLS = ['showcase', 'mocap', 'pose', 'edit', 'sculpt', 'physics', 'decimate', 'bake', 'hair', 'csg', 'uv', 'paint', 'weightpaint', 'morph', 'bakemaps', 'curves'];
   let lastLoadedName = '';
 
   // ---------- toasts ----------
@@ -563,15 +596,105 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
   }
 
   // ---------- iframe lifecycle ----------
+  // ---------- WebGL context / memory budget ----------
+  // Every tool iframe holds its own live WebGL context. Browsers cap concurrent
+  // contexts (~16 on Chrome, far fewer on weak GPUs) and never reclaim them, so
+  // a long session that visits all 14 tools can trip context-loss (the black
+  // viewport) and balloon GPU memory. We treat mounted frames as an MRU pool:
+  // the active tool is always kept, plus the few most-recently-used; anything
+  // past the budget that has gone idle is torn down (freeing its context +
+  // memory) and transparently rebuilt — with the active character re-delivered
+  // — the next time you open it.
+  const CTX = {
+    budget: 5,           // active + warm frames kept resident
+    idleMs: 4 * 60000,   // only reap frames idle longer than this
+    mru: [],             // tool keys, most-recent last
+  };
+  function ctxKeep(tool) {
+    if (tool === 'library' || !TOOLS[tool]) return;
+    const i = CTX.mru.indexOf(tool); if (i >= 0) CTX.mru.splice(i, 1);
+    CTX.mru.push(tool);
+    TOOLS[tool].lastUsed = Date.now();
+  }
+  function liveTools() { return Object.keys(TOOLS).filter(t => TOOLS[t].frame); }
+  function evictFrame(tool) {
+    const T = TOOLS[tool];
+    if (!T || !T.frame || tool === activeTool) return false;
+    if (tool === 'rig' && !$('#btnHandoff').disabled) return false;  // don't drop a rig mid-handoff
+    try { T.frame.remove(); } catch (e) {}
+    T.frame = null; T.ready = false; T._pending = null;
+    const ld = $('#load-' + tool); if (ld) ld.style.display = '';    // restore loader for next visit
+    const i = CTX.mru.indexOf(tool); if (i >= 0) CTX.mru.splice(i, 1);
+    if (activeChar) activeChar.deliveredTo.delete(tool);             // re-deliver the character on reopen
+    updateCtxMeter();
+    return true;
+  }
+  function enforceBudget(silent) {
+    const live = CTX.mru.filter(t => TOOLS[t].frame);
+    let over = live.length - CTX.budget, freed = 0;
+    if (over <= 0) return;
+    for (const tool of live) {                                       // oldest first
+      if (freed >= over) break;
+      if (evictFrame(tool)) freed++;
+    }
+    if (freed && !silent) toast('Released ' + freed + ' idle 3D workspace' + (freed > 1 ? 's' : '') + ' to save memory', 'info');
+  }
+  function reapIdle() {
+    const now = Date.now();
+    const live = CTX.mru.filter(t => TOOLS[t].frame && t !== activeTool);
+    if (live.length + 1 <= CTX.budget) return;                       // under budget → keep them warm
+    live.forEach(tool => { if (now - (TOOLS[tool].lastUsed || 0) > CTX.idleMs) evictFrame(tool); });
+  }
+  // Same-origin iframes let us catch a lost GL context and rebuild that one
+  // workspace instead of leaving the user staring at a black viewport.
+  function attachCtxWatch(tool, f) {
+    let win; try { win = f.contentWindow; } catch (e) { return; }
+    if (!win) return;
+    try {
+      win.addEventListener('webglcontextlost', () => {
+        toast((TOOLS[tool] && TOOLS[tool].label || tool) + ' lost its 3D context — rebuilding…', 'warn');
+        reviveFrame(tool);
+      }, { capture: true });
+    } catch (e) {}
+  }
+  function reviveFrame(tool) {
+    const T = TOOLS[tool]; if (!T) return;
+    const wasActive = tool === activeTool;
+    if (T.frame) { try { T.frame.remove(); } catch (e) {} }
+    T.frame = null; T.ready = false; T._pending = null;
+    const ld = $('#load-' + tool); if (ld) ld.style.display = '';
+    if (activeChar) activeChar.deliveredTo.delete(tool);
+    const i = CTX.mru.indexOf(tool); if (i >= 0) CTX.mru.splice(i, 1);
+    if (wasActive) setTool(tool);                                    // remount + re-deliver active character
+    updateCtxMeter();
+  }
+  function updateCtxMeter() {
+    const el = $('#stCtx'); if (!el) return;
+    const n = liveTools().length;
+    const iso = (typeof crossOriginIsolated !== 'undefined') ? crossOriginIsolated : false;
+    const hot = n >= CTX.budget + 2;
+    el.innerHTML =
+      '<span style="width:8px;height:8px;border-radius:50%;display:inline-block;background:' + (hot ? 'var(--honey)' : 'var(--sage-deep)') + ';"></span>'
+      + '<span>' + n + ' live 3D</span><span style="opacity:.5;">·</span>'
+      + '<span title="' + (iso ? 'Cross-origin isolated — WASM SIMD + threads available to solvers' : 'Not cross-origin isolated — heavy solves (physics, bake, UV, decimate) fall back to a single thread. Serve with COOP/COEP headers to speed them up.') + '" style="color:' + (iso ? 'var(--sage-deep)' : 'var(--honey)') + ';">'
+      + (iso ? '⚡ threads' : '◷ 1-thread') + '</span>';
+  }
+
+  // ---------- iframe lifecycle ----------
   function ensureFrame(tool) {
-    const T = TOOLS[tool]; if (!T || T.frame) return T && T.frame;
+    const T = TOOLS[tool]; if (!T) return null;
+    if (T.frame) { ctxKeep(tool); return T.frame; }
     const pane = $('#pane-' + tool);
     const f = document.createElement('iframe');
     f.className = 'tool-frame';
     f.src = T.src;
     f.allow = 'camera; microphone';
+    f.addEventListener('load', () => attachCtxWatch(tool, f));
     pane.appendChild(f);
-    T.frame = f;
+    T.frame = f; T.mountedAt = Date.now();
+    ctxKeep(tool);
+    enforceBudget(true);        // free the oldest idle frame if we're over budget
+    updateCtxMeter();
     return f;
   }
   function post(tool, type, payload, transfer) {
@@ -584,12 +707,13 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
     activeTool = tool;
     $$('.dock-item').forEach(d => d.classList.toggle('active', d.dataset.tool === tool));
     $('#lib').classList.toggle('show', tool === 'library');
-    ['showcase', 'rig', 'mocap', 'edit', 'motion', 'sculpt', 'hair', 'pose', 'physics', 'decimate', 'bake', 'csg', 'uv', 'paint'].forEach(t => {
+    ['showcase', 'rig', 'mocap', 'edit', 'motion', 'sculpt', 'hair', 'pose', 'physics', 'decimate', 'bake', 'csg', 'uv', 'paint', 'weightpaint', 'morph', 'bakemaps', 'curves'].forEach(t => {
       const pane = $('#pane-' + t);
       const on = t === tool;
       pane.classList.toggle('show', on);
       if (on) { ensureFrame(t); const ld = $('#load-' + t); }
     });
+    updateCtxMeter();
     // status + flow
     $('#stTool').textContent = tool === 'library' ? 'Library' : TOOLS[tool].label;
     // shared character state — the active character follows you into each tool (once)
@@ -614,6 +738,10 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
     else if (tool === 'uv') $('#stHint').textContent = 'Auto-detect or paint seams, then LSCM-unwrap every chart — WASM conformal solve, on-device';
     else if (tool === 'paint') $('#stHint').textContent = 'Paint straight onto the model or the flat map — clone-stamp, heal, fill; the map is the live texture, on-device';
     else if (tool === 'hair') $('#stHint').textContent = 'Paint the head & hair, split the hair off, then drape it under gravity — on-device';
+    else if (tool === 'weightpaint') $('#stHint').textContent = 'Pick a bone and brush its skin influence — normalize & mirror to fix collapsing joints, on-device';
+    else if (tool === 'morph') $('#stHint').textContent = 'Sculpt blendshapes — blink, smile, jaw — and drive them with sliders; export as glTF morph targets, on-device';
+    else if (tool === 'bakemaps') $('#stHint').textContent = 'Bake normal / AO / curvature from a high-res sculpt onto the low-poly UVs — download the maps, on-device';
+    else if (tool === 'curves') $('#stHint').textContent = 'Hand-edit the F-curves, trim the loop, and onion-skin the arc — motion editing, on-device';
     else $('#stHint').textContent = 'Pick a character to rig, or jump straight to MoCap';
   }
 
@@ -1056,7 +1184,11 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
   // ---------- boot ----------
   loadManifests();
   idbRestore().then(n => { if (n) { renderLib(); toast(n + ' saved character' + (n > 1 ? 's' : '') + ' restored', 'info'); } });
+  // shrink the resident-workspace budget on memory-constrained machines
+  if (navigator.deviceMemory && navigator.deviceMemory <= 4) CTX.budget = 3;
   setTool('library');
+  updateCtxMeter();
+  setInterval(reapIdle, 45000);   // reap frames left idle past the budget
 
   // guard against losing in-memory work that didn't make it into IndexedDB
   window.addEventListener('beforeunload', (e) => {
@@ -1083,7 +1215,7 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
   })();
 
   // expose for verification
-  window.Studio = { setTool, post, TOOLS, session, libData, toast, clearSavedSession, idbDeleteChar, resetStorage: idbNuke, playAnimOnActive };
+  window.Studio = { setTool, post, TOOLS, session, libData, toast, clearSavedSession, idbDeleteChar, resetStorage: idbNuke, playAnimOnActive, CTX, liveTools, evictFrame, enforceBudget, reviveFrame };
 })();
 </script>
 </body>

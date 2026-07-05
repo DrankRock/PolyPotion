@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./studio3D_scripts/support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Spline+Sans+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="theme.js"></script>
+<style>
+  html,body{margin:0;padding:0;height:100%;background:var(--gutter);}
+  *{box-sizing:border-box;}
+  @keyframes bm-spin{to{transform:rotate(360deg);}}
+  @keyframes bm-tin{from{transform:translateX(120%);opacity:0;}to{transform:translateX(0);opacity:1;}}
+  #bm-root ::-webkit-scrollbar{width:10px;height:10px;}
+  #bm-root ::-webkit-scrollbar-track{background:var(--gutter);}
+  #bm-root ::-webkit-scrollbar-thumb{background:var(--panel-3);border:2px solid var(--gutter);border-radius:6px;}
+  #bm-root input[type=range]{-webkit-appearance:none;height:4px;border-radius:2px;background:var(--panel-3);outline:none;}
+  #bm-root input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--accent);cursor:pointer;border:2px solid var(--panel);}
+</style>
+</helmet>
+
+<div id="bm-root" style="display:flex;flex-direction:column;height:100vh;width:100%;overflow:hidden;background:var(--gutter);color:var(--text);font-family:var(--font-ui);font-size:13px;-webkit-font-smoothing:antialiased;user-select:none;">
+
+  <header style="height:46px;flex:none;display:flex;align-items:center;gap:14px;padding:0 14px;background:var(--header);border-bottom:1px solid var(--seam);">
+    <div style="display:flex;align-items:center;gap:9px;">
+      <div style="width:26px;height:26px;border-radius:5px;display:flex;align-items:center;justify-content:center;background:var(--accent);color:#0d0f1f;font-weight:700;font-size:15px;">☰</div>
+      <div>
+        <div style="font-weight:700;letter-spacing:.04em;font-size:14px;">BAKE MAPS</div>
+        <div style="font-family:var(--font-mono);font-size:10px;color:var(--muted);letter-spacing:.1em;margin-top:1px;">HIGH → LOW · NORMAL / AO / CURVATURE · LOCAL</div>
+      </div>
+    </div>
+    <div style="flex:1;"></div>
+    <div style="display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--text2);padding:4px 10px;background:var(--panel);border:1px solid var(--seam);border-radius:5px;">
+      <span style="width:7px;height:7px;border-radius:50%;flex:none;background:{{ dotColor }};"></span>
+      <span style="font-family:var(--font-mono);">{{ statusName }}</span>
+    </div>
+  </header>
+
+  <div style="flex:1;display:flex;min-height:0;">
+
+    <!-- VIEWPORT -->
+    <div style="flex:1;position:relative;min-width:0;min-height:0;background:var(--viewport);">
+      <canvas id="bm-gl" style="position:absolute;inset:0;width:100%;height:100%;display:block;"></canvas>
+
+      <sc-if value="{{ noModel }}" hint-placeholder-val="{{ true }}">
+        <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;background:rgba(18,20,24,.86);">
+          <div style="width:70px;height:70px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:30px;background:var(--accentDim);border:1px solid var(--edge2);color:var(--accent);">☰</div>
+          <div style="text-align:center;">
+            <div style="font-size:16px;font-weight:700;margin-bottom:6px;">Bake detail into texture maps</div>
+            <div style="font-size:12.5px;color:var(--text2);max-width:460px;line-height:1.6;">Load a <b>low-poly target</b> (must be UV-unwrapped) — that's what the maps are baked onto. Optionally add a <b>high-res</b> sculpt to project its detail down. AO &amp; curvature bake from a single mesh too.</div>
+          </div>
+          <div style="display:flex;gap:10px;">
+            <button style="padding:10px 18px;border-radius:7px;font-size:12.5px;font-weight:600;background:var(--accent);border:1px solid var(--accent);color:#0d0f1f;cursor:pointer;" onClick="{{ pickLow }}">⬇ Load low-poly target…</button>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ loading }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:rgba(18,20,24,.72);color:var(--muted);">
+          <div style="width:38px;height:38px;border:3px solid var(--panel-3);border-top-color:var(--accent);border-radius:50%;animation:bm-spin .9s linear infinite;"></div>
+          <div style="font-size:12px;">{{ loadingMsg }}</div>
+          <sc-if value="{{ baking }}" hint-placeholder-val="{{ false }}">
+            <div style="width:220px;height:6px;border-radius:3px;background:var(--panel-3);overflow:hidden;"><div style="height:100%;width:{{ progressPct }};background:var(--accent);transition:width .15s;"></div></div>
+          </sc-if>
+          <sc-if value="{{ baking }}" hint-placeholder-val="{{ false }}"><button style="padding:6px 14px;border-radius:6px;font-size:11px;font-weight:600;background:var(--panel-3);border:1px solid var(--edge);color:var(--text);cursor:pointer;" onClick="{{ doCancel }}">Cancel</button></sc-if>
+        </div>
+      </sc-if>
+
+      <div style="position:absolute;left:50%;top:10px;transform:translateX(-50%);display:flex;align-items:center;gap:4px;background:rgba(15,15,15,.86);border:1px solid var(--edge);border-radius:8px;padding:5px 7px;">
+        <sc-for list="{{ previews }}" as="v" hint-placeholder-count="5"><button style="{{ v.style }}" onClick="{{ v.onClick }}">{{ v.label }}</button></sc-for>
+      </div>
+      <div style="position:absolute;left:10px;bottom:12px;font-size:10.5px;color:var(--text2);background:rgba(15,15,15,.78);border:1px solid var(--edge);padding:6px 11px;border-radius:6px;pointer-events:none;max-width:320px;line-height:1.5;">preview switches the model's material between the baked maps · drag orbits · scroll zoom</div>
+    </div>
+
+    <!-- RIGHT : CONTROLS -->
+    <aside style="width:300px;flex:none;background:var(--panel);border-left:1px solid var(--seam);display:flex;flex-direction:column;min-height:0;overflow-y:auto;">
+
+      <!-- inputs -->
+      <div style="border-bottom:1px solid var(--seam);">
+        <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--header);border-bottom:1px solid var(--seam);"><span style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);">Meshes</span></div>
+        <div style="padding:11px 12px;display:flex;flex-direction:column;gap:8px;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="width:9px;height:9px;border-radius:2px;flex:none;background:{{ lowDot }};"></span>
+            <div style="flex:1;min-width:0;">
+              <div style="font-size:11.5px;font-weight:600;">Low-poly target <span style="color:var(--muted);font-weight:400;">{{ uvNote }}</span></div>
+              <div style="font-family:var(--font-mono);font-size:10px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ lowLabel }}</div>
+            </div>
+            <button style="{{ smallBtn }}" onClick="{{ pickLow }}">…</button>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="width:9px;height:9px;border-radius:2px;flex:none;background:{{ highDot }};"></span>
+            <div style="flex:1;min-width:0;">
+              <div style="font-size:11.5px;font-weight:600;">High-res detail <span style="color:var(--muted);font-weight:400;">optional</span></div>
+              <div style="font-family:var(--font-mono);font-size:10px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ highLabel }}</div>
+            </div>
+            <button style="{{ smallBtn }}" onClick="{{ pickHigh }}">…</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- which maps -->
+      <div style="border-bottom:1px solid var(--seam);">
+        <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--header);border-bottom:1px solid var(--seam);"><span style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);">Maps to bake</span></div>
+        <div style="padding:11px 12px;display:flex;flex-direction:column;gap:7px;">
+          <sc-for list="{{ mapToggles }}" as="m" hint-placeholder-count="4">
+            <label style="display:flex;align-items:center;gap:9px;font-size:12px;color:{{ m.color }};cursor:pointer;">
+              <input type="checkbox" checked="{{ m.on }}" onChange="{{ m.onChange }}" style="accent-color:var(--accent);">
+              <span style="flex:1;">{{ m.label }}</span>
+              <span style="font-family:var(--font-mono);font-size:9.5px;color:var(--muted);">{{ m.note }}</span>
+            </label>
+          </sc-for>
+        </div>
+      </div>
+
+      <!-- settings -->
+      <div style="border-bottom:1px solid var(--seam);">
+        <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--header);border-bottom:1px solid var(--seam);"><span style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);">Settings</span></div>
+        <div style="padding:11px 12px;">
+          <label style="display:block;font-size:10.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:7px;">Resolution</label>
+          <div style="display:flex;gap:6px;margin-bottom:13px;">
+            <sc-for list="{{ resOpts }}" as="r" hint-placeholder-count="4"><button style="{{ r.style }}" onClick="{{ r.onClick }}">{{ r.label }}</button></sc-for>
+          </div>
+          <label style="display:flex;justify-content:space-between;font-size:10.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;"><span>Cage distance</span><span style="font-family:var(--font-mono);color:var(--text);">{{ cageLabel }}</span></label>
+          <input type="range" min="1" max="20" value="{{ cageSlide }}" onInput="{{ onCage }}" style="width:100%;margin-bottom:13px;">
+          <label style="display:flex;justify-content:space-between;font-size:10.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;"><span>AO ray quality</span><span style="font-family:var(--font-mono);color:var(--text);">{{ raysLabel }}</span></label>
+          <input type="range" min="8" max="64" value="{{ raysSlide }}" onInput="{{ onRays }}" style="width:100%;">
+        </div>
+      </div>
+
+      <!-- bake + export -->
+      <div style="padding:12px;display:flex;flex-direction:column;gap:8px;">
+        <button style="display:flex;align-items:center;justify-content:center;gap:7px;padding:11px;border-radius:7px;font-size:13px;font-weight:700;background:var(--accent);border:1px solid var(--accent);color:#0d0f1f;width:100%;cursor:pointer;" onClick="{{ doBake }}">☰ Bake maps</button>
+        <sc-if value="{{ hasMaps }}" hint-placeholder-val="{{ false }}">
+          <button style="display:flex;align-items:center;justify-content:center;gap:7px;padding:9px;border-radius:6px;font-size:12px;font-weight:600;background:var(--panel-3);border:1px solid var(--edge);color:var(--text);width:100%;cursor:pointer;" onClick="{{ doDownloadAll }}">⬇ Download all maps (.png)</button>
+        </sc-if>
+        <div style="display:flex;gap:9px;padding:9px 11px;border-radius:7px;font-size:11px;line-height:1.5;background:var(--accentDim);border:1px solid var(--edge2);color:var(--text);margin-top:4px;"><span style="flex:none;">✦</span><span>{{ tipText }}</span></div>
+      </div>
+    </aside>
+  </div>
+
+  <input type="file" id="bm-low" accept=".glb,.gltf,.fbx,.obj" style="display:none;">
+  <input type="file" id="bm-high" accept=".glb,.gltf,.fbx,.obj" style="display:none;">
+  <div id="bm-toasts" style="position:fixed;bottom:16px;right:16px;z-index:300;display:flex;flex-direction:column;gap:8px;"></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = {
+    lowName: '', highName: '', hasLow: false, hasHigh: false, haveUV: false,
+    loading: false, loadingMsg: '', baking: false, progress: 0,
+    res: 512, cage: 4, rays: 24,
+    maps: { normal: true, ao: true, curvature: true, height: false },
+    preview: 'shaded', bakedMaps: [],
+  };
+
+  componentDidMount() { this.setupEmbed(); this.boot(); this.setupDrop(); }
+
+  async boot() {
+    try {
+      const canvas = document.getElementById('bm-gl');
+      const mod = await import('./bakemaps-engine.js');
+      const eng = new mod.BMEngine(canvas); this._eng = eng;
+      eng.onChange = () => this.refresh();
+      eng.onStatus = (msg) => this.setState({ loading: !!msg || this.state.baking, loadingMsg: msg || '' });
+      eng.onProgress = (p) => this.setState({ progress: p });
+      if (this._pending) { const p = this._pending; this._pending = null; p(); }
+    } catch (e) { this.toast('Engine failed: ' + (e && e.message || e)); if (this._post) this._post('studio:error', { tool: 'bakemaps', message: String(e && e.message || e) }); }
+  }
+
+  refresh() {
+    if (!this._eng) return; const s = this._eng.stats();
+    this.setState({ lowName: s.low, highName: s.high, hasLow: this._eng.hasLow(), hasHigh: s.hasHigh, haveUV: s.haveUV, bakedMaps: s.maps });
+  }
+
+  async loadLow(fn, label) {
+    if (!this._eng) { this._pending = () => this.loadLow(fn, label); return; }
+    this.setState({ loading: true, loadingMsg: 'Loading target…' });
+    try { const r = await fn(); this.refresh(); this.setState({ loading: false }); this.toast('Target: ' + r.name + ' — ' + (r.tris | 0).toLocaleString() + ' tris' + (r.haveUV ? '' : ' · ⚠ no UVs')); }
+    catch (e) { this.setState({ loading: false }); this.toast('Load failed: ' + (e && e.message || e)); }
+  }
+  async loadHigh(fn, label) {
+    if (!this._eng) { this._pending = () => this.loadHigh(fn, label); return; }
+    this.setState({ loading: true, loadingMsg: 'Loading high-res…' });
+    try { const r = await fn(); this.refresh(); this.setState({ loading: false }); this.toast('Detail: ' + r.name + ' — ' + (r.tris | 0).toLocaleString() + ' tris'); }
+    catch (e) { this.setState({ loading: false }); this.toast('Load failed: ' + (e && e.message || e)); }
+  }
+
+  fileSrc(f) { return f.arrayBuffer().then(buf => ({ buf, ext: (f.name.split('.').pop() || 'glb').toLowerCase(), name: f.name })); }
+
+  async doBake() {
+    if (!this._eng || !this._eng.hasLow()) { this.toast('Load a low-poly target first'); return; }
+    if (!this.state.haveUV) { this.toast('Target has no UVs — unwrap it in the UV tool first'); return; }
+    const anyMap = Object.values(this.state.maps).some(Boolean);
+    if (!anyMap) { this.toast('Pick at least one map to bake'); return; }
+    this.setState({ baking: true, loading: true, loadingMsg: 'Baking…', progress: 0 });
+    try {
+      const r = await this._eng.bake({ res: this.state.res, cage: this.state.cage / 100, aoRays: this.state.rays, maps: this.state.maps });
+      this.setState({ baking: false, loading: false }); this.refresh();
+      this.toast('Baked ' + r.maps.length + ' map' + (r.maps.length > 1 ? 's' : '') + ' at ' + r.res + '²');
+    } catch (e) {
+      this.setState({ baking: false, loading: false });
+      if (String(e.message) === 'cancelled') this.toast('Bake cancelled'); else this.toast('Bake failed: ' + (e && e.message || e));
+    }
+  }
+
+  setupDrop() {
+    const root = document.getElementById('bm-root'); if (!root) return;
+    root.addEventListener('dragover', e => e.preventDefault());
+    root.addEventListener('drop', e => { e.preventDefault(); const f = e.dataTransfer.files && e.dataTransfer.files[0]; if (!f) return; if (!this._eng.hasLow()) this.loadLow(async () => this._eng.loadLow(await this.fileSrc(f)), f.name); else this.loadHigh(async () => this._eng.loadHigh(await this.fileSrc(f)), f.name); });
+    document.getElementById('bm-low').addEventListener('change', e => { const f = e.target.files[0]; if (f) { this.loadLow(async () => this._eng.loadLow(await this.fileSrc(f)), f.name); e.target.value = ''; } });
+    document.getElementById('bm-high').addEventListener('change', e => { const f = e.target.files[0]; if (f) { this.loadHigh(async () => this._eng.loadHigh(await this.fileSrc(f)), f.name); e.target.value = ''; } });
+  }
+
+  setupEmbed() {
+    const params = new URLSearchParams(location.search);
+    this._embedded = params.get('embed') === '1' || window.parent !== window;
+    this._post = (type, payload, transfer) => { try { window.parent && window.parent.postMessage(Object.assign({ __studio: true, type }, payload || {}), '*', transfer || []); } catch (e) {} };
+    if (this._embedded) { const hide = () => { const h = document.querySelector('#bm-root > header'); if (h && h.firstElementChild) h.firstElementChild.style.display = 'none'; }; hide(); setTimeout(hide, 60); setTimeout(hide, 300); }
+    window.addEventListener('message', (e) => {
+      const d = e.data; if (!d || !d.__studio) return;
+      // studio delivers the active character as the low-poly target
+      if (d.type === 'studio:loadCharUrl') this.loadLow(() => this._eng.loadLow({ buf: null, ext: d.ext, name: d.label, url: d.url }).catch(async () => { const { fetchAssetBuffer } = await import('./chunk-loader.js'); const buf = await fetchAssetBuffer(d.url, { chunked: d.chunked, chunks: d.chunks }); return this._eng.loadLow({ buf, ext: d.ext || (d.url.split('.').pop()), name: d.label || 'target' }); }), d.label);
+      else if (d.type === 'studio:loadCharBuffer') this.loadLow(() => this._eng.loadLow({ buf: d.buffer, ext: (d.name || '').split('.').pop(), name: d.name || 'target' }), d.name);
+    });
+    setTimeout(() => this._post('studio:ready', { tool: 'bakemaps' }), 0);
+  }
+
+  toast(msg) {
+    const wrap = document.getElementById('bm-toasts'); if (!wrap) return;
+    const el = document.createElement('div');
+    el.style.cssText = 'padding:11px 15px;border-radius:7px;font-size:12px;background:var(--panel-3);border:1px solid var(--edge);border-left:3px solid var(--accent);box-shadow:0 8px 24px rgba(0,0,0,.45);max-width:340px;color:var(--text);animation:bm-tin .25s cubic-bezier(.2,1,.3,1);';
+    el.textContent = msg; wrap.appendChild(el);
+    setTimeout(() => { el.style.transition = 'opacity .3s'; el.style.opacity = '0'; setTimeout(() => el.remove(), 300); }, 2800);
+  }
+
+  segBtn(on) { return 'flex:1;font-size:11px;font-weight:600;padding:7px 6px;border-radius:5px;cursor:pointer;border:1px solid ' + (on ? 'var(--accent)' : 'var(--edge)') + ';background:' + (on ? 'var(--accentDim)' : 'var(--panel-3)') + ';color:' + (on ? 'var(--accent)' : 'var(--text)') + ';'; }
+  pvBtn(on, dis) { return 'font-size:11px;font-weight:600;padding:5px 10px;border-radius:5px;cursor:' + (dis ? 'default' : 'pointer') + ';background:' + (on ? 'var(--accentDim)' : 'transparent') + ';border:none;color:' + (dis ? 'var(--muted)' : (on ? 'var(--accent)' : 'var(--text2)')) + ';opacity:' + (dis ? 0.5 : 1) + ';'; }
+
+  renderVals() {
+    const st = this.state, eng = this._eng;
+    const toggleMap = (k) => this.setState({ maps: Object.assign({}, st.maps, { [k]: !st.maps[k] }) });
+    const mapMeta = [
+      { k: 'normal', label: 'Normal map', note: st.hasHigh ? 'high→low' : 'flat (add high-res)' },
+      { k: 'ao', label: 'Ambient occlusion', note: 'rays' },
+      { k: 'curvature', label: 'Curvature', note: 'edges' },
+      { k: 'height', label: 'Height / displacement', note: st.hasHigh ? 'high→low' : 'needs high-res' },
+    ];
+    const mapToggles = mapMeta.map(m => ({ label: m.label, note: m.note, on: !!st.maps[m.k], color: 'var(--text)', onChange: () => toggleMap(m.k) }));
+
+    const resOpts = [256, 512, 1024, 2048].map(r => ({ label: r + '', style: this.segBtn(st.res === r), onClick: () => this.setState({ res: r }) }));
+
+    const pvList = [{ k: 'shaded', label: 'Shaded' }, { k: 'normal', label: 'Normal' }, { k: 'ao', label: 'AO' }, { k: 'curvature', label: 'Curv' }, { k: 'height', label: 'Height' }];
+    const previews = pvList.map(p => { const has = p.k === 'shaded' || (st.bakedMaps || []).includes(p.k); return { label: p.label, style: this.pvBtn(st.preview === p.k, !has), onClick: () => { if (!has) return; this.setState({ preview: p.k }); if (eng) eng.setPreview(p.k); } }; });
+
+    const statusName = st.baking ? 'baking ' + Math.round(st.progress * 100) + '%' : (st.hasLow ? (st.hasHigh ? 'low + high loaded' : 'target loaded') : 'no target');
+    const tip = st.hasHigh
+      ? 'The normal map projects the high-res sculpt onto the target along the cage. Widen the cage if you see holes; raise resolution for finer detail.'
+      : 'Add a high-res sculpt to bake a real normal map. Right now AO + curvature bake from the single mesh — still great for masks and edge wear.';
+
+    return {
+      dotColor: st.hasLow ? 'var(--good)' : 'var(--muted)', statusName,
+      noModel: !st.hasLow && !st.loading, loading: st.loading, loadingMsg: st.loadingMsg,
+      baking: st.baking, progressPct: Math.round(st.progress * 100) + '%',
+      doCancel: () => { if (eng) eng.cancel(); },
+      pickLow: () => document.getElementById('bm-low').click(),
+      pickHigh: () => document.getElementById('bm-high').click(),
+      lowLabel: st.lowName || 'none — required', highLabel: st.highName || 'none',
+      lowDot: st.hasLow ? (st.haveUV ? 'var(--good)' : 'var(--warn,#e0a93b)') : 'var(--muted)',
+      highDot: st.hasHigh ? 'var(--good)' : 'var(--edge)',
+      uvNote: st.hasLow ? (st.haveUV ? '· UVs ✓' : '· ⚠ no UVs') : '· required',
+      smallBtn: 'width:30px;height:28px;border-radius:6px;font-size:14px;background:var(--panel-3);border:1px solid var(--edge);color:var(--text);cursor:pointer;flex:none;',
+      mapToggles, resOpts,
+      cageSlide: st.cage, cageLabel: (st.cage / 100).toFixed(2),
+      onCage: (e) => this.setState({ cage: +e.target.value }),
+      raysSlide: st.rays, raysLabel: st.rays + '',
+      onRays: (e) => this.setState({ rays: +e.target.value }),
+      previews,
+      doBake: () => this.doBake(),
+      hasMaps: (st.bakedMaps || []).length > 0,
+      doDownloadAll: () => { const n = eng ? eng.downloadAll() : 0; this.toast(n ? 'Downloaded ' + n + ' maps' : 'Bake first'); },
+      tipText: tip,
+    };
+  }
+}
+</script>
+</body>
+</html>
