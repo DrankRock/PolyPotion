@@ -4,6 +4,15 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>PolyPotion — 3D Character Pipeline</title>
+<meta name="description" content="Free, open-source, all-in-one 3D character suite — rig, mocap, pose, sculpt, paint and animate, entirely in your browser. Nothing is uploaded.">
+<meta property="og:title" content="PolyPotion — 3D Character Pipeline">
+<meta property="og:description" content="Free, open-source, all-in-one 3D character suite — rig, mocap, pose, sculpt, paint and animate, entirely in your browser. Nothing is uploaded.">
+<meta property="og:type" content="website">
+<meta property="og:image" content="social-card.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="PolyPotion — 3D Character Pipeline">
+<meta name="twitter:description" content="Free, open-source 3D character suite that runs entirely in your browser.">
+<meta name="twitter:image" content="social-card.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;500;600;700&family=Nunito:ital,wght@0,400;0,600;0,700;0,800;1,600&display=swap" rel="stylesheet">
@@ -228,6 +237,7 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
     </div>
     <div class="spacer"></div>
     <button class="tbtn primary" id="btnHandoff" disabled title="Bake the rigged character and send it to MoCap">⟐ Send rig to MoCap →</button>
+    <a class="tbtn ghost" href="Handbook.dc.html" target="_blank" rel="noopener" title="How every tool works — the PolyPotion Handbook" style="text-decoration:none;">✍ Handbook</a>
     <button class="tbtn ghost" id="btnTheme" title="Switch theme">◐ Cute Light</button>
     <button class="tbtn ghost" id="btnLib">▤ Library</button>
   </header>
@@ -365,6 +375,7 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
     <div class="right">
       <span class="mono" id="stHint">Pick a character to rig, or jump straight to MoCap</span>
       <span class="mono" style="display:flex;gap:9px;align-items:center;">
+        <a href="Handbook.dc.html" target="_blank" rel="noopener" style="color:var(--ink-soft);text-decoration:none;border-bottom:1px dotted var(--wood);">Handbook</a>
         <a href="Privacy.html" target="_blank" rel="noopener" style="color:var(--ink-soft);text-decoration:none;border-bottom:1px dotted var(--wood);">Privacy</a>
         <a href="Terms.html" target="_blank" rel="noopener" style="color:var(--ink-soft);text-decoration:none;border-bottom:1px dotted var(--wood);">Terms</a>
         <a href="Notices.html" target="_blank" rel="noopener" style="color:var(--ink-soft);text-decoration:none;border-bottom:1px dotted var(--wood);">Notices</a>
@@ -438,6 +449,7 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
       { id:'physics:flick', title:'Physics — Flick it (boing)', hint:'✦', run:() => { S.setTool('physics'); setTimeout(()=>physicsPost('studio:cmd',{cmd:'flick'}),120); } },
       { id:'theme', title:'Cycle theme (dark / slate / contrast)', hint:'T', run:cycleTheme },
       { id:'clearsession', title:'Clear saved session (delete restored rigs)', hint:'⌫', run:() => S.clearSavedSession && S.clearSavedSession() },
+      { id:'resetstorage', title:'Reset library storage (fix corrupted saves)', hint:'⚠', run:() => S.resetStorage && S.resetStorage() },
       { id:'handoff', title:'Send rig to MoCap', hint:'⟐', run:() => $('#btnHandoff') && $('#btnHandoff').click() },
       { id:'cheat', title:'Show keyboard shortcuts', hint:'?', run:() => openCheat() },
     ];
@@ -621,6 +633,17 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
   // Baked rigs live only in memory by default; we mirror them into IndexedDB
   // so a page reload restores the full character (skeleton + skin GLB buffer).
   const IDB = { name: 'studioSession', store: 'chars', _db: null };
+  let _idbWarned = false;
+  function idbWarn() {
+    if (_idbWarned) return; _idbWarned = true;
+    toast('Couldn\u2019t save to browser storage (full or corrupted) \u2014 this work lives only in this tab. \u2318K \u2192 \u201cReset library storage\u201d can fix corruption.', 'error');
+  }
+  function idbNuke() {
+    try { if (IDB._db) { IDB._db.close(); IDB._db = null; } indexedDB.deleteDatabase(IDB.name); } catch (e) {}
+    _idbWarned = false;
+    session.characters = session.characters.filter(c => !c.restored);
+    renderLib(); toast('Library storage reset \u2014 saved characters wiped', 'warn');
+  }
   function idbOpen() {
     if (IDB._db) return Promise.resolve(IDB._db);
     return new Promise((res, rej) => {
@@ -636,19 +659,26 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
   }
   function idbSaveChar(it) {
     if (!it._buffer) return;
-    const rec = { id: it.path + '|' + it.label, label: it.label, path: it.path, ext: it.ext || 'glb', rig: it.rig || 'autorig', buffer: it._buffer.slice(0), ts: Date.now() };
-    idbTx('readwrite', st => st.put(rec));
+    try {
+      const rec = { id: it.path + '|' + it.label, label: it.label, path: it.path, ext: it.ext || 'glb', rig: it.rig || 'autorig', rigged: it.rigged, buffer: it._buffer.slice(0), ts: Date.now() };
+      const p = idbTx('readwrite', st => st.put(rec));
+      if (p && p.then) p.then(ok => { if (ok === null) idbWarn(); else it._saved = true; }, () => idbWarn());
+    } catch (e) { idbWarn(); }
   }
   function idbDeleteChar(it) { idbTx('readwrite', st => st.delete(it.path + '|' + it.label)); }
   async function idbRestore() {
-    const recs = await idbTx('readonly', st => { const r = st.getAll(); return r; });
+    let recs = null;
+    try { recs = await idbTx('readonly', st => { const r = st.getAll(); return r; }); } catch (e) { recs = null; }
     if (!recs || !recs.length) return 0;
-    recs.sort((a, b) => b.ts - a.ts);
+    recs.sort((a, b) => (b.ts || 0) - (a.ts || 0));
+    let n = 0;
     for (const r of recs) {
+      if (!r || !r.label || !r.buffer || !(r.buffer instanceof ArrayBuffer)) continue;   // skip corrupted records
       if (session.characters.some(c => c.path === r.path && c.label === r.label)) continue;
-      session.characters.push({ label: r.label, path: r.path, ext: r.ext, session: true, restored: true, rig: r.rig, _buffer: r.buffer });
+      session.characters.push({ label: r.label, path: r.path, ext: r.ext, session: true, restored: true, rig: r.rig, rigged: r.rigged, _buffer: r.buffer, _saved: true });
+      n++;
     }
-    return recs.length;
+    return n;
   }
   function clearSavedSession() {
     idbTx('readwrite', st => st.clear());
@@ -802,10 +832,13 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
         <div class="nm">${it.label}</div>
         <div class="dt">${it.frames ? it.frames + ' frames · ' + (it.fps || 30) + 'fps' : (it.path || '').replace('data/animations/', '')}</div>
         <div class="acts">
+          <button class="act warm">◈ Play on character</button>
           <button class="act accent">⛷ Use in MoCap</button>
         </div>
       </div>`);
-    el.querySelector('.act').addEventListener('click', () => useAnimInMocap(it));
+    const [playBtn, mocapBtn] = el.querySelectorAll('.act');
+    playBtn.addEventListener('click', () => playAnimOnActive(it));
+    mocapBtn.addEventListener('click', () => useAnimInMocap(it));
     return el;
   }
 
@@ -823,7 +856,7 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
     let send;
     if (it.session && it._buffer) {
       const copy = it._buffer.slice(0);
-      send = () => { post(tool, 'studio:loadCharBuffer', { buffer: copy, name: (it.label || 'character') + '.glb' }, [copy]); sendLib(); };
+      send = () => { post(tool, 'studio:loadCharBuffer', { buffer: copy, name: (it.label || 'character') + '.' + (it.ext || 'glb') }, [copy]); sendLib(); };
     } else {
       send = () => { post(tool, 'studio:loadCharUrl', { url: it.path, label: it.label, ext: it.ext, chunked: it.chunked, chunks: it.chunks }); sendLib(); };
     }
@@ -866,6 +899,22 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
     toast('Using ' + it.label + ' as MoCap source…', 'info');
   }
 
+  // ---------- one-click retarget: play any library clip on the active character ----------
+  // Uses Showcase's semantic retarget core (canonical bone mapping); the clip is
+  // queued if the character is still loading.
+  function playAnimOnActive(anim) {
+    const ch = activeChar && activeChar.it;
+    const fallback = !ch && (session.characters.find(c => itemTags(c).has('rigged')) || (libData.characters || []).find(c => itemTags(c).has('rigged')));
+    const target = ch || fallback;
+    if (!target) { toast('No character to play it on — open or drop one first', 'warn'); return; }
+    if (!ch) setActiveChar(target);
+    setTool('showcase');   // auto-delivers the active character if it isn't there yet
+    const send = () => post('showcase', 'studio:playAnim', { anim });
+    if (TOOLS.showcase.ready) send();
+    else { const prev = TOOLS.showcase._pending; TOOLS.showcase._pending = () => { if (prev) prev(); send(); }; }
+    toast('Retargeting ' + anim.label + ' onto ' + target.label + '…', 'info');
+  }
+
   // ---------- rig → mocap handoff ----------
   $('#btnHandoff').addEventListener('click', () => {
     if (!TOOLS.rig.ready) { toast('Rig workspace not ready', 'warn'); return; }
@@ -886,6 +935,7 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
     try { buf = await file.arrayBuffer(); } catch (e) { toast('Could not read ' + name, 'error'); return; }
     const it = { label: name.replace(/\.(glb|gltf|fbx|obj)$/i, ''), path: name, ext, session: true, dropped: true, rig: 'unknown', rigged: 'false', _buffer: buf };
     session.characters.unshift(it);
+    idbSaveChar(it);   // dropped meshes survive a reload too
     renderLib();
     setActiveChar(it, 'showcase');
     lastLoadedName = it.label;
@@ -1008,6 +1058,23 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
   idbRestore().then(n => { if (n) { renderLib(); toast(n + ' saved character' + (n > 1 ? 's' : '') + ' restored', 'info'); } });
   setTool('library');
 
+  // guard against losing in-memory work that didn't make it into IndexedDB
+  window.addEventListener('beforeunload', (e) => {
+    const unsaved = session.characters.some(c => c.session && c._buffer && !c._saved);
+    if (unsaved) { e.preventDefault(); e.returnValue = ''; }
+  });
+
+  // warm the shared HTTP cache with the three.js module graph so the first
+  // tool workspace opens near-instantly (iframes share the cache).
+  setTimeout(() => {
+    ['https://esm.sh/three@0.160.0',
+     'https://esm.sh/three@0.160.0/examples/jsm/controls/OrbitControls.js',
+     'https://esm.sh/three@0.160.0/examples/jsm/loaders/GLTFLoader.js',
+     'https://esm.sh/three@0.160.0/examples/jsm/loaders/FBXLoader.js',
+     'https://esm.sh/three@0.160.0/examples/jsm/loaders/OBJLoader.js'
+    ].forEach(u => { try { import(u).catch(() => {}); } catch (e) {} });
+  }, 1500);
+
   // dismiss the potion splash once the shell is up (min ~1s so it's seen)
   (function () {
     const b = document.querySelector('#bootSplash'); if (!b) return;
@@ -1016,7 +1083,7 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
   })();
 
   // expose for verification
-  window.Studio = { setTool, post, TOOLS, session, libData, toast, clearSavedSession, idbDeleteChar };
+  window.Studio = { setTool, post, TOOLS, session, libData, toast, clearSavedSession, idbDeleteChar, resetStorage: idbNuke, playAnimOnActive };
 })();
 </script>
 </body>

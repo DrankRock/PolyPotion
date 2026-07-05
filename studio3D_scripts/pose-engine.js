@@ -353,6 +353,28 @@ export class PEngine {
   // mixamo faces +Z with character-left on world -X; AutoRig is spun 180 via root.
   _sideDir(dir) { return dir; }
 
+  // apply an arbitrary aim list (same shape as POSES[].aim) — used by text-to-pose.
+  // Returns { applied } so callers can tell how much of the spec matched this rig.
+  applyAimList(aim) {
+    if (!this.model) return { applied: 0 };
+    this.restQ.forEach((q, bone) => bone.quaternion.copy(q));
+    this.model.updateMatrixWorld(true);
+    let applied = 0;
+    (Array.isArray(aim) ? aim : []).forEach(a => {
+      if (!Array.isArray(a) || a.length < 3) return;
+      const pk = String(a[0]).toLowerCase().replace(/[^a-z]/g, '');
+      const ck = String(a[1]).toLowerCase().replace(/[^a-z]/g, '');
+      const dir = a[2];
+      if (!this.canon[pk] || !this.canon[ck]) return;
+      if (!Array.isArray(dir) || dir.length < 3 || dir.some(v => !isFinite(+v))) return;
+      this._aim(pk, ck, [+dir[0], +dir[1], +dir[2]]);
+      applied++;
+    });
+    this.model.updateMatrixWorld(true);
+    this._changed();
+    return { applied };
+  }
+
   // ---------------------------------------------------------- VIEW / LAYERS
   setSymmetry(on) { this.symmetry = !!on; }
   setLayers(mesh, skel) { this.showMesh = mesh; this.showSkel = skel; this._applyLayers(); }

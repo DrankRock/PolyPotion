@@ -264,6 +264,7 @@ class Component extends DCLogic {
       this.refresh(); this.setState({ loading: false, suggestDismiss: false });
       const extra = r.clips && r.clips.length ? ' · ' + r.clips.length + ' clip' + (r.clips.length > 1 ? 's' : '') : (r.hasSkeleton ? ' · rigged' : '');
       this.toast('Loaded ' + r.name + ' — ' + (r.tris ? r.tris.toLocaleString() + ' tris' : '') + extra);
+      if (this._animQueued) { const a = this._animQueued; this._animQueued = null; this.playLibAnim(a); }
     } catch (e) {
       this.setState({ loading: false });
       this.toast('Load failed: ' + (e && e.message || e));
@@ -303,6 +304,11 @@ class Component extends DCLogic {
       if (d.type === 'studio:loadCharUrl') this.loadVia(() => this._eng.loadUrl(d.url, d.ext, { chunked: d.chunked, chunks: d.chunks }), d.label || 'character');
       else if (d.type === 'studio:loadCharBuffer') this.loadVia(() => this._eng.loadBuffer(d.buffer, d.name, (d.name || '').split('.').pop()), d.name || 'mesh');
       else if (d.type === 'studio:animLibrary') this.setState({ libAnims: d.animations || [] });
+      else if (d.type === 'studio:playAnim') {
+        const a = d.anim; if (!a) return;
+        if (this._eng && this._eng.hasModel()) this.playLibAnim(a);
+        else this._animQueued = a;   // played as soon as the character finishes loading
+      }
     });
     setTimeout(() => this._post('studio:ready', { tool: 'showcase' }), 0);
   }

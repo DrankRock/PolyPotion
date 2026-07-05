@@ -47,11 +47,25 @@
   <!-- MAIN -->
   <main id="doc-main" style="flex:1;min-width:0;max-width:860px;padding:40px 56px 120px;">
 
+    <a href="index.html" style="display:inline-flex;align-items:center;gap:8px;font-size:12.5px;font-weight:700;color:var(--accent);text-decoration:none;margin-bottom:22px;padding:8px 14px;border:1px solid var(--seam);border-radius:8px;background:var(--panel);">← Back to Studio</a>
+
     <header style="margin-bottom:8px;">
       <div style="font-family:var(--font-mono);font-size:11px;letter-spacing:.14em;color:var(--accent);margin-bottom:10px;">3D CHARACTER PIPELINE · LOCAL</div>
       <h1 style="font-size:34px;font-weight:700;letter-spacing:-.01em;margin:0 0 14px;">PolyPotion Handbook</h1>
       <p style="font-size:16px;color:var(--text2);margin:0;max-width:620px;">A plain-language tour of every tool in PolyPotion — what it's for, the buttons that matter, and a few tricks once you're comfortable. Skim the sidebar, jump to whatever you're using.</p>
     </header>
+
+    <!-- WHAT’S NEW -->
+    <section style="margin:26px 0 10px;padding:18px 20px;border:1px solid var(--seam);border-radius:12px;background:var(--panel);">
+      <div style="font-family:var(--font-mono);font-size:11px;letter-spacing:.14em;color:var(--accent);margin-bottom:12px;">⚗ RECENTLY BREWED</div>
+      <ul style="margin:0;padding-left:18px;font-size:13.5px;line-height:1.75;color:var(--text2);">
+        <li><b style="color:var(--text);">Play any clip on your character</b> — every animation card in the Library now has <i>◈ Play on character</i>: one click retargets the clip onto whichever character you last opened and plays it in Showcase.</li>
+        <li><b style="color:var(--text);">Text to pose</b> — in the Pose tool’s left panel, describe a pose in plain words (“kneeling, arms raised”) and an AI drafts it onto the skeleton. Pick Claude, DeepSeek V4 Pro / Flash, DeepSeek V3 or Gemini; the ⚙ cog stores your API keys locally. Refine the result by dragging handles as usual.</li>
+        <li><b style="color:var(--text);">Drop-imports now survive a reload</b> — meshes you drop into the Library are saved in your browser alongside baked rigs.</li>
+        <li><b style="color:var(--text);">Storage escape hatch</b> — if saved characters ever refuse to load, open the command palette (<span style="font-family:var(--font-mono);">⌘K</span>) and run <i>Reset library storage</i>.</li>
+      </ul>
+    </section>
+
 
     <!-- OVERVIEW -->
     <section id="overview" data-doc style="padding:30px 0 8px;">
@@ -179,7 +193,7 @@ class Component extends DCLogic {
           { k: 'chunked badge', v: 'A large file split into parts for hosting — it reassembles automatically.' },
         ],
         advanced: [
-          'Rigs you bake stay in the Library between visits, so you can close the tab and come back to them.',
+          'Rigs you bake — and meshes you drop in — stay in the Library between visits, so you can close the tab and come back to them.',
         ],
       },
       {
@@ -312,6 +326,7 @@ class Component extends DCLogic {
           { k: 'Bind pose', v: 'Reset back to the neutral rig.' },
         ],
         advanced: [
+          'Text to pose: type what you want (“sitting cross-armed”) in the ✦ panel, pick an AI provider, and hit ⚗ Brew — the ⚙ cog holds your API keys. The AI drafts the pose; you polish it with the handles.',
           'Turn on Symmetry to pose both arms at once, then finish one side and hit Mirror to copy it across.',
         ],
       },

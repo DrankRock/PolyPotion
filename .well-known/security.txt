@@ -1,0 +1,6 @@
+Contact: mailto:mat.github.vei@gmail.com
+Expires: 2027-07-05T00:00:00.000Z
+Preferred-Languages: en, fr
+# Canonical: https://YOUR-DOMAIN/.well-known/security.txt  (uncomment + set your domain)
+# PolyPotion is a fully client-side app; nothing is uploaded. Please report
+# any security issue in a library we bundle or in our code to the contact above.

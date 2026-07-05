@@ -63,6 +63,36 @@
           </sc-for>
         </div>
       </div>
+      <div style="border-top:1px solid var(--seam);">
+        <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--header);border-bottom:1px solid var(--seam);">
+          <span style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);">✦ Text to pose</span>
+          <button title="AI provider settings" style="margin-left:auto;width:22px;height:22px;border-radius:5px;border:1px solid var(--edge);background:var(--panel3);color:var(--text2);cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;" onClick="{{ aiToggleSettings }}">⚙</button>
+        </div>
+        <div style="padding:11px 12px;display:flex;flex-direction:column;gap:8px;">
+          <textarea id="po-ai-prompt" rows="3" placeholder="Describe a pose — kneeling, arms raised to the sky" style="width:100%;resize:vertical;min-height:54px;padding:8px 9px;border-radius:6px;border:1px solid var(--edge);background:var(--panel2);color:var(--text);font-family:var(--font-ui);font-size:11.5px;line-height:1.45;outline:none;"></textarea>
+          <div style="display:flex;gap:7px;">
+            <select value="{{ aiProvider }}" onChange="{{ aiOnProvider }}" style="flex:1;min-width:0;height:30px;padding:0 6px;border-radius:6px;border:1px solid var(--edge);background:var(--panel3);color:var(--text);font-size:11px;font-weight:600;">
+              <sc-for list="{{ aiProviders }}" as="pr" hint-placeholder-count="5">
+                <option value="{{ pr.id }}">{{ pr.label }}</option>
+              </sc-for>
+            </select>
+            <button style="{{ aiBrewStyle }}" onClick="{{ aiBrew }}">{{ aiBtnLabel }}</button>
+          </div>
+          <sc-if value="{{ aiSettingsOpen }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;flex-direction:column;gap:7px;padding:9px;border-radius:7px;background:var(--panel2);border:1px solid var(--seam);">
+              <div style="font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);">API keys · stored only in this browser</div>
+              <input type="password" placeholder="DeepSeek API key (sk-...)" value="{{ aiKeyDeepseek }}" onInput="{{ aiSetKeyDeepseek }}" style="height:28px;padding:0 9px;border-radius:6px;border:1px solid var(--edge);background:var(--panel3);color:var(--text);font-size:11px;outline:none;">
+              <input type="password" placeholder="Gemini API key (AIza...)" value="{{ aiKeyGemini }}" onInput="{{ aiSetKeyGemini }}" style="height:28px;padding:0 9px;border-radius:6px;border:1px solid var(--edge);background:var(--panel3);color:var(--text);font-size:11px;outline:none;">
+              <input type="text" placeholder="Gemini model · default gemini-flash-latest" value="{{ aiGeminiModel }}" onInput="{{ aiSetGeminiModel }}" style="height:28px;padding:0 9px;border-radius:6px;border:1px solid var(--edge);background:var(--panel3);color:var(--text);font-size:11px;outline:none;">
+              <input type="password" placeholder="Anthropic API key — optional" value="{{ aiKeyAnthropic }}" onInput="{{ aiSetKeyAnthropic }}" style="height:28px;padding:0 9px;border-radius:6px;border:1px solid var(--edge);background:var(--panel3);color:var(--text);font-size:11px;outline:none;">
+              <div style="font-size:10px;line-height:1.5;color:var(--muted);">Claude uses the built-in helper when available — no key needed. DeepSeek &amp; Gemini call their APIs straight from your browser; keys never leave this device.</div>
+            </div>
+          </sc-if>
+          <sc-if value="{{ aiNoteShow }}" hint-placeholder-val="{{ false }}">
+            <div style="font-size:10.5px;line-height:1.5;color:var(--text2);">{{ aiNote }}</div>
+          </sc-if>
+        </div>
+      </div>
       <div style="border-top:1px solid var(--seam);padding:12px;">
         <div style="display:flex;gap:9px;padding:9px 11px;border-radius:7px;font-size:10.5px;line-height:1.5;background:var(--activeDim);border:1px solid rgba(255,79,0,.28);color:#ffd2bb;"><span style="flex:none;">⟁</span><span>Orange handles are <b>IK</b> — drag a wrist or ankle and the limb bends to follow. Blue handles are <b>FK</b> — drag to rotate that joint directly.</span></div>
       </div>
@@ -155,7 +185,113 @@ class Component extends DCLogic {
     meshName: 'no model', loading: false, loadingMsg: '', hasModel: false,
     symmetry: true, showMesh: true, showSkel: true, xray: false,
     sel: null, bones: 0, handles: 0, rig: '—',
+    aiBusy: false, aiSettingsOpen: false, aiNote: '',
+    aiProvider: (function () { try { return localStorage.getItem('pp.ai.provider') || 'claude'; } catch (e) { return 'claude'; } })(),
+    aiKeys: (function () { try { return JSON.parse(localStorage.getItem('pp.ai.keys') || '{}') || {}; } catch (e) { return {}; } })(),
   };
+
+  aiProviderDefs() {
+    return [
+      { id: 'claude', label: 'Claude (Haiku 4.5)', keyId: 'anthropic', model: 'claude-haiku-4-5' },
+      { id: 'deepseek-v4-pro', label: 'DeepSeek V4 Pro', keyId: 'deepseek', model: 'deepseek-v4-pro' },
+      { id: 'deepseek-v4-flash', label: 'DeepSeek V4 Flash', keyId: 'deepseek', model: 'deepseek-v4-flash' },
+      { id: 'deepseek-v3', label: 'DeepSeek V3 (legacy)', keyId: 'deepseek', model: 'deepseek-chat' },
+      { id: 'gemini', label: 'Gemini', keyId: 'gemini', model: 'gemini-flash-latest' },
+    ];
+  }
+
+  aiSysPrompt() {
+    return [
+      'You pose a 3D humanoid character by aiming skeleton segments along world-space directions.',
+      'World frame: the character stands at the origin FACING +Z (toward the camera). +Y is up. The character\u2019s LEFT side is on world -X, RIGHT side on +X.',
+      'A segment is [parentJoint, childJoint, [x,y,z]] \u2014 the bone from parentJoint toward childJoint ends up pointing along [x,y,z] (normalized for you).',
+      'Available segments (list parents before children): spine\u2192chest (torso lean), neck\u2192head, leftarm\u2192leftforearm (left upper arm), leftforearm\u2192lefthand, rightarm\u2192rightforearm, rightforearm\u2192righthand, leftupleg\u2192leftleg (left thigh), leftleg\u2192leftfoot (left shin), rightupleg\u2192rightleg, rightleg\u2192rightfoot.',
+      'Reference directions: T-pose arms point [-1,0,0] (left) / [1,0,0] (right). Arms hanging relaxed \u2248 [-0.3,-0.95,0.1] / [0.3,-0.95,0.1]. Thighs straight down [0,-1,0]. A raised right fist \u2248 rightarm\u2192rightforearm [0.7,0.65,0.1], rightforearm\u2192righthand [0.3,0.95,0].',
+      'Example \u2014 "waving hello": {"aim":[["rightarm","rightforearm",[0.74,0.66,0.1]],["rightforearm","righthand",[0.42,0.9,0.1]],["leftarm","leftforearm",[-0.42,-0.9,0.08]],["leftforearm","lefthand",[-0.42,-0.9,0.08]],["neck","head",[0.16,0.97,0.05]]],"note":"cheery wave"}',
+      'Example \u2014 "sitting on a chair": {"aim":[["leftupleg","leftleg",[-0.18,-0.32,0.93]],["leftleg","leftfoot",[-0.05,-0.97,0.18]],["rightupleg","rightleg",[0.18,-0.32,0.93]],["rightleg","rightfoot",[0.05,-0.97,0.18]],["leftarm","leftforearm",[-0.42,-0.86,0.28]],["leftforearm","lefthand",[-0.2,-0.6,0.77]],["rightarm","rightforearm",[0.42,-0.86,0.28]],["rightforearm","righthand",[0.2,-0.6,0.77]],["spine","chest",[0,0.99,-0.12]]],"note":"seated, hands on thighs"}',
+      'Rules: reply with ONLY the JSON object \u2014 no prose, no code fences. Unlisted segments stay in bind pose (T-pose), so aim BOTH arms unless the pose truly calls for T-pose arms. Aim every segment the pose involves. "note" is \u2264 6 words.',
+    ].join('\n');
+  }
+
+  aiSaveKey(id, val) {
+    const keys = Object.assign({}, this.state.aiKeys); keys[id] = val;
+    this.setState({ aiKeys: keys });
+    try { localStorage.setItem('pp.ai.keys', JSON.stringify(keys)); } catch (e) {}
+  }
+
+  async aiCall(prov, sys, user) {
+    const keys = this.state.aiKeys || {};
+    if (prov.id === 'claude' && window.claude && window.claude.complete) {
+      return await window.claude.complete({ system: sys, messages: [{ role: 'user', content: user }], max_tokens: 1200 });
+    }
+    if (prov.keyId === 'anthropic') {
+      const k = keys.anthropic; if (!k) throw new Error('No built-in Claude here and no Anthropic key \u2014 add one in \u2699 settings');
+      const r = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', 'x-api-key': k, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+        body: JSON.stringify({ model: prov.model, max_tokens: 1200, system: sys, messages: [{ role: 'user', content: user }] }),
+      });
+      const j = await r.json();
+      if (!r.ok) throw new Error((j.error && j.error.message) || ('Anthropic HTTP ' + r.status));
+      return (j.content || []).map(c => c.text || '').join('');
+    }
+    if (prov.keyId === 'deepseek') {
+      const k = keys.deepseek; if (!k) throw new Error('DeepSeek API key missing \u2014 add it in \u2699 settings');
+      const r = await fetch('https://api.deepseek.com/chat/completions', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', 'authorization': 'Bearer ' + k },
+        body: JSON.stringify({ model: prov.model, max_tokens: 1200, messages: [{ role: 'system', content: sys }, { role: 'user', content: user }] }),
+      });
+      const j = await r.json();
+      if (!r.ok) throw new Error((j.error && (j.error.message || String(j.error))) || ('DeepSeek HTTP ' + r.status));
+      return (j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content) || '';
+    }
+    // gemini
+    const k = keys.gemini; if (!k) throw new Error('Gemini API key missing \u2014 add it in \u2699 settings');
+    const model = (keys.geminiModel || '').trim() || prov.model;
+    const r = await fetch('https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(model) + ':generateContent?key=' + encodeURIComponent(k), {
+      method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ systemInstruction: { parts: [{ text: sys }] }, contents: [{ role: 'user', parts: [{ text: user }] }] }),
+    });
+    const j = await r.json();
+    if (!r.ok) throw new Error((j.error && j.error.message) || ('Gemini HTTP ' + r.status));
+    const cand = (j.candidates || [])[0];
+    return ((cand && cand.content && cand.content.parts) || []).map(p => p.text || '').join('');
+  }
+
+  aiParse(text) {
+    let t = String(text || '').trim();
+    const m = t.match(/```(?:json)?([\s\S]*?)```/); if (m) t = m[1];
+    const a = t.indexOf('{'), b = t.lastIndexOf('}');
+    if (a < 0 || b <= a) throw new Error('The model returned no JSON');
+    const spec = JSON.parse(t.slice(a, b + 1));
+    if (!spec || !Array.isArray(spec.aim)) throw new Error('The model\u2019s JSON has no "aim" list');
+    return spec;
+  }
+
+  async aiBrewPose() {
+    if (this.state.aiBusy) return;
+    const eng = this._eng;
+    if (!eng || !this.state.hasModel) { this.toast('Load a rig first'); return; }
+    const ta = document.getElementById('po-ai-prompt');
+    const txt = ta && ta.value.trim();
+    if (!txt) { this.toast('Describe the pose first'); return; }
+    const defs = this.aiProviderDefs();
+    const prov = defs.find(p => p.id === this.state.aiProvider) || defs[0];
+    this.setState({ aiBusy: true, aiNote: '' });
+    try {
+      const reply = await this.aiCall(prov, this.aiSysPrompt(), 'Pose: ' + txt);
+      const spec = this.aiParse(reply);
+      const r = eng.applyAimList(spec.aim);
+      if (!r.applied) throw new Error('None of the returned joints matched this rig');
+      this.refresh();
+      this.setState({ aiBusy: false, aiNote: '\u2697 ' + (spec.note || txt) + ' \u2014 ' + r.applied + ' segments via ' + prov.label });
+      this.toast('Pose brewed \u2014 refine it by dragging the handles');
+    } catch (e) {
+      this.setState({ aiBusy: false, aiNote: '\u2715 ' + (e && e.message || e) });
+      this.toast('Text-to-pose failed: ' + (e && e.message || e));
+    }
+  }
 
   componentDidMount() { this.setupEmbed(); this.boot(); this.setupDrop(); }
 
@@ -236,6 +372,20 @@ class Component extends DCLogic {
 
     return {
       presets, views,
+      // text-to-pose
+      aiProviders: this.aiProviderDefs().map(p => ({ id: p.id, label: p.label })),
+      aiProvider: st.aiProvider,
+      aiOnProvider: (e) => { const v = e.target.value; this.setState({ aiProvider: v }); try { localStorage.setItem('pp.ai.provider', v); } catch (err) {} },
+      aiToggleSettings: () => this.setState({ aiSettingsOpen: !st.aiSettingsOpen }),
+      aiSettingsOpen: st.aiSettingsOpen,
+      aiBrew: () => this.aiBrewPose(),
+      aiBtnLabel: st.aiBusy ? '\u2026 brewing' : '\u2697 Brew',
+      aiBrewStyle: 'flex:none;height:30px;padding:0 13px;border-radius:6px;font-size:11.5px;font-weight:700;cursor:' + (st.aiBusy ? 'wait' : 'pointer') + ';background:' + (st.aiBusy ? 'var(--panel3)' : 'var(--active)') + ';border:1px solid ' + (st.aiBusy ? 'var(--edge)' : 'var(--active)') + ';color:' + (st.aiBusy ? 'var(--text2)' : 'var(--on-accent)') + ';',
+      aiNote: st.aiNote, aiNoteShow: !!st.aiNote,
+      aiKeyDeepseek: st.aiKeys.deepseek || '', aiSetKeyDeepseek: (e) => this.aiSaveKey('deepseek', e.target.value),
+      aiKeyGemini: st.aiKeys.gemini || '', aiSetKeyGemini: (e) => this.aiSaveKey('gemini', e.target.value),
+      aiGeminiModel: st.aiKeys.geminiModel || '', aiSetGeminiModel: (e) => this.aiSaveKey('geminiModel', e.target.value),
+      aiKeyAnthropic: st.aiKeys.anthropic || '', aiSetKeyAnthropic: (e) => this.aiSaveKey('anthropic', e.target.value),
       meshName: st.meshName, hasModel: st.hasModel, noModel: !st.hasModel && !st.loading,
       dotColor: st.hasModel ? 'var(--good)' : 'var(--muted)',
       loading: st.loading, loadingMsg: st.loadingMsg,
