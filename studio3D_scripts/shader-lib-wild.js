@@ -847,262 +847,262 @@ export const WILD_PRESETS = [
       { "key": "speed", "label": "Trip", "type": "range", "min": 0, "max": 4, "step": 0.05, "default": 2.5 }
     ],
     "fragBody": "float t = u_time * u_speed; float z = 1.0; for(int i=0; i<3; i++){ z = fbm(vObjPos * z * 2.0 + t * 0.2) * 2.0; } vec3 c = hsv2rgb(vec3(z*0.8+t*0.1, 1.0, 1.0)); col = c * diff; col += vec3(1.0)*pow(fres,4.0)*2.0;"
+  },  // =========== after the existing presets, replace from cyberglitch onward ===========
+  {
+    id: 'cyberglitch',
+    name: 'Cyber Glitch',
+    category: 'Mind-bending',
+    kind: 'shader',
+    swatch: ['#ff00ff', '#00ffff'],
+    gravity: true,
+    fragBody: AXIS + `\n float t = u_time * u_speed; float block = floor(h*15.0+t*2.0)*0.0667; float glitch = step(0.88, snoise(vec3(block*1.3, t*5.0, 0.3))); float g2 = step(0.94, fbm(vObjPos*30.0+t*10.0)); float bright = max(glitch, g2); vec3 colBase = hsv2rgb(vec3(fract(h*2.0+t*0.1), 1.0, 1.0)); col = mix(colBase*0.2, colBase, bright) * diff; col += vec3(1.0,0.3,0.5)*pow(fres,4.0)*1.2;\n`,
+    params: [
+      { key: 'speed', label: 'Jitter', type: 'range', min: 0, max: 4, step: 0.05, default: 1.5 },
+    ],
   },
   {
-    "id": "cyberglitch",
-    "name": "Cyber Glitch",
-    "category": "Mind-bending",
-    "kind": "shader",
-    "swatch": ["#ff00ff", "#00ffff"],
-    "gravity": true,
-    "fragBody": "AXIS + ` float t = u_time * u_speed; float block = floor(h*15.0+t*2.0)*0.0667; float glitch = step(0.88, snoise(vec3(block*1.3, t*5.0, 0.3))); float g2 = step(0.94, fbm(vObjPos*30.0+t*10.0)); float bright = max(glitch, g2); vec3 colBase = hsv2rgb(vec3(fract(h*2.0+t*0.1), 1.0, 1.0)); col = mix(colBase*0.2, colBase, bright) * diff; col += vec3(1.0,0.3,0.5)*pow(fres,4.0)*1.2;`",
-    "params": [
-      { "key": "speed", "label": "Jitter", "type": "range", "min": 0, "max": 4, "step": 0.05, "default": 1.5 }
-    ]
+    id: 'gelatinouscube',
+    name: 'Gelatinous Cube',
+    category: 'Mind-bending',
+    kind: 'shader',
+    swatch: ['#8affb0', '#0a4a2a'],
+    gravity: true,
+    transparent: true,
+    additive: true,
+    depthWrite: false,
+    fragBody: AXIS + `\n float t = u_time * u_speed; float wobble = sin(pPerp * 4.0 + t * 2.0) * 0.2; float gel = fbm(vObjPos * 3.0 + t * 0.3 + wobble); float opacity = smoothstep(0.3, 0.7, gel) * 0.9; col = hsv2rgb(vec3(0.3 + gel * 0.2, 0.8, 1.0)) * opacity * 1.5; alpha = opacity;\n`,
+    params: [
+      { key: 'speed', label: 'Wiggle', type: 'range', min: 0, max: 3, step: 0.05, default: 1.2 },
+    ],
   },
   {
-    "id": "gelatinouscube",
-    "name": "Gelatinous Cube",
-    "category": "Mind-bending",
-    "kind": "shader",
-    "swatch": ["#8affb0", "#0a4a2a"],
-    "gravity": true,
-    "transparent": true,
-    "additive": true,
-    "depthWrite": false,
-    "fragBody": "AXIS + ` float t = u_time * u_speed; float wobble = sin(pPerp * 4.0 + t * 2.0) * 0.2; float gel = fbm(vObjPos * 3.0 + t * 0.3 + wobble); float opacity = smoothstep(0.3, 0.7, gel) * 0.9; col = hsv2rgb(vec3(0.3 + gel * 0.2, 0.8, 1.0)) * opacity * 1.5; alpha = opacity;`",
-    "params": [
-      { "key": "speed", "label": "Wiggle", "type": "range", "min": 0, "max": 3, "step": 0.05, "default": 1.2 }
-    ]
+    id: 'sandstorm',
+    name: 'Sandstorm',
+    category: 'Mind-bending',
+    kind: 'shader',
+    swatch: ['#d4a036', '#3a2a0a'],
+    gravity: true,
+    transparent: true,
+    additive: true,
+    depthWrite: false,
+    fragBody: AXIS + `\n float t = u_time * u_speed; float grains = 0.0; for(int i=0; i<4; i++){ float fi = float(i); grains += step(0.82, snoise(vObjPos * (8.0+fi*3.0) + vec3(fi*t*1.7, -fi*t*0.9, fi))); } col = vec3(0.8,0.5,0.2) * grains * 2.0; alpha = grains * 0.85;\n`,
+    params: [
+      { key: 'speed', label: 'Wind', type: 'range', min: 0, max: 4, step: 0.05, default: 2.2 },
+    ],
   },
   {
-    "id": "sandstorm",
-    "name": "Sandstorm",
-    "category": "Mind-bending",
-    "kind": "shader",
-    "swatch": ["#d4a036", "#3a2a0a"],
-    "gravity": true,
-    "transparent": true,
-    "additive": true,
-    "depthWrite": false,
-    "fragBody": "AXIS + ` float t = u_time * u_speed; float grains = 0.0; for(int i=0; i<4; i++){ float fi = float(i); grains += step(0.82, snoise(vObjPos * (8.0+fi*3.0) + vec3(fi*t*1.7, -fi*t*0.9, fi))); } col = vec3(0.8,0.5,0.2) * grains * 2.0; alpha = grains * 0.85;`",
-    "params": [
-      { "key": "speed", "label": "Wind", "type": "range", "min": 0, "max": 4, "step": 0.05, "default": 2.2 }
-    ]
+    id: 'nebulaecho',
+    name: 'Nebula Echo',
+    category: 'Mind-bending',
+    kind: 'shader',
+    swatch: ['#ff80c0', '#200840'],
+    gravity: true,
+    fragBody: AXIS + `\n float t = u_time * u_speed; float cloud = fbm(vObjPos*2.5 + t*0.15); float echo = sin(cloud*12.0)*0.5+0.5; vec3 col1 = hsv2rgb(vec3(0.8+cloud*0.2, 0.7, 0.5)); vec3 col2 = hsv2rgb(vec3(0.6+cloud*0.3, 0.8, 0.8)); col = mix(col1, col2, echo) * diff; col += vec3(1.0,0.7,1.0)*pow(fres,3.0)*0.9;\n`,
+    params: [
+      { key: 'speed', label: 'Drift', type: 'range', min: 0, max: 3, step: 0.05, default: 1.0 },
+    ],
   },
   {
-    "id": "nebulaecho",
-    "name": "Nebula Echo",
-    "category": "Mind-bending",
-    "kind": "shader",
-    "swatch": ["#ff80c0", "#200840"],
-    "gravity": true,
-    "fragBody": "AXIS + ` float t = u_time * u_speed; float cloud = fbm(vObjPos*2.5 + t*0.15); float echo = sin(cloud*12.0)*0.5+0.5; vec3 col1 = hsv2rgb(vec3(0.8+cloud*0.2, 0.7, 0.5)); vec3 col2 = hsv2rgb(vec3(0.6+cloud*0.3, 0.8, 0.8)); col = mix(col1, col2, echo) * diff; col += vec3(1.0,0.7,1.0)*pow(fres,3.0)*0.9;`",
-    "params": [
-      { "key": "speed", "label": "Drift", "type": "range", "min": 0, "max": 3, "step": 0.05, "default": 1.0 }
-    ]
+    id: 'electricarc',
+    name: 'Electric Arc',
+    category: 'Mind-bending',
+    kind: 'shader',
+    swatch: ['#ffffff', '#0022ff'],
+    gravity: true,
+    transparent: true,
+    additive: true,
+    depthWrite: false,
+    fragBody: AXIS + `\n float t = u_time * u_speed; float arc = 0.0; for(int i=0; i<3; i++){ float fi = float(i); arc += pow(max(0.0, 1.0 - abs(sin(pPerp*(7.0+fi*3.0)+t*2.0 + fi*1.2)*0.5+0.5 - 0.7)*15.0), 3.0); } arc = clamp(arc,0.0,1.0); col = vec3(0.8,0.9,1.0) * arc * 4.0; col += vec3(1.0)*pow(fres,5.0)*0.8; alpha = arc*0.95;\n`,
+    params: [
+      { key: 'speed', label: 'Zap', type: 'range', min: 0, max: 4, step: 0.05, default: 2.5 },
+    ],
   },
   {
-    "id": "electricarc",
-    "name": "Electric Arc",
-    "category": "Mind-bending",
-    "kind": "shader",
-    "swatch": ["#ffffff", "#0022ff"],
-    "gravity": true,
-    "transparent": true,
-    "additive": true,
-    "depthWrite": false,
-    "fragBody": "AXIS + ` float t = u_time * u_speed; float arc = 0.0; for(int i=0; i<3; i++){ float fi = float(i); arc += pow(max(0.0, 1.0 - abs(sin(pPerp*(7.0+fi*3.0)+t*2.0 + fi*1.2)*0.5+0.5 - 0.7)*15.0), 3.0); } arc = clamp(arc,0.0,1.0); col = vec3(0.8,0.9,1.0) * arc * 4.0; col += vec3(1.0)*pow(fres,5.0)*0.8; alpha = arc*0.95;`",
-    "params": [
-      { "key": "speed", "label": "Zap", "type": "range", "min": 0, "max": 4, "step": 0.05, "default": 2.5 }
-    ]
+    id: 'flowymercury',
+    name: 'Flow Mercury',
+    category: 'Mind-bending',
+    kind: 'shader',
+    swatch: ['#c0c0d0', '#3a3a4a'],
+    gravity: true,
+    fragBody: AXIS + `\n float t = u_time * u_speed; float flow = fbm(vObjPos*3.0 + t*0.4); float streak = abs(sin(ang*4.0 + flow*7.0 + t)*0.5+0.5); col = mix(vec3(0.2,0.22,0.3), vec3(0.8,0.82,0.9), streak) * diff; col += vec3(1.0)*pow(fres,3.0)*0.7;\n`,
+    params: [
+      { key: 'speed', label: 'Flow', type: 'range', min: 0, max: 3, step: 0.05, default: 1.3 },
+    ],
   },
   {
-    "id": "flowymercury",
-    "name": "Flow Mercury",
-    "category": "Mind-bending",
-    "kind": "shader",
-    "swatch": ["#c0c0d0", "#3a3a4a"],
-    "gravity": true,
-    "fragBody": "AXIS + ` float t = u_time * u_speed; float flow = fbm(vObjPos*3.0 + t*0.4); float streak = abs(sin(ang*4.0 + flow*7.0 + t)*0.5+0.5); col = mix(vec3(0.2,0.22,0.3), vec3(0.8,0.82,0.9), streak) * diff; col += vec3(1.0)*pow(fres,3.0)*0.7;`",
-    "params": [
-      { "key": "speed", "label": "Flow", "type": "range", "min": 0, "max": 3, "step": 0.05, "default": 1.3 }
-    ]
+    id: 'candyfloss',
+    name: 'Candy Floss',
+    category: 'Mind-bending',
+    kind: 'shader',
+    swatch: ['#ffaacc', '#ffffff'],
+    gravity: false,
+    fragBody: `float t = u_time * u_speed; float fluff = fbm(vObjPos*5.0 + t*0.6); float thickness = smoothstep(0.3, 0.8, fluff); vec3 cotton = mix(vec3(1.0,0.7,0.8), vec3(1.0,0.9,0.95), thickness); col = cotton * diff; col += vec3(1.0)*pow(fres,2.0)*1.2;`,
+    params: [
+      { key: 'speed', label: 'Spin', type: 'range', min: 0, max: 3, step: 0.05, default: 0.8 },
+    ],
   },
   {
-    "id": "candyfloss",
-    "name": "Candy Floss",
-    "category": "Mind-bending",
-    "kind": "shader",
-    "swatch": ["#ffaacc", "#ffffff"],
-    "gravity": false,
-    "fragBody": "float t = u_time * u_speed; float fluff = fbm(vObjPos*5.0 + t*0.6); float thickness = smoothstep(0.3, 0.8, fluff); vec3 cotton = mix(vec3(1.0,0.7,0.8), vec3(1.0,0.9,0.95), thickness); col = cotton * diff; col += vec3(1.0)*pow(fres,2.0)*1.2;",
-    "params": [
-      { "key": "speed", "label": "Spin", "type": "range", "min": 0, "max": 3, "step": 0.05, "default": 0.8 }
-    ]
+    id: 'glitchgrid',
+    name: 'Glitch Grid',
+    category: 'Mind-bending',
+    kind: 'shader',
+    swatch: ['#ff00ff', '#000000'],
+    gravity: true,
+    transparent: true,
+    additive: true,
+    depthWrite: false,
+    fragBody: AXIS + `\n float t = u_time * u_speed; vec3 grid = fract(vObjPos*6.0); float gx = smoothstep(0.08,0.1,grid.x); float gy = smoothstep(0.08,0.1,grid.y); float gz = smoothstep(0.08,0.1,grid.z); float g = max(max(gx,gy),gz); float glitch = step(0.92, snoise(vObjPos*3.0 + t*10.0)); g = max(g, glitch); col = vec3(1.0,0.2,1.0) * g * 3.0; alpha = g*0.9;\n`,
+    params: [
+      { key: 'speed', label: 'Scan', type: 'range', min: 0, max: 4, step: 0.05, default: 1.8 },
+    ],
   },
   {
-    "id": "glitchgrid",
-    "name": "Glitch Grid",
-    "category": "Mind-bending",
-    "kind": "shader",
-    "swatch": ["#ff00ff", "#000000"],
-    "gravity": true,
-    "transparent": true,
-    "additive": true,
-    "depthWrite": false,
-    "fragBody": "AXIS + ` float t = u_time * u_speed; vec3 grid = fract(vObjPos*6.0); float gx = smoothstep(0.08,0.1,grid.x); float gy = smoothstep(0.08,0.1,grid.y); float gz = smoothstep(0.08,0.1,grid.z); float g = max(max(gx,gy),gz); float glitch = step(0.92, snoise(vObjPos*3.0 + t*10.0)); g = max(g, glitch); col = vec3(1.0,0.2,1.0) * g * 3.0; alpha = g*0.9;`",
-    "params": [
-      { "key": "speed", "label": "Scan", "type": "range", "min": 0, "max": 4, "step": 0.05, "default": 1.8 }
-    ]
+    id: 'sparkleswirl',
+    name: 'Sparkle Swirl',
+    category: 'Mind-bending',
+    kind: 'shader',
+    swatch: ['#ffdd55', '#550066'],
+    gravity: true,
+    fragBody: AXIS + `\n float t = u_time * u_speed; float a = ang + t*2.0 + rad*8.0; float spark = pow(max(sin(a*6.0)*0.5+0.5, 0.0), 20.0); vec3 base = hsv2rgb(vec3(0.15+rad*0.2, 0.9, 0.7)); col = base * diff + vec3(1.0,0.9,0.3)*spark*5.0; col += vec3(1.0)*pow(fres,4.0)*0.5;\n`,
+    params: [
+      { key: 'speed', label: 'Spin', type: 'range', min: 0, max: 4, step: 0.05, default: 1.5 },
+    ],
   },
   {
-    "id": "sparkleswirl",
-    "name": "Sparkle Swirl",
-    "category": "Mind-bending",
-    "kind": "shader",
-    "swatch": ["#ffdd55", "#550066"],
-    "gravity": true,
-    "fragBody": "AXIS + ` float t = u_time * u_speed; float a = ang + t*2.0 + rad*8.0; float spark = pow(max(sin(a*6.0)*0.5+0.5, 0.0), 20.0); vec3 base = hsv2rgb(vec3(0.15+rad*0.2, 0.9, 0.7)); col = base * diff + vec3(1.0,0.9,0.3)*spark*5.0; col += vec3(1.0)*pow(fres,4.0)*0.5;`",
-    "params": [
-      { "key": "speed", "label": "Spin", "type": "range", "min": 0, "max": 4, "step": 0.05, "default": 1.5 }
-    ]
+    id: 'bubblecolumn',
+    name: 'Bubble Column',
+    category: 'Mind-bending',
+    kind: 'shader',
+    swatch: ['#80d0ff', '#0a2a4a'],
+    gravity: true,
+    transparent: true,
+    additive: true,
+    depthWrite: false,
+    fragBody: AXIS + `\n float t = u_time * u_speed; float rise = fract(h*4.0 - t*0.9); float bubble = step(0.85, snoise(vObjPos*10.0 + vec3(0.0,t*2.5,0.0))); bubble *= smoothstep(0.0, 0.2, rise)*smoothstep(0.8,0.6,rise); col = vec3(0.3,0.8,1.0) * bubble * 2.5; col += vec3(1.0)*pow(fres,3.0)*0.4; alpha = bubble*0.9;\n`,
+    params: [
+      { key: 'speed', label: 'Speed', type: 'range', min: 0, max: 4, step: 0.05, default: 1.6 },
+    ],
   },
   {
-    "id": "bubblecolumn",
-    "name": "Bubble Column",
-    "category": "Mind-bending",
-    "kind": "shader",
-    "swatch": ["#80d0ff", "#0a2a4a"],
-    "gravity": true,
-    "transparent": true,
-    "additive": true,
-    "depthWrite": false,
-    "fragBody": "AXIS + ` float t = u_time * u_speed; float rise = fract(h*4.0 - t*0.9); float bubble = step(0.85, snoise(vObjPos*10.0 + vec3(0.0,t*2.5,0.0))); bubble *= smoothstep(0.0, 0.2, rise)*smoothstep(0.8,0.6,rise); col = vec3(0.3,0.8,1.0) * bubble * 2.5; col += vec3(1.0)*pow(fres,3.0)*0.4; alpha = bubble*0.9;`",
-    "params": [
-      { "key": "speed", "label": "Speed", "type": "range", "min": 0, "max": 4, "step": 0.05, "default": 1.6 }
-    ]
+    id: 'hologlitch',
+    name: 'Holo-Glitch',
+    category: 'Mind-bending',
+    kind: 'shader',
+    swatch: ['#ffaa00', '#0055ff'],
+    gravity: true,
+    fragBody: AXIS + `\n float t = u_time * u_speed; float holo = fbm(vObjPos*4.0 + t*0.5); float g = step(0.65, holo) * smoothstep(0.3,0.8,holo); vec3 c1 = hsv2rgb(vec3(0.6+holo*0.2,1.0,1.0)); vec3 c2 = vec3(0.9); col = mix(c1*0.3, c2, g) * diff; col += vec3(1.0)*pow(fres,4.0)*0.8;\n`,
+    params: [
+      { key: 'speed', label: 'Shift', type: 'range', min: 0, max: 4, step: 0.05, default: 1.0 },
+    ],
   },
   {
-    "id": "hologlitch",
-    "name": "Holo-Glitch",
-    "category": "Mind-bending",
-    "kind": "shader",
-    "swatch": ["#ffaa00", "#0055ff"],
-    "gravity": true,
-    "fragBody": "AXIS + ` float t = u_time * u_speed; float holo = fbm(vObjPos*4.0 + t*0.5); float g = step(0.65, holo) * smoothstep(0.3,0.8,holo); vec3 c1 = hsv2rgb(vec3(0.6+holo*0.2,1.0,1.0)); vec3 c2 = vec3(0.9); col = mix(c1*0.3, c2, g) * diff; col += vec3(1.0)*pow(fres,4.0)*0.8;`",
-    "params": [
-      { "key": "speed", "label": "Shift", "type": "range", "min": 0, "max": 4, "step": 0.05, "default": 1.0 }
-    ]
+    id: 'rainbowwave',
+    name: 'Rainbow Wave',
+    category: 'Mind-bending',
+    kind: 'shader',
+    swatch: ['#ff0066', '#00ffcc'],
+    gravity: true,
+    fragBody: AXIS + `\n float t = u_time * u_speed; float wave = sin(pPerp*6.0 + h*8.0 - t*4.0)*0.5+0.5; col = hsv2rgb(vec3(fract(h*2.0+t*0.1), 1.0, 1.0)) * wave * 2.0 * diff; col += vec3(1.0)*pow(fres,3.0)*1.2;\n`,
+    params: [
+      { key: 'speed', label: 'Speed', type: 'range', min: 0, max: 4, step: 0.05, default: 2.0 },
+    ],
   },
   {
-    "id": "rainbowwave",
-    "name": "Rainbow Wave",
-    "category": "Mind-bending",
-    "kind": "shader",
-    "swatch": ["#ff0066", "#00ffcc"],
-    "gravity": true,
-    "fragBody": "AXIS + ` float t = u_time * u_speed; float wave = sin(pPerp*6.0 + h*8.0 - t*4.0)*0.5+0.5; col = hsv2rgb(vec3(fract(h*2.0+t*0.1), 1.0, 1.0)) * wave * 2.0 * diff; col += vec3(1.0)*pow(fres,3.0)*1.2;`",
-    "params": [
-      { "key": "speed", "label": "Speed", "type": "range", "min": 0, "max": 4, "step": 0.05, "default": 2.0 }
-    ]
+    id: 'octarine',
+    name: 'Octarine',
+    category: 'Mind-bending',
+    kind: 'shader',
+    swatch: ['#7a00ff', '#ff0088'],
+    gravity: true,
+    fragBody: AXIS + `\n float t = u_time * u_speed; float n = fbm(vObjPos*5.0 + t*0.4); float magic = sin(n*12.0)*0.5+0.5; vec3 c = hsv2rgb(vec3(0.8+n*0.2, 0.9, 1.0)); col = c * magic * 2.0 * diff; col += vec3(0.8,0.2,1.0)*pow(fres,4.0)*0.6;\n`,
+    params: [],
   },
   {
-    "id": "octarine",
-    "name": "Octarine",
-    "category": "Mind-bending",
-    "kind": "shader",
-    "swatch": ["#7a00ff", "#ff0088"],
-    "gravity": true,
-    "fragBody": "AXIS + ` float t = u_time * u_speed; float n = fbm(vObjPos*5.0 + t*0.4); float magic = sin(n*12.0)*0.5+0.5; vec3 c = hsv2rgb(vec3(0.8+n*0.2, 0.9, 1.0)); col = c * magic * 2.0 * diff; col += vec3(0.8,0.2,1.0)*pow(fres,4.0)*0.6;`",
-    "params": []
+    id: 'shatteredglass',
+    name: 'Shattered Glass',
+    category: 'Mind-bending',
+    kind: 'shader',
+    swatch: ['#88ccff', '#1a2a3a'],
+    gravity: true,
+    fragBody: AXIS + `\n float t = u_time * u_speed; vec3 p = vObjPos*12.0; vec3 f1 = floor(p); float crack = abs(snoise(f1 + t*0.1)); float shard = step(0.7, crack); col = mix(vec3(0.1,0.2,0.3), vec3(0.6,0.8,1.0), shard) * diff; col += vec3(1.0)*pow(fres,5.0)*0.9;\n`,
+    params: [
+      { key: 'speed', label: 'Stress', type: 'range', min: 0, max: 3, step: 0.05, default: 1.0 },
+    ],
   },
   {
-    "id": "shatteredglass",
-    "name": "Shattered Glass",
-    "category": "Mind-bending",
-    "kind": "shader",
-    "swatch": ["#88ccff", "#1a2a3a"],
-    "gravity": true,
-    "fragBody": "AXIS + ` float t = u_time * u_speed; vec3 p = vObjPos*12.0; vec3 f1 = floor(p); float crack = abs(snoise(f1 + t*0.1)); float shard = step(0.7, crack); col = mix(vec3(0.1,0.2,0.3), vec3(0.6,0.8,1.0), shard) * diff; col += vec3(1.0)*pow(fres,5.0)*0.9;`",
-    "params": [
-      { "key": "speed", "label": "Stress", "type": "range", "min": 0, "max": 3, "step": 0.05, "default": 1.0 }
-    ]
+    id: 'phaseghost',
+    name: 'Phase Ghost',
+    category: 'Mind-bending',
+    kind: 'shader',
+    swatch: ['#d0f0ff', '#4a6a8a'],
+    gravity: true,
+    transparent: true,
+    additive: true,
+    depthWrite: false,
+    fragBody: AXIS + `\n float t = u_time * u_speed; float phase = sin(t*3.0 + pPerp*10.0)*0.5+0.5; float v = fbm(vObjPos*2.0 + t*0.7); col = vec3(0.8,0.9,1.0) * v * phase * 2.0; alpha = v*phase*0.85;\n`,
+    params: [
+      { key: 'speed', label: 'Phase', type: 'range', min: 0, max: 4, step: 0.05, default: 1.5 },
+    ],
   },
   {
-    "id": "phaseghost",
-    "name": "Phase Ghost",
-    "category": "Mind-bending",
-    "kind": "shader",
-    "swatch": ["#d0f0ff", "#4a6a8a"],
-    "gravity": true,
-    "transparent": true,
-    "additive": true,
-    "depthWrite": false,
-    "fragBody": "AXIS + ` float t = u_time * u_speed; float phase = sin(t*3.0 + pPerp*10.0)*0.5+0.5; float v = fbm(vObjPos*2.0 + t*0.7); col = vec3(0.8,0.9,1.0) * v * phase * 2.0; alpha = v*phase*0.85;`",
-    "params": [
-      { "key": "speed", "label": "Phase", "type": "range", "min": 0, "max": 4, "step": 0.05, "default": 1.5 }
-    ]
+    id: 'liquidmetal',
+    name: 'Liquid Metal',
+    category: 'Mind-bending',
+    kind: 'shader',
+    swatch: ['#b0b0c0', '#1a1a2a'],
+    gravity: true,
+    fragBody: AXIS + `\n float t = u_time * u_speed; float flow = fbm(vObjPos*2.5 + t*0.3); float spec = pow(max(dot(reflect(-V, N), KL), 0.0), 30.0); col = mix(vec3(0.1,0.12,0.18), vec3(0.8,0.82,0.9), flow) * diff; col += vec3(1.0)*spec*1.8;\n`,
+    params: [
+      { key: 'speed', label: 'Flow', type: 'range', min: 0, max: 3, step: 0.05, default: 1.0 },
+    ],
   },
   {
-    "id": "liquidmetal",
-    "name": "Liquid Metal",
-    "category": "Mind-bending",
-    "kind": "shader",
-    "swatch": ["#b0b0c0", "#1a1a2a"],
-    "gravity": true,
-    "fragBody": "AXIS + ` float t = u_time * u_speed; float flow = fbm(vObjPos*2.5 + t*0.3); float spec = pow(max(dot(reflect(-V, N), KL), 0.0), 30.0); col = mix(vec3(0.1,0.12,0.18), vec3(0.8,0.82,0.9), flow) * diff; col += vec3(1.0)*spec*1.8;`",
-    "params": [
-      { "key": "speed", "label": "Flow", "type": "range", "min": 0, "max": 3, "step": 0.05, "default": 1.0 }
-    ]
+    id: 'inkdrop',
+    name: 'Ink Drop',
+    category: 'Mind-bending',
+    kind: 'shader',
+    swatch: ['#000000', '#ffffff'],
+    gravity: true,
+    fragBody: AXIS + `\n float t = u_time * u_speed; float n = fbm(vObjPos*3.0 + t*0.2); float ink = smoothstep(0.4, 0.7, n); col = vec3(1.0-ink) * diff; col += vec3(0.1)*pow(fres,2.0);\n`,
+    params: [],
   },
   {
-    "id": "inkdrop",
-    "name": "Ink Drop",
-    "category": "Mind-bending",
-    "kind": "shader",
-    "swatch": ["#000000", "#ffffff"],
-    "gravity": true,
-    "fragBody": "AXIS + ` float t = u_time * u_speed; float n = fbm(vObjPos*3.0 + t*0.2); float ink = smoothstep(0.4, 0.7, n); col = vec3(1.0-ink) * diff; col += vec3(0.1)*pow(fres,2.0);`",
-    "params": []
+    id: 'shockwave',
+    name: 'Shockwave',
+    category: 'Mind-bending',
+    kind: 'shader',
+    swatch: ['#ffaa00', '#550000'],
+    gravity: true,
+    transparent: true,
+    additive: true,
+    depthWrite: false,
+    fragBody: AXIS + `\n float t = u_time * u_speed; float wave = sin(rad*15.0 - t*6.0)*0.5+0.5; wave = smoothstep(0.2,0.6,wave) * exp(-rad*2.0); col = vec3(1.0,0.6,0.1) * wave * 3.0; alpha = wave*0.9;\n`,
+    params: [
+      { key: 'speed', label: 'Boom', type: 'range', min: 0, max: 4, step: 0.05, default: 2.0 },
+    ],
   },
   {
-    "id": "shockwave",
-    "name": "Shockwave",
-    "category": "Mind-bending",
-    "kind": "shader",
-    "swatch": ["#ffaa00", "#550000"],
-    "gravity": true,
-    "transparent": true,
-    "additive": true,
-    "depthWrite": false,
-    "fragBody": "AXIS + ` float t = u_time * u_speed; float wave = sin(rad*15.0 - t*6.0)*0.5+0.5; wave = smoothstep(0.2,0.6,wave) * exp(-rad*2.0); col = vec3(1.0,0.6,0.1) * wave * 3.0; alpha = wave*0.9;`",
-    "params": [
-      { "key": "speed", "label": "Boom", "type": "range", "min": 0, "max": 4, "step": 0.05, "default": 2.0 }
-    ]
+    id: 'tvstatic',
+    name: 'TV Static',
+    category: 'Mind-bending',
+    kind: 'shader',
+    swatch: ['#888888', '#000000'],
+    gravity: false,
+    fragBody: 'float t = u_time * u_speed; float noise = snoise(vObjPos*30.0 + t*50.0); float mono = noise*0.5+0.5; col = vec3(mono) * diff; col += vec3(1.0)*pow(fres,2.0)*0.2;',
+    params: [
+      { key: 'speed', label: 'Noise', type: 'range', min: 0, max: 4, step: 0.05, default: 1.0 },
+    ],
   },
   {
-    "id": "tvstatic",
-    "name": "TV Static",
-    "category": "Mind-bending",
-    "kind": "shader",
-    "swatch": ["#888888", "#000000"],
-    "gravity": false,
-    "fragBody": "float t = u_time * u_speed; float noise = snoise(vObjPos*30.0 + t*50.0); float mono = noise*0.5+0.5; col = vec3(mono) * diff; col += vec3(1.0)*pow(fres,2.0)*0.2;",
-    "params": [
-      { "key": "speed", "label": "Noise", "type": "range", "min": 0, "max": 4, "step": 0.05, "default": 1.0 }
-    ]
-  },
-  {
-    "id": "motherofflowers",
-    "name": "Mother of Flowers",
-    "category": "Mind-bending",
-    "kind": "shader",
-    "swatch": ["#ff88bb", "#2288ff"],
-    "gravity": true,
-    "fragBody": "AXIS + ` float t = u_time * u_speed; float petal = sin(ang*5.0 + rad*12.0 + t)*0.5+0.5; petal = pow(petal, 3.0); vec3 c = hsv2rgb(vec3(0.8+petal*0.2, 0.8, 0.9)); col = c * petal * 2.0 * diff; col += vec3(1.0,0.6,0.8)*pow(fres,3.0)*0.7;`",
-    "params": [
-      { "key": "speed", "label": "Bloom", "type": "range", "min": 0, "max": 3, "step": 0.05, "default": 1.0 }
-    ]
+    id: 'motherofflowers',
+    name: 'Mother of Flowers',
+    category: 'Mind-bending',
+    kind: 'shader',
+    swatch: ['#ff88bb', '#2288ff'],
+    gravity: true,
+    fragBody: AXIS + `\n float t = u_time * u_speed; float petal = sin(ang*5.0 + rad*12.0 + t)*0.5+0.5; petal = pow(petal, 3.0); vec3 c = hsv2rgb(vec3(0.8+petal*0.2, 0.8, 0.9)); col = c * petal * 2.0 * diff; col += vec3(1.0,0.6,0.8)*pow(fres,3.0)*0.7;\n`,
+    params: [
+      { key: 'speed', label: 'Bloom', type: 'range', min: 0, max: 3, step: 0.05, default: 1.0 },
+    ],
   }
 ];
