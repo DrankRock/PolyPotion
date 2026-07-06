@@ -14,6 +14,7 @@
 // Imported by showcase-engine.js. Same THREE singleton (esm.sh dedupes URLs).
 // ============================================================
 import * as THREE from 'https://esm.sh/three@0.160.0';
+import { WILD_PRESETS } from './shader-lib-wild.js';
 
 // ---------- shared GLSL: simplex noise + fbm + helpers ----------
 const NOISE = `
@@ -86,6 +87,8 @@ const VERT = `
 uniform float u_time;
 uniform float u_speed;
 uniform float u_displace;
+uniform vec3 u_gravity;   // world "down" in OBJECT space (engine-updated for gravity presets)
+uniform float u_sag;      // gravity droop amount (melting looks)
 varying vec3 vWorldNormal;
 varying vec3 vWorldPos;
 varying vec3 vViewDir;
@@ -112,6 +115,15 @@ void main(){
     transformed += normalize(objectNormal) * u_displace * d;
   }
 
+  if (u_sag > 0.0001) {
+    // droop verts along gravity — downward-facing surfaces sag most, with a
+    // slow noise crawl so drips creep. u_gravity is object-space world-down.
+    vec3 gd = normalize(u_gravity + vec3(0.0, -0.0001, 0.0));
+    float droop = pow(clamp(0.5 - 0.5 * dot(normalize(objectNormal), -gd), 0.0, 1.0), 1.5);
+    float sn = fbm(position * 2.2 + u_time * u_speed * 0.22);
+    transformed += gd * u_sag * (0.3 + 0.7 * droop) * (0.55 + 0.45 * sn);
+  }
+
   vec4 wp = modelMatrix * vec4(transformed, 1.0);
   vWorldPos = wp.xyz;
   vWorldNormal = normalize(mat3(modelMatrix) * objectNormal);
@@ -132,6 +144,14 @@ varying vec3 vObjPos;
 uniform float u_time;
 uniform float u_speed;
 uniform float u_displace;
+// gravity set — engine-updated per frame on presets flagged gravity:true;
+// harmless defaults otherwise. See shader-lib-wild.js for how they're used.
+uniform vec3 u_gravity;    // world down, object space, normalized
+uniform vec3 u_slosh;      // damped-spring surface tilt vector
+uniform float u_sloshMag;  // 0..1 agitation
+uniform float u_levMin;    // bbox projected onto current up axis
+uniform float u_levMax;
+uniform float u_fill;      // fill fraction 0..1
 ${NOISE}
 `;
 
@@ -153,9 +173,9 @@ const MAIN_CLOSE = `
 `;
 
 // ============================================================
-//  PRESETS
+//  PRESETS (core set — the wild set lives in shader-lib-wild.js)
 // ============================================================
-export const SHADER_PRESETS = [
+const CORE_PRESETS = [
 
   // ---------------- REALISTIC (physical materials) ----------------
   {
@@ -480,6 +500,9 @@ export const SHADER_PRESETS = [
   },
 ];
 
+// Full library: core looks + the wild shelf (potions, radiant FX, candy, glitch…).
+export const SHADER_PRESETS = [...CORE_PRESETS, ...WILD_PRESETS];
+
 // Build a live ShaderMaterial from a shader preset + a values map (param key → value).
 export function buildShaderMaterial(preset, values) {
   values = values || {};
@@ -490,6 +513,13 @@ export function buildShaderMaterial(preset, values) {
   }
   if (!uniforms.u_speed) uniforms.u_speed = { value: 1.0 };
   if (!uniforms.u_displace) uniforms.u_displace = { value: 0.0 };
+  if (!uniforms.u_sag) uniforms.u_sag = { value: 0.0 };
+  if (!uniforms.u_fill) uniforms.u_fill = { value: 0.6 };
+  if (!uniforms.u_gravity) uniforms.u_gravity = { value: new THREE.Vector3(0, -1, 0) };
+  if (!uniforms.u_slosh) uniforms.u_slosh = { value: new THREE.Vector3() };
+  if (!uniforms.u_sloshMag) uniforms.u_sloshMag = { value: 0.0 };
+  if (!uniforms.u_levMin) uniforms.u_levMin = { value: -0.5 };
+  if (!uniforms.u_levMax) uniforms.u_levMax = { value: 0.5 };
 
   const mat = new THREE.ShaderMaterial({
     uniforms,

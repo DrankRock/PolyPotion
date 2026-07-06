@@ -26,6 +26,27 @@ function latheBottle() {
   return new THREE.LatheGeometry(pts, 96);
 }
 
+// round-bottom alchemist flask — bulb + narrow neck + lip. Built for the
+// gravity-liquid shaders (potion, lava lamp…): lots of volume to fill.
+function latheFlask() {
+  const pts = [new THREE.Vector2(0, 0.02)];
+  for (let i = 0; i <= 22; i++) {
+    const a = -Math.PI * 0.42 + (i / 22) * Math.PI * 0.86;
+    pts.push(new THREE.Vector2(Math.cos(a) * 0.5, 0.52 + Math.sin(a) * 0.5));
+  }
+  pts.push(
+    new THREE.Vector2(0.13, 1.12), new THREE.Vector2(0.12, 1.38),
+    new THREE.Vector2(0.18, 1.42), new THREE.Vector2(0.18, 1.52),
+    new THREE.Vector2(0.12, 1.54), new THREE.Vector2(0.0, 1.54));
+  return new THREE.LatheGeometry(pts, 96);
+}
+
+// scratch objects for the per-frame gravity/slosh update (no allocs in loop)
+const _gM3 = new THREE.Matrix3();
+const _gDown = new THREE.Vector3();
+const _gTmp = new THREE.Vector3();
+const _gCamR = new THREE.Vector3();
+
 const readVar = (name, fb) => {
   try { const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim(); return v || fb; }
   catch (e) { return fb; }
@@ -687,6 +708,8 @@ export class SCEngine {
     if (kind === 'sphere') geo = new THREE.SphereGeometry(0.72, 96, 64);
     else if (kind === 'torus') geo = new THREE.TorusGeometry(0.6, 0.26, 64, 128);
     else if (kind === 'bottle') geo = latheBottle();
+    else if (kind === 'flask') geo = latheFlask();
+    else if (kind === 'gem') { geo = new THREE.IcosahedronGeometry(0.72, 1).toNonIndexed(); geo.scale(1, 1.35, 1); }
     else if (kind === 'cube') geo = new THREE.BoxGeometry(1, 1, 1, 12, 12, 12);
     else if (kind === 'suzanne' || kind === 'blob') geo = new THREE.IcosahedronGeometry(0.75, 24);
     else { kind = 'knot'; geo = new THREE.TorusKnotGeometry(0.55, 0.2, 256, 40); }
@@ -753,7 +776,19 @@ export class SCEngine {
       }
       material.wireframe = preset.wireframe || this.wire;
       mesh.material = material;
-      this._shaderEntries.push({ mesh, material, uniforms, presetId: id, kind: preset.kind });
+      const entry = { mesh, material, uniforms, presetId: id, kind: preset.kind };
+      // gravity presets: cache the local bbox corners + init the slosh spring
+      if (preset.gravity && uniforms) {
+        const g = mesh.geometry;
+        if (!g.boundingBox) g.computeBoundingBox();
+        const b = g.boundingBox;
+        entry._corners = [];
+        for (let i = 0; i < 8; i++) entry._corners.push(new THREE.Vector3(
+          (i & 1) ? b.max.x : b.min.x, (i & 2) ? b.max.y : b.min.y, (i & 4) ? b.max.z : b.min.z));
+        entry._g = { prev: new THREE.Vector3(0, -1, 0), p: new THREE.Vector3(), v: new THREE.Vector3() };
+        entry.gravity = true;
+      }
+      this._shaderEntries.push(entry);
     }
     this._changed && this._changed();
   }
@@ -788,6 +823,38 @@ export class SCEngine {
     return this._shaderEntries.length ? this._shaderEntries[0].presetId : null;
   }
 
+  // ---------- gravity liquids ----------
+  // Per frame, per gravity-shader entry: transform world "down" into the mesh's
+  // object space (so the liquid plane stays WORLD-level however the model is
+  // rotated — turntable, mocap root motion, anything), project the cached bbox
+  // corners onto the up axis for the fill range, and run a damped spring whose
+  // impulses come from (a) rotation of the mesh and (b) camera-orbit speed.
+  // Result lands in u_gravity / u_levMin / u_levMax / u_slosh / u_sloshMag.
+  _updateGravity(e, dt) {
+    const u = e.uniforms;
+    if (!u.u_gravity || !e._corners) return;
+    e.mesh.updateWorldMatrix(true, false);
+    _gM3.setFromMatrix4(e.mesh.matrixWorld).invert();
+    _gDown.set(0, -1, 0).applyMatrix3(_gM3).normalize();
+    // fill range along current up axis (up·c == -down·c)
+    let hMin = Infinity, hMax = -Infinity;
+    for (const c of e._corners) { const h = -c.dot(_gDown); if (h < hMin) hMin = h; if (h > hMax) hMax = h; }
+    // slosh spring
+    const g = e._g;
+    _gTmp.copy(_gDown).sub(g.prev); g.prev.copy(_gDown);
+    g.v.addScaledVector(_gTmp, 14);                               // model-rotation impulse
+    g.v.addScaledVector(_gTmp.copy(_gCamR).applyMatrix3(_gM3), 1); // camera-orbit impulse
+    g.v.addScaledVector(g.p, -34 * dt);                           // spring toward flat
+    g.v.multiplyScalar(Math.max(0, 1 - 2.4 * dt));                // damping
+    g.p.addScaledVector(g.v, dt);
+    g.p.addScaledVector(_gDown, -g.p.dot(_gDown));                // keep tilt ⟂ to down
+    if (g.p.lengthSq() > 0.16) g.p.setLength(0.4);
+    u.u_gravity.value.copy(_gDown);
+    u.u_levMin.value = hMin; u.u_levMax.value = hMax;
+    u.u_slosh.value.copy(g.p);
+    u.u_sloshMag.value = Math.min(1, g.p.length() * 4 + g.v.length() * 0.15);
+  }
+
   stats() {
     return { name: this.modelName, tris: this.tris, bones: this.boneCount, hasSkeleton: this.hasSkeleton, env: this.envName, envIntensity: this.envIntensity, envBg: this._envAsBg, shadow: this._shadowStrength };
   }
@@ -804,7 +871,20 @@ export class SCEngine {
     if (this.mixer && this.playing) this.mixer.update(dt);
     if (this._shaderEntries.length) {
       const t = this.clock.elapsedTime;
-      for (const e of this._shaderEntries) { if (e.uniforms && e.uniforms.u_time) e.uniforms.u_time.value = t; }
+      // camera-orbit impulse: swinging the view "swirls the room", so agitate
+      // gravity liquids proportionally to azimuth speed — reads as sloshing.
+      let az = 0, dAz = 0;
+      try { az = this.controls.getAzimuthalAngle(); } catch (_) {}
+      if (this._prevAz !== undefined) {
+        dAz = az - this._prevAz;
+        if (dAz > Math.PI) dAz -= Math.PI * 2; else if (dAz < -Math.PI) dAz += Math.PI * 2;
+      }
+      this._prevAz = az;
+      _gCamR.setFromMatrixColumn(this.camera.matrixWorld, 0).multiplyScalar(dAz * 0.8);
+      for (const e of this._shaderEntries) {
+        if (e.uniforms && e.uniforms.u_time) e.uniforms.u_time.value = t;
+        if (e.gravity && e.uniforms) this._updateGravity(e, Math.min(dt, 0.05));
+      }
     }
     this.controls.update();
     this.renderer.render(this.scene, this.camera);

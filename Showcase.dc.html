@@ -570,7 +570,7 @@ class Component extends DCLogic {
       suggestChips,
       dismissSuggest: () => this.setState({ suggestDismiss: true }),
       noModel: !st.hasModel && !st.loading, loading: st.loading, loadingMsg: st.loadingMsg,
-      demoShapes: [['knot', 'Torus knot'], ['sphere', 'Sphere'], ['bottle', 'Bottle'], ['torus', 'Torus'], ['blob', 'Blob'], ['cube', 'Cube']]
+      demoShapes: [['flask', 'Potion flask'], ['bottle', 'Bottle'], ['gem', 'Gem'], ['knot', 'Torus knot'], ['sphere', 'Sphere'], ['torus', 'Torus'], ['blob', 'Blob'], ['cube', 'Cube']]
         .map(([k, label]) => ({ label, onClick: () => this.loadVia(async () => this._eng.loadDemo(k), 'demo shape') })),
       shaderNoModel: !st.hasModel,
       shaderReady: st.hasModel && presets.length > 0,
