@@ -103,14 +103,21 @@ E.init = function (cv) {
 
   bindPointer();
   window.addEventListener('resize', resize);
+  // A window 'resize' does NOT fire when the tool iframe itself is resized or
+  // re-shown by the shell — which left the drawing buffer stale while the CSS
+  // box changed, so the picture got stretched and clicks landed off-target.
+  // Watch the canvas box directly and re-sync the buffer + cameras.
+  if (window.ResizeObserver) { try { new ResizeObserver(() => resize()).observe(canvas); } catch (_) {} }
   resize();
   animate();
   return E;
 };
 
+let _lastW = 0, _lastH = 0;
 function resize() {
   if (!renderer) return;
   const w = canvas.clientWidth || 1, h = canvas.clientHeight || 1;
+  _lastW = canvas.clientWidth; _lastH = canvas.clientHeight;
   renderer.setSize(w, h, false);
   updateCameras();
 }
@@ -148,6 +155,11 @@ function updateCameras() {
 
 function animate() {
   requestAnimationFrame(animate);
+  // Keep the drawing buffer locked to the canvas box every frame. ResizeObserver
+  // and window 'resize' both miss cases (frame re-shown after being hidden, and
+  // some embedded/webview environments never fire RO at all) — a stale buffer is
+  // what makes the picture stretch and clicks land in the wrong place.
+  if (canvas.clientWidth !== _lastW || canvas.clientHeight !== _lastH) resize();
   const dt = clock.getDelta();
   if (extActive && extMixer) extMixer.update(dt);
   else if (animPlaying && skeleton) { animT += dt; poseSkeleton(animT); }
@@ -354,6 +366,7 @@ E.getViewSign = name => (orthos[name] ? (orthos[name].sign || 1) : 1);
 // ---- maximize one panel to fill the viewport (or null = restore quad) ----
 E.setSoloView = function (name) {
   soloView = (name === 'persp' || name === 'front' || name === 'side' || name === 'top') ? name : null;
+  if (soloView && soloView !== 'persp') lastOrthoView = soloView;
   resize();
   if (onSoloCb) onSoloCb(soloView);
   return soloView;
@@ -522,72 +535,45 @@ E.mirrorSide = function (from) {
   return count;
 };
 
-// ---- auto-center: snap a joint to the middle of the mesh volume around it ----
-// The slice plane is PERPENDICULAR to the local limb axis (estimated from the
-// joint's parent / child directions), so an elbow in a T-pose arm centers in
-// the arm's vertical circular cross-section instead of sliding sideways. The
-// joint is never moved ALONG the limb axis — that's its anatomical position,
-// which only the user knows. Torso joints (vertical axis) fall back to the
-// old horizontal X/Z slice automatically.
+// ---- auto-center: push a joint to the middle of the mesh volume ALONG THE
+// DEPTH AXIS OF THE VIEW YOU'RE WORKING IN ----
+// Where you drop a joint in an ortho view (its two on-screen axes) is exactly
+// where you meant it to be — auto-center must NOT slide it around that plane.
+// It only nudges the ONE axis you can't see (the view's depth). Front view →
+// depth is Z, Side → X, Top → Y. `lastOrthoView` tracks the view last touched.
 const _centerRay = new THREE.Raycaster();
-function limbAxis(j) {
-  const p = j.marker.position;
-  const dir = new THREE.Vector3();
-  const minD2 = (modelR * 1e-3) ** 2;
-  const par = enabledParent(j);
-  if (par) {
-    const d = p.clone().sub(par.marker.position);
-    if (d.lengthSq() > minD2) dir.add(d.normalize());
-  }
-  joints.forEach(c => {
-    if (!c.enabled || c.parent !== j.id) return;
-    const d = c.marker.position.clone().sub(p);
-    if (d.lengthSq() > minD2) dir.add(d.normalize());
-  });
-  // no clear axis (isolated joint, or parent/child directions cancel) →
-  // treat as vertical, i.e. center in the horizontal plane like before
-  if (dir.lengthSq() < 0.25) return new THREE.Vector3(0, 1, 0);
-  return dir.normalize();
-}
+const VIEW_DEPTH = {
+  front: new THREE.Vector3(0, 0, 1),   // looking down Z → depth is Z
+  side:  new THREE.Vector3(1, 0, 0),   // looking down X → depth is X
+  top:   new THREE.Vector3(0, 1, 0),   // looking down Y → depth is Y
+};
 function centerJointInMesh(j) {
   if (!modelMeshes.length) return false;
   const pos = j.marker.position;
-  const axis = limbAxis(j);
-  // orthonormal basis (u, v) spanning the slice plane perpendicular to the limb
-  const ref = Math.abs(axis.y) > 0.9 ? new THREE.Vector3(1, 0, 0) : new THREE.Vector3(0, 1, 0);
-  const u = new THREE.Vector3().crossVectors(axis, ref).normalize();
-  const v = new THREE.Vector3().crossVectors(axis, u).normalize();
-  let moved = false;
-  for (let pass = 0; pass < 2; pass++) {        // 2nd pass refines after the 1st shift
-    let passMoved = false;
-    for (const rayDir of [u, v]) {
-      const L = modelR * 4;
-      const start = pos.clone().addScaledVector(rayDir, -L);
-      _centerRay.set(start, rayDir);
-      _centerRay.near = 0; _centerRay.far = L * 2;
-      const raw = _centerRay.intersectObjects(modelMeshes, false).map(h => h.distance).sort((a, b) => a - b);
-      // dedupe near-coincident hits (shared edges / double-sided duplicates)
-      const hits = [];
-      for (const d of raw) { if (!hits.length || d - hits[hits.length - 1] > modelR * 5e-4) hits.push(d); }
-      if (hits.length < 2) continue;
-      const jd = L;                             // joint's coordinate along the ray
-      let best = null, bestScore = Infinity;
-      for (let i = 0; i + 1 < hits.length; i += 2) {
-        const a = hits[i], b = hits[i + 1];
-        const score = (jd >= a && jd <= b) ? 0 : Math.min(Math.abs(jd - a), Math.abs(jd - b));
-        if (score < bestScore) { bestScore = score; best = (a + b) / 2; }
-      }
-      // accept only the enclosing interval or one CLOSE by — never teleport
-      // across the body because a stray ray found the other leg
-      if (best === null || bestScore > modelR * 0.2) continue;
-      if (Math.abs(best - jd) < modelR * 1e-5) continue;
-      pos.addScaledVector(rayDir, best - jd);
-      moved = true; passMoved = true;
-    }
-    if (!passMoved) break;
+  const axis = VIEW_DEPTH[lastOrthoView] || VIEW_DEPTH.front;   // the unseen axis
+  const L = modelR * 4;
+  const start = pos.clone().addScaledVector(axis, -L);
+  _centerRay.set(start, axis);
+  _centerRay.near = 0; _centerRay.far = L * 2;
+  const raw = _centerRay.intersectObjects(modelMeshes, false).map(h => h.distance).sort((a, b) => a - b);
+  // dedupe near-coincident hits (shared edges / double-sided duplicates)
+  const hits = [];
+  for (const d of raw) { if (!hits.length || d - hits[hits.length - 1] > modelR * 5e-4) hits.push(d); }
+  if (hits.length < 2) return false;
+  const jd = L;                             // joint's coordinate along the ray
+  let best = null, bestScore = Infinity;
+  for (let i = 0; i + 1 < hits.length; i += 2) {
+    const a = hits[i], b = hits[i + 1];
+    const score = (jd >= a && jd <= b) ? 0 : Math.min(Math.abs(jd - a), Math.abs(jd - b));
+    if (score < bestScore) { bestScore = score; best = (a + b) / 2; }
   }
-  if (moved) j._moved = true;
-  return moved;
+  // accept only the enclosing interval (or one close by) — never teleport across
+  // the body because a stray ray found the other limb
+  if (best === null || bestScore > modelR * 0.25) return false;
+  if (Math.abs(best - jd) < modelR * 1e-5) return false;
+  pos.addScaledVector(axis, best - jd);     // moves ONLY along the depth axis
+  j._moved = true;
+  return true;
 }
 E.centerSelected = function () {
   if (!selJoint) return false;
@@ -609,6 +595,7 @@ E.centerAll = function () {
 // ============================================================
 const ray = new THREE.Raycaster();
 let drag = null;
+let lastOrthoView = 'front';   // which ortho view the user last worked in → drives auto-center's depth axis
 
 function panelAt(px, py) {
   const h = canvas.clientHeight;
@@ -654,6 +641,7 @@ function bindPointer() {
     const rect = canvas.getBoundingClientRect();
     const px = e.clientX - rect.left, py = e.clientY - rect.top;
     const p = panelAt(px, py); if (!p) return;
+    if (p.kind === 'ortho') lastOrthoView = p.name;   // remember the view being worked in
     downXY = [px, py]; moved = false;
     canvas.setPointerCapture(e.pointerId);
     if (zoneMode && p.kind === 'ortho') { drag = { mode: 'zone', panel: p, x0: px, y0: py, cx: px, cy: py }; emitZoneRect(px, py, px, py); return; }

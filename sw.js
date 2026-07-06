@@ -12,7 +12,7 @@
        plane. (True vendoring is still better; this is the client-side half.)
    Bump CACHE_VERSION whenever shell files change so clients pick them up.
    ============================================================ */
-const CACHE_VERSION = 'pp-v1';
+const CACHE_VERSION = 'pp-v4';
 const CORE_CACHE = CACHE_VERSION + '-core';
 const RUNTIME_CACHE = CACHE_VERSION + '-runtime';
 const CDN_CACHE = CACHE_VERSION + '-cdn';
@@ -101,7 +101,12 @@ self.addEventListener('fetch', (e) => {
     const cached = await caches.match(req);
     if (cached) return cached;
     try {
-      const res = await fetch(req);
+      // Populate the (versioned) runtime cache from the NETWORK, bypassing the
+      // browser HTTP cache — otherwise a stale disk-cached copy of an engine/
+      // script survives a CACHE_VERSION bump and clients never see the update.
+      let res;
+      try { res = await fetch(new Request(req.url, { cache: 'reload' })); }
+      catch (_) { res = await fetch(req); }
       if (res && res.ok && res.type === 'basic') { const c = await caches.open(RUNTIME_CACHE); c.put(req, res.clone()); }
       return res;
     } catch (err) {
