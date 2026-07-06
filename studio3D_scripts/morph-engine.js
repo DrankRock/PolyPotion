@@ -221,7 +221,9 @@ export class MorphEngine {
     const d = this._drag; if (!d || this.active < 0) return;
     const R = this.brush.radius * this.modelRadius; const R2 = R * R;
     const delta = this.morphs[this.active].delta; const work = this.work; const b = this.base;
-    const n = b.length / 3; const str = this.brush.strength;
+    const n = b.length / 3;
+    const pen = e && e.pointerType === 'pen' && e.pressure > 0;
+    const str = this.brush.strength * (pen ? Math.max(0.05, e.pressure) : 1);
     const cx = d.center.x, cy = d.center.y, cz = d.center.z;
 
     if (this.brush.mode === 'grab') {

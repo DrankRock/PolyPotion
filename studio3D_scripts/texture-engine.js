@@ -337,6 +337,8 @@ export class TexEngine {
   _strokeEnd() { this._last = null; this._strokeSnap = null; this.cloneAnchor = null; this._pushRedoClear(); }
 
   _applyAt(u, v, ev) {
+    // stylus pressure scales brush opacity for pen input; mouse/touch stays full
+    this._penFactor = (ev && ev.pointerType === 'pen' && ev.pressure > 0) ? Math.max(0.05, ev.pressure) : 1;
     const px = u * this.texW, py = (1 - v) * this.texH;   // flipY texture
     if (this.tool === 'pick') { this._pick(px, py); return; }
     if (this.tool === 'fill') { this._bucket(px, py); this.texture.needsUpdate = true; return; }
@@ -360,7 +362,8 @@ export class TexEngine {
     if (this.tool === 'erase') g.globalCompositeOperation = 'destination-out';
     const grad = g.createRadialGradient(px, py, r * this.hardness, px, py, r);
     const col = this.tool === 'erase' ? '0,0,0' : this._rgb(this.color);
-    grad.addColorStop(0, 'rgba(' + col + ',' + this.opacity + ')');
+    const op = this.opacity * (this._penFactor || 1);
+    grad.addColorStop(0, 'rgba(' + col + ',' + op + ')');
     grad.addColorStop(1, 'rgba(' + col + ',0)');
     g.fillStyle = grad; g.beginPath(); g.arc(px, py, r, 0, Math.PI * 2); g.fill();
     g.restore();

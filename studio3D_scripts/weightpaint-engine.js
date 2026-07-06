@@ -299,7 +299,9 @@ export class WPEngine {
     const px = hit.point.x, py = hit.point.y, pz = hit.point.z;
     const invert = e && (e.buttons === 2 || e.shiftKey && this.brush.mode === 'add');
     const b = this.selBone;
-    const str = this.brush.strength;
+    // stylus pressure: a pen drives strength directly; mouse/touch stays at full
+    const pen = e && e.pointerType === 'pen' && e.pressure > 0;
+    const str = this.brush.strength * (pen ? Math.max(0.05, e.pressure) : 1);
 
     // gather affected welded ids for blur mode
     if (this.brush.mode === 'blur') {
@@ -321,8 +323,7 @@ export class WPEngine {
         const d2 = dx * dx + dy * dy + dz * dz; if (d2 > R2) continue;
         const fall = this._falloff(Math.sqrt(d2) / R) * str;
         if (fall <= 0) continue;
-        const cur = this._getW(si, sw, i, b);
-        let val;
+        const cur = this._getW(si, sw, i, b);        let val;
         if (this.brush.mode === 'set') val = cur + (this.brush.value - cur) * fall;
         else if (this.brush.mode === 'subtract' || invert) val = cur - fall;
         else val = cur + fall; // add

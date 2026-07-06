@@ -147,6 +147,7 @@ export class CurveEngine {
   // crop the clip to [in,out] (destructive on the clip copy)
   trimToRange() {
     const clip = this.clips[this.clipIndex]; if (!clip) return;
+    this.pushUndo();
     const inT = this.inT, outT = this.outT;
     clip.tracks.forEach(tr => {
       const times = tr.times, vs = tr.getValueSize(); const nt = [], nv = [];
@@ -261,12 +262,12 @@ export class CurveEngine {
       return null;
     };
     el.addEventListener('pointerdown', e => {
-      const p = pos(e); if (e.button === 2) { const k = hitKey(p); if (k) { this._removeKey(k); } e.preventDefault(); return; }
+      const p = pos(e); if (e.button === 2) { const k = hitKey(p); if (k) { this.pushUndo(); this._removeKey(k); } e.preventDefault(); return; }
       // drag in/out handles
       if (Math.abs(p.x - this._px(this.inT)) < 6 && p.y < this._ch - this._padB) { this._dragRange = 'in'; return; }
       if (Math.abs(p.x - this._px(this.outT)) < 6 && p.y < this._ch - this._padB) { this._dragRange = 'out'; return; }
       const k = hitKey(p);
-      if (k) { this.selKey = k; this._dragKey = k; this._changed(); this._drawCurves(); }
+      if (k) { this.pushUndo(); this.selKey = k; this._dragKey = k; this._changed(); this._drawCurves(); }
       else { // scrub
         this._scrubbing = true; this.seek(this._tAt(p.x));
       }
@@ -278,7 +279,7 @@ export class CurveEngine {
       if (this._scrubbing) { this.seek(this._tAt(p.x)); }
     });
     window.addEventListener('pointerup', () => { this._dragKey = null; this._dragRange = null; this._scrubbing = false; });
-    el.addEventListener('dblclick', e => { const p = pos(e); this._addKeyAt(this._tAt(p.x)); });
+    el.addEventListener('dblclick', e => { const p = pos(e); this.pushUndo(); this._addKeyAt(this._tAt(p.x)); });
     el.addEventListener('contextmenu', e => e.preventDefault());
     el.addEventListener('wheel', e => { e.preventDefault(); const f = e.deltaY < 0 ? 0.9 : 1.1; const mid = (this.vy.min + this.vy.max) / 2; this.vy = { min: mid + (this.vy.min - mid) * f, max: mid + (this.vy.max - mid) * f }; this._drawCurves(); }, { passive: false });
   }
@@ -314,6 +315,13 @@ export class CurveEngine {
     const wasT = this.time; this.action.stop(); this.action = this.mixer.clipAction(clip); this.action.play(); this.action.paused = true;
     this._buildGhosts();
   }
+
+  // snapshot-based undo over the current clip's track data
+  _snapClip() { const clip = this.clips[this.clipIndex]; if (!clip) return null; return { dur: clip.duration, tracks: clip.tracks.map(tr => ({ times: tr.times.slice(0), values: tr.values.slice(0) })) }; }
+  _applyClipSnap(snap) { const clip = this.clips[this.clipIndex]; if (!clip || !snap) return; clip.tracks.forEach((tr, i) => { if (snap.tracks[i]) { tr.times = snap.tracks[i].times.slice(0); tr.values = snap.tracks[i].values.slice(0); } }); clip.duration = snap.dur; clip.resetDuration(); this._buildTracks(clip); this._commitTrack(); this._seek(Math.min(this.time, this._dur())); this._changed(); }
+  pushUndo() { const s = this._snapClip(); if (!s) return; this._undo = this._undo || []; this._undo.push(s); if (this._undo.length > 40) this._undo.shift(); this._redo = []; }
+  undo() { if (!this._undo || !this._undo.length) return false; this._redo = this._redo || []; this._redo.push(this._snapClip()); this._applyClipSnap(this._undo.pop()); return true; }
+  redo() { if (!this._redo || !this._redo.length) return false; this._undo = this._undo || []; this._undo.push(this._snapClip()); this._applyClipSnap(this._redo.pop()); return true; }
 
   // ---------------------------------------------------------- EXPORT
   currentClip() { return this.clips[this.clipIndex] || null; }

@@ -15,6 +15,16 @@ import { GLTFLoader } from 'https://esm.sh/three@0.160.0/examples/jsm/loaders/GL
 import { OBJLoader } from 'https://esm.sh/three@0.160.0/examples/jsm/loaders/OBJLoader.js';
 import { RoomEnvironment } from 'https://esm.sh/three@0.160.0/examples/jsm/environments/RoomEnvironment.js';
 import { fetchAssetBuffer } from './chunk-loader.js';
+import { SHADER_PRESETS, buildShaderMaterial, presetDescriptors } from './shader-lib.js';
+
+// simple wine/water-bottle silhouette for the demo-shape playground
+function latheBottle() {
+  const pts = [
+    [0.0, 0.0], [0.42, 0.0], [0.44, 0.05], [0.44, 0.9], [0.30, 1.05],
+    [0.16, 1.15], [0.14, 1.5], [0.17, 1.55], [0.17, 1.62], [0.0, 1.62],
+  ].map(([x, y]) => new THREE.Vector2(x, y));
+  return new THREE.LatheGeometry(pts, 96);
+}
 
 const readVar = (name, fb) => {
   try { const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim(); return v || fb; }
@@ -129,6 +139,8 @@ export class SCEngine {
     this.modelCenter = new THREE.Vector3(0, 0.95, 0);
     this.modelRadius = 1;
 
+    this._shaderEntries = [];    // { mesh, material, uniforms, presetId, kind } — live shaders on meshes
+
     this.autoSpin = false;
     this.spinSpeed = 0.35;       // rad/s
     this.speed = 1.0;
@@ -206,11 +218,52 @@ export class SCEngine {
 
   setAutoSpin(on) { this.autoSpin = on; }
   setSpinSpeed(v) { this.spinSpeed = v; }
+
+  // ---------- capture ----------
+  // A still PNG or a full 360° turntable WebM, rendered straight off the live
+  // canvas (preserveDrawingBuffer is on). No upload, no watermark.
+  snapshotPNG() {
+    this.renderer.render(this.scene, this.camera);
+    return new Promise(res => this.canvas.toBlob(b => res(b), 'image/png'));
+  }
+  async recordTurntable(opts) {
+    opts = opts || {};
+    if (!this.wrap) throw new Error('Load a character first');
+    if (typeof MediaRecorder === 'undefined' || !this.canvas.captureStream) throw new Error('Video capture unsupported in this browser');
+    const seconds = opts.seconds || 6;
+    const fps = opts.fps || 30;
+    const stream = this.canvas.captureStream(fps);
+    const mime = MediaRecorder.isTypeSupported('video/webm;codecs=vp9') ? 'video/webm;codecs=vp9'
+      : (MediaRecorder.isTypeSupported('video/webm;codecs=vp8') ? 'video/webm;codecs=vp8' : 'video/webm');
+    const rec = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 12000000 });
+    const chunks = []; rec.ondataavailable = e => { if (e.data && e.data.size) chunks.push(e.data); };
+    const stopped = new Promise(res => { rec.onstop = res; });
+    const prevSpin = this.autoSpin; const startRot = this.wrap.rotation.y; this.autoSpin = false;
+    this._capturing = true; rec.start();
+    const t0 = performance.now();
+    await new Promise(resolve => {
+      const tick = () => {
+        const p = Math.min(1, (performance.now() - t0) / 1000 / seconds);
+        this.wrap.rotation.y = startRot + p * Math.PI * 2;
+        if (opts.onProgress) opts.onProgress(p);
+        if (p >= 1) return resolve();
+        requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+    });
+    this.wrap.rotation.y = startRot; this.autoSpin = prevSpin; this._capturing = false;
+    rec.stop(); await stopped;
+    return new Blob(chunks, { type: 'video/webm' });
+  }
   setSpeed(v) { this.speed = v; if (this.mixer) this.mixer.timeScale = v; }
 
   // ---------- loading ----------
   clearModel() {
     if (this.mixer) { this.mixer.stopAllAction(); this.mixer = null; }
+    if (this._shaderEntries && this._shaderEntries.length) {
+      this._shaderEntries.forEach(e => { try { e.material && e.material.dispose && e.material.dispose(); } catch (_) {} });
+    }
+    this._shaderEntries = [];
     if (this.model) { this.wrap.remove(this.model); this.model.traverse(o => { if (o.isMesh) { o.geometry && o.geometry.dispose(); } }); }
     this.model = null; this.clips = []; this.actions = []; this.activeAction = null;
     this.skeleton = null; this.hasSkeleton = false; this.boneCount = 0; this.tris = 0;
@@ -258,6 +311,7 @@ export class SCEngine {
         if (pos) tris += o.geometry.index ? o.geometry.index.count / 3 : pos.count / 3;
         const mats = Array.isArray(o.material) ? o.material : [o.material];
         mats.forEach(m => { if (m) { m.side = THREE.DoubleSide; if ('wireframe' in m) m.wireframe = this.wire; if ('envMapIntensity' in m) m.envMapIntensity = this.envIntensity; } });
+        o.userData._origMat = o.material;   // kept so a shader can be removed and the model restored
       }
       if (o.isBone) bones++;
       if (o.isSkinnedMesh && o.skeleton && !skeleton) skeleton = o.skeleton;
@@ -623,6 +677,117 @@ export class SCEngine {
   setEnvBackground(on) { this._envAsBg = !!on; if (on && this._envRT) this.scene.background = this._envRT.texture; else this.setBackground(this.bgName); }
   setShadowStrength(v) { this._shadowStrength = v; if (this.floor && this.floor.material) this.floor.material.opacity = v; }
 
+  // ---------- demo shapes ----------
+  // A quick primitive to play with when no model is loaded — a torus knot,
+  // sphere, bottle (lathe), etc. Behaves like a loaded model so every shader
+  // and capture tool works on it.
+  loadDemo(kind) {
+    this.clearModel();
+    let geo;
+    if (kind === 'sphere') geo = new THREE.SphereGeometry(0.72, 96, 64);
+    else if (kind === 'torus') geo = new THREE.TorusGeometry(0.6, 0.26, 64, 128);
+    else if (kind === 'bottle') geo = latheBottle();
+    else if (kind === 'cube') geo = new THREE.BoxGeometry(1, 1, 1, 12, 12, 12);
+    else if (kind === 'suzanne' || kind === 'blob') geo = new THREE.IcosahedronGeometry(0.75, 24);
+    else { kind = 'knot'; geo = new THREE.TorusKnotGeometry(0.55, 0.2, 256, 40); }
+    geo.computeVertexNormals();
+    const mat = new THREE.MeshStandardMaterial({ color: 0x9aa0a8, metalness: 0.1, roughness: 0.55, side: THREE.DoubleSide });
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.castShadow = true; mesh.receiveShadow = true;
+    mesh.name = kind; mesh.userData._origMat = mat;
+    const root = new THREE.Group(); root.add(mesh);
+    this.wrap.add(root);
+    this.model = root;
+    const pos = geo.getAttribute('position');
+    this.tris = Math.round((geo.index ? geo.index.count : pos.count) / 3);
+    this.modelName = 'Demo · ' + kind;
+    this.skeleton = null; this.hasSkeleton = false; this.boneCount = 0;
+    this.clips = []; this.actions = []; this.activeAction = null;
+    this._normalize(); this.frame(); this._changed(); this._status('');
+    return { name: this.modelName, tris: this.tris, bones: 0, hasSkeleton: false, clips: [] };
+  }
+
+  // ---------- shaders ----------
+  shaderPresets() { return presetDescriptors(); }
+
+  listMeshes() {
+    const out = [];
+    if (!this.model) return out;
+    this.model.traverse(o => {
+      if (o.isMesh && o.geometry) {
+        const pos = o.geometry.getAttribute('position');
+        const t = o.geometry.index ? o.geometry.index.count / 3 : (pos ? pos.count / 3 : 0);
+        out.push({ uuid: o.uuid, name: o.name || 'mesh', tris: Math.round(t) });
+      }
+    });
+    return out;
+  }
+
+  _targetMeshes(uuid) {
+    const out = [];
+    if (!this.model) return out;
+    this.model.traverse(o => { if (o.isMesh && o.geometry) { if (!uuid || uuid === 'all' || o.uuid === uuid) out.push(o); } });
+    return out;
+  }
+
+  _removeEntry(mesh) {
+    const i = this._shaderEntries.findIndex(e => e.mesh === mesh);
+    if (i >= 0) { const e = this._shaderEntries[i]; try { e.material && e.material.dispose && e.material.dispose(); } catch (_) {} this._shaderEntries.splice(i, 1); }
+  }
+
+  applyShader(id, values, targetUuid) {
+    const preset = SHADER_PRESETS.find(p => p.id === id);
+    if (!preset) return;
+    const targets = this._targetMeshes(targetUuid);
+    for (const mesh of targets) {
+      this._removeEntry(mesh);
+      let material, uniforms = null;
+      if (preset.kind === 'physical') {
+        material = preset.make();
+        for (const p of preset.params) p.apply(material, (values && values[p.key] != null) ? values[p.key] : p.default);
+        material.side = THREE.DoubleSide;
+        if ('envMapIntensity' in material) material.envMapIntensity = this.envIntensity;
+      } else {
+        const built = buildShaderMaterial(preset, values);
+        material = built.material; uniforms = built.uniforms;
+      }
+      material.wireframe = preset.wireframe || this.wire;
+      mesh.material = material;
+      this._shaderEntries.push({ mesh, material, uniforms, presetId: id, kind: preset.kind });
+    }
+    this._changed && this._changed();
+  }
+
+  setShaderParam(key, value) {
+    for (const e of this._shaderEntries) {
+      const preset = SHADER_PRESETS.find(p => p.id === e.presetId);
+      const param = preset && (preset.params || []).find(p => p.key === key);
+      if (!param) continue;
+      if (e.kind === 'physical') { param.apply(e.material, value); e.material.needsUpdate = true; }
+      else if (e.uniforms) {
+        const u = e.uniforms['u_' + key];
+        if (u) { if (param.type === 'color') u.value.set(value); else u.value = value; }
+      }
+    }
+  }
+
+  clearShader(targetUuid) {
+    const targets = this._targetMeshes(targetUuid);
+    for (const mesh of targets) {
+      this._removeEntry(mesh);
+      const orig = mesh.userData._origMat;
+      if (orig) mesh.material = orig;
+    }
+    this.setWire(this.wire);
+    this._applyEnvIntensity();
+    this._changed && this._changed();
+  }
+
+  activeShaderFor(uuid) {
+    if (uuid && uuid !== 'all') { const e = this._shaderEntries.find(x => x.mesh.uuid === uuid); return e ? e.presetId : null; }
+    return this._shaderEntries.length ? this._shaderEntries[0].presetId : null;
+  }
+
   stats() {
     return { name: this.modelName, tris: this.tris, bones: this.boneCount, hasSkeleton: this.hasSkeleton, env: this.envName, envIntensity: this.envIntensity, envBg: this._envAsBg, shadow: this._shadowStrength };
   }
@@ -637,6 +802,10 @@ export class SCEngine {
     const dt = this.clock.getDelta();
     if (this.autoSpin && this.wrap) this.wrap.rotation.y += this.spinSpeed * dt;
     if (this.mixer && this.playing) this.mixer.update(dt);
+    if (this._shaderEntries.length) {
+      const t = this.clock.elapsedTime;
+      for (const e of this._shaderEntries) { if (e.uniforms && e.uniforms.u_time) e.uniforms.u_time.value = t; }
+    }
     this.controls.update();
     this.renderer.render(this.scene, this.camera);
     if (this.onTime && this.activeAction && this.playing) {

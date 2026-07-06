@@ -13,6 +13,9 @@
 <meta name="twitter:title" content="PolyPotion — 3D Character Pipeline">
 <meta name="twitter:description" content="Free, open-source 3D character suite that runs entirely in your browser.">
 <meta name="twitter:image" content="social-card.png">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#9c6b3f">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;500;600;700&family=Nunito:ital,wght@0,400;0,600;0,700;0,800;1,600&display=swap" rel="stylesheet">
@@ -81,6 +84,8 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
 .dock-sep{width:40px;height:3px;border-radius:2px;background:repeating-linear-gradient(90deg,var(--wood) 0 5px,transparent 5px 9px);margin:4px 0;opacity:.5;}
 .dock-spacer{flex:1;}
 .dock-item.disabled{opacity:.34;cursor:not-allowed;}
+.dock-item:focus-visible{outline:3px solid var(--clay);outline-offset:2px;}
+.tbtn:focus-visible,.act:focus-visible,.cardDel:focus-visible,.cardRen:focus-visible,.cardDup:focus-visible{outline:3px solid var(--clay);outline-offset:2px;}
 
 /* stage */
 .stage{flex:1;position:relative;min-width:0;min-height:0;background:var(--bg);}
@@ -236,7 +241,9 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
       <div class="fstep" data-flow="export"><span class="fi">4</span>Export</div>
     </div>
     <div class="spacer"></div>
+    <button class="tbtn ghost" id="btnInstall" title="Install PolyPotion as an offline app" style="display:none;">⤓ Install</button>
     <button class="tbtn primary" id="btnHandoff" disabled title="Bake the rigged character and send it to MoCap">⟐ Send rig to MoCap →</button>
+    <button class="tbtn ghost" id="btnExport" title="Export the active character to GLB / FBX / OBJ / STL / USDZ">⤒ Export</button>
     <a class="tbtn ghost" href="Handbook.dc.html" target="_blank" rel="noopener" title="How every tool works — the PolyPotion Handbook" style="text-decoration:none;">✍ Handbook</a>
     <button class="tbtn ghost" id="btnTheme" title="Switch theme">◐ Cute Light</button>
     <button class="tbtn ghost" id="btnLib">▤ Library</button>
@@ -244,7 +251,7 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
 
   <div class="body">
     <!-- TOOL DOCK -->
-    <nav class="dock" id="dock">
+    <nav class="dock" id="dock" role="tablist" aria-orientation="vertical" aria-label="Tools">
       <div class="dock-item" data-tool="library"><span class="ic">▤</span><span class="lb">Library</span></div>
       <div class="dock-item" data-tool="showcase" title="Showcase — view, spin & animate a finished character"><span class="ic">◈</span><span class="lb">Show</span></div>
       <div class="dock-sep"></div>
@@ -265,6 +272,8 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
       <div class="dock-item" data-tool="morph" title="Morph — blendshape / expression editor"><span class="ic">◕</span><span class="lb">Morph</span></div>
       <div class="dock-item" data-tool="bakemaps" title="Bake Maps — normal / AO / curvature high→low"><span class="ic">☰</span><span class="lb">Bake+</span></div>
       <div class="dock-item" data-tool="curves" title="Curves — F-curve editor + onion skinning"><span class="ic">∿</span><span class="lb">Curves</span></div>
+      <div class="dock-item" data-tool="humangen" title="HumanGen — generate a neutral base human (start here)"><span class="ic">☺</span><span class="lb">Human</span></div>
+      <div class="dock-item" data-tool="hairstudio" title="Hair Studio — style procedural hair"><span class="ic">〰</span><span class="lb">Hair+</span></div>
       <div class="dock-spacer"></div>
       <div class="dock-sep"></div>
       <div class="dock-item disabled" title="Scene assembly — coming soon"><span class="ic">⊞</span><span class="lb">Scene</span></div>
@@ -282,6 +291,11 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
           </div>
           <button class="tbtn ghost lib-import" id="libImport">⬇ Import file…</button>
           <input type="file" id="libFile" accept=".fbx,.glb,.gltf,.obj" style="display:none;">
+          <div class="spacer" style="flex:1;"></div>
+          <div id="storMeter" title="Browser storage used by your saved library" style="display:flex;align-items:center;gap:8px;font-family:var(--font-mono);font-size:11px;color:var(--ink-soft);"></div>
+          <button class="tbtn ghost" id="btnBackup" title="Download a single .polypotion file with your whole library — your backup / to move machines">⬇ Backup all</button>
+          <button class="tbtn ghost" id="btnRestoreBk" title="Import a .polypotion backup or project bundle">⬆ Restore</button>
+          <input type="file" id="bkFile" accept=".polypotion,.zip" style="display:none;">
         </div>
         <div class="lib-scroll">
           <div class="dropzone" id="dropZone">
@@ -294,6 +308,7 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
             <input type="file" id="dropFile" accept=".glb,.gltf,.fbx,.obj" style="display:none;">
           </div>
           <div class="lib-section-label" id="libLabel">Rigged characters · drop in <span class="mono" style="color:var(--text-2)">data/characters/</span></div>
+          <div style="margin:0 0 14px;"><input id="libSearch" type="search" placeholder="🔍  Search characters by name…" aria-label="Search the character library by name" style="width:100%;max-width:340px;height:34px;padding:0 13px;border-radius:20px;border:3px solid var(--wood-dark);background:var(--cream);color:var(--ink);font-family:var(--font-mono);font-size:12px;outline:none;"></div>
           <div class="lib-filters" id="libFilters"></div>
           <div class="lib-grid" id="libGrid"></div>
         </div>
@@ -388,6 +403,16 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
       <div class="tool-pane" id="pane-curves">
         <div class="tool-loading" id="load-curves"><div class="ring"></div><div>Loading Curves workspace…</div></div>
       </div>
+
+      <!-- HumanGen tool -->
+      <div class="tool-pane" id="pane-humangen">
+        <div class="tool-loading" id="load-humangen"><div class="ring"></div><div>Loading HumanGen workspace…</div></div>
+      </div>
+
+      <!-- Hair Studio tool -->
+      <div class="tool-pane" id="pane-hairstudio">
+        <div class="tool-loading" id="load-hairstudio"><div class="ring"></div><div>Loading Hair Studio workspace…</div></div>
+      </div>
     </div>
   </div>
 
@@ -401,16 +426,87 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
       <span class="mono" id="stCtx" title="Live 3D workspaces held in GPU memory" style="display:flex;align-items:center;gap:6px;cursor:default;"></span>
       <span class="mono" style="display:flex;gap:9px;align-items:center;">
         <a href="Handbook.dc.html" target="_blank" rel="noopener" style="color:var(--ink-soft);text-decoration:none;border-bottom:1px dotted var(--wood);">Handbook</a>
+        <a href="ToolContract.dc.html" target="_blank" rel="noopener" style="color:var(--ink-soft);text-decoration:none;border-bottom:1px dotted var(--wood);">Build a tool</a>
         <a href="Privacy.html" target="_blank" rel="noopener" style="color:var(--ink-soft);text-decoration:none;border-bottom:1px dotted var(--wood);">Privacy</a>
         <a href="Terms.html" target="_blank" rel="noopener" style="color:var(--ink-soft);text-decoration:none;border-bottom:1px dotted var(--wood);">Terms</a>
         <a href="Notices.html" target="_blank" rel="noopener" style="color:var(--ink-soft);text-decoration:none;border-bottom:1px dotted var(--wood);">Notices</a>
       </span>
       <span class="mono">⌥ local · nothing uploaded</span>
+      <button id="btnVersion" aria-label="What’s new in this version" title="What’s new" style="font-family:var(--font-mono);font-size:11px;font-weight:600;padding:2px 9px;border-radius:20px;border:2px solid var(--wood-dark);background:var(--cream);color:var(--wood-dark);cursor:pointer;">v0.9 ✦</button>
     </div>
   </footer>
 </div>
 
+<!-- ============ WHAT'S NEW ============ -->
+<div id="whatsNew" style="display:none;position:fixed;inset:0;z-index:530;background:rgba(45,30,18,.5);backdrop-filter:blur(2px);align-items:center;justify-content:center;">
+  <div style="width:460px;max-width:92vw;max-height:80vh;overflow-y:auto;background:var(--cream-2);border:4px solid var(--wood-dark);border-radius:18px;box-shadow:var(--hard-lg);">
+    <div style="display:flex;align-items:center;gap:11px;padding:15px 20px;background:var(--header);border-bottom:4px solid var(--wood-dark);">
+      <span style="width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;background:var(--sage-deep);color:#fff6e0;font-size:15px;border:3px solid var(--wood-dark);">✦</span>
+      <div style="flex:1;"><div style="font-family:var(--font-mono);font-weight:700;font-size:16px;color:var(--ink);">What’s new</div><div style="font-family:var(--font-mono);font-size:11px;color:var(--ink-soft);">PolyPotion v0.9 · recently brewed</div></div>
+      <button id="wnClose" aria-label="Close what’s new" style="width:28px;height:28px;border-radius:8px;border:3px solid var(--wood-dark);background:var(--cream);color:var(--wood-dark);font-size:14px;cursor:pointer;">×</button>
+    </div>
+    <div id="wnBody" style="padding:8px 20px 20px;"></div>
+  </div>
+</div>
+
+<!-- ============ FIRST-BREW TOUR ============ -->
+<div id="tour" style="display:none;position:fixed;inset:0;z-index:540;background:rgba(45,30,18,.6);backdrop-filter:blur(3px);align-items:center;justify-content:center;">
+  <div style="width:440px;max-width:92vw;background:var(--cream-2);border:4px solid var(--wood-dark);border-radius:20px;box-shadow:var(--hard-lg);overflow:hidden;">
+    <div id="tourArt" style="height:120px;display:flex;align-items:center;justify-content:center;font-size:54px;background:var(--header);border-bottom:4px solid var(--wood-dark);">⚗</div>
+    <div style="padding:20px 22px 8px;">
+      <div id="tourStep" style="font-family:var(--font-mono);font-size:11px;letter-spacing:.1em;color:var(--sage-deep);margin-bottom:7px;">STEP 1 / 4</div>
+      <div id="tourTitle" style="font-size:19px;font-weight:700;color:var(--ink);margin-bottom:8px;"></div>
+      <div id="tourText" style="font-size:13.5px;line-height:1.6;color:var(--ink-soft);min-height:66px;"></div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;padding:8px 22px 20px;">
+      <div id="tourDots" style="display:flex;gap:6px;"></div>
+      <div style="flex:1;"></div>
+      <button id="tourSkip" class="tbtn ghost">Skip</button>
+      <button id="tourNext" class="tbtn primary">Next →</button>
+    </div>
+  </div>
+</div>
+
 <div id="toasts"></div>
+
+<!-- ============ EXPORT DIALOG ============ -->
+<div id="exportModal" style="display:none;position:fixed;inset:0;z-index:520;background:rgba(45,30,18,.55);backdrop-filter:blur(2px);align-items:center;justify-content:center;">
+  <div style="width:520px;max-width:94vw;background:var(--cream-2);border:4px solid var(--wood-dark);border-radius:18px;box-shadow:var(--hard-lg);overflow:hidden;">
+    <div style="display:flex;align-items:center;gap:11px;padding:16px 20px;background:var(--header);border-bottom:4px solid var(--wood-dark);">
+      <span style="width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;background:var(--clay);color:#fff6e0;font-size:16px;border:3px solid var(--wood-dark);">⤒</span>
+      <div style="flex:1;">
+        <div style="font-family:var(--font-mono);font-weight:700;font-size:16px;color:var(--ink);">Export character</div>
+        <div style="font-family:var(--font-mono);font-size:11px;color:var(--ink-soft);" id="exTarget">no character loaded</div>
+      </div>
+      <button id="exClose" aria-label="Close export dialog" style="width:28px;height:28px;border-radius:8px;border:3px solid var(--wood-dark);background:var(--cream);color:var(--wood-dark);font-size:14px;cursor:pointer;">×</button>
+    </div>
+    <div style="padding:18px 20px;max-height:64vh;overflow-y:auto;">
+      <div style="font-family:var(--font-mono);font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-soft);margin-bottom:9px;">Format</div>
+      <div id="exFormats" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:20px;"></div>
+
+      <div style="font-family:var(--font-mono);font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-soft);margin-bottom:9px;">Target app preset</div>
+      <div id="exPresets" style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:20px;"></div>
+
+      <div style="display:flex;gap:22px;flex-wrap:wrap;">
+        <div>
+          <div style="font-family:var(--font-mono);font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-soft);margin-bottom:9px;">Up axis</div>
+          <div id="exAxis" style="display:flex;gap:7px;"></div>
+        </div>
+        <div style="flex:1;min-width:180px;">
+          <div style="font-family:var(--font-mono);font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-soft);margin-bottom:9px;display:flex;justify-content:space-between;"><span>Unit scale</span><span id="exScaleVal" style="color:var(--ink);">1.00×</span></div>
+          <input id="exScale" type="range" min="1" max="400" value="100" style="width:100%;">
+        </div>
+      </div>
+
+      <div id="exNote" style="margin-top:18px;display:flex;gap:9px;padding:11px 13px;border-radius:11px;background:var(--cream);border:2px solid var(--wood);font-size:12px;line-height:1.55;color:var(--ink-soft);"></div>
+    </div>
+    <div style="display:flex;gap:10px;padding:14px 20px;border-top:4px solid var(--wood-dark);background:var(--header);">
+      <div style="flex:1;"></div>
+      <button id="exCancel" class="tbtn ghost">Cancel</button>
+      <button id="exGo" class="tbtn primary">⤓ Download</button>
+    </div>
+  </div>
+</div>
 
 <!-- ============ COMMAND PALETTE ============ -->
 <div id="cmdk" style="display:none;position:fixed;inset:0;z-index:500;background:rgba(8,8,8,0.55);backdrop-filter:blur(2px);align-items:flex-start;justify-content:center;">
@@ -468,6 +564,8 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
       { k:'morph', label:'Morph', icon:'◕', key:'' },
       { k:'bakemaps', label:'Bake Maps', icon:'☰', key:'' },
       { k:'curves', label:'Curves', icon:'∿', key:'' },
+      { k:'humangen', label:'HumanGen — generate a base human', icon:'☺', key:'' },
+      { k:'hairstudio', label:'Hair Studio', icon:'〰', key:'' },
     ];
     const COMMANDS = [
       ...TOOLDEFS.map(t => ({ id:'go:'+t.k, title:'Go to ' + t.label, hint:t.icon + '  ·  ' + t.key, run:() => S.setTool(t.k) })),
@@ -480,6 +578,9 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
       { id:'clearsession', title:'Clear saved session (delete restored rigs)', hint:'⌫', run:() => S.clearSavedSession && S.clearSavedSession() },
       { id:'resetstorage', title:'Reset library storage (fix corrupted saves)', hint:'⚠', run:() => S.resetStorage && S.resetStorage() },
       { id:'handoff', title:'Send rig to MoCap', hint:'⟐', run:() => $('#btnHandoff') && $('#btnHandoff').click() },
+      { id:'export', title:'Export character (GLB / FBX / OBJ / STL / USDZ)…', hint:'⤒', run:() => $('#btnExport') && $('#btnExport').click() },
+      { id:'tour', title:'Show the welcome tour again', hint:'⚗', run:() => window.__ppTour && window.__ppTour() },
+      { id:'whatsnew', title:'What\u2019s new in this version', hint:'✦', run:() => $('#btnVersion') && $('#btnVersion').click() },
       { id:'cheat', title:'Show keyboard shortcuts', hint:'?', run:() => openCheat() },
     ];
 
@@ -536,6 +637,18 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
     window.addEventListener('keydown', e => {
       const typing = /input|textarea|select/i.test((e.target && e.target.tagName) || '');
       if ((e.metaKey || e.ctrlKey) && (e.key === 'k' || e.key === 'K')) { e.preventDefault(); pal.style.display === 'flex' ? closePal() : openPal(); return; }
+      // uniform undo/redo — forward to whichever tool is active (its own handler
+      // catches this when focus is inside the iframe; this covers shell focus)
+      if ((e.metaKey || e.ctrlKey) && (e.key === 'z' || e.key === 'Z')) {
+        if (activeTool && activeTool !== 'library' && TOOLS[activeTool] && TOOLS[activeTool].frame) {
+          S.post(activeTool, e.shiftKey ? 'studio:redo' : 'studio:undo', {}); e.preventDefault();
+        }
+        return;
+      }
+      if ((e.metaKey || e.ctrlKey) && (e.key === 'y' || e.key === 'Y')) {
+        if (activeTool && activeTool !== 'library' && TOOLS[activeTool] && TOOLS[activeTool].frame) { S.post(activeTool, 'studio:redo', {}); e.preventDefault(); }
+        return;
+      }
       if (pal.style.display === 'flex' || typing) return;
       if (e.key === 'Escape') { closeCheat(); return; }
       if (e.key === '?') { cheat.style.display === 'flex' ? closeCheat() : openCheat(); return; }
@@ -576,12 +689,15 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
     morph: { src: 'Morph.dc.html?embed=1', frame: null, ready: false, label: 'Morph' },
     bakemaps: { src: 'BakeMaps.dc.html?embed=1', frame: null, ready: false, label: 'Bake Maps' },
     curves: { src: 'Curves.dc.html?embed=1', frame: null, ready: false, label: 'Curves' },
+    humangen: { src: 'HumanGen.dc.html?embed=1', frame: null, ready: false, label: 'HumanGen' },
+    hairstudio: { src: 'HairStudio.dc.html?embed=1', frame: null, ready: false, label: 'Hair Studio' },
   };
   let activeTool = 'library';
   let session = { characters: [], animations: [] };  // rigged-this-session
   let libData = { characters: [], animations: [] };
   let libTab = 'characters';
   let libFilters = new Set();   // active category filters (AND-combined)
+  let libSearchQ = '';          // library name search
   let activeChar = null;        // shared character state — { it, deliveredTo:Set } follows you across tools
   const CHAR_TOOLS = ['showcase', 'mocap', 'pose', 'edit', 'sculpt', 'physics', 'decimate', 'bake', 'hair', 'csg', 'uv', 'paint', 'weightpaint', 'morph', 'bakemaps', 'curves'];
   let lastLoadedName = '';
@@ -705,9 +821,9 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
   // ---------- tool switching ----------
   function setTool(tool) {
     activeTool = tool;
-    $$('.dock-item').forEach(d => d.classList.toggle('active', d.dataset.tool === tool));
+    $$('.dock-item').forEach(d => { const on = d.dataset.tool === tool; d.classList.toggle('active', on); d.setAttribute('aria-selected', on ? 'true' : 'false'); });
     $('#lib').classList.toggle('show', tool === 'library');
-    ['showcase', 'rig', 'mocap', 'edit', 'motion', 'sculpt', 'hair', 'pose', 'physics', 'decimate', 'bake', 'csg', 'uv', 'paint', 'weightpaint', 'morph', 'bakemaps', 'curves'].forEach(t => {
+    ['showcase', 'rig', 'mocap', 'edit', 'motion', 'sculpt', 'hair', 'pose', 'physics', 'decimate', 'bake', 'csg', 'uv', 'paint', 'weightpaint', 'morph', 'bakemaps', 'curves', 'humangen', 'hairstudio'].forEach(t => {
       const pane = $('#pane-' + t);
       const on = t === tool;
       pane.classList.toggle('show', on);
@@ -742,6 +858,8 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
     else if (tool === 'morph') $('#stHint').textContent = 'Sculpt blendshapes — blink, smile, jaw — and drive them with sliders; export as glTF morph targets, on-device';
     else if (tool === 'bakemaps') $('#stHint').textContent = 'Bake normal / AO / curvature from a high-res sculpt onto the low-poly UVs — download the maps, on-device';
     else if (tool === 'curves') $('#stHint').textContent = 'Hand-edit the F-curves, trim the loop, and onion-skin the arc — motion editing, on-device';
+    else if (tool === 'humangen') $('#stHint').textContent = 'Generate a neutral base human — then “Use in Studio” to rig, pose and dress it. Zero assets needed';
+    else if (tool === 'hairstudio') $('#stHint').textContent = 'Style procedural hair, then “Use in Studio” to drape it under gravity in Physics';
     else $('#stHint').textContent = 'Pick a character to rig, or jump straight to MoCap';
   }
 
@@ -788,12 +906,42 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
   function idbSaveChar(it) {
     if (!it._buffer) return;
     try {
-      const rec = { id: it.path + '|' + it.label, label: it.label, path: it.path, ext: it.ext || 'glb', rig: it.rig || 'autorig', rigged: it.rigged, buffer: it._buffer.slice(0), ts: Date.now() };
+      const rec = { id: it.path + '|' + it.label, label: it.label, path: it.path, ext: it.ext || 'glb', rig: it.rig || 'autorig', rigged: it.rigged, buffer: it._buffer.slice(0), pfp: it.pfp || null, ts: Date.now() };
       const p = idbTx('readwrite', st => st.put(rec));
-      if (p && p.then) p.then(ok => { if (ok === null) idbWarn(); else it._saved = true; }, () => idbWarn());
+      if (p && p.then) p.then(ok => { if (ok === null) idbWarn(); else { it._saved = true; persistDurable(); updateStorMeter(); } }, () => idbWarn());
     } catch (e) { idbWarn(); }
   }
   function idbDeleteChar(it) { idbTx('readwrite', st => st.delete(it.path + '|' + it.label)); }
+
+  // ---------- thumbnails / rename / duplicate ----------
+  // Render the actual mesh to a small PNG once, cache it on the item + in IDB,
+  // and re-render the card. Cheap, on-device, deferred so it never blocks import.
+  async function genThumb(it) {
+    if (!it || !it._buffer || it.pfp || it._thumbing) return;
+    it._thumbing = true;
+    try {
+      if (!window.PPThumb) await import('./studio3D_scripts/thumbnailer.js');
+      const url = await window.PPThumb.render(it._buffer, it.ext || 'glb', 256);
+      it.pfp = url; it._thumbing = false;
+      if (it._saved) idbSaveChar(it);
+      renderLib();
+    } catch (e) { it._thumbing = false; }
+  }
+  function renameChar(it) {
+    const name = (prompt('Rename character', it.label) || '').trim();
+    if (!name || name === it.label) return;
+    if (it._saved) idbDeleteChar(it);            // key is path|label — remove the old record
+    it.label = name;
+    if (it._saved) idbSaveChar(it);
+    if (activeChar && activeChar.it === it) $('#stAsset').textContent = '◉ ' + it.label;
+    renderLib(); toast('Renamed to “' + name + '”', 'info');
+  }
+  function duplicateChar(it) {
+    if (!it._buffer) { toast('Only session characters can be duplicated', 'warn'); return; }
+    const copy = { label: it.label + ' copy', path: (it.label + '-copy-' + Date.now()) + '.' + (it.ext || 'glb'), ext: it.ext || 'glb', session: true, rig: it.rig, rigged: it.rigged, _buffer: it._buffer.slice(0), pfp: it.pfp || null };
+    const i = session.characters.indexOf(it); session.characters.splice(i < 0 ? 0 : i + 1, 0, copy);
+    idbSaveChar(copy); renderLib(); toast('Duplicated “' + it.label + '”', 'info');
+  }
   async function idbRestore() {
     let recs = null;
     try { recs = await idbTx('readonly', st => { const r = st.getAll(); return r; }); } catch (e) { recs = null; }
@@ -803,7 +951,7 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
     for (const r of recs) {
       if (!r || !r.label || !r.buffer || !(r.buffer instanceof ArrayBuffer)) continue;   // skip corrupted records
       if (session.characters.some(c => c.path === r.path && c.label === r.label)) continue;
-      session.characters.push({ label: r.label, path: r.path, ext: r.ext, session: true, restored: true, rig: r.rig, rigged: r.rigged, _buffer: r.buffer, _saved: true });
+      session.characters.push({ label: r.label, path: r.path, ext: r.ext, session: true, restored: true, rig: r.rig, rigged: r.rigged, _buffer: r.buffer, _saved: true, pfp: r.pfp || null });
       n++;
     }
     return n;
@@ -812,6 +960,76 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
     idbTx('readwrite', st => st.clear());
     session.characters = session.characters.filter(c => !c.session);
     renderLib(); toast('Saved session cleared', 'info');
+  }
+
+  // ---------- durable storage + quota meter ----------
+  // Ask the browser to make our storage persistent (opt out of automatic
+  // eviction under pressure / Safari's 7-day clear). Best-effort, once.
+  async function persistDurable() {
+    try {
+      if (!navigator.storage || !navigator.storage.persist) return;
+      if (localStorage.getItem('pp_persist_asked')) return;
+      localStorage.setItem('pp_persist_asked', '1');
+      const already = navigator.storage.persisted && await navigator.storage.persisted();
+      if (already) return;
+      const ok = await navigator.storage.persist();
+      if (ok) toast('Storage marked durable — your library won\u2019t be auto-evicted', 'success');
+    } catch (e) {}
+  }
+  async function updateStorMeter() {
+    const el = document.querySelector('#storMeter'); if (!el) return;
+    try {
+      if (!navigator.storage || !navigator.storage.estimate) { el.textContent = ''; return; }
+      const { usage = 0, quota = 0 } = await navigator.storage.estimate();
+      const persisted = navigator.storage.persisted ? await navigator.storage.persisted() : false;
+      const pct = quota ? Math.min(100, usage / quota * 100) : 0;
+      const mb = (usage / 1048576).toFixed(usage > 10485760 ? 0 : 1);
+      const qmb = quota ? (quota / 1073741824).toFixed(1) + ' GB' : '';
+      el.innerHTML = '<span title="' + (persisted ? 'Durable — protected from eviction' : 'Not yet durable') + '" style="width:8px;height:8px;border-radius:50%;background:' + (persisted ? 'var(--sage-deep)' : 'var(--honey)') + ';"></span>'
+        + '<span style="width:70px;height:6px;border-radius:3px;background:var(--panel-3);overflow:hidden;display:inline-block;"><span style="display:block;height:100%;width:' + pct.toFixed(0) + '%;background:var(--wood);"></span></span>'
+        + '<span>' + mb + ' MB' + (qmb ? ' / ' + qmb : '') + '</span>';
+    } catch (e) { el.textContent = ''; }
+  }
+
+  // ---------- backup / restore (portable .polypotion bundle) ----------
+  async function backupAll() {
+    try {
+      const recs = await idbTx('readonly', st => st.getAll()) || [];
+      const chars = recs.filter(r => r && r.buffer instanceof ArrayBuffer);
+      if (!chars.length) { toast('Nothing saved yet to back up', 'warn'); return; }
+      const { zipStore, jsonBytes } = await import('./studio3D_scripts/pack.js');
+      const manifest = { format: 'polypotion-bundle', version: 1, created: new Date().toISOString(), characters: [] };
+      const files = [];
+      chars.forEach((r, i) => {
+        const fname = 'meshes/' + String(i).padStart(3, '0') + '_' + (r.label || 'char').replace(/[^a-z0-9_-]+/gi, '_') + '.glb';
+        manifest.characters.push({ label: r.label, path: r.path, ext: r.ext || 'glb', rig: r.rig, rigged: r.rigged, ts: r.ts, file: fname });
+        files.push({ name: fname, data: r.buffer });
+      });
+      files.unshift({ name: 'manifest.json', data: jsonBytes(manifest) });
+      const blob = zipStore(files);
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+      a.download = 'polypotion-' + new Date().toISOString().slice(0, 10) + '.polypotion';
+      document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+      toast('Backed up ' + chars.length + ' character' + (chars.length > 1 ? 's' : '') + ' → ' + a.download, 'success');
+    } catch (e) { toast('Backup failed: ' + (e && e.message || e), 'error'); }
+  }
+  async function restoreBundle(file) {
+    try {
+      const { unzip, bytesJson } = await import('./studio3D_scripts/pack.js');
+      const entries = unzip(await file.arrayBuffer());
+      const man = entries['manifest.json'] ? bytesJson(entries['manifest.json']) : null;
+      if (!man || !man.characters) { toast('Not a PolyPotion bundle', 'error'); return; }
+      let n = 0;
+      for (const c of man.characters) {
+        const bytes = entries[c.file]; if (!bytes) continue;
+        const buf = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
+        if (session.characters.some(x => x.label === c.label && x.path === c.path)) continue;
+        const it = { label: c.label, path: c.path || (c.label + '.glb'), ext: c.ext || 'glb', session: true, restored: true, rig: c.rig, rigged: c.rigged, _buffer: buf };
+        session.characters.unshift(it); idbSaveChar(it); n++;
+      }
+      renderLib(); updateStorMeter();
+      toast(n ? 'Restored ' + n + ' character' + (n > 1 ? 's' : '') + ' from bundle' : 'Nothing new to restore', n ? 'success' : 'info');
+    } catch (e) { toast('Restore failed: ' + (e && e.message || e), 'error'); }
   }
   window.Studio = window.Studio || {};
 
@@ -879,16 +1097,31 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
       : 'Motion clips · drop in <span class="mono" style="color:var(--text-2)">data/animations/</span>';
     renderFilters(all);
     const items = libTab === 'characters' ? all.filter(itemMatches) : all;
+    const q = libSearchQ.trim().toLowerCase();
+    const shown = q ? items.filter(it => ((it.label || '') + ' ' + (it.path || '')).toLowerCase().includes(q)) : items;
     grid.innerHTML = '';
     if (!all.length) {
-      grid.innerHTML = '<div style="color:var(--muted);font-size:12px;padding:30px 0;">Nothing here yet. Use Import, or drop files into the data/ folder.</div>';
+      grid.innerHTML = '<div style="grid-column:1/-1;display:flex;flex-direction:column;align-items:center;gap:16px;padding:44px 20px;text-align:center;">'
+        + '<div style="font-size:34px;">\u2697</div>'
+        + '<div style="font-size:15px;font-weight:700;color:var(--ink);">Your shelf is empty \u2014 brew something</div>'
+        + '<div style="font-size:12px;color:var(--ink-soft);max-width:420px;line-height:1.6;">Generate a base character with no files at all, or drop your own <span class="mono">.glb / .fbx / .obj</span> anywhere on this page.</div>'
+        + '<div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center;">'
+        + '<button class="tbtn primary" id="emptyGen">\u263a Generate a character</button>'
+        + '<button class="tbtn ghost" id="emptyImport">\u2b07 Import a file\u2026</button>'
+        + '</div></div>';
+      const g = $('#emptyGen'); if (g) g.addEventListener('click', () => setTool('humangen'));
+      const im = $('#emptyImport'); if (im) im.addEventListener('click', () => { const f = $('#libFile') || $('#dropFile'); if (f) f.click(); });
       return;
     }
     if (!items.length) {
       grid.innerHTML = '<div style="color:var(--muted);font-size:12px;padding:30px 0;">No characters match these filters.</div>';
       return;
     }
-    items.forEach(it => grid.appendChild(libTab === 'characters' ? charCard(it) : animCard(it)));
+    if (!shown.length) {
+      grid.innerHTML = '<div style="color:var(--muted);font-size:12px;padding:30px 0;">No characters match “' + q.replace(/[<>&]/g, '') + '”.</div>';
+      return;
+    }
+    shown.forEach(it => grid.appendChild(libTab === 'characters' ? charCard(it) : animCard(it)));
   }
 
   function cardEl(html) { const d = document.createElement('div'); d.className = 'asset'; d.innerHTML = html; return d; }
@@ -908,7 +1141,7 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
           ${rig === 'mixamo' ? '<span class="bdg mixamo">mixamo</span>' : (rig === 'autorig' ? '<span class="bdg autorig">autorig</span>' : '')}
           ${it.restored ? '<span class="bdg autorig" title="restored from a previous session">saved</span>' : ''}
         </div>
-        ${it.session ? '<button class="cardDel" title="Remove from session" style="position:absolute;top:7px;right:7px;width:22px;height:22px;border-radius:5px;border:1px solid var(--edge,#34322d);background:rgba(15,15,15,0.7);color:var(--text-2,#9b958a);font-size:13px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;">×</button>' : ''}
+        ${it.session ? '<div class="cardTools" style="position:absolute;top:7px;right:7px;display:flex;gap:4px;"><button class="cardRen" title="Rename" style="width:22px;height:22px;border-radius:5px;border:1px solid var(--edge,#34322d);background:rgba(15,15,15,0.7);color:var(--text-2,#9b958a);font-size:11px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;">✎</button><button class="cardDup" title="Duplicate" style="width:22px;height:22px;border-radius:5px;border:1px solid var(--edge,#34322d);background:rgba(15,15,15,0.7);color:var(--text-2,#9b958a);font-size:11px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;">⧉</button><button class="cardDel" title="Remove from session" style="width:22px;height:22px;border-radius:5px;border:1px solid var(--edge,#34322d);background:rgba(15,15,15,0.7);color:var(--text-2,#9b958a);font-size:13px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;">×</button></div>' : ''}
       </div>
       <div class="meta">
         <div class="nm">${it.label}</div>
@@ -927,6 +1160,8 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
         </div>
       </div>`);
     attachPfp(el, it);
+    const ren = el.querySelector('.cardRen'); if (ren) ren.addEventListener('click', (e) => { e.stopPropagation(); renameChar(it); });
+    const dup = el.querySelector('.cardDup'); if (dup) dup.addEventListener('click', (e) => { e.stopPropagation(); duplicateChar(it); });
     const [openRig, openPose, openPhysics, openSculpt, openEdit, openBake, openDecimate, openPaint, toMocap] = el.querySelectorAll('.act');
     const del = el.querySelector('.cardDel');
     if (del) del.addEventListener('click', (e) => {
@@ -946,7 +1181,8 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
     toMocap.addEventListener('click', () => sendCharToMocap(it));
     const thumbEl = el.querySelector('.thumb'); if (thumbEl) thumbEl.style.cursor = 'pointer';
     const nmEl = el.querySelector('.nm'); if (nmEl) nmEl.style.cursor = 'pointer';
-    el.addEventListener('click', (e) => { if (e.target.closest('.acts') || e.target.closest('.cardDel')) return; openInShowcase(it); });
+    el.addEventListener('click', (e) => { if (e.target.closest('.acts') || e.target.closest('.cardTools')) return; openInShowcase(it); });
+    if (it.session && !it.pfp) genThumb(it);
     return el;
   }
 
@@ -1096,10 +1332,157 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
 
   // ---------- dock + library button ----------
   $$('.dock-item').forEach(d => {
-    if (d.classList.contains('disabled')) return;
-    d.addEventListener('click', () => setTool(d.dataset.tool));
+    const tool = d.dataset.tool;
+    // accessibility: expose each dock item as a real button to AT + keyboard
+    const label = (d.querySelector('.lb') || {}).textContent || tool;
+    d.setAttribute('role', 'tab');
+    d.setAttribute('aria-label', (d.getAttribute('title') || (label + ' tool')));
+    if (!d.hasAttribute('tabindex')) d.setAttribute('tabindex', d.classList.contains('disabled') ? '-1' : '0');
+    d.setAttribute('aria-selected', tool === activeTool ? 'true' : 'false');
+    if (d.classList.contains('disabled')) { d.setAttribute('aria-disabled', 'true'); return; }
+    d.addEventListener('click', () => setTool(tool));
+    d.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setTool(tool); }
+      else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        const items = $$('.dock-item').filter(x => !x.classList.contains('disabled'));
+        const i = items.indexOf(d); const n = items[(i + (e.key === 'ArrowDown' ? 1 : items.length - 1)) % items.length];
+        if (n) n.focus();
+      }
+    });
   });
   $('#btnLib').addEventListener('click', () => setTool('library'));
+  { const b = $('#btnBackup'); if (b) b.addEventListener('click', backupAll); }
+  { const b = $('#btnRestoreBk'), inp = $('#bkFile'); if (b && inp) { b.addEventListener('click', () => inp.click()); inp.addEventListener('change', e => { const f = e.target.files[0]; if (f) restoreBundle(f); e.target.value = ''; }); } }
+
+  { const s = $('#libSearch'); if (s) s.addEventListener('input', e => { libSearchQ = e.target.value || ''; renderLib(); }); }
+
+  // ---------- version / what's new ----------
+  const PP_VERSION = '0.9';
+  const WHATS_NEW = [
+    ['Universal Export', 'One dialog exports the active character to glTF / FBX / OBJ / STL / USDZ with up-axis + unit-scale presets for Blender, Unity, Unreal, Godot and 3D print.'],
+    ['Five new craft tools', 'Weight Paint (hand-paint skin influence), Bake Maps (normal / AO / curvature high\u2192low), Morph (blendshape editor), Curves (F-curve editor + onion skinning), and HDRI lighting in Showcase.'],
+    ['Runs fully offline', 'Installable as an app, precached by a service worker \u2014 open it on a plane. Durable storage keeps your library from being evicted, with one-click backup of everything.'],
+    ['Kinder on your GPU', 'Idle 3D workspaces are released automatically so long sessions don\u2019t exhaust WebGL contexts; a lost context now rebuilds instead of going black.'],
+    ['Build your own tool', 'The Tool Contract documents the whole message protocol with a copy-paste \u201cHello Tool\u201d template \u2014 add a module without reading the source.'],
+  ];
+  function renderWhatsNew() {
+    const body = $('#wnBody'); if (!body) return; body.innerHTML = '';
+    WHATS_NEW.forEach(([t, d]) => {
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex;gap:11px;padding:12px 0;border-bottom:1px solid var(--wood);';
+      row.innerHTML = '<span style="flex:none;color:var(--sage-deep);font-size:14px;margin-top:1px;">\u2726</span>'
+        + '<div><div style="font-weight:700;font-size:13.5px;color:var(--ink);margin-bottom:3px;">' + t + '</div>'
+        + '<div style="font-size:12px;line-height:1.55;color:var(--ink-soft);">' + d + '</div></div>';
+      body.appendChild(row);
+    });
+  }
+  function openWhatsNew() { renderWhatsNew(); $('#whatsNew').style.display = 'flex'; try { localStorage.setItem('pp.seenVersion', PP_VERSION); } catch (e) {} }
+  function closeWhatsNew() { $('#whatsNew').style.display = 'none'; }
+  { const b = $('#btnVersion'); if (b) b.addEventListener('click', openWhatsNew); }
+  { const c = $('#wnClose'); if (c) c.addEventListener('click', closeWhatsNew); }
+  { const m = $('#whatsNew'); if (m) m.addEventListener('click', e => { if (e.target === m) closeWhatsNew(); }); }
+  // auto-open once per new version for returning users (never on a fresh first run)
+  try { const seen = localStorage.getItem('pp.seenVersion'); if (seen && seen !== PP_VERSION) setTimeout(openWhatsNew, 900); } catch (e) {}
+
+  // ---------- first-brew guided tour ----------
+  const TOUR = [
+    ['⚗', 'Welcome to PolyPotion', 'A full character pipeline that runs entirely on your machine — rig, sculpt, pose, texture, animate and export. Nothing is uploaded. Here\u2019s the 30-second tour.'],
+    ['☺', '1 · Get a character', 'Start with nothing: open <b>HumanGen</b> to generate a base character, or drag your own <span style="font-family:var(--font-mono);">.glb / .fbx / .obj</span> anywhere onto the Library. Samples work too.'],
+    ['⦿', '2 · Rig &amp; pose it', 'Send a mesh to <b>Rig</b> to auto-build a skeleton, fix any joint by hand in <b>Weight Paint</b>, then drag it into a pose in <b>Pose</b> (or describe one with Text-to-Pose).'],
+    ['⤒', '3 · Export anywhere', 'Hit <b>Export</b> in the top bar for glTF / FBX / OBJ / STL / USDZ with the right up-axis for Blender, Unity, Unreal or Godot. Your character always follows you between tools.'],
+  ];
+  let tourI = 0;
+  function renderTour() {
+    const s = TOUR[tourI];
+    $('#tourArt').textContent = s[0];
+    $('#tourStep').textContent = 'STEP ' + (tourI + 1) + ' / ' + TOUR.length;
+    $('#tourTitle').innerHTML = s[1];
+    $('#tourText').innerHTML = s[2];
+    $('#tourNext').textContent = tourI === TOUR.length - 1 ? 'Start brewing' : 'Next →';
+    const dots = $('#tourDots'); dots.innerHTML = '';
+    TOUR.forEach((_, i) => { const d = document.createElement('span'); d.style.cssText = 'width:8px;height:8px;border-radius:50%;background:' + (i === tourI ? 'var(--sage-deep)' : 'var(--wood)') + ';'; dots.appendChild(d); });
+  }
+  function endTour() { $('#tour').style.display = 'none'; try { localStorage.setItem('pp.tourDone', '1'); } catch (e) {} }
+  function openTour() { tourI = 0; renderTour(); $('#tour').style.display = 'flex'; }
+  { const n = $('#tourNext'); if (n) n.addEventListener('click', () => { if (tourI >= TOUR.length - 1) { endTour(); if (!libData.characters.length && !session.characters.length) setTool('humangen'); } else { tourI++; renderTour(); } }); }
+  { const s = $('#tourSkip'); if (s) s.addEventListener('click', endTour); }
+  window.__ppTour = openTour;   // re-runnable from the command palette
+  try { if (!localStorage.getItem('pp.tourDone')) setTimeout(openTour, 700); } catch (e) {}
+
+  // ---------- universal export dialog ----------
+  // Exports the ACTIVE character (the one following you across tools). Uses its
+  // in-memory GLB buffer when present, else fetches its library file. Edits made
+  // in tools that route their result back (rig, weight-paint, morph, bake maps,
+  // decimate, boolean, uv) are reflected; a caveat covers tools that don't yet.
+  const exState = { format: 'glb', up: 'y', scale: 100 };
+  async function activeCharBuffer() {
+    const it = activeChar && activeChar.it; if (!it) return null;
+    if (it._buffer) return it._buffer.slice(0);
+    try {
+      const { fetchAssetBuffer } = await import('./studio3D_scripts/chunk-loader.js');
+      return await fetchAssetBuffer(it.path, { chunked: it.chunked, chunks: it.chunks });
+    } catch (e) { try { const r = await fetch(it.path); return await r.arrayBuffer(); } catch (e2) { return null; } }
+  }
+  function renderExport() {
+    const P = window.PPExport; if (!P) return;
+    const it = activeChar && activeChar.it;
+    $('#exTarget').textContent = it ? ('◉ ' + it.label) : 'no character loaded — open one from the Library first';
+    const fmtWrap = $('#exFormats'); fmtWrap.innerHTML = '';
+    P.FORMATS.forEach(f => {
+      const on = exState.format === f.id;
+      const b = document.createElement('button');
+      b.style.cssText = 'text-align:left;padding:9px 11px;border-radius:10px;cursor:pointer;border:3px solid ' + (on ? 'var(--clay)' : 'var(--wood-dark)') + ';background:' + (on ? 'var(--active-dim)' : 'var(--cream)') + ';color:var(--ink);';
+      b.innerHTML = '<div style="font-family:var(--font-mono);font-weight:700;font-size:13px;">' + f.label + '</div><div style="font-size:10px;color:var(--ink-soft);margin-top:2px;">.' + f.ext + ' · ' + f.note + '</div>';
+      b.setAttribute('aria-pressed', on ? 'true' : 'false');
+      b.addEventListener('click', () => { exState.format = f.id; renderExport(); });
+      fmtWrap.appendChild(b);
+    });
+    const preWrap = $('#exPresets'); preWrap.innerHTML = '';
+    Object.entries(P.PRESETS).forEach(([k, pr]) => {
+      const b = document.createElement('button'); b.className = 'fchip';
+      b.textContent = pr.label;
+      b.addEventListener('click', () => { exState.up = pr.up; exState.scale = Math.round(pr.scale * 100); renderExport(); });
+      preWrap.appendChild(b);
+    });
+    const axWrap = $('#exAxis'); axWrap.innerHTML = '';
+    [['y', 'Y-up'], ['z', 'Z-up']].forEach(([k, lb]) => {
+      const on = exState.up === k; const b = document.createElement('button'); b.className = 'fchip' + (on ? ' on' : '');
+      b.textContent = lb; b.setAttribute('aria-pressed', on ? 'true' : 'false');
+      b.addEventListener('click', () => { exState.up = k; renderExport(); });
+      axWrap.appendChild(b);
+    });
+    $('#exScale').value = exState.scale; $('#exScaleVal').textContent = (exState.scale / 100).toFixed(2) + '×';
+    const f = P.FORMATS.find(x => x.id === exState.format) || {};
+    let note = '';
+    if (exState.format === 'fbx') note = 'FBX carries the skeleton + skin — cleanest for characters rigged in PolyPotion. Imported (e.g. Mixamo) rigs with rotated bones may need a re-pose on import.';
+    else if (!f.rig) note = f.label + ' is geometry only — no skeleton or animation. Use glTF or FBX to keep the rig.';
+    else if (!f.anim && f.rig) note = 'Keeps the skeleton + skin. (glTF also carries animation clips.)';
+    else note = 'Keeps skeleton, skin weights and any animation clips. The recommended all-round format.';
+    $('#exNote').innerHTML = '<span style="flex:none;">✦</span><span>' + note + '</span>';
+  }
+  function openExport() {
+    if (!window.PPExport) { import('./studio3D_scripts/exporter.js').then(() => { renderExport(); $('#exportModal').style.display = 'flex'; }).catch(() => toast('Export module failed to load', 'error')); return; }
+    renderExport(); $('#exportModal').style.display = 'flex';
+  }
+  function closeExport() { $('#exportModal').style.display = 'none'; }
+  { const b = $('#btnExport'); if (b) b.addEventListener('click', openExport); }
+  { const b = $('#exClose'); if (b) b.addEventListener('click', closeExport); }
+  { const b = $('#exCancel'); if (b) b.addEventListener('click', closeExport); }
+  { const m = $('#exportModal'); if (m) m.addEventListener('click', e => { if (e.target === m) closeExport(); }); }
+  { const s = $('#exScale'); if (s) s.addEventListener('input', e => { exState.scale = +e.target.value; $('#exScaleVal').textContent = (exState.scale / 100).toFixed(2) + '×'; }); }
+  { const g = $('#exGo'); if (g) g.addEventListener('click', async () => {
+      const it = activeChar && activeChar.it;
+      if (!it) { toast('Open a character first — nothing to export', 'warn'); return; }
+      g.disabled = true; const label = g.textContent; g.textContent = '⏳ Preparing…';
+      try {
+        const buf = await activeCharBuffer();
+        if (!buf) { toast('Could not read the character data', 'error'); return; }
+        const r = await window.PPExport.exportCharacter(buf, { format: exState.format, upAxis: exState.up, scale: exState.scale / 100, name: it.label });
+        toast('Exported ' + r.file, 'success'); closeExport();
+      } catch (e) { toast('Export failed: ' + (e && e.message || e), 'error'); }
+      finally { g.disabled = false; g.textContent = label; }
+    }); }
   const btnTheme = $('#btnTheme');
   function themeLabel(){ const ST = window.StudioTheme; if (!ST) return '◐ Theme'; const n = ST.get(); const m = (ST.META && ST.META[n]) || { label: n, dark: false }; return (m.dark ? '◑ ' : '◐ ') + m.label; }
   function updateThemeBtn(){ if (btnTheme) btnTheme.textContent = themeLabel(); }
@@ -1163,6 +1546,21 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
     else if (d.type === 'studio:charLoaded') {
       $('#stAsset').textContent = d.name + ' · ' + (d.bones || '?') + ' bones';
     }
+    else if (d.type === 'studio:saveChar') {
+      // a generator (HumanGen / HairStudio) produced a mesh → add to library,
+      // make it the active character, and jump to the requested tool.
+      const buf = d.buffer, name = d.name || 'generated.glb';
+      const it = { label: name.replace(/\.(glb|gltf|fbx)$/i, ''), path: name, ext: 'glb', session: true, rig: 'autorig', _buffer: buf.slice(0) };
+      session.characters.unshift(it);
+      idbSaveChar(it);
+      renderLib();
+      const goto = d.goto && (TOOLS[d.goto] || d.goto === 'library') ? d.goto : 'showcase';
+      setActiveChar(it, goto);
+      lastLoadedName = it.label;
+      setTool(goto);
+      deliverChar(goto, it, true);
+      toast('\u201c' + it.label + '\u201d added to your library', 'success');
+    }
     else if (d.type === 'studio:routeBuffer') {
       // a tool is handing its current mesh off to another tool (e.g. UV → Decimate)
       const tool = d.tool, buf = d.buffer, name = d.name || 'mesh.glb';
@@ -1188,7 +1586,36 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
   if (navigator.deviceMemory && navigator.deviceMemory <= 4) CTX.budget = 3;
   setTool('library');
   updateCtxMeter();
+  updateStorMeter();
   setInterval(reapIdle, 45000);   // reap frames left idle past the budget
+
+  // ---------- offline / installable PWA ----------
+  // Register the service worker so the whole suite works with no network after
+  // the first visit, and can be installed to the OS like a real creative tool.
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js').then(reg => {
+        // notify once when everything's cached and offline is ready
+        if (!localStorage.getItem('pp_offline_ready') && navigator.serviceWorker.controller == null) {
+          reg.addEventListener('updatefound', () => {
+            const w = reg.installing; if (!w) return;
+            w.addEventListener('statechange', () => { if (w.state === 'activated' || w.state === 'installed') { try { localStorage.setItem('pp_offline_ready', '1'); } catch (e) {} toast('Ready to work offline — PolyPotion is now cached on this machine', 'success'); } });
+          });
+        }
+      }).catch(() => {});
+    });
+  }
+  // install-to-OS prompt
+  let _deferredPrompt = null;
+  const btnInstall = $('#btnInstall');
+  window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); _deferredPrompt = e; if (btnInstall) btnInstall.style.display = ''; });
+  if (btnInstall) btnInstall.addEventListener('click', async () => {
+    if (!_deferredPrompt) { toast('Already installed, or use your browser menu → Install', 'info'); return; }
+    _deferredPrompt.prompt(); const { outcome } = await _deferredPrompt.userChoice;
+    if (outcome === 'accepted') { toast('Installing PolyPotion…', 'success'); btnInstall.style.display = 'none'; }
+    _deferredPrompt = null;
+  });
+  window.addEventListener('appinstalled', () => { if (btnInstall) btnInstall.style.display = 'none'; toast('PolyPotion installed — launch it from your dock any time', 'success'); });
 
   // guard against losing in-memory work that didn't make it into IndexedDB
   window.addEventListener('beforeunload', (e) => {

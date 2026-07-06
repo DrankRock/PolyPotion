@@ -66,8 +66,10 @@
       <div style="border-top:1px solid var(--seam);">
         <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--header);border-bottom:1px solid var(--seam);">
           <span style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);">✦ Text to pose</span>
+          <sc-if value="{{ netMode }}" hint-placeholder-val="{{ true }}"><span title="Sends your text prompt to a third-party AI over the internet. Everything else in PolyPotion stays on your device." style="font-size:8.5px;font-weight:700;letter-spacing:.06em;padding:2px 6px;border-radius:20px;background:rgba(224,113,79,.16);border:1px solid rgba(224,113,79,.5);color:#e0714f;cursor:help;">&#9673; NETWORKED</span></sc-if>
           <button title="AI provider settings" style="margin-left:auto;width:22px;height:22px;border-radius:5px;border:1px solid var(--edge);background:var(--panel3);color:var(--text2);cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;" onClick="{{ aiToggleSettings }}">⚙</button>
         </div>
+        <sc-if value="{{ netMode }}" hint-placeholder-val="{{ true }}"><div style="display:flex;gap:7px;padding:8px 12px;background:rgba(224,113,79,.07);border-bottom:1px solid var(--seam);font-size:10px;line-height:1.5;color:var(--text2);"><span style="flex:none;color:#e0714f;">&#9673;</span><span>Opt-in AI. Your <b>text prompt</b> is sent to the chosen provider (Claude / DeepSeek / Gemini) over the internet to compute the pose. Your mesh and everything else never leave this device — skip it and pose by hand anytime.</span></div></sc-if>
         <div style="padding:11px 12px;display:flex;flex-direction:column;gap:8px;">
           <textarea id="po-ai-prompt" rows="3" placeholder="Describe a pose — kneeling, arms raised to the sky" style="width:100%;resize:vertical;min-height:54px;padding:8px 9px;border-radius:6px;border:1px solid var(--edge);background:var(--panel2);color:var(--text);font-family:var(--font-ui);font-size:11.5px;line-height:1.45;outline:none;"></textarea>
           <div style="display:flex;gap:7px;">
@@ -186,12 +188,13 @@ class Component extends DCLogic {
     symmetry: true, showMesh: true, showSkel: true, xray: false,
     sel: null, bones: 0, handles: 0, rig: '—',
     aiBusy: false, aiSettingsOpen: false, aiNote: '',
-    aiProvider: (function () { try { return localStorage.getItem('pp.ai.provider') || 'claude'; } catch (e) { return 'claude'; } })(),
+    aiProvider: (function () { try { return localStorage.getItem('pp.ai.provider') || 'local'; } catch (e) { return 'local'; } })(),
     aiKeys: (function () { try { return JSON.parse(localStorage.getItem('pp.ai.keys') || '{}') || {}; } catch (e) { return {}; } })(),
   };
 
   aiProviderDefs() {
     return [
+      { id: 'local', label: 'On device (offline, no key)', keyId: 'local', model: 'pose-library' },
       { id: 'claude', label: 'Claude (Haiku 4.5)', keyId: 'anthropic', model: 'claude-haiku-4-5' },
       { id: 'deepseek-v4-pro', label: 'DeepSeek V4 Pro', keyId: 'deepseek', model: 'deepseek-v4-pro' },
       { id: 'deepseek-v4-flash', label: 'DeepSeek V4 Flash', keyId: 'deepseek', model: 'deepseek-v4-flash' },
@@ -279,6 +282,21 @@ class Component extends DCLogic {
     const defs = this.aiProviderDefs();
     const prov = defs.find(p => p.id === this.state.aiProvider) || defs[0];
     this.setState({ aiBusy: true, aiNote: '' });
+    if (prov.id === 'local') {
+      (async () => {
+        try {
+          if (!window.PPPoseLib) await import('./pose-library.js');
+          const hit = window.PPPoseLib.match(txt);
+          if (!hit) { this.setState({ aiBusy: false, aiNote: 'No on-device match \u2014 try simpler words (kneel, wave, sit, run\u2026) or choose a provider' }); this.toast('No local pose matched \u2014 try simpler wording'); return; }
+          const r = eng.applyAimList(hit.aim);
+          if (!r.applied) throw new Error('None of the matched joints fit this rig');
+          this.refresh();
+          this.setState({ aiBusy: false, aiNote: '\u2697 ' + hit.note + ' \u2014 ' + r.applied + ' segments \u00b7 on device' });
+          this.toast('Posed on-device \u2014 refine by dragging the handles');
+        } catch (e) { this.setState({ aiBusy: false, aiNote: (e && e.message || e) }); this.toast('Local pose failed: ' + (e && e.message || e)); }
+      })();
+      return;
+    }
     try {
       const reply = await this.aiCall(prov, this.aiSysPrompt(), 'Pose: ' + txt);
       const spec = this.aiParse(reply);
@@ -338,6 +356,8 @@ class Component extends DCLogic {
     if (this._embedded) { const hide = () => { const h = document.querySelector('#po-root > header'); if (h && h.firstElementChild) h.firstElementChild.style.display = 'none'; }; hide(); setTimeout(hide, 60); setTimeout(hide, 300); }
     window.addEventListener('message', (e) => {
       const d = e.data; if (!d || !d.__studio) return;
+      if (d.type === 'studio:undo') { if (this._eng && this._eng.undo()) this.refresh(); return; }
+      if (d.type === 'studio:redo') { if (this._eng && this._eng.redo()) this.refresh(); return; }
       if (d.type === 'studio:loadCharUrl') this.loadVia(() => this._eng.loadUrl(d.url, d.ext, { chunked: d.chunked, chunks: d.chunks }), d.label || 'character');
       else if (d.type === 'studio:loadCharBuffer') this.loadVia(() => this._eng.loadBuffer(d.buffer, d.name, (d.name || '').split('.').pop()), d.name || 'rig');
     });
@@ -375,6 +395,7 @@ class Component extends DCLogic {
       // text-to-pose
       aiProviders: this.aiProviderDefs().map(p => ({ id: p.id, label: p.label })),
       aiProvider: st.aiProvider,
+      netMode: st.aiProvider !== 'local',
       aiOnProvider: (e) => { const v = e.target.value; this.setState({ aiProvider: v }); try { localStorage.setItem('pp.ai.provider', v); } catch (err) {} },
       aiToggleSettings: () => this.setState({ aiSettingsOpen: !st.aiSettingsOpen }),
       aiSettingsOpen: st.aiSettingsOpen,

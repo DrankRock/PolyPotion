@@ -72,6 +72,14 @@
             <div style="font-size:12.5px;color:var(--text2);max-width:430px;line-height:1.6;">Pick anything from the Library and it lands here — orbit around it, spin the turntable, and play a motion clip on it if it's rigged. Drop a <b>.glb / .fbx / .obj</b> to view one directly.</div>
           </div>
           <button style="padding:10px 18px;border-radius:7px;font-size:12.5px;font-weight:600;background:var(--accent);border:1px solid var(--accent);color:#0d0f1f;cursor:pointer;" onClick="{{ pickFile }}">⬇ Open file…</button>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:8px;">
+            <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:.14em;color:var(--muted);text-transform:uppercase;">or drop a demo shape into the shader lab</div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center;max-width:340px;">
+              <sc-for list="{{ demoShapes }}" as="d" hint-placeholder-count="5">
+                <button style="font-size:11.5px;font-weight:600;padding:7px 13px;border-radius:6px;cursor:pointer;background:var(--panel-3);border:1px solid var(--edge);color:var(--text);" onClick="{{ d.onClick }}">{{ d.label }}</button>
+              </sc-for>
+            </div>
+          </div>
         </div>
       </sc-if>
 
@@ -125,6 +133,72 @@
         </div>
       </div>
 
+      <!-- shaders / materials -->
+      <div style="border-bottom:1px solid var(--seam);">
+        <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--header);border-bottom:1px solid var(--seam);">
+          <span style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);">Shader</span>
+          <sc-if value="{{ hasActiveShader }}" hint-placeholder-val="{{ false }}">
+            <span style="margin-left:auto;font-family:var(--font-mono);font-size:9px;letter-spacing:.1em;color:#c98a5a;text-transform:uppercase;">{{ activeShaderName }}</span>
+          </sc-if>
+        </div>
+        <div style="padding:11px 12px;display:flex;flex-direction:column;gap:12px;">
+
+          <sc-if value="{{ shaderNoModel }}" hint-placeholder-val="{{ true }}">
+            <div style="font-size:11px;color:var(--text2);line-height:1.5;">Load a character or drop a demo shape, then paint it with a material below — glass, chrome, water, hologram and more.</div>
+          </sc-if>
+
+          <sc-if value="{{ shaderReady }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;flex-direction:column;gap:12px;">
+
+              <!-- target + surprise -->
+              <div style="display:flex;gap:6px;align-items:center;">
+                <sc-if value="{{ multiMesh }}" hint-placeholder-val="{{ false }}">
+                  <select value="{{ shaderTarget }}" onChange="{{ onShaderTarget }}" style="flex:1;min-width:0;font-family:var(--font-ui);font-size:11.5px;font-weight:600;padding:7px 9px;border-radius:6px;background:var(--panel-3);border:1px solid var(--edge);color:var(--text);cursor:pointer;">
+                    <sc-for list="{{ shaderTargetOpts }}" as="o" hint-placeholder-count="2">
+                      <option value="{{ o.value }}">{{ o.label }}</option>
+                    </sc-for>
+                  </select>
+                </sc-if>
+                <button style="flex:none;font-size:11px;font-weight:600;padding:7px 11px;border-radius:6px;cursor:pointer;background:var(--panel-3);border:1px solid var(--edge);color:var(--text);" onClick="{{ surprise }}" title="Apply a random shader">🎲 Surprise</button>
+              </div>
+
+              <!-- preset grid grouped by category -->
+              <sc-for list="{{ presetGroups }}" as="g" hint-placeholder-count="4">
+                <div>
+                  <div style="font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:7px;">{{ g.cat }}</div>
+                  <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+                    <sc-for list="{{ g.items }}" as="p" hint-placeholder-count="4">
+                      <button style="{{ p.style }}" onClick="{{ p.onClick }}">
+                        <span style="{{ p.swatchStyle }}"></span>
+                        <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ p.name }}</span>
+                      </button>
+                    </sc-for>
+                  </div>
+                </div>
+              </sc-for>
+
+              <!-- live params for the active shader -->
+              <sc-if value="{{ hasActiveShader }}" hint-placeholder-val="{{ false }}">
+                <div style="display:flex;flex-direction:column;gap:10px;padding-top:11px;border-top:1px solid var(--seam);">
+                  <sc-for list="{{ activeParams }}" as="p" hint-placeholder-count="2">
+                    <div>
+                      <label style="display:flex;justify-content:space-between;align-items:center;font-size:10.5px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;"><span>{{ p.label }}</span><span style="font-family:var(--font-mono);color:var(--text);">{{ p.valLabel }}</span></label>
+                      <sc-if value="{{ p.isRange }}" hint-placeholder-val="{{ true }}">
+                        <input type="range" min="{{ p.min }}" max="{{ p.max }}" step="{{ p.step }}" value="{{ p.slideVal }}" onInput="{{ p.onInput }}" style="width:100%;">
+                      </sc-if>
+                      <sc-if value="{{ p.isColor }}" hint-placeholder-val="{{ false }}">
+                        <input type="color" value="{{ p.value }}" onInput="{{ p.onInput }}" style="width:100%;height:28px;border:1px solid var(--edge);border-radius:5px;background:var(--panel-3);cursor:pointer;padding:2px;">
+                      </sc-if>
+                    </div>
+                  </sc-for>
+                  <button style="width:100%;padding:8px;border-radius:6px;font-size:11.5px;font-weight:600;background:transparent;border:1px solid var(--edge);color:var(--text);cursor:pointer;" onClick="{{ removeShader }}">✕ Remove shader · original material</button>
+                </div>
+              </sc-if>
+            </div>
+          </sc-if>
+        </div>
+      </div>
+
       <!-- animation -->
       <div style="border-bottom:1px solid var(--seam);">
         <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--header);border-bottom:1px solid var(--seam);"><span style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);">Animation</span></div>
@@ -174,6 +248,23 @@
               <button style="margin-top:9px;width:100%;padding:8px;border-radius:6px;font-size:11.5px;font-weight:600;background:transparent;border:1px solid var(--edge);color:var(--text);cursor:pointer;" onClick="{{ stopAnim }}">■ Stop · rest pose</button>
             </div>
           </sc-if>
+        </div>
+      </div>
+
+      <!-- capture -->
+      <div style="border-bottom:1px solid var(--seam);">
+        <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--header);border-bottom:1px solid var(--seam);"><span style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);">Capture</span><span style="margin-left:auto;font-size:9px;color:var(--muted);">watermark-free</span></div>
+        <div style="padding:11px 12px;display:flex;flex-direction:column;gap:9px;">
+          <button style="display:flex;align-items:center;justify-content:center;gap:7px;padding:9px;border-radius:6px;font-size:12px;font-weight:600;background:var(--panel-3);border:1px solid var(--edge);color:var(--text);width:100%;cursor:pointer;" onClick="{{ doSnapshot }}">▣ Snapshot PNG</button>
+          <div>
+            <label style="display:flex;justify-content:space-between;font-size:10.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:7px;"><span>Turntable length</span><span style="font-family:var(--font-mono);color:var(--text);">{{ capSecLabel }}</span></label>
+            <input type="range" min="3" max="12" value="{{ capSec }}" onInput="{{ onCapSec }}" style="width:100%;">
+          </div>
+          <button style="{{ capBtnStyle }}" onClick="{{ doRecord }}">{{ capBtnLabel }}</button>
+          <sc-if value="{{ capBusy }}" hint-placeholder-val="{{ false }}">
+            <div style="height:6px;border-radius:3px;background:var(--panel-3);overflow:hidden;"><div style="height:100%;width:{{ capPct }};background:var(--accent);transition:width .1s;"></div></div>
+          </sc-if>
+          <div style="font-size:10px;line-height:1.5;color:var(--muted);">Records one full 360° spin to WebM — the clip you post that makes people ask what you made it in.</div>
         </div>
       </div>
 
@@ -243,6 +334,7 @@ class Component extends DCLogic {
     spin: false, wire: false, bg: 'studio', ground: true, speed: 100,
     env: 'studio', envInt: 75, envBg: false, shadow: 34,
     hasUVs: false, hasTexture: false, suggestDismiss: false,
+    presets: [], meshes: [], shaderTarget: 'all', activeShader: null, shaderParams: {},
   };
 
   componentDidMount() { this.setupEmbed(); this.boot(); this.setupDrop(); }
@@ -255,6 +347,7 @@ class Component extends DCLogic {
       eng.onStatus = (msg) => this.setState({ loading: !!msg, loadingMsg: msg || '' });
       eng.onChange = () => this.refresh();
       eng.onTime = (info) => this.setState({ time: info.time, duration: info.duration });
+      try { this.setState({ presets: eng.shaderPresets() }); } catch (e) {}
       if (this._pending) { const p = this._pending; this._pending = null; p(); }
     } catch (e) {
       this.toast('Engine failed: ' + (e && e.message || e));
@@ -273,7 +366,7 @@ class Component extends DCLogic {
     } });
     this.setState({
       hasModel: eng.hasModel(), tris: s.tris, bones: s.bones, hasSkeleton: s.hasSkeleton,
-      hasUVs, hasTexture,
+      hasUVs, hasTexture, meshes: eng.listMeshes(),
       meshName: eng.hasModel() ? s.name : 'no model',
       clips: eng.clips.map((c, i) => ({ i, name: c.name || ('Clip ' + (i + 1)), duration: c.duration || 0 })),
       hasAnim: !!eng.activeAction, playing: eng.playing,
@@ -287,7 +380,7 @@ class Component extends DCLogic {
     this.setState({ loading: true, loadingMsg: 'Loading ' + (label || 'model') + '…', activeLib: '' });
     try {
       const r = await fn();
-      this.refresh(); this.setState({ loading: false, suggestDismiss: false });
+      this.refresh(); this.setState({ loading: false, suggestDismiss: false, activeShader: null, shaderParams: {}, shaderTarget: 'all' });
       const extra = r.clips && r.clips.length ? ' · ' + r.clips.length + ' clip' + (r.clips.length > 1 ? 's' : '') : (r.hasSkeleton ? ' · rigged' : '');
       this.toast('Loaded ' + r.name + ' — ' + (r.tris ? r.tris.toLocaleString() + ' tris' : '') + extra);
       if (this._animQueued) { const a = this._animQueued; this._animQueued = null; this.playLibAnim(a); }
@@ -352,6 +445,23 @@ class Component extends DCLogic {
   chip(on) { return 'font-family:Spline Sans Mono,monospace;font-size:10px;padding:5px 10px;border-radius:5px;cursor:pointer;background:rgba(15,15,15,.6);border:1px solid ' + (on ? '#c98a5a' : 'var(--edge)') + ';color:' + (on ? '#e6c3a3' : 'var(--text-2)') + ';'; }
   swatch(colors, on) { return 'width:30px;height:24px;border-radius:5px;cursor:pointer;border:2px solid ' + (on ? '#c98a5a' : 'var(--edge)') + ';background:linear-gradient(' + colors[0] + ',' + colors[1] + ');'; }
 
+  _dl(blob, name) { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 600); }
+  async doSnapshot() {
+    const eng = this._eng; if (!eng || !eng.hasModel()) { this.toast('Load a character first'); return; }
+    try { const blob = await eng.snapshotPNG(); this._dl(blob, (eng.stats().name || 'character') + '.png'); this.toast('Saved snapshot PNG'); }
+    catch (e) { this.toast('Snapshot failed: ' + (e && e.message || e)); }
+  }
+  async doRecord() {
+    const eng = this._eng; if (!eng || !eng.hasModel()) { this.toast('Load a character first'); return; }
+    if (this.state.capBusy) return;
+    this.setState({ capBusy: true, capProg: 0 });
+    try {
+      const blob = await eng.recordTurntable({ seconds: this.state.capSec || 6, fps: 30, onProgress: (p) => this.setState({ capProg: p }) });
+      this._dl(blob, (eng.stats().name || 'character') + '_turntable.webm');
+      this.setState({ capBusy: false, capProg: 0 }); this.toast('Saved turntable WebM');
+    } catch (e) { this.setState({ capBusy: false, capProg: 0 }); this.toast('Recording failed: ' + (e && e.message || e)); }
+  }
+
   renderVals() {
     const st = this.state, eng = this._eng;
     const SA = window.SuggestedActions;
@@ -396,6 +506,60 @@ class Component extends DCLogic {
 
     const scrub = st.duration ? Math.round((st.time / st.duration) * 1000) : 0;
 
+    // ---------- shaders ----------
+    const presets = st.presets || [];
+    const activePreset = presets.find(p => p.id === st.activeShader) || null;
+    const applyPreset = (id) => {
+      const p = presets.find(x => x.id === id); if (!p) return;
+      const defaults = {};
+      (p.params || []).forEach(pr => { defaults[pr.key] = pr.default; });
+      this.setState({ activeShader: id, shaderParams: defaults });
+      if (eng) eng.applyShader(id, defaults, st.shaderTarget);
+    };
+    const presetTile = (p, on) => 'display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:6px;cursor:pointer;font-size:11px;font-weight:600;text-align:left;overflow:hidden;border:1px solid ' + (on ? '#c98a5a' : 'var(--edge)') + ';background:' + (on ? 'rgba(201,138,90,.16)' : 'var(--panel-3)') + ';color:' + (on ? '#e6c3a3' : 'var(--text)') + ';';
+    const swatchStyle = (cols) => 'flex:none;width:20px;height:20px;border-radius:4px;border:1px solid rgba(0,0,0,.25);background:linear-gradient(135deg,' + (cols[0] || '#888') + ',' + (cols[1] || '#444') + ');';
+    const catOrder = [];
+    presets.forEach(p => { if (catOrder.indexOf(p.category) < 0) catOrder.push(p.category); });
+    const presetGroups = catOrder.map(cat => ({
+      cat,
+      items: presets.filter(p => p.category === cat).map(p => ({
+        id: p.id, name: p.name,
+        style: presetTile(p, st.activeShader === p.id),
+        swatchStyle: swatchStyle(p.swatch || []),
+        onClick: () => applyPreset(p.id),
+      })),
+    }));
+    const meshOpts = [{ value: 'all', label: 'All meshes (' + (st.meshes.length || 0) + ')' }]
+      .concat((st.meshes || []).map(m => ({ value: m.uuid, label: (m.name || 'mesh') + ' · ' + (m.tris ? m.tris.toLocaleString() : '0') })));
+    const fmtNum = (v) => (Math.abs(v) >= 10 ? Math.round(v) : (Math.round(v * 100) / 100)).toString();
+    const activeParams = activePreset ? (activePreset.params || []).map(pr => {
+      const cur = st.shaderParams[pr.key] != null ? st.shaderParams[pr.key] : pr.default;
+      const isColor = pr.type === 'color';
+      return {
+        key: pr.key, label: pr.label, isColor, isRange: !isColor,
+        min: pr.min, max: pr.max, step: pr.step, slideVal: cur, value: cur,
+        valLabel: isColor ? String(cur).toUpperCase() : fmtNum(+cur),
+        onInput: (e) => {
+          const v = isColor ? e.target.value : +e.target.value;
+          this.setState(s => ({ shaderParams: Object.assign({}, s.shaderParams, { [pr.key]: v }) }));
+          if (eng) eng.setShaderParam(pr.key, v);
+        },
+      };
+    }) : [];
+    const onShaderTarget = (e) => {
+      const uuid = e.target.value;
+      const active = eng ? eng.activeShaderFor(uuid) : null;
+      let params = {};
+      if (active) { const p = presets.find(x => x.id === active); (p && p.params || []).forEach(pr => { params[pr.key] = pr.default; }); }
+      this.setState({ shaderTarget: uuid, activeShader: active, shaderParams: params });
+    };
+    const surprise = () => {
+      const pool = presets.filter(p => p.id !== st.activeShader);
+      if (!pool.length) return;
+      applyPreset(pool[Math.floor(Math.random() * pool.length)].id);
+    };
+    const removeShader = () => { if (eng) eng.clearShader(st.shaderTarget); this.setState({ activeShader: null, shaderParams: {} }); };
+
     return {
       charName: st.meshName, dotColor: st.hasModel ? 'var(--good)' : 'var(--muted)',
       showSuggest: actionable.length > 0 && st.hasModel && !st.suggestDismiss,
@@ -406,6 +570,16 @@ class Component extends DCLogic {
       suggestChips,
       dismissSuggest: () => this.setState({ suggestDismiss: true }),
       noModel: !st.hasModel && !st.loading, loading: st.loading, loadingMsg: st.loadingMsg,
+      demoShapes: [['knot', 'Torus knot'], ['sphere', 'Sphere'], ['bottle', 'Bottle'], ['torus', 'Torus'], ['blob', 'Blob'], ['cube', 'Cube']]
+        .map(([k, label]) => ({ label, onClick: () => this.loadVia(async () => this._eng.loadDemo(k), 'demo shape') })),
+      shaderNoModel: !st.hasModel,
+      shaderReady: st.hasModel && presets.length > 0,
+      multiMesh: (st.meshes || []).length > 1,
+      shaderTarget: st.shaderTarget, shaderTargetOpts: meshOpts, onShaderTarget,
+      presetGroups,
+      hasActiveShader: !!activePreset,
+      activeShaderName: activePreset ? activePreset.name : '',
+      activeParams, surprise, removeShader,
       modeBadge: st.hasModel ? 'SHOWCASE' : 'OPEN A CHARACTER',
       pickFile: () => document.getElementById('sc-file').click(),
       views,
@@ -432,6 +606,13 @@ class Component extends DCLogic {
       stopAnim: () => { if (eng) { eng.stopAnim(); this.setState({ activeLib: '', blend: 100 }); this.refresh(); } },
       backgrounds,
       envOpts,
+      capSec: st.capSec || 6, capSecLabel: (st.capSec || 6) + 's',
+      onCapSec: (e) => this.setState({ capSec: +e.target.value }),
+      capBusy: !!st.capBusy, capPct: Math.round((st.capProg || 0) * 100) + '%',
+      capBtnLabel: st.capBusy ? ('● Recording ' + Math.round((st.capProg || 0) * 100) + '%') : '◉ Record turntable → WebM',
+      capBtnStyle: 'display:flex;align-items:center;justify-content:center;gap:7px;padding:9px;border-radius:6px;font-size:12px;font-weight:600;width:100%;cursor:' + (st.capBusy ? 'wait' : 'pointer') + ';background:' + (st.capBusy ? 'var(--panel-3)' : 'var(--accent)') + ';border:1px solid ' + (st.capBusy ? 'var(--edge)' : 'var(--accent)') + ';color:' + (st.capBusy ? 'var(--text2)' : '#0d0f1f') + ';',
+      doSnapshot: () => this.doSnapshot(),
+      doRecord: () => this.doRecord(),
       envIntSlide: st.envInt, envIntLabel: (st.envInt / 100).toFixed(2) + '×',
       onEnvInt: (e) => { const v = +e.target.value; this.setState({ envInt: v }); if (eng) eng.setEnvIntensity(v / 100); },
       shadowSlide: st.shadow, shadowLabel: (st.shadow / 100).toFixed(2),

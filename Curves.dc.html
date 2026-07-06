@@ -155,7 +155,8 @@ class Component extends DCLogic {
     root.addEventListener('dragover', e => e.preventDefault());
     root.addEventListener('drop', e => { e.preventDefault(); const f = e.dataTransfer.files && e.dataTransfer.files[0]; if (f) this.loadVia(() => this._eng.loadFile(f), f.name); });
     document.getElementById('cv-file').addEventListener('change', e => { const f = e.target.files[0]; if (f) { this.loadVia(() => this._eng.loadFile(f), f.name); e.target.value = ''; } });
-    window.addEventListener('keydown', e => { if (/input|textarea/i.test((e.target && e.target.tagName) || '')) return; if (e.key === ' ') { e.preventDefault(); if (this._eng) { this._eng.toggle(); this.refresh(); } } });
+    window.addEventListener('keydown', e => { if (/input|textarea/i.test((e.target && e.target.tagName) || '')) return; if ((e.ctrlKey || e.metaKey) && (e.key === 'z' || e.key === 'Z')) { e.preventDefault(); if (this._eng) { if (e.shiftKey) this._eng.redo(); else this._eng.undo(); this.refresh(); } return; }
+      if (e.key === ' ') { e.preventDefault(); if (this._eng) { this._eng.toggle(); this.refresh(); } } });
   }
 
   setupEmbed() {
@@ -163,7 +164,9 @@ class Component extends DCLogic {
     this._embedded = params.get('embed') === '1' || window.parent !== window;
     this._post = (type, payload, transfer) => { try { window.parent && window.parent.postMessage(Object.assign({ __studio: true, type }, payload || {}), '*', transfer || []); } catch (e) {} };
     if (this._embedded) { const hide = () => { const h = document.querySelector('#cv-root > header'); if (h && h.firstElementChild) h.firstElementChild.style.display = 'none'; }; hide(); setTimeout(hide, 60); setTimeout(hide, 300); }
-    window.addEventListener('message', (e) => { const d = e.data; if (!d || !d.__studio) return; if (d.type === 'studio:loadCharUrl') this.loadVia(() => this._eng.loadUrl(d.url, d.ext, { chunked: d.chunked, chunks: d.chunks }), d.label || 'character'); else if (d.type === 'studio:loadCharBuffer') this.loadVia(() => this._eng.loadBuffer(d.buffer, d.name, (d.name || '').split('.').pop()), d.name || 'clip'); });
+    window.addEventListener('message', (e) => { const d = e.data; if (!d || !d.__studio) return;
+      if (d.type === 'studio:undo') { if (this._eng && this._eng.undo()) this.refresh(); return; }
+      if (d.type === 'studio:redo') { if (this._eng && this._eng.redo()) this.refresh(); return; } if (d.type === 'studio:loadCharUrl') this.loadVia(() => this._eng.loadUrl(d.url, d.ext, { chunked: d.chunked, chunks: d.chunks }), d.label || 'character'); else if (d.type === 'studio:loadCharBuffer') this.loadVia(() => this._eng.loadBuffer(d.buffer, d.name, (d.name || '').split('.').pop()), d.name || 'clip'); });
     setTimeout(() => this._post('studio:ready', { tool: 'curves' }), 0);
   }
 

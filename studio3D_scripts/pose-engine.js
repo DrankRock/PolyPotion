@@ -208,6 +208,7 @@ export class PEngine {
       this.selected = h.key; this.controls.enableRotate = false; c.style.cursor = 'grabbing';
       this._paintHandles(); this._changed();
       if (h.type === 'ik') this._beginIK(h, e); else this._beginFK(h, e);
+      this.pushUndo();
     });
     window.addEventListener('pointerup', () => { if (this._drag) { this._drag = null; this.controls.enableRotate = true; this.canvas.style.cursor = 'default'; this._changed(); } });
   }
@@ -307,6 +308,13 @@ export class PEngine {
   }
 
   // ---------------------------------------------------------- POSE OPS
+  // snapshot-based undo: capture every posed bone's local quaternion
+  _snapshot() { const m = new Map(); this.restQ.forEach((q, bone) => m.set(bone, bone.quaternion.clone())); return m; }
+  _applySnap(m) { if (!m) return; m.forEach((q, bone) => bone.quaternion.copy(q)); if (this.model) this.model.updateMatrixWorld(true); this.selected = null; this._paintHandles(); this._changed(); }
+  pushUndo() { if (!this.model) return; this._undo = this._undo || []; this._undo.push(this._snapshot()); if (this._undo.length > 40) this._undo.shift(); this._redo = []; }
+  undo() { if (!this._undo || !this._undo.length) return false; this._redo = this._redo || []; this._redo.push(this._snapshot()); this._applySnap(this._undo.pop()); return true; }
+  redo() { if (!this._redo || !this._redo.length) return false; this._undo = this._undo || []; this._undo.push(this._snapshot()); this._applySnap(this._redo.pop()); return true; }
+
   resetPose() {
     this.restQ.forEach((q, bone) => bone.quaternion.copy(q));
     if (this.model) this.model.updateMatrixWorld(true);
@@ -343,6 +351,7 @@ export class PEngine {
   }
   applyPreset(name) {
     const P = POSES[name]; if (!P) return;
+    this.pushUndo();
     // start from bind, then aim each limb segment in order (parent before child)
     this.restQ.forEach((q, bone) => bone.quaternion.copy(q));
     if (this.model) this.model.updateMatrixWorld(true);
@@ -357,6 +366,7 @@ export class PEngine {
   // Returns { applied } so callers can tell how much of the spec matched this rig.
   applyAimList(aim) {
     if (!this.model) return { applied: 0 };
+    this.pushUndo();
     this.restQ.forEach((q, bone) => bone.quaternion.copy(q));
     this.model.updateMatrixWorld(true);
     let applied = 0;

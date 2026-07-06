@@ -375,7 +375,7 @@ export class SCEngine {
   _dab(P, type, invert, sx) {
     const r = this.worldRadius(), r2 = r * r;
     const vp = this.vpos, vn = this.vnrm, msk = this.mask, n = this.nUnique;
-    const str = this.strength;
+    const str = this.strength * ((this._lastE && this._lastE.pointerType === 'pen' && this._lastE.pressure > 0) ? Math.max(0.05, this._lastE.pressure) : 1);
     // gather affected
     const idx = []; const wts = [];
     for (let i = 0; i < n; i++) {

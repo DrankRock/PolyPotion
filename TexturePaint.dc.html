@@ -353,6 +353,8 @@ class Component extends DCLogic {
     if (this._embedded) { const hide = () => { const h = document.querySelector('#tp-root > header'); if (h && h.firstElementChild) h.firstElementChild.style.display = 'none'; }; hide(); setTimeout(hide, 60); setTimeout(hide, 300); }
     window.addEventListener('message', (e) => {
       const d = e.data; if (!d || !d.__studio) return;
+      if (d.type === 'studio:undo') { if (this._eng) this._eng.undo(); return; }
+      if (d.type === 'studio:redo') { if (this._eng) this._eng.redo(); return; }
       if (d.type === 'studio:loadCharUrl') this.loadVia(() => this._eng.loadUrl(d.url, d.ext, { chunked: d.chunked, chunks: d.chunks }), d.label || 'character');
       else if (d.type === 'studio:loadCharBuffer') this.loadVia(() => this._eng.loadBuffer(d.buffer, d.name, (d.name || '').split('.').pop()), d.name || 'mesh');
     });

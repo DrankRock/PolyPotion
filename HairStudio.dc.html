@@ -150,13 +150,19 @@
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
         {{ exportLabel }}
       </button>
+      <sc-if value="{{ embedded }}" hint-placeholder-val="{{ false }}">
+        <button onClick="{{ sendToStudio }}" style="display:flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:14px;margin-top:8px;cursor:pointer;background:#ff4f00;color:#fff;border:none;font:700 12px 'Space Grotesk';letter-spacing:.08em">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg>
+          {{ sendLabel }}
+        </button>
+      </sc-if>
     </div>
   </aside>
 </div>
 </x-dc>
 <script type="text/x-dc" data-dc-script>
 class Component extends DCLogic {
-  state = { style: 1, color: 1, density: 1.0, length: 1.0, fly: true, rotate: true, loading: true, exporting: false, cards: 0 };
+  state = { style: 1, color: 1, density: 1.0, length: 1.0, fly: true, rotate: true, loading: true, exporting: false, cards: 0, sending: false, embedded: false };
 
   STYLES = [
     { name: 'Short Crop', tag: 'buzz / fade' },
@@ -190,7 +196,31 @@ class Component extends DCLogic {
     this.animate();
     this.ro = new ResizeObserver(() => this.resize()); this.ro.observe(this.viewportEl);
     this.setState({ loading: false });
+    this.setupBridge();
   }
+
+  setupBridge() {
+    const params = new URLSearchParams(location.search);
+    const embedded = params.get('embed') === '1' || window.parent !== window;
+    this._post = (type, payload, transfer) => { try { window.parent && window.parent.postMessage(Object.assign({ __studio: true, type }, payload || {}), '*', transfer || []); } catch (e) {} };
+    this.setState({ embedded });
+    setTimeout(() => this._post('studio:ready', { tool: 'hairstudio' }), 0);
+  }
+
+  sendToStudio = async () => {
+    if (this.state.sending || !this.hair) return;
+    this.setState({ sending: true });
+    try {
+      const { GLTFExporter } = await import('https://esm.sh/three@0.160.0/examples/jsm/exporters/GLTFExporter.js');
+      const grp = new this.T.Group(); grp.add(this.hair.clone());
+      new GLTFExporter().parse(grp, (buf) => {
+        const ab = buf instanceof ArrayBuffer ? buf : new Uint8Array(buf).buffer;
+        const name = 'hair_' + this.STYLES[this.state.style].name.toLowerCase().replace(/ /g, '') + '.glb';
+        this._post('studio:saveChar', { buffer: ab, name, goto: 'showcase' }, [ab]);
+        this.setState({ sending: false });
+      }, (err) => { console.error(err); this.setState({ sending: false }); }, { binary: true });
+    } catch (e) { console.error(e); this.setState({ sending: false }); }
+  };
   componentWillUnmount() {
     cancelAnimationFrame(this.raf);
     if (this.ro) this.ro.disconnect();
@@ -522,6 +552,7 @@ class Component extends DCLogic {
       toggleFly: this.toggleFly,
       flyTrack: st.fly ? acc : 'rgba(20,18,12,0.22)', flyKnob: st.fly ? '20px' : '2px',
       exportGLB: this.exportGLB, exportLabel: st.exporting ? 'EXPORTING…' : 'EXPORT · GLB',
+      embedded: st.embedded, sendToStudio: this.sendToStudio, sendLabel: st.sending ? 'SENDING…' : 'USE IN STUDIO',
       toggleRotate: this.toggleRotate, rotateLabel: st.rotate ? 'SPIN' : 'STATIC',
       rotateColor: st.rotate ? acc : ink,
       rotateBg: '#e0dcd4',

@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<script src="theme.js"></script>
+<style>
+  html{scroll-behavior:smooth;}
+  html,body{margin:0;padding:0;background:var(--bg);}
+  *{box-sizing:border-box;}
+  #tc ::-webkit-scrollbar{width:10px;height:10px;}
+  #tc ::-webkit-scrollbar-track{background:var(--gutter);}
+  #tc ::-webkit-scrollbar-thumb{background:var(--edge);border:2px solid var(--gutter);border-radius:6px;}
+  #tc section[id]{scroll-margin-top:22px;}
+  #tc a{color:inherit;}
+  #tc pre{margin:0;overflow-x:auto;}
+</style>
+</helmet>
+
+<div id="tc" style="display:flex;align-items:flex-start;min-height:100vh;width:100%;background:var(--bg);color:var(--text);font-family:var(--font-ui);font-size:14px;line-height:1.65;-webkit-font-smoothing:antialiased;">
+
+  <!-- SIDEBAR -->
+  <aside style="position:sticky;top:0;height:100vh;width:250px;flex:none;background:var(--panel);border-right:1px solid var(--seam);overflow-y:auto;padding:20px 14px 40px;">
+    <div style="display:flex;align-items:center;gap:9px;padding:0 6px 14px;">
+      <div style="width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--accent),var(--wood-dark));color:var(--on-accent);font-weight:700;font-size:15px;">⊞</div>
+      <div>
+        <div style="font-weight:700;letter-spacing:.05em;font-size:13px;">TOOL CONTRACT</div>
+        <div style="font-family:var(--font-mono);font-size:9px;color:var(--muted);letter-spacing:.12em;">BUILD A POLYPOTION MODULE</div>
+      </div>
+    </div>
+    <a href="#intro" style="display:block;padding:7px 9px;border-radius:6px;font-size:12.5px;font-weight:600;color:var(--text);text-decoration:none;margin-bottom:1px;">Overview</a>
+    <a href="#lifecycle" style="display:block;padding:7px 9px;border-radius:6px;font-size:12.5px;color:var(--muted);text-decoration:none;margin-bottom:1px;">The iframe lifecycle</a>
+    <a href="#shell-to-tool" style="display:block;padding:7px 9px;border-radius:6px;font-size:12.5px;color:var(--muted);text-decoration:none;margin-bottom:1px;">Shell → tool messages</a>
+    <a href="#tool-to-shell" style="display:block;padding:7px 9px;border-radius:6px;font-size:12.5px;color:var(--muted);text-decoration:none;margin-bottom:1px;">Tool → shell messages</a>
+    <a href="#hello" style="display:block;padding:7px 9px;border-radius:6px;font-size:12.5px;color:var(--muted);text-decoration:none;margin-bottom:1px;">Hello Tool template</a>
+    <a href="#register" style="display:block;padding:7px 9px;border-radius:6px;font-size:12.5px;color:var(--muted);text-decoration:none;margin-bottom:1px;">Register it in the shell</a>
+    <a href="#rules" style="display:block;padding:7px 9px;border-radius:6px;font-size:12.5px;color:var(--muted);text-decoration:none;margin-bottom:1px;">Rules &amp; good manners</a>
+    <div style="margin-top:16px;padding:10px 9px;font-size:11px;line-height:1.6;color:var(--muted);border-top:1px solid var(--seam);">Every tool is a standalone page the shell hosts in an iframe. Talk to the shell with one tiny <span style="font-family:var(--font-mono);">postMessage</span> protocol — that's the whole contract.</div>
+    <a href="index.html" style="display:block;margin-top:14px;padding:8px 10px;border:1px solid var(--seam);border-radius:8px;font-size:12px;font-weight:700;color:var(--accent);text-decoration:none;text-align:center;">← Back to Studio</a>
+  </aside>
+
+  <!-- MAIN -->
+  <main id="tc-main" style="flex:1;min-width:0;max-width:880px;padding:40px 56px 140px;">
+
+    <header style="margin-bottom:8px;">
+      <div style="font-family:var(--font-mono);font-size:11px;letter-spacing:.14em;color:var(--accent);margin-bottom:10px;">CONTRIBUTOR GUIDE · CLIENT-SIDE · NO BUILD STEP</div>
+      <h1 style="font-size:34px;font-weight:700;letter-spacing:-.01em;margin:0 0 14px;">Build a tool for PolyPotion</h1>
+      <p style="font-size:16px;color:var(--text-2);margin:0;max-width:680px;">A tool is just an HTML page. The shell mounts it in an iframe, and the two talk over a small set of <span style="font-family:var(--font-mono);">postMessage</span> events — every one tagged <span style="font-family:var(--font-mono);">{ __studio: true }</span>. Learn these events and your tool joins the dock, receives the active character, and hands results to the rest of the pipeline. No framework, no bundler, no server.</p>
+    </header>
+
+    <section id="intro" data-doc style="padding:26px 0 6px;">
+      <div style="display:flex;gap:12px;flex-wrap:wrap;">
+        <div style="flex:1;min-width:210px;padding:15px 17px;border:1px solid var(--seam);border-radius:11px;background:var(--panel);">
+          <div style="font-weight:700;margin-bottom:5px;">1 · It's your page</div>
+          <div style="font-size:13px;color:var(--text-2);">Any HTML/JS/WebGL. The shell never reaches inside — it only sends and receives messages.</div>
+        </div>
+        <div style="flex:1;min-width:210px;padding:15px 17px;border:1px solid var(--seam);border-radius:11px;background:var(--panel);">
+          <div style="font-weight:700;margin-bottom:5px;">2 · One handshake</div>
+          <div style="font-size:13px;color:var(--text-2);">Post <span style="font-family:var(--font-mono);">studio:ready</span> once you can accept a mesh. The shell flushes whatever was queued for you.</div>
+        </div>
+        <div style="flex:1;min-width:210px;padding:15px 17px;border:1px solid var(--seam);border-radius:11px;background:var(--panel);">
+          <div style="font-weight:700;margin-bottom:5px;">3 · Characters flow</div>
+          <div style="font-size:13px;color:var(--text-2);">Receive the active character; hand your result on with <span style="font-family:var(--font-mono);">saveChar</span> or <span style="font-family:var(--font-mono);">routeBuffer</span>.</div>
+        </div>
+      </div>
+    </section>
+
+    <section id="lifecycle" data-doc style="padding:34px 0 6px;border-top:1px solid var(--seam);margin-top:26px;">
+      <h2 style="font-size:22px;font-weight:700;margin:0 0 10px;">The iframe lifecycle</h2>
+      <ol style="margin:0;padding-left:20px;color:var(--text-2);font-size:14px;line-height:1.85;">
+        <li>The shell lazily creates <span style="font-family:var(--font-mono);">&lt;iframe src="YourTool.dc.html?embed=1"&gt;</span> the first time the user opens your tool.</li>
+        <li>Your page boots. Detect embedding with <span style="font-family:var(--font-mono);">window.parent !== window</span> (or the <span style="font-family:var(--font-mono);">?embed=1</span> flag) and hide your own top-bar chrome so it sits flush in the shell.</li>
+        <li>When your engine is ready to accept a mesh, post <span style="font-family:var(--font-mono);">studio:ready</span>. The shell hides your loader and flushes any pending character delivery.</li>
+        <li>The shell may deliver the active character <b>more than once</b> (first visit, and again if your frame was reclaimed to save GPU memory). Handle every <span style="font-family:var(--font-mono);">loadChar*</span> idempotently.</li>
+        <li>Idle, off-screen frames can be <b>evicted</b> (WebGL contexts are capped). Keep important state in messages you've sent back, not only in the frame — the shell re-delivers the active character on reopen.</li>
+      </ol>
+    </section>
+
+    <section id="shell-to-tool" data-doc style="padding:34px 0 6px;border-top:1px solid var(--seam);margin-top:26px;">
+      <h2 style="font-size:22px;font-weight:700;margin:0 0 6px;">Messages the shell sends you</h2>
+      <p style="color:var(--text-2);margin:0 0 16px;">Listen on <span style="font-family:var(--font-mono);">window</span>; ignore anything without <span style="font-family:var(--font-mono);">__studio</span>.</p>
+      <div id="tc-in" style="display:flex;flex-direction:column;gap:9px;"></div>
+    </section>
+
+    <section id="tool-to-shell" data-doc style="padding:34px 0 6px;border-top:1px solid var(--seam);margin-top:26px;">
+      <h2 style="font-size:22px;font-weight:700;margin:0 0 6px;">Messages you send the shell</h2>
+      <p style="color:var(--text-2);margin:0 0 16px;"><span style="font-family:var(--font-mono);">window.parent.postMessage(msg, '*', transfer)</span> — pass big ArrayBuffers in the transfer list so they move, not copy.</p>
+      <div id="tc-out" style="display:flex;flex-direction:column;gap:9px;"></div>
+    </section>
+
+    <section id="hello" data-doc style="padding:34px 0 6px;border-top:1px solid var(--seam);margin-top:26px;">
+      <h2 style="font-size:22px;font-weight:700;margin:0 0 6px;">Hello Tool — copy, paste, ship</h2>
+      <p style="color:var(--text-2);margin:0 0 14px;">The smallest complete tool: it handshakes, receives a character, and can hand a result back. Save as <span style="font-family:var(--font-mono);">HelloTool.dc.html</span>.</p>
+      <pre id="code-hello" style="background:var(--panel);border:1px solid var(--seam);border-radius:11px;padding:16px 18px;font-family:var(--font-mono);font-size:12px;line-height:1.6;color:var(--text);"></pre>
+    </section>
+
+    <section id="register" data-doc style="padding:34px 0 6px;border-top:1px solid var(--seam);margin-top:26px;">
+      <h2 style="font-size:22px;font-weight:700;margin:0 0 6px;">Register it in the shell</h2>
+      <p style="color:var(--text-2);margin:0 0 14px;">Four small edits in <span style="font-family:var(--font-mono);">index.html</span> and your tool is in the dock, the command palette, and the character flow.</p>
+      <pre id="code-reg" style="background:var(--panel);border:1px solid var(--seam);border-radius:11px;padding:16px 18px;font-family:var(--font-mono);font-size:12px;line-height:1.6;color:var(--text);"></pre>
+      <p style="color:var(--muted);font-size:12.5px;margin:12px 0 0;">Add your tool's filename to the <span style="font-family:var(--font-mono);">CORE</span> list in <span style="font-family:var(--font-mono);">sw.js</span> too, so it's precached for offline use.</p>
+    </section>
+
+    <section id="rules" data-doc style="padding:34px 0 6px;border-top:1px solid var(--seam);margin-top:26px;">
+      <h2 style="font-size:22px;font-weight:700;margin:0 0 12px;">Rules &amp; good manners</h2>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div style="padding:14px 16px;border:1px solid var(--seam);border-radius:10px;background:var(--panel);"><div style="font-weight:700;margin-bottom:4px;">Speak GLB</div><div style="font-size:12.5px;color:var(--text-2);">Accept and emit binary glTF (.glb) as ArrayBuffers — the shell's lingua franca. Parse with three's GLTFLoader.</div></div>
+        <div style="padding:14px 16px;border:1px solid var(--seam);border-radius:10px;background:var(--panel);"><div style="font-weight:700;margin-bottom:4px;">Transfer, don't copy</div><div style="font-size:12.5px;color:var(--text-2);">Put buffers in the transfer list. A 40 MB character copied per hop adds up fast.</div></div>
+        <div style="padding:14px 16px;border:1px solid var(--seam);border-radius:10px;background:var(--panel);"><div style="font-weight:700;margin-bottom:4px;">Stay local</div><div style="font-size:12.5px;color:var(--text-2);">No uploads. Anything networked (an AI helper, a CDN model) must be opt-in and clearly labelled — it's the promise users came for.</div></div>
+        <div style="padding:14px 16px;border:1px solid var(--seam);border-radius:10px;background:var(--panel);"><div style="font-weight:700;margin-bottom:4px;">Follow the theme</div><div style="font-size:12.5px;color:var(--text-2);">Load <span style="font-family:var(--font-mono);">theme.js</span> and use its CSS variables so your tool restyles with the rest.</div></div>
+        <div style="padding:14px 16px;border:1px solid var(--seam);border-radius:10px;background:var(--panel);"><div style="font-weight:700;margin-bottom:4px;">Report errors</div><div style="font-size:12.5px;color:var(--text-2);">Send <span style="font-family:var(--font-mono);">studio:error</span> so the shell can surface a toast instead of failing silently.</div></div>
+        <div style="padding:14px 16px;border:1px solid var(--seam);border-radius:10px;background:var(--panel);"><div style="font-weight:700;margin-bottom:4px;">Survive re-delivery</div><div style="font-size:12.5px;color:var(--text-2);">Loading the same character twice must be safe — clear your scene first.</div></div>
+      </div>
+    </section>
+
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  componentDidMount() {
+    this.buildMessageRows();
+    this.injectCode();
+    this._io = new IntersectionObserver((entries) => {
+      entries.forEach(e => { if (e.isIntersecting) this.highlight(e.target.id); });
+    }, { rootMargin: '-6% 0px -80% 0px' });
+    setTimeout(() => document.querySelectorAll('#tc-main section[id]').forEach(s => this._io.observe(s)), 60);
+  }
+  componentWillUnmount() { if (this._io) this._io.disconnect(); }
+
+  highlight(id) {
+    document.querySelectorAll('#tc aside a[href^="#"]').forEach(a => {
+      const on = a.getAttribute('href') === '#' + id;
+      a.style.color = on ? 'var(--text)' : 'var(--muted)';
+      a.style.background = on ? 'var(--accent-dim)' : 'transparent';
+      a.style.fontWeight = on ? '600' : '400';
+    });
+  }
+
+  msgRow(name, payload, desc) {
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'border:1px solid var(--seam);border-radius:10px;background:var(--panel);padding:12px 15px;';
+    const tag = document.createElement('div');
+    tag.style.cssText = 'display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:5px;';
+    tag.innerHTML = '<span style="font-family:var(--font-mono);font-size:13px;font-weight:700;color:var(--accent);">' + name + '</span>'
+      + '<span style="font-family:var(--font-mono);font-size:11px;color:var(--muted);">' + payload + '</span>';
+    const d = document.createElement('div');
+    d.style.cssText = 'font-size:13px;color:var(--text-2);line-height:1.55;';
+    d.textContent = desc;
+    wrap.appendChild(tag); wrap.appendChild(d);
+    return wrap;
+  }
+
+  buildMessageRows() {
+    const inRows = [
+      ['studio:loadCharUrl', '{ url, label, ext, chunked?, chunks? }', 'Load the active character from a library URL. Use the chunk-loader helper if chunked is set.'],
+      ['studio:loadCharBuffer', '{ buffer, name }  ·  buffer transferred', 'Load the active character straight from an in-memory GLB ArrayBuffer (a session or handed-off mesh).'],
+      ['studio:loadUrl', '{ url, name, chunked?, chunks? }', 'Rig-style raw load (unrigged source mesh). Only the Rig tool needs this variant.'],
+      ['studio:animLibrary', '{ animations: [...] }', 'The current clip library (Showcase uses it to offer clips to play).'],
+      ['studio:playAnim', '{ anim }', 'Retarget + play a specific clip on the loaded character (Showcase).'],
+      ['studio:setVideoUrl', '{ url, label, ext }', 'Set a motion source for capture/retarget (MoCap).'],
+      ['studio:getRiggedGLB', '{ name }', 'Asks the Rig tool to bake and return the rigged GLB (answered with studio:riggedGLB).'],
+      ['studio:cmd', '{ cmd }', 'Tool-specific command channel (e.g. Physics: cloth / flag / drape / toggleSim / flick).'],
+    ];
+    const outRows = [
+      ['studio:ready', '{ tool }', 'You are mounted and can accept a mesh. Send once; the shell then flushes any queued delivery.'],
+      ['studio:saveChar', '{ buffer, name, goto? }  ·  transfer buffer', 'Add a new character to the library, make it active, and (optionally) jump to a tool. Generators use this.'],
+      ['studio:routeBuffer', '{ tool, buffer, name }  ·  transfer buffer', 'Hand your current mesh straight to another tool (e.g. UV to Decimate, Weight Paint to Pose).'],
+      ['studio:riggedGLB', '{ name, buffer }  ·  transfer buffer', 'The baked rigged character (Rig answers getRiggedGLB with this; shell forwards to MoCap).'],
+      ['studio:goTool', '{ tool }', 'Ask the shell to switch to another tool.'],
+      ['studio:error', '{ tool, message }', 'Something went wrong — the shell shows a toast.'],
+      ['studio:loaded / studio:bound / studio:charLoaded', '{ name?, bones? }', 'Progress signals the shell uses to update the status bar and enable handoff (mostly Rig).'],
+    ];
+    const inWrap = document.getElementById('tc-in'); inRows.forEach(r => inWrap.appendChild(this.msgRow(r[0], r[1], r[2])));
+    const outWrap = document.getElementById('tc-out'); outRows.forEach(r => outWrap.appendChild(this.msgRow(r[0], r[1], r[2])));
+  }
+
+  injectCode() {
+    const OPEN_DC = '<x-' + 'dc>';
+    const CLOSE_DC = '<' + '/x-dc>';
+    const OPEN = '<' + 'script type="text/x-dc" data-dc-script>';
+    const CLOSE = '<' + '/script>';
+    const hello = [
+      '<!-- HelloTool.dc.html — a minimal PolyPotion tool -->',
+      OPEN_DC,
+      '  <div style="height:100vh;display:flex;align-items:center;justify-content:center">',
+      '    <canvas id="gl" style="position:absolute;inset:0"></canvas>',
+      '    <div id="hint">Open a character from the Library…</div>',
+      '  </div>',
+      CLOSE_DC,
+      OPEN,
+      'class Component extends DCLogic {',
+      '  componentDidMount() {',
+      '    // 1 · bridge to the shell (every message is tagged __studio)',
+      '    this.post = (type, data, transfer) => window.parent.postMessage(',
+      '      Object.assign({ __studio: true, type }, data || {}), "*", transfer || []);',
+      '',
+      '    // 2 · hide our own chrome when embedded',
+      '    this.embedded = window.parent !== window;',
+      '',
+      '    // 3 · receive the active character (may arrive more than once)',
+      '    window.addEventListener("message", (e) => {',
+      '      const d = e.data; if (!d || !d.__studio) return;',
+      '      if (d.type === "studio:loadCharBuffer") this.load(d.buffer, d.name);',
+      '      else if (d.type === "studio:loadCharUrl") this.loadUrl(d.url, d.ext);',
+      '    });',
+      '',
+      '    // 4 · announce readiness — the shell flushes any queued character',
+      '    this.post("studio:ready", { tool: "hello" });',
+      '  }',
+      '',
+      '  load(buffer, name) { /* clear scene, parse the GLB ArrayBuffer, show it */ }',
+      '  loadUrl(url, ext)  { /* fetch(url) then arrayBuffer then this.load(...) */ }',
+      '',
+      '  // hand your finished mesh back to the library (or another tool):',
+      '  done(glb, name) {',
+      '    this.post("studio:saveChar", { buffer: glb, name, goto: "showcase" }, [glb]);',
+      '  }',
+      '}',
+      CLOSE,
+    ].join('\n');
+
+    const reg = [
+      '// 1 · TOOLS map (index.html)',
+      "hello: { src: 'HelloTool.dc.html?embed=1', frame: null, ready: false, label: 'Hello' },",
+      '',
+      '// 2 · dock button',
+      '<div class="dock-item" data-tool="hello"><span class="ic">\u2606</span><span class="lb">Hello</span></div>',
+      '',
+      '// 3 · stage pane',
+      '<div class="tool-pane" id="pane-hello">',
+      '  <div class="tool-loading" id="load-hello"><div class="ring"></div><div>Loading Hello…</div></div>',
+      '</div>',
+      '',
+      '// 4 · let the active character auto-follow into your tool',
+      "const CHAR_TOOLS = [ /* … */ , 'hello' ];",
+    ].join('\n');
+
+    const h = document.getElementById('code-hello'); if (h) h.textContent = hello;
+    const r = document.getElementById('code-reg'); if (r) r.textContent = reg;
+  }
+
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
