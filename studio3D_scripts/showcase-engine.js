@@ -286,6 +286,7 @@ export class SCEngine {
       this._shaderEntries.forEach(e => { try { e.material && e.material.dispose && e.material.dispose(); } catch (_) {} });
     }
     this._shaderEntries = [];
+    this._hasBaked = false; this._bakedMaps = [];
     if (this.model) { this.wrap.remove(this.model); this.model.traverse(o => { if (o.isMesh) { o.geometry && o.geometry.dispose(); } }); }
     this.model = null; this.clips = []; this.actions = []; this.activeAction = null;
     this.skeleton = null; this.hasSkeleton = false; this.boneCount = 0; this.tris = 0;
@@ -848,6 +849,145 @@ export class SCEngine {
       }
     }
     this._changed && this._changed();
+  }
+
+  // ---------- bake shader → texture ----------
+  // Freeze the CURRENT look of a live shader (this exact frame — same u_time,
+  // params, pose and viewing angle) into a UV-space texture, then swap the mesh
+  // to an UNLIT material carrying that texture. The result exports as a plain
+  // glTF that renders identically in any engine — no custom GLSL required.
+  //
+  // How: we reuse the shader's OWN vertex+fragment source and shared uniforms,
+  // but rewrite the vertex shader's final line so gl_Position lands each vertex
+  // at its UV coordinate (clip space). The fragment shader is untouched, so every
+  // texel receives the shader's real output for that surface point. A second
+  // 1.0-everywhere pass gives a coverage mask we dilate to kill UV seams.
+  _dilateBuf(buf, mask, res, passes) {
+    for (let pass = 0; pass < (passes || 4); pass++) {
+      const add = [];
+      for (let y = 0; y < res; y++) for (let x = 0; x < res; x++) {
+        const idx = y * res + x; if (mask[idx]) continue;
+        let r = 0, g = 0, b = 0, a = 0, c = 0;
+        for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+          const nx = x + dx, ny = y + dy; if (nx < 0 || ny < 0 || nx >= res || ny >= res) continue;
+          const ni = ny * res + nx; if (mask[ni] === 1) { r += buf[ni * 4]; g += buf[ni * 4 + 1]; b += buf[ni * 4 + 2]; a += buf[ni * 4 + 3]; c++; }
+        }
+        if (c) add.push([idx, r / c, g / c, b / c, a / c]);
+      }
+      for (const [idx, r, g, b, a] of add) { buf[idx * 4] = r; buf[idx * 4 + 1] = g; buf[idx * 4 + 2] = b; buf[idx * 4 + 3] = a; mask[idx] = 1; }
+      if (!add.length) break;
+    }
+  }
+
+  _bakeOneEntry(entry, res) {
+    const mesh = entry.mesh;
+    if (!mesh.geometry.getAttribute('uv')) throw new Error((mesh.name || 'A mesh') + ' has no UVs — unwrap it in the UV tool first.');
+    const src = entry.material;
+    const patchedVert = src.vertexShader.replace(
+      'gl_Position = projectionMatrix * viewMatrix * wp;',
+      'gl_Position = vec4(uv * 2.0 - 1.0, 0.0, 1.0);');
+    const common = { uniforms: src.uniforms, vertexShader: patchedVert, side: THREE.DoubleSide, transparent: false, blending: THREE.NoBlending, depthTest: false, depthWrite: false };
+    const bakeMat = new THREE.ShaderMaterial(Object.assign({}, common, { fragmentShader: src.fragmentShader }));
+    const maskMat = new THREE.ShaderMaterial(Object.assign({}, common, { fragmentShader: 'void main(){ gl_FragColor = vec4(1.0); }' }));
+
+    const rt = new THREE.WebGLRenderTarget(res, res, { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, format: THREE.RGBAFormat, type: THREE.UnsignedByteType });
+    const renderer = this.renderer;
+    const prevRT = renderer.getRenderTarget();
+    const prevBg = this.scene.background;
+    const prevClear = renderer.getClearColor(new THREE.Color()); const prevClearA = renderer.getClearAlpha();
+    const prevMat = mesh.material, prevCull = mesh.frustumCulled;
+
+    // isolate: hide everything except this mesh, keep it in-place so its world
+    // matrix, skinning and pose are exactly what the viewport shows
+    const hidden = [];
+    this.scene.traverse(o => { if (o !== mesh && o.visible && (o.isMesh || o.isLine || o.isPoints || o.isSprite)) { o.visible = false; hidden.push(o); } });
+    this.scene.background = null;
+    mesh.frustumCulled = false;
+    renderer.setClearColor(0x000000, 0);
+
+    const color = new Uint8Array(res * res * 4);
+    const maskPx = new Uint8Array(res * res * 4);
+    try {
+      mesh.material = bakeMat;
+      renderer.setRenderTarget(rt); renderer.clear(); renderer.render(this.scene, this.camera);
+      renderer.readRenderTargetPixels(rt, 0, 0, res, res, color);
+      mesh.material = maskMat;
+      renderer.clear(); renderer.render(this.scene, this.camera);
+      renderer.readRenderTargetPixels(rt, 0, 0, res, res, maskPx);
+    } finally {
+      mesh.material = prevMat; mesh.frustumCulled = prevCull;
+      hidden.forEach(o => o.visible = true);
+      this.scene.background = prevBg;
+      renderer.setRenderTarget(prevRT);
+      renderer.setClearColor(prevClear, prevClearA);
+      rt.dispose(); bakeMat.dispose(); maskMat.dispose();
+    }
+
+    const N = res * res;
+    const mask = new Uint8Array(N);
+    for (let i = 0; i < N; i++) mask[i] = maskPx[i * 4] > 8 ? 1 : 0;
+    this._dilateBuf(color, mask, res, 8);
+    // GL reads bottom-up; write top-down so CanvasTexture's default flipY samples correctly
+    const flipped = new Uint8ClampedArray(N * 4);
+    const row = res * 4;
+    for (let y = 0; y < res; y++) { const s = (res - 1 - y) * row; flipped.set(color.subarray(s, s + row), y * row); }
+    const cv = document.createElement('canvas'); cv.width = cv.height = res;
+    cv.getContext('2d').putImageData(new ImageData(flipped, res, res), 0, 0);
+    const tex = new THREE.CanvasTexture(cv); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 4; tex.needsUpdate = true;
+    return { tex, canvas: cv, transparent: !!src.transparent };
+  }
+
+  // Bake the active shader(s) into texture(s) and freeze the mesh to an unlit look.
+  bakeShaderToTexture(opts) {
+    opts = opts || {};
+    const res = opts.res || 1024;
+    const target = opts.target || 'all';
+    const entries = this._shaderEntries.filter(e => e.kind !== 'physical' && (target === 'all' || e.mesh.uuid === target));
+    if (!entries.length) throw new Error('Apply a shader first, then bake its current look.');
+    const baked = [];
+    for (const e of entries) {
+      const out = this._bakeOneEntry(e, res);
+      const mat = new THREE.MeshBasicMaterial({ map: out.tex, side: THREE.DoubleSide, transparent: out.transparent, alphaTest: out.transparent ? 0.02 : 0 });
+      mat.toneMapped = false;
+      e.mesh.userData._bakedMat = mat;
+      e.mesh.userData._bakedCanvas = out.canvas;
+      e.mesh.material = mat;
+      baked.push({ uuid: e.mesh.uuid, name: e.mesh.name || 'shader', canvas: out.canvas });
+    }
+    // drop the live entries — the look is now frozen in the texture
+    for (const e of entries.slice()) this._removeEntry(e.mesh);
+    this._bakedMaps = baked;
+    this._hasBaked = true;
+    this._changed && this._changed();
+    return { count: baked.length, res };
+  }
+
+  hasBakedShader() { return !!this._hasBaked; }
+  bakedMaps() { return this._bakedMaps || []; }
+
+  revertBaked() {
+    if (!this.model) return;
+    this.model.traverse(o => {
+      if (o.userData && o.userData._bakedMat) {
+        if (o.userData._origMat) o.material = o.userData._origMat;
+        try { o.userData._bakedMat.map && o.userData._bakedMat.map.dispose(); o.userData._bakedMat.dispose(); } catch (_) {}
+        delete o.userData._bakedMat; delete o.userData._bakedCanvas;
+      }
+    });
+    this._hasBaked = false; this._bakedMaps = [];
+    this.setWire(this.wire); this._applyEnvIntensity();
+    this._changed && this._changed();
+  }
+
+  // Export the model (with baked unlit textures) as a .glb — loads in any engine.
+  async exportBakedGLB() {
+    if (!this._hasBaked || !this.model) throw new Error('Bake a shader first.');
+    const { GLTFExporter } = await import('https://esm.sh/three@0.160.0/examples/jsm/exporters/GLTFExporter.js');
+    const exporter = new GLTFExporter();
+    const out = await new Promise((res, rej) => exporter.parse(this.model, res, rej, {
+      binary: true, onlyVisible: false, embedImages: true, animations: this.clips || [],
+    }));
+    return new Blob([out], { type: 'model/gltf-binary' });
   }
 
   // ---------- gravity liquids ----------

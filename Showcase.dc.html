@@ -213,6 +213,43 @@
         </div>
       </div>
 
+      <!-- bake shader → asset -->
+      <div style="border-bottom:1px solid var(--seam);">
+        <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--header);border-bottom:1px solid var(--seam);">
+          <span style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);">Bake to asset</span>
+          <sc-if value="{{ baked }}" hint-placeholder-val="{{ false }}">
+            <span style="margin-left:auto;font-family:var(--font-mono);font-size:9px;letter-spacing:.1em;color:#8fd3a0;text-transform:uppercase;">baked · frozen</span>
+          </sc-if>
+        </div>
+        <div style="padding:11px 12px;display:flex;flex-direction:column;gap:11px;">
+
+          <sc-if value="{{ bakeHint }}" hint-placeholder-val="{{ true }}">
+            <div style="font-size:11px;color:var(--text2);line-height:1.5;">Apply a shader above, then bake its <b>current frame</b> — this exact look, pose and angle — into a UV texture. The mesh freezes to an unlit material you can export as a <b>.glb</b> that renders the same in any engine, no custom shader needed. Needs UVs (unwrap in the UV tool first).</div>
+          </sc-if>
+
+          <sc-if value="{{ canBake }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;flex-direction:column;gap:10px;">
+              <div>
+                <div style="font-size:10.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:7px;">Texture size</div>
+                <div style="display:flex;gap:6px;">
+                  <sc-for list="{{ bakeResOpts }}" as="r" hint-placeholder-count="3"><button style="{{ r.style }}" onClick="{{ r.onClick }}">{{ r.label }}</button></sc-for>
+                </div>
+              </div>
+              <button style="{{ bakeBtnStyle }}" onClick="{{ doBakeShader }}">{{ bakeBtnLabel }}</button>
+              <div style="font-size:10px;color:var(--text2);line-height:1.45;">Freezes the animation — view-dependent looks (fresnel, sheen) bake from the current camera angle.</div>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ baked }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;flex-direction:column;gap:8px;">
+              <button style="display:flex;align-items:center;justify-content:center;gap:7px;padding:9px;border-radius:6px;font-size:12px;font-weight:600;background:var(--accent);border:1px solid var(--accent);color:#0d0f1f;width:100%;cursor:pointer;" onClick="{{ downloadBakedGLB }}">⬇ Download .glb <span style="font-family:var(--font-mono);font-size:9.5px;opacity:.75;">unlit · baked</span></button>
+              <button style="display:flex;align-items:center;justify-content:center;gap:7px;padding:8px;border-radius:6px;font-size:11.5px;font-weight:600;background:var(--panel-3);border:1px solid var(--edge);color:var(--text);width:100%;cursor:pointer;" onClick="{{ downloadBakedPNG }}">▣ Download texture PNG</button>
+              <button style="display:flex;align-items:center;justify-content:center;gap:7px;padding:8px;border-radius:6px;font-size:11.5px;font-weight:600;background:transparent;border:1px solid var(--edge);color:var(--text);width:100%;cursor:pointer;" onClick="{{ revertBaked }}">↺ Revert to original material</button>
+            </div>
+          </sc-if>
+        </div>
+      </div>
+
       <!-- animation -->
       <div style="border-bottom:1px solid var(--seam);">
         <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--header);border-bottom:1px solid var(--seam);"><span style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);">Animation</span></div>
@@ -349,6 +386,7 @@ class Component extends DCLogic {
     env: 'studio', envInt: 75, envBg: false, shadow: 34,
     hasUVs: false, hasTexture: false, suggestDismiss: false,
     presets: [], meshes: [], shaderTarget: 'all', activeShader: null, shaderParams: {}, texMix: 1,
+    bakeRes: 1024, baked: false, baking: false,
   };
 
   componentDidMount() { this.setupEmbed(); this.boot(); this.setupDrop(); }
@@ -394,7 +432,7 @@ class Component extends DCLogic {
     this.setState({ loading: true, loadingMsg: 'Loading ' + (label || 'model') + '…', activeLib: '' });
     try {
       const r = await fn();
-      this.refresh(); this.setState({ loading: false, suggestDismiss: false, activeShader: null, shaderParams: {}, shaderTarget: 'all' });
+      this.refresh(); this.setState({ loading: false, suggestDismiss: false, activeShader: null, shaderParams: {}, shaderTarget: 'all', baked: false });
       const extra = r.clips && r.clips.length ? ' · ' + r.clips.length + ' clip' + (r.clips.length > 1 ? 's' : '') : (r.hasSkeleton ? ' · rigged' : '');
       this.toast('Loaded ' + r.name + ' — ' + (r.tris ? r.tris.toLocaleString() + ' tris' : '') + extra);
       if (this._animQueued) { const a = this._animQueued; this._animQueued = null; this.playLibAnim(a); }
@@ -476,6 +514,32 @@ class Component extends DCLogic {
     } catch (e) { this.setState({ capBusy: false, capProg: 0 }); this.toast('Recording failed: ' + (e && e.message || e)); }
   }
 
+  async doBakeShader() {
+    const eng = this._eng; if (!eng || !eng.hasModel()) { this.toast('Load a model first'); return; }
+    if (!this.state.activeShader) { this.toast('Apply a shader first'); return; }
+    this.setState({ baking: true });
+    // let one frame render so u_time / uniforms are current, then bake
+    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+    try {
+      const r = eng.bakeShaderToTexture({ res: this.state.bakeRes || 1024, target: this.state.shaderTarget });
+      this.setState({ baking: false, baked: true, activeShader: null, shaderParams: {} });
+      this.refresh();
+      this.toast('Baked → ' + r.res + '² texture · frozen on ' + r.count + ' mesh' + (r.count > 1 ? 'es' : ''));
+    } catch (e) { this.setState({ baking: false }); this.toast('Bake failed: ' + (e && e.message || e)); }
+  }
+  async downloadBakedGLB() {
+    const eng = this._eng; if (!eng) return;
+    try { const blob = await eng.exportBakedGLB(); this._dl(blob, (eng.stats().name || 'character') + '_baked.glb'); this.toast('Exported baked .glb — unlit, loads anywhere'); }
+    catch (e) { this.toast('Export failed: ' + (e && e.message || e)); }
+  }
+  downloadBakedPNG() {
+    const eng = this._eng; const maps = eng ? eng.bakedMaps() : [];
+    if (!maps.length) { this.toast('Nothing baked yet'); return; }
+    maps.forEach(m => { const a = document.createElement('a'); a.href = m.canvas.toDataURL('image/png'); a.download = (eng.stats().name || 'mesh') + '_' + (m.name || 'shader') + '.png'; document.body.appendChild(a); a.click(); setTimeout(() => a.remove(), 300); });
+    this.toast('Saved baked texture PNG' + (maps.length > 1 ? ' ×' + maps.length : ''));
+  }
+  revertBaked() { const eng = this._eng; if (eng) eng.revertBaked(); this.setState({ baked: false }); this.refresh(); this.toast('Reverted to original material'); }
+
   renderVals() {
     const st = this.state, eng = this._eng;
     const SA = window.SuggestedActions;
@@ -527,7 +591,7 @@ class Component extends DCLogic {
       const p = presets.find(x => x.id === id); if (!p) return;
       const defaults = {};
       (p.params || []).forEach(pr => { defaults[pr.key] = pr.default; });
-      this.setState({ activeShader: id, shaderParams: defaults });
+      this.setState({ activeShader: id, shaderParams: defaults, baked: false });
       if (eng) eng.applyShader(id, defaults, st.shaderTarget);
     };
     const presetTile = (p, on) => 'display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:6px;cursor:pointer;font-size:11px;font-weight:600;text-align:left;overflow:hidden;border:1px solid ' + (on ? '#c98a5a' : 'var(--edge)') + ';background:' + (on ? 'rgba(201,138,90,.16)' : 'var(--panel-3)') + ';color:' + (on ? '#e6c3a3' : 'var(--text)') + ';';
@@ -572,7 +636,7 @@ class Component extends DCLogic {
       if (!pool.length) return;
       applyPreset(pool[Math.floor(Math.random() * pool.length)].id);
     };
-    const removeShader = () => { if (eng) eng.clearShader(st.shaderTarget); this.setState({ activeShader: null, shaderParams: {} }); };
+    const removeShader = () => { if (eng) eng.clearShader(st.shaderTarget); this.setState({ activeShader: null, shaderParams: {}, baked: false }); };
     const shaderHasTex = !!activePreset && !!eng && eng.targetHasTexture(st.shaderTarget);
     const shaderNoTex = !!activePreset && !shaderHasTex;
     const onTexMix = (e) => {
@@ -580,6 +644,10 @@ class Component extends DCLogic {
       this.setState({ texMix: v });
       if (eng) eng.setTextureBlend(v);
     };
+
+    // ---------- bake shader → asset ----------
+    const bakeResBtn = (on) => 'flex:1;font-size:10.5px;font-weight:600;padding:7px 4px;border-radius:5px;cursor:pointer;border:1px solid ' + (on ? '#c98a5a' : 'var(--edge)') + ';background:' + (on ? 'rgba(201,138,90,.16)' : 'var(--panel-3)') + ';color:' + (on ? '#e6c3a3' : 'var(--text)') + ';';
+    const bakeResOpts = [512, 1024, 2048].map(n => ({ label: n + '²', style: bakeResBtn(st.bakeRes === n), onClick: () => this.setState({ bakeRes: n }) }));
 
     return {
       charName: st.meshName, dotColor: st.hasModel ? 'var(--good)' : 'var(--muted)',
@@ -602,6 +670,16 @@ class Component extends DCLogic {
       activeParams, surprise, removeShader,
       shaderHasTex, shaderNoTex, onTexMix, texMixPct: Math.round((st.texMix != null ? st.texMix : 1) * 100),
       activeShaderName: activePreset ? activePreset.name : '',
+      bakeHint: st.hasModel && !st.activeShader && !st.baked,
+      canBake: !!activePreset && !st.baked,
+      baked: st.baked,
+      bakeResOpts,
+      bakeBtnStyle: 'display:flex;align-items:center;justify-content:center;gap:7px;padding:9px;border-radius:6px;font-size:12px;font-weight:600;width:100%;cursor:' + (st.baking ? 'wait' : 'pointer') + ';background:' + (st.baking ? 'var(--panel-3)' : 'var(--accent)') + ';border:1px solid ' + (st.baking ? 'var(--edge)' : 'var(--accent)') + ';color:' + (st.baking ? 'var(--text2)' : '#0d0f1f') + ';',
+      bakeBtnLabel: st.baking ? '● Baking…' : '☀ Bake current look',
+      doBakeShader: () => this.doBakeShader(),
+      downloadBakedGLB: () => this.downloadBakedGLB(),
+      downloadBakedPNG: () => this.downloadBakedPNG(),
+      revertBaked: () => this.revertBaked(),
       modeBadge: st.hasModel ? 'SHOWCASE' : 'OPEN A CHARACTER',
       pickFile: () => document.getElementById('sc-file').click(),
       views,
