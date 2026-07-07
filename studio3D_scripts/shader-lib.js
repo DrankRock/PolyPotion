@@ -1,20 +1,39 @@
 // ============================================================
-// shader-lib.js — SHOWCASE shader presets
-// A curated library of "looks" you can drop onto any mesh: real physically
-// based materials (glass, chrome, gold, velvet…) built on MeshPhysicalMaterial
-// so they pick up the scene IBL, plus hand-written GLSL ShaderMaterials for the
-// stylised / sci-fi / liquid effects (hologram, lava, mercury, dissolve…).
+// shader-lib.js — SHOWCASE shader library (entry point).
 //
-// Every ShaderMaterial shares ONE vertex shader that goes through three's
-// skinning + morph chunks, so these looks survive on rigged, animated
-// characters — the deformation still happens, we only repaint the surface.
+// This is the "engine" half of the library: the shared GLSL (noise/fbm, the one
+// vertex shader, the fragment prelude + main wrapper), the normalize/dedupe pass
+// for the wild shelf, buildShaderMaterial(), presetDescriptors(), and the final
+// SHADER_PRESETS assembly. It imports the presets themselves from per-category
+// files under ./presets/ (one file per category), plus the shared GLSL glue
+// (AXIS/LIQ/GLASS_ABOVE) from ./shader-glue.js.
 //
 // Presets are plain data. buildShaderMaterial() turns a shader preset into a
 // live THREE.ShaderMaterial; physical presets carry their own make()/params.
 // Imported by showcase-engine.js. Same THREE singleton (esm.sh dedupes URLs).
 // ============================================================
 import * as THREE from 'https://esm.sh/three@0.160.0';
-import { WILD_PRESETS, AXIS, LIQ, GLASS_ABOVE } from './shader-lib-wild.js';
+import { AXIS, LIQ, GLASS_ABOVE } from './shader-glue.js';
+
+// ---- core presets (curated set), one file per category ----
+import { CORE_REALISTIC } from './presets/core-realistic.js';
+import { CORE_LIQUID_ORGANIC } from './presets/core-liquid-organic.js';
+import { CORE_STYLIZED } from './presets/core-stylized.js';
+import { CORE_SCI_FI_FX } from './presets/core-sci-fi-fx.js';
+
+// ---- wild shelf, one file per category (normalized/deduped below) ----
+import { WILD_POTIONS_LIQUIDS } from './presets/wild-potions-liquids.js';
+import { WILD_RADIANT_COSMIC } from './presets/wild-radiant-cosmic.js';
+import { WILD_CANDY_CRYSTAL } from './presets/wild-candy-crystal.js';
+import { WILD_SPOOKY_GLITCH } from './presets/wild-spooky-glitch.js';
+import { WILD_MIND_BENDING } from './presets/wild-mind-bending.js';
+import { WILD_BIOMIMETIC_ORGANIC } from './presets/wild-biomimetic-organic.js';
+import { WILD_AGED_WEATHERED } from './presets/wild-aged-weathered.js';
+import { WILD_STRUCTURAL_COLOR } from './presets/wild-structural-color.js';
+import { WILD_CYBERPUNK_NEON } from './presets/wild-cyberpunk-neon.js';
+import { WILD_ELEMENTAL_ENERGY } from './presets/wild-elemental-energy.js';
+import { WILD_MATERIALS_SURFACES } from './presets/wild-materials-surfaces.js';
+import { WILD_GLASS_TRANSMISSION } from './presets/wild-glass-transmission.js';
 
 // ---------- shared GLSL: simplex noise + fbm + helpers ----------
 const NOISE = `
@@ -186,332 +205,10 @@ const MAIN_CLOSE = `
 `;
 
 // ============================================================
-//  PRESETS (core set — the wild set lives in shader-lib-wild.js)
+//  PRESET ASSEMBLY
 // ============================================================
-const CORE_PRESETS = [
-
-  // ---------------- REALISTIC (physical materials) ----------------
-  {
-    id: 'glass', name: 'Clear glass', category: 'Realistic', kind: 'physical', swatch: ['#cfeeff', '#8fbfe0'],
-    params: [
-      { key: 'color', label: 'Tint', type: 'color', default: '#dff2ff', apply: (m, v) => m.color.set(v) },
-      { key: 'roughness', label: 'Frost', type: 'range', min: 0, max: 1, step: 0.01, default: 0.02, apply: (m, v) => { m.roughness = v; } },
-      { key: 'ior', label: 'Density', type: 'range', min: 1, max: 2.3, step: 0.01, default: 1.5, apply: (m, v) => { m.ior = v; } },
-    ],
-    make: () => new THREE.MeshPhysicalMaterial({ transmission: 1, thickness: 0.6, roughness: 0.02, metalness: 0, ior: 1.5, transparent: true, side: THREE.DoubleSide, envMapIntensity: 1 }),
-  },
-  {
-    id: 'frosted', name: 'Frosted glass', category: 'Realistic', kind: 'physical', swatch: ['#eaf4f7', '#b9cdd4'],
-    params: [
-      { key: 'color', label: 'Tint', type: 'color', default: '#eef6f8', apply: (m, v) => m.color.set(v) },
-      { key: 'roughness', label: 'Frost', type: 'range', min: 0.1, max: 1, step: 0.01, default: 0.55, apply: (m, v) => { m.roughness = v; } },
-    ],
-    make: () => new THREE.MeshPhysicalMaterial({ transmission: 1, thickness: 0.9, roughness: 0.55, metalness: 0, ior: 1.4, transparent: true, side: THREE.DoubleSide, envMapIntensity: 1 }),
-  },
-  {
-    id: 'chrome', name: 'Chrome', category: 'Realistic', kind: 'physical', swatch: ['#f4f6fa', '#9aa2ad'],
-    params: [
-      { key: 'color', label: 'Tint', type: 'color', default: '#f4f6fa', apply: (m, v) => m.color.set(v) },
-      { key: 'roughness', label: 'Polish', type: 'range', min: 0, max: 0.5, step: 0.01, default: 0.03, apply: (m, v) => { m.roughness = v; } },
-    ],
-    make: () => new THREE.MeshPhysicalMaterial({ metalness: 1, roughness: 0.03, color: 0xf4f6fa, envMapIntensity: 1.2, side: THREE.DoubleSide }),
-  },
-  {
-    id: 'brushed', name: 'Brushed steel', category: 'Realistic', kind: 'physical', swatch: ['#c6cad0', '#7f858d'],
-    params: [
-      { key: 'color', label: 'Tint', type: 'color', default: '#b8bcc4', apply: (m, v) => m.color.set(v) },
-      { key: 'roughness', label: 'Grain', type: 'range', min: 0.1, max: 0.8, step: 0.01, default: 0.38, apply: (m, v) => { m.roughness = v; } },
-    ],
-    make: () => new THREE.MeshPhysicalMaterial({ metalness: 1, roughness: 0.38, color: 0xb8bcc4, envMapIntensity: 1, side: THREE.DoubleSide }),
-  },
-  {
-    id: 'gold', name: 'Gold', category: 'Realistic', kind: 'physical', swatch: ['#ffe08a', '#c8912f'],
-    params: [
-      { key: 'color', label: 'Metal', type: 'color', default: '#ffce5a', apply: (m, v) => m.color.set(v) },
-      { key: 'roughness', label: 'Polish', type: 'range', min: 0, max: 0.7, step: 0.01, default: 0.18, apply: (m, v) => { m.roughness = v; } },
-    ],
-    make: () => new THREE.MeshPhysicalMaterial({ metalness: 1, roughness: 0.18, color: 0xffce5a, envMapIntensity: 1.2, side: THREE.DoubleSide }),
-  },
-  {
-    id: 'copper', name: 'Copper', category: 'Realistic', kind: 'physical', swatch: ['#f0a878', '#a8582e'],
-    params: [
-      { key: 'color', label: 'Metal', type: 'color', default: '#d98b5a', apply: (m, v) => m.color.set(v) },
-      { key: 'roughness', label: 'Polish', type: 'range', min: 0, max: 0.7, step: 0.01, default: 0.28, apply: (m, v) => { m.roughness = v; } },
-    ],
-    make: () => new THREE.MeshPhysicalMaterial({ metalness: 1, roughness: 0.28, color: 0xd98b5a, envMapIntensity: 1.1, side: THREE.DoubleSide }),
-  },
-  {
-    id: 'ceramic', name: 'Glazed ceramic', category: 'Realistic', kind: 'physical', swatch: ['#f2f4f7', '#c3ccd4'],
-    params: [
-      { key: 'color', label: 'Glaze', type: 'color', default: '#eef1f4', apply: (m, v) => m.color.set(v) },
-      { key: 'roughness', label: 'Matte', type: 'range', min: 0.05, max: 0.9, step: 0.01, default: 0.28, apply: (m, v) => { m.roughness = v; } },
-    ],
-    make: () => new THREE.MeshPhysicalMaterial({ metalness: 0, roughness: 0.28, clearcoat: 1, clearcoatRoughness: 0.08, color: 0xeef1f4, envMapIntensity: 1, side: THREE.DoubleSide }),
-  },
-  {
-    id: 'pearl', name: 'Pearl / car paint', category: 'Realistic', kind: 'physical', swatch: ['#f7d7ee', '#8fb6e0'],
-    params: [
-      { key: 'color', label: 'Base', type: 'color', default: '#c05a9a', apply: (m, v) => m.color.set(v) },
-      { key: 'iridescence', label: 'Shift', type: 'range', min: 0, max: 1, step: 0.01, default: 1, apply: (m, v) => { m.iridescence = v; } },
-    ],
-    make: () => new THREE.MeshPhysicalMaterial({ metalness: 0.6, roughness: 0.25, clearcoat: 1, clearcoatRoughness: 0.05, iridescence: 1, iridescenceIOR: 1.6, color: 0xc05a9a, envMapIntensity: 1.1, side: THREE.DoubleSide }),
-  },
-  {
-    id: 'velvet', name: 'Velvet', category: 'Realistic', kind: 'physical', swatch: ['#7a2740', '#3a1020'],
-    params: [
-      { key: 'color', label: 'Cloth', type: 'color', default: '#5a1f2a', apply: (m, v) => m.color.set(v) },
-      { key: 'sheen', label: 'Sheen', type: 'color', default: '#d98a9a', apply: (m, v) => m.sheenColor.set(v) },
-    ],
-    make: () => new THREE.MeshPhysicalMaterial({ metalness: 0, roughness: 0.9, sheen: 1, sheenRoughness: 0.5, sheenColor: new THREE.Color(0xd98a9a), color: 0x5a1f2a, envMapIntensity: 0.6, side: THREE.DoubleSide }),
-  },
-  {
-    id: 'clay', name: 'Matte clay', category: 'Realistic', kind: 'physical', swatch: ['#d1a184', '#8a5a3e'],
-    params: [
-      { key: 'color', label: 'Clay', type: 'color', default: '#c88f6a', apply: (m, v) => m.color.set(v) },
-    ],
-    make: () => new THREE.MeshPhysicalMaterial({ metalness: 0, roughness: 1, color: 0xc88f6a, envMapIntensity: 0.5, side: THREE.DoubleSide }),
-  },
-
-  // ---------------- LIQUID & ORGANIC (shaders) ----------------
-  {
-    id: 'water', name: 'Water', category: 'Liquid & organic', kind: 'shader', swatch: ['#8fe0ff', '#0e6fa8'],
-    transparent: true, depthWrite: false,
-    params: [
-      { key: 'color', label: 'Water', type: 'color', default: '#2aa8d8' },
-      { key: 'speed', label: 'Flow', type: 'range', min: 0, max: 3, step: 0.05, default: 1 },
-    ],
-    fragUniforms: 'uniform vec3 u_color;',
-    fragBody: `
-      float w1 = snoise(vObjPos*4.0 + vec3(0.0, u_time*u_speed*0.6, u_time*u_speed*0.4));
-      float w2 = snoise(vObjPos*9.0 - vec3(u_time*u_speed*0.5, 0.0, u_time*u_speed*0.3));
-      vec3 nn = normalize(N + 0.32*vec3(w1, (w1+w2)*0.5, w2));
-      vec3 r = reflect(-V, nn);
-      float up = clamp(r.y*0.5+0.5, 0.0, 1.0);
-      vec3 sky = mix(u_color*0.55, vec3(0.86,0.93,1.0), up);
-      float f = pow(1.0 - max(dot(nn, V), 0.0), 3.0);
-      col = mix(u_color*0.4, sky, clamp(f*1.5, 0.0, 1.0));
-      float spark = pow(max(snoise(vObjPos*14.0 + u_time*u_speed), 0.0), 6.0);
-      col += spark*0.6;
-      alpha = clamp(0.72 + f*0.28, 0.0, 1.0);
-    `,
-  },
-  {
-    id: 'mercury', name: 'Liquid metal', category: 'Liquid & organic', kind: 'shader', swatch: ['#eef2f8', '#5a636e'],
-    params: [
-      { key: 'tint', label: 'Tint', type: 'color', default: '#cdd4de' },
-      { key: 'ripple', label: 'Ripple', type: 'range', min: 0, max: 0.6, step: 0.01, default: 0.25 },
-      { key: 'speed', label: 'Flow', type: 'range', min: 0, max: 3, step: 0.05, default: 1 },
-    ],
-    fragUniforms: 'uniform vec3 u_tint; uniform float u_ripple;',
-    fragBody: `
-      float w = fbm(vObjPos*8.0 + u_time*u_speed*0.5);
-      float w2 = fbm(vObjPos*8.0 + 30.0 - u_time*u_speed*0.4);
-      vec3 nn = normalize(N + u_ripple*vec3(w, (w+w2)*0.5, w2));
-      vec3 r = reflect(-V, nn);
-      float up = clamp(r.y*0.5+0.5, 0.0, 1.0);
-      vec3 sky = mix(vec3(0.05,0.06,0.08), vec3(0.92,0.95,1.0), pow(up,1.5));
-      float spec = pow(up, 8.0);
-      col = sky * u_tint + spec*0.6;
-      col += pow(1.0 - max(dot(nn,V),0.0), 3.0) * 0.2;
-    `,
-  },
-  {
-    id: 'jelly', name: 'Jelly / goo', category: 'Liquid & organic', kind: 'shader', swatch: ['#ff8fc4', '#a83e78'],
-    transparent: false, displaceParam: true,
-    params: [
-      { key: 'color', label: 'Jelly', type: 'color', default: '#ff7ab8' },
-      { key: 'color2', label: 'Rim', type: 'color', default: '#fff3a0' },
-      { key: 'displace', label: 'Wobble', type: 'range', min: 0, max: 0.3, step: 0.005, default: 0.12 },
-      { key: 'speed', label: 'Speed', type: 'range', min: 0, max: 3, step: 0.05, default: 1 },
-    ],
-    fragUniforms: 'uniform vec3 u_color; uniform vec3 u_color2;',
-    fragBody: `
-      vec3 sss = u_color * (0.55 + 0.6*diff);
-      float rim = pow(1.0 - max(dot(N,V),0.0), 2.0);
-      col = mix(sss, u_color2, rim*0.7);
-      col += rim*0.3;
-    `,
-  },
-  {
-    id: 'lava', name: 'Lava / magma', category: 'Liquid & organic', kind: 'shader', swatch: ['#ffd24a', '#8a1c05'],
-    params: [
-      { key: 'intensity', label: 'Heat', type: 'range', min: 0.5, max: 2.2, step: 0.05, default: 1.2 },
-      { key: 'scale', label: 'Scale', type: 'range', min: 1, max: 8, step: 0.1, default: 3 },
-      { key: 'speed', label: 'Flow', type: 'range', min: 0, max: 3, step: 0.05, default: 1 },
-    ],
-    fragUniforms: 'uniform float u_intensity; uniform float u_scale;',
-    fragBody: `
-      vec3 q = vObjPos*u_scale;
-      float n = fbm(q + vec3(0.0, -u_time*u_speed*0.4, 0.0));
-      float n2 = fbm(q*2.0 + vec3(u_time*u_speed*0.3, 0.0, 0.0));
-      float h = (n*0.65 + n2*0.35)*0.5 + 0.5;
-      vec3 cool = vec3(0.11,0.02,0.01);
-      vec3 mid  = vec3(0.85,0.18,0.03);
-      vec3 hot  = vec3(1.0,0.85,0.35);
-      col = mix(cool, mid, smoothstep(0.35,0.6,h));
-      col = mix(col, hot, smoothstep(0.62,0.86,h));
-      col *= u_intensity;
-    `,
-  },
-
-  // ---------------- STYLIZED (shaders) ----------------
-  {
-    id: 'toon', name: 'Toon / cel', category: 'Stylized', kind: 'shader', swatch: ['#8ec7ff', '#2f6fb0'],
-    params: [
-      { key: 'color', label: 'Colour', type: 'color', default: '#4aa3ff' },
-      { key: 'rim', label: 'Rim', type: 'range', min: 1, max: 6, step: 0.1, default: 3 },
-      { key: 'rimColor', label: 'Rim tint', type: 'color', default: '#ffffff' },
-    ],
-    fragUniforms: 'uniform vec3 u_color; uniform float u_rim; uniform vec3 u_rimColor;',
-    fragBody: `
-      float l = dot(N, KL);
-      float t = 0.35 + smoothstep(0.0,0.02,l)*0.2 + smoothstep(0.35,0.37,l)*0.2 + smoothstep(0.75,0.77,l)*0.25;
-      col = u_color * t;
-      float rim = pow(1.0 - max(dot(N,V),0.0), u_rim);
-      col += rim * u_rimColor * 0.6;
-    `,
-  },
-  {
-    id: 'matcap', name: 'Sculpt matcap', category: 'Stylized', kind: 'shader', swatch: ['#b7bcc4', '#5c626b'],
-    params: [
-      { key: 'color', label: 'Body', type: 'color', default: '#8a8f98' },
-      { key: 'spec', label: 'Highlight', type: 'color', default: '#ffffff' },
-    ],
-    fragUniforms: 'uniform vec3 u_color; uniform vec3 u_spec;',
-    fragBody: `
-      vec3 vn = normalize(vViewNormal);
-      vec2 muv = vn.xy*0.5 + 0.5;
-      float d = distance(muv, vec2(0.68, 0.72));
-      float spec = smoothstep(0.45, 0.0, d);
-      float amb = 0.25 + 0.7*muv.y;
-      col = u_color * amb + spec * u_spec * 1.2;
-      col *= (0.6 + 0.4*(1.0 - pow(fres, 3.0)));
-    `,
-  },
-  {
-    id: 'iridescent', name: 'Iridescent', category: 'Stylized', kind: 'shader', swatch: ['#7affd0', '#b06be6'],
-    params: [
-      { key: 'color', label: 'Base', type: 'color', default: '#20232a' },
-      { key: 'bands', label: 'Bands', type: 'range', min: 0.5, max: 4, step: 0.05, default: 1.6 },
-      { key: 'intensity', label: 'Sheen', type: 'range', min: 0, max: 1.5, step: 0.02, default: 1 },
-      { key: 'speed', label: 'Drift', type: 'range', min: 0, max: 3, step: 0.05, default: 1 },
-    ],
-    fragUniforms: 'uniform vec3 u_color; uniform float u_bands; uniform float u_intensity;',
-    fragBody: `
-      float fp = pow(fres, 1.4);
-      float hue = fract(u_time*0.03*u_speed + fp*u_bands + N.y*0.25 + vWorldPos.y*0.1);
-      vec3 rain = hsv2rgb(vec3(hue, 0.85, 1.0));
-      col = mix(u_color*diff, rain, clamp(fp*u_intensity, 0.0, 1.0));
-      col += pow(fp, 4.0)*0.5;
-    `,
-  },
-  {
-    id: 'normals', name: 'Normals', category: 'Stylized', kind: 'shader', swatch: ['#8a8fff', '#5affa0'],
-    params: [],
-    fragUniforms: '',
-    fragBody: `
-      col = normalize(vWorldNormal)*0.5 + 0.5;
-    `,
-  },
-
-  // ---------------- SCI-FI FX (shaders) ----------------
-  {
-    id: 'hologram', name: 'Hologram', category: 'Sci-fi FX', kind: 'shader', swatch: ['#38f0ff', '#1360a0'],
-    transparent: true, additive: true, depthWrite: false,
-    params: [
-      { key: 'color', label: 'Colour', type: 'color', default: '#38f0ff' },
-      { key: 'density', label: 'Scanlines', type: 'range', min: 10, max: 120, step: 1, default: 45 },
-      { key: 'opacity', label: 'Opacity', type: 'range', min: 0, max: 1, step: 0.01, default: 0.9 },
-      { key: 'speed', label: 'Speed', type: 'range', min: 0, max: 3, step: 0.05, default: 1 },
-    ],
-    fragUniforms: 'uniform vec3 u_color; uniform float u_density; uniform float u_opacity;',
-    fragBody: `
-      float scan = 0.5 + 0.5*sin(vWorldPos.y*u_density - u_time*4.0*u_speed);
-      float fp = pow(fres, 2.0);
-      float flick = 0.85 + 0.15*sin(u_time*30.0);
-      col = u_color * (0.4 + 1.2*fp) + vec3(0.08)*scan;
-      alpha = clamp((0.12 + pow(fp,1.5)*0.9) * (0.55 + 0.45*scan) * flick, 0.0, 1.0) * u_opacity;
-    `,
-  },
-  {
-    id: 'shield', name: 'Energy shield', category: 'Sci-fi FX', kind: 'shader', swatch: ['#5effc8', '#1c9a70'],
-    transparent: true, additive: true, depthWrite: false,
-    params: [
-      { key: 'color', label: 'Colour', type: 'color', default: '#5effc8' },
-      { key: 'power', label: 'Edge', type: 'range', min: 0.8, max: 4, step: 0.05, default: 2 },
-      { key: 'opacity', label: 'Opacity', type: 'range', min: 0, max: 1, step: 0.01, default: 0.8 },
-      { key: 'speed', label: 'Pulse', type: 'range', min: 0, max: 3, step: 0.05, default: 1 },
-    ],
-    fragUniforms: 'uniform vec3 u_color; uniform float u_power; uniform float u_opacity;',
-    fragBody: `
-      float fp = pow(fres, u_power);
-      float bands = 0.5 + 0.5*sin(vWorldPos.y*20.0 - u_time*3.0*u_speed);
-      float pulse = 0.6 + 0.4*sin(u_time*2.0*u_speed);
-      col = u_color * (fp*1.5 + 0.15) + u_color*bands*fp*0.4;
-      alpha = clamp(fp*pulse, 0.0, 1.0) * u_opacity + 0.04;
-    `,
-  },
-  {
-    id: 'plasma', name: 'Plasma / electric', category: 'Sci-fi FX', kind: 'shader', swatch: ['#c08bff', '#2a1258'],
-    params: [
-      { key: 'color', label: 'Core', type: 'color', default: '#2a1258' },
-      { key: 'color2', label: 'Arc', type: 'color', default: '#c08bff' },
-      { key: 'scale', label: 'Scale', type: 'range', min: 1, max: 8, step: 0.1, default: 3 },
-      { key: 'speed', label: 'Speed', type: 'range', min: 0, max: 3, step: 0.05, default: 1 },
-    ],
-    fragUniforms: 'uniform vec3 u_color; uniform vec3 u_color2; uniform float u_scale;',
-    fragBody: `
-      vec3 q = vObjPos*u_scale;
-      float n = fbm(q*2.0 + u_time*u_speed*0.6);
-      float v = abs(sin(n*6.2831 + u_time*u_speed*3.0));
-      float bolt = pow(1.0 - v, 8.0);
-      col = mix(u_color*0.15, u_color2*2.2, bolt) + bolt*0.6;
-    `,
-  },
-  {
-    id: 'xray', name: 'X-ray', category: 'Sci-fi FX', kind: 'shader', swatch: ['#9adfff', '#155a80'],
-    transparent: true, additive: true, depthWrite: false,
-    params: [
-      { key: 'color', label: 'Colour', type: 'color', default: '#7ad0ff' },
-      { key: 'power', label: 'Falloff', type: 'range', min: 0.5, max: 3, step: 0.05, default: 1.4 },
-      { key: 'opacity', label: 'Opacity', type: 'range', min: 0, max: 1, step: 0.01, default: 0.7 },
-    ],
-    fragUniforms: 'uniform vec3 u_color; uniform float u_power; uniform float u_opacity;',
-    fragBody: `
-      float fp = pow(fres, u_power);
-      col = u_color * fp * 2.2;
-      alpha = clamp(fp, 0.0, 1.0) * u_opacity;
-    `,
-  },
-  {
-    id: 'neonwire', name: 'Neon wireframe', category: 'Sci-fi FX', kind: 'shader', swatch: ['#5effd0', '#12403a'],
-    transparent: true, additive: true, depthWrite: false, wireframe: true,
-    params: [
-      { key: 'color', label: 'Wire', type: 'color', default: '#5effd0' },
-    ],
-    fragUniforms: 'uniform vec3 u_color;',
-    fragBody: `
-      col = u_color * (1.2 + fres);
-    `,
-  },
-  {
-    id: 'dissolve', name: 'Dissolve burn', category: 'Sci-fi FX', kind: 'shader', swatch: ['#ff6a2a', '#cfcfcf'],
-    params: [
-      { key: 'color', label: 'Surface', type: 'color', default: '#c9c9c9' },
-      { key: 'glow', label: 'Ember', type: 'color', default: '#ff6a2a' },
-      { key: 'scale', label: 'Grain', type: 'range', min: 1, max: 12, step: 0.1, default: 4 },
-      { key: 'edge', label: 'Reveal', type: 'range', min: 0, max: 1, step: 0.01, default: 0.35 },
-      { key: 'width', label: 'Ember width', type: 'range', min: 0.01, max: 0.3, step: 0.005, default: 0.08 },
-    ],
-    fragUniforms: 'uniform vec3 u_color; uniform vec3 u_glow; uniform float u_scale; uniform float u_edge; uniform float u_width;',
-    fragBody: `
-      float n = fbm(vObjPos*u_scale)*0.5 + 0.5;
-      if (n < u_edge) discard;
-      float e = smoothstep(u_edge, u_edge + u_width, n);
-      col = mix(u_glow*2.6, u_color*diff, e);
-    `,
-  },
-];
+// Core looks (curated). Order preserved from the original library.
+const CORE_PRESETS = [...CORE_REALISTIC, ...CORE_LIQUID_ORGANIC, ...CORE_STYLIZED, ...CORE_SCI_FI_FX];
 
 // The wild shelf is hand-edited and accumulates cruft: duplicate ids (the same
 // look pasted 2-3 times) and a few presets whose fragBody got saved as the
@@ -533,6 +230,10 @@ function normalizeWild(list) {
   }
   return [...seen.values()];
 }
+
+// Raw wild shelf, concatenated from the per-category files (order preserved so
+// that dedupe-by-last keeps the same winners as the original single file).
+const WILD_PRESETS = [...WILD_POTIONS_LIQUIDS, ...WILD_RADIANT_COSMIC, ...WILD_CANDY_CRYSTAL, ...WILD_SPOOKY_GLITCH, ...WILD_MIND_BENDING, ...WILD_BIOMIMETIC_ORGANIC, ...WILD_AGED_WEATHERED, ...WILD_STRUCTURAL_COLOR, ...WILD_CYBERPUNK_NEON, ...WILD_ELEMENTAL_ENERGY, ...WILD_MATERIALS_SURFACES, ...WILD_GLASS_TRANSMISSION];
 
 // Full library: core looks + the (normalized) wild shelf.
 export const SHADER_PRESETS = [...CORE_PRESETS, ...normalizeWild(WILD_PRESETS)];
