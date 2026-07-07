@@ -184,7 +184,14 @@
                     <div>
                       <label style="display:flex;justify-content:space-between;align-items:center;font-size:10.5px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;"><span>Over texture</span><span style="font-family:var(--font-mono);color:var(--text);">{{ texMixPct }}%</span></label>
                       <input type="range" min="0" max="100" step="1" value="{{ texMixPct }}" onInput="{{ onTexMix }}" style="width:100%;">
-                      <div style="font-size:10px;color:var(--text2);line-height:1.45;margin-top:5px;">This mesh has its own texture. The shader is layered on top of it — drag down for a pure shader, up to let the texture show through.</div>
+                      <div style="font-size:10px;color:var(--text2);line-height:1.45;margin-top:5px;">The shader is layered on top of this mesh's texture — drag to 0% for a pure shader, up to let the texture show through.</div>
+                    </div>
+                  </sc-if>
+                  <sc-if value="{{ shaderNoTex }}" hint-placeholder-val="{{ false }}">
+                    <div style="opacity:.5;">
+                      <label style="display:flex;justify-content:space-between;align-items:center;font-size:10.5px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;"><span>Over texture</span><span style="font-family:var(--font-mono);color:var(--text);">—</span></label>
+                      <input type="range" min="0" max="100" value="100" disabled="{{ true }}" style="width:100%;cursor:not-allowed;">
+                      <div style="font-size:10px;color:var(--text2);line-height:1.45;margin-top:5px;">This mesh has no texture yet. Add one in the Texture Paint tool, then this slider blends it under the shader.</div>
                     </div>
                   </sc-if>
                   <sc-for list="{{ activeParams }}" as="p" hint-placeholder-count="2">
@@ -567,6 +574,7 @@ class Component extends DCLogic {
     };
     const removeShader = () => { if (eng) eng.clearShader(st.shaderTarget); this.setState({ activeShader: null, shaderParams: {} }); };
     const shaderHasTex = !!activePreset && !!eng && eng.targetHasTexture(st.shaderTarget);
+    const shaderNoTex = !!activePreset && !shaderHasTex;
     const onTexMix = (e) => {
       const v = +e.target.value / 100;
       this.setState({ texMix: v });
@@ -592,7 +600,7 @@ class Component extends DCLogic {
       presetGroups,
       hasActiveShader: !!activePreset,
       activeParams, surprise, removeShader,
-      shaderHasTex, onTexMix, texMixPct: Math.round((st.texMix != null ? st.texMix : 1) * 100),
+      shaderHasTex, shaderNoTex, onTexMix, texMixPct: Math.round((st.texMix != null ? st.texMix : 1) * 100),
       activeShaderName: activePreset ? activePreset.name : '',
       modeBadge: st.hasModel ? 'SHOWCASE' : 'OPEN A CHARACTER',
       pickFile: () => document.getElementById('sc-file').click(),
