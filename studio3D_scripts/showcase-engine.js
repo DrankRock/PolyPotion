@@ -161,6 +161,7 @@ export class SCEngine {
     this.modelRadius = 1;
 
     this._shaderEntries = [];    // { mesh, material, uniforms, presetId, kind } — live shaders on meshes
+    this._texMix = 1.0;          // how strongly a live shader is modulated by the mesh's own texture
 
     this.autoSpin = false;
     this.spinSpeed = 0.35;       // rad/s
@@ -764,19 +765,23 @@ export class SCEngine {
     const targets = this._targetMeshes(targetUuid);
     for (const mesh of targets) {
       this._removeEntry(mesh);
+      // the mesh's OWN texture — shaders paint over it instead of replacing it.
+      const om0 = Array.isArray(mesh.userData._origMat) ? mesh.userData._origMat[0] : mesh.userData._origMat;
+      const baseMap = (om0 && om0.map) ? om0.map : null;
       let material, uniforms = null;
       if (preset.kind === 'physical') {
         material = preset.make();
         for (const p of preset.params) p.apply(material, (values && values[p.key] != null) ? values[p.key] : p.default);
         material.side = THREE.DoubleSide;
+        if (baseMap) { material.map = baseMap; }   // keep the character's texture as albedo
         if ('envMapIntensity' in material) material.envMapIntensity = this.envIntensity;
       } else {
-        const built = buildShaderMaterial(preset, values);
+        const built = buildShaderMaterial(preset, values, baseMap, this._texMix);
         material = built.material; uniforms = built.uniforms;
       }
       material.wireframe = preset.wireframe || this.wire;
       mesh.material = material;
-      const entry = { mesh, material, uniforms, presetId: id, kind: preset.kind };
+      const entry = { mesh, material, uniforms, presetId: id, kind: preset.kind, baseMap };
       // gravity presets: cache the local bbox corners + init the slosh spring
       if (preset.gravity && uniforms) {
         const g = mesh.geometry;
@@ -821,6 +826,28 @@ export class SCEngine {
   activeShaderFor(uuid) {
     if (uuid && uuid !== 'all') { const e = this._shaderEntries.find(x => x.mesh.uuid === uuid); return e ? e.presetId : null; }
     return this._shaderEntries.length ? this._shaderEntries[0].presetId : null;
+  }
+
+  // Does the target mesh(es) carry its own albedo texture? (drives the panel's
+  // "blend over texture" control — a shader can only sit ON a texture if one exists.)
+  targetHasTexture(uuid) {
+    return this._targetMeshes(uuid).some(m => {
+      const om = Array.isArray(m.userData._origMat) ? m.userData._origMat[0] : m.userData._origMat;
+      return !!(om && om.map);
+    });
+  }
+
+  // 0 = pure shader look, 1 = shader fully modulated by the mesh's own texture.
+  setTextureBlend(v) {
+    this._texMix = v;
+    for (const e of this._shaderEntries) {
+      if (e.kind === 'physical') {
+        if (e.baseMap) { e.material.map = v > 0.02 ? e.baseMap : null; e.material.needsUpdate = true; }
+      } else if (e.uniforms && e.uniforms.u_texMix) {
+        e.uniforms.u_texMix.value = v;
+      }
+    }
+    this._changed && this._changed();
   }
 
   // ---------- gravity liquids ----------

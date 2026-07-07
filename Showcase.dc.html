@@ -144,7 +144,7 @@
         <div style="padding:11px 12px;display:flex;flex-direction:column;gap:12px;">
 
           <sc-if value="{{ shaderNoModel }}" hint-placeholder-val="{{ true }}">
-            <div style="font-size:11px;color:var(--text2);line-height:1.5;">Load a character or drop a demo shape, then paint it with a material below — glass, chrome, water, hologram and more.</div>
+            <div style="font-size:11px;color:var(--text2);line-height:1.5;">Load a character or drop a demo shape, then paint it with a material below — glass, chrome, water, hologram and more. Textured characters keep their texture; the shader layers on top of it.</div>
           </sc-if>
 
           <sc-if value="{{ shaderReady }}" hint-placeholder-val="{{ false }}">
@@ -180,6 +180,13 @@
               <!-- live params for the active shader -->
               <sc-if value="{{ hasActiveShader }}" hint-placeholder-val="{{ false }}">
                 <div style="display:flex;flex-direction:column;gap:10px;padding-top:11px;border-top:1px solid var(--seam);">
+                  <sc-if value="{{ shaderHasTex }}" hint-placeholder-val="{{ false }}">
+                    <div>
+                      <label style="display:flex;justify-content:space-between;align-items:center;font-size:10.5px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;"><span>Over texture</span><span style="font-family:var(--font-mono);color:var(--text);">{{ texMixPct }}%</span></label>
+                      <input type="range" min="0" max="100" step="1" value="{{ texMixPct }}" onInput="{{ onTexMix }}" style="width:100%;">
+                      <div style="font-size:10px;color:var(--text2);line-height:1.45;margin-top:5px;">This mesh has its own texture. The shader is layered on top of it — drag down for a pure shader, up to let the texture show through.</div>
+                    </div>
+                  </sc-if>
                   <sc-for list="{{ activeParams }}" as="p" hint-placeholder-count="2">
                     <div>
                       <label style="display:flex;justify-content:space-between;align-items:center;font-size:10.5px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;"><span>{{ p.label }}</span><span style="font-family:var(--font-mono);color:var(--text);">{{ p.valLabel }}</span></label>
@@ -334,7 +341,7 @@ class Component extends DCLogic {
     spin: false, wire: false, bg: 'studio', ground: true, speed: 100,
     env: 'studio', envInt: 75, envBg: false, shadow: 34,
     hasUVs: false, hasTexture: false, suggestDismiss: false,
-    presets: [], meshes: [], shaderTarget: 'all', activeShader: null, shaderParams: {},
+    presets: [], meshes: [], shaderTarget: 'all', activeShader: null, shaderParams: {}, texMix: 1,
   };
 
   componentDidMount() { this.setupEmbed(); this.boot(); this.setupDrop(); }
@@ -559,6 +566,12 @@ class Component extends DCLogic {
       applyPreset(pool[Math.floor(Math.random() * pool.length)].id);
     };
     const removeShader = () => { if (eng) eng.clearShader(st.shaderTarget); this.setState({ activeShader: null, shaderParams: {} }); };
+    const shaderHasTex = !!activePreset && !!eng && eng.targetHasTexture(st.shaderTarget);
+    const onTexMix = (e) => {
+      const v = +e.target.value / 100;
+      this.setState({ texMix: v });
+      if (eng) eng.setTextureBlend(v);
+    };
 
     return {
       charName: st.meshName, dotColor: st.hasModel ? 'var(--good)' : 'var(--muted)',
@@ -578,8 +591,9 @@ class Component extends DCLogic {
       shaderTarget: st.shaderTarget, shaderTargetOpts: meshOpts, onShaderTarget,
       presetGroups,
       hasActiveShader: !!activePreset,
-      activeShaderName: activePreset ? activePreset.name : '',
       activeParams, surprise, removeShader,
+      shaderHasTex, onTexMix, texMixPct: Math.round((st.texMix != null ? st.texMix : 1) * 100),
+      activeShaderName: activePreset ? activePreset.name : '',
       modeBadge: st.hasModel ? 'SHOWCASE' : 'OPEN A CHARACTER',
       pickFile: () => document.getElementById('sc-file').click(),
       views,

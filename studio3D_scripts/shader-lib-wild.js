@@ -21,7 +21,7 @@
 import * as THREE from 'https://esm.sh/three@0.160.0';
 
 // Shared axis frame: up vector, height h + normalized height hn, radial coords.
-const AXIS = `
+export const AXIS = `
   vec3 upA = normalize(-u_gravity);
   float E = max(u_levMax - u_levMin, 0.0001);
   float h = dot(vObjPos, upA);
@@ -34,7 +34,7 @@ const AXIS = `
 `;
 
 // Liquid surface: world-level fill plane + slosh tilt + agitation ripple.
-const LIQ = AXIS + `
+export const LIQ = AXIS + `
   float lev = mix(u_levMin, u_levMax, clamp(u_fill, 0.0, 1.0));
   float tiltW = dot(pPerp, u_slosh) * 1.35;
   float ripple = snoise(pPerp * (13.0 / E) + u_time * u_speed * vec3(1.3, 0.0, 1.1)) * E * (0.006 + 0.055 * u_sloshMag);
@@ -45,7 +45,7 @@ const LIQ = AXIS + `
 `;
 
 // Empty glass above the fill line (uses u_color as tint).
-const GLASS_ABOVE = `
+export const GLASS_ABOVE = `
   float fg = pow(fres, 2.0);
   col = u_color * 0.06 + vec3(0.9, 0.95, 1.0) * fg * 0.55;
   alpha = 0.10 + fg * 0.5;

@@ -14,7 +14,7 @@
 // Imported by showcase-engine.js. Same THREE singleton (esm.sh dedupes URLs).
 // ============================================================
 import * as THREE from 'https://esm.sh/three@0.160.0';
-import { WILD_PRESETS } from './shader-lib-wild.js';
+import { WILD_PRESETS, AXIS, LIQ, GLASS_ABOVE } from './shader-lib-wild.js';
 
 // ---------- shared GLSL: simplex noise + fbm + helpers ----------
 const NOISE = `
@@ -152,6 +152,12 @@ uniform float u_sloshMag;  // 0..1 agitation
 uniform float u_levMin;    // bbox projected onto current up axis
 uniform float u_levMax;
 uniform float u_fill;      // fill fraction 0..1
+// base texture: the mesh's OWN albedo map (if any). Shaders paint OVER it
+// rather than replacing it, so a textured character keeps its texture and the
+// shader modulates it. u_hasBaseMap gates it; u_texMix (0..1) fades it in.
+uniform sampler2D u_baseMap;
+uniform float u_hasBaseMap;
+uniform float u_texMix;
 ${NOISE}
 `;
 
@@ -166,8 +172,15 @@ void main(){
   float fres = 1.0 - max(dot(N, V), 0.0);
   vec3 col = vec3(0.0);
   float alpha = 1.0;
+  // sample the mesh's own texture (sRGB -> linear working space). Presets may
+  // read baseTex/baseAlpha directly; otherwise it's composited at the end.
+  vec3 baseTex = vec3(1.0);
+  float baseAlpha = 1.0;
+  if (u_hasBaseMap > 0.5) { vec4 _bt = texture2D(u_baseMap, vUv); baseTex = pow(_bt.rgb, vec3(2.2)); baseAlpha = _bt.a; }
 `;
 const MAIN_CLOSE = `
+  // composite the shader OVER the mesh's own texture (multiply), faded by u_texMix.
+  if (u_hasBaseMap > 0.5) col = mix(col, col * baseTex, clamp(u_texMix, 0.0, 1.0));
   gl_FragColor = vec4(toSRGB(col), clamp(alpha, 0.0, 1.0));
 }
 `;
@@ -500,11 +513,33 @@ const CORE_PRESETS = [
   },
 ];
 
-// Full library: core looks + the wild shelf (potions, radiant FX, candy, glitch…).
-export const SHADER_PRESETS = [...CORE_PRESETS, ...WILD_PRESETS];
+// The wild shelf is hand-edited and accumulates cruft: duplicate ids (the same
+// look pasted 2-3 times) and a few presets whose fragBody got saved as the
+// literal STRING "AXIS + `...`" (or "LIQ + ...") instead of a real concatenated
+// expression, so it never compiled. Normalize before use:
+//   (1) repair string-form fragBodies by splicing in the real GLSL glue, and
+//   (2) dedupe by id keeping the LAST definition (the newest, usually-fixed copy).
+// Nothing unique is dropped — only redundant/older copies of the same id.
+const _GLUE = { AXIS, LIQ, GLASS_ABOVE };
+function normalizeWild(list) {
+  const seen = new Map();
+  for (const p of (list || [])) {
+    let fb = p.fragBody;
+    if (typeof fb === 'string') {
+      const m = fb.match(/^\s*(AXIS|LIQ|GLASS_ABOVE)\s*\+\s*`([\s\S]*)`\s*$/);
+      if (m) fb = (_GLUE[m[1]] || '') + m[2];
+    }
+    seen.set(p.id, fb === p.fragBody ? p : Object.assign({}, p, { fragBody: fb }));
+  }
+  return [...seen.values()];
+}
 
-// Build a live ShaderMaterial from a shader preset + a values map (param key → value).
-export function buildShaderMaterial(preset, values) {
+// Full library: core looks + the (normalized) wild shelf.
+export const SHADER_PRESETS = [...CORE_PRESETS, ...normalizeWild(WILD_PRESETS)];
+
+// Build a live ShaderMaterial from a shader preset + a values map (param key -> value).
+// baseMap (optional): the mesh's own albedo texture, so the shader paints OVER it.
+export function buildShaderMaterial(preset, values, baseMap, texMix) {
   values = values || {};
   const uniforms = { u_time: { value: 0 } };
   for (const p of (preset.params || [])) {
@@ -520,6 +555,9 @@ export function buildShaderMaterial(preset, values) {
   if (!uniforms.u_sloshMag) uniforms.u_sloshMag = { value: 0.0 };
   if (!uniforms.u_levMin) uniforms.u_levMin = { value: -0.5 };
   if (!uniforms.u_levMax) uniforms.u_levMax = { value: 0.5 };
+  uniforms.u_baseMap = { value: baseMap || null };
+  uniforms.u_hasBaseMap = { value: baseMap ? 1.0 : 0.0 };
+  uniforms.u_texMix = { value: baseMap ? (texMix != null ? texMix : 1.0) : 0.0 };
 
   const mat = new THREE.ShaderMaterial({
     uniforms,
