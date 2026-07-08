@@ -173,6 +173,90 @@
         </div>
       </div>
 
+      <!-- SHADER FX → BAKE -->
+      <div style="border-bottom:1px solid var(--seam);">
+        <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--header);border-bottom:1px solid var(--seam);cursor:pointer;" onClick="{{ toggleFx }}">
+          <span style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);">Shader FX → bake</span>
+          <sc-if value="{{ hasFlip }}" hint-placeholder-val="{{ false }}"><span style="font-family:var(--font-mono);font-size:9px;letter-spacing:.1em;color:#8fd3a0;text-transform:uppercase;">flipbook</span></sc-if>
+          <span style="margin-left:auto;font-family:var(--font-mono);font-size:13px;color:var(--muted);">{{ fxChevron }}</span>
+        </div>
+        <sc-if value="{{ fxOpen }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:11px 12px;display:flex;flex-direction:column;gap:12px;">
+
+            <sc-if value="{{ fxDisabled }}" hint-placeholder-val="{{ false }}">
+              <div style="font-size:11px;color:var(--text2);line-height:1.5;">Load a UV-unwrapped mesh to apply an animated shader, then bake it into a texture or a sprite-sheet <b>flipbook</b> that plays in Godot / Unity.</div>
+            </sc-if>
+
+            <!-- preset picker -->
+            <div style="display:flex;gap:5px;overflow-x:auto;padding-bottom:2px;">
+              <sc-for list="{{ catChips }}" as="c" hint-placeholder-count="5"><button style="{{ c.style }}" onClick="{{ c.onClick }}">{{ c.label }}</button></sc-for>
+            </div>
+            <div style="max-height:186px;overflow-y:auto;display:flex;flex-direction:column;gap:2px;border:1px solid var(--seam);border-radius:7px;padding:5px;">
+              <sc-for list="{{ presetList }}" as="p" hint-placeholder-count="8">
+                <button style="{{ p.style }}" onClick="{{ p.onClick }}"><span style="{{ p.swatchStyle }}"></span><span style="font-size:11.5px;">{{ p.name }}</span></button>
+              </sc-for>
+            </div>
+
+            <!-- active shader controls -->
+            <sc-if value="{{ hasShader }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;flex-direction:column;gap:11px;border-top:1px solid var(--seam);padding-top:11px;">
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <span style="font-size:12.5px;font-weight:700;color:var(--text);">{{ shaderName }}</span>
+                  <button style="margin-left:auto;font-size:10.5px;padding:4px 9px;border-radius:5px;cursor:pointer;background:transparent;border:1px solid var(--edge);color:var(--text2);" onClick="{{ removeShader }}">✕ remove</button>
+                </div>
+                <div>
+                  <label style="display:flex;justify-content:space-between;font-size:10.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;"><span>Speed</span><span style="font-family:var(--font-mono);color:var(--text);">{{ speedLabel }}</span></label>
+                  <input type="range" min="0" max="4" step="0.05" value="{{ speed }}" onInput="{{ onSpeed }}" style="width:100%;">
+                </div>
+                <sc-for list="{{ shaderParamCtrls }}" as="p" hint-placeholder-count="2">
+                  <div>
+                    <label style="display:flex;justify-content:space-between;font-size:10.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;"><span>{{ p.label }}</span><sc-if value="{{ p.isNum }}" hint-placeholder-val="{{ true }}"><span style="font-family:var(--font-mono);color:var(--text);">{{ p.valueLabel }}</span></sc-if></label>
+                    <sc-if value="{{ p.isColor }}" hint-placeholder-val="{{ false }}"><input type="color" value="{{ p.value }}" onInput="{{ p.onInput }}" style="width:44px;height:30px;"></sc-if>
+                    <sc-if value="{{ p.isNum }}" hint-placeholder-val="{{ true }}"><input type="range" min="{{ p.min }}" max="{{ p.max }}" step="{{ p.step }}" value="{{ p.value }}" onInput="{{ p.onInput }}" style="width:100%;"></sc-if>
+                  </div>
+                </sc-for>
+
+                <button style="display:flex;align-items:center;justify-content:center;gap:7px;padding:9px;border-radius:6px;font-size:12px;font-weight:600;background:var(--panel3);border:1px solid var(--edge);color:var(--text);cursor:pointer;" onClick="{{ doFreeze }}">☀ Freeze frame → texture</button>
+                <div style="font-size:10px;color:var(--text2);line-height:1.45;">Bakes this exact frame into the paintable texture — still editable, exports as a plain .glb that renders anywhere.</div>
+
+                <!-- flipbook -->
+                <div style="border-top:1px solid var(--seam);padding-top:11px;display:flex;flex-direction:column;gap:9px;">
+                  <div style="font-size:11.5px;font-weight:700;color:var(--text);">▦ Flipbook — moving texture</div>
+                  <div>
+                    <div style="font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">Frames</div>
+                    <div style="display:flex;gap:5px;"><sc-for list="{{ frameOpts }}" as="f" hint-placeholder-count="4"><button style="{{ f.style }}" onClick="{{ f.onClick }}">{{ f.label }}</button></sc-for></div>
+                  </div>
+                  <div>
+                    <label style="display:flex;justify-content:space-between;font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;"><span>Loop length</span><span style="font-family:var(--font-mono);color:var(--text);">{{ loopLabel }}</span></label>
+                    <input type="range" min="1" max="8" step="0.5" value="{{ loop }}" onInput="{{ onLoop }}" style="width:100%;">
+                  </div>
+                  <div>
+                    <div style="font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">Atlas size</div>
+                    <div style="display:flex;gap:5px;"><sc-for list="{{ resOpts }}" as="r" hint-placeholder-count="2"><button style="{{ r.style }}" onClick="{{ r.onClick }}">{{ r.label }}</button></sc-for></div>
+                  </div>
+                  <button style="display:flex;align-items:center;justify-content:center;gap:7px;padding:10px;border-radius:6px;font-size:12.5px;font-weight:700;background:#c8743c;border:1px solid #c8743c;color:#fff6e0;cursor:pointer;" onClick="{{ doBakeFlipbook }}">▦ Bake flipbook</button>
+                </div>
+              </div>
+            </sc-if>
+
+            <!-- flipbook exports -->
+            <sc-if value="{{ hasFlip }}" hint-placeholder-val="{{ false }}">
+              <div style="border-top:1px solid var(--seam);padding-top:11px;display:flex;flex-direction:column;gap:8px;">
+                <div style="display:flex;align-items:center;gap:8px;"><span style="font-size:11px;font-weight:700;color:#8fd3a0;">▦ Flipbook ready</span><span style="margin-left:auto;font-family:var(--font-mono);font-size:9.5px;color:var(--muted);">{{ flipInfo }}</span></div>
+                <button style="display:flex;align-items:center;justify-content:center;gap:7px;padding:10px;border-radius:6px;font-size:12.5px;font-weight:700;background:#c8743c;border:1px solid #c8743c;color:#fff6e0;cursor:pointer;" onClick="{{ exportFlipGLB }}">⬇ .glb <span style="font-family:var(--font-mono);font-size:9.5px;opacity:.8;">atlas embedded</span></button>
+                <div style="display:flex;gap:6px;">
+                  <button style="flex:1;padding:9px;border-radius:6px;font-size:11.5px;font-weight:600;background:var(--panel3);border:1px solid var(--edge);color:var(--text);cursor:pointer;" onClick="{{ exportGodot }}">Godot shader</button>
+                  <button style="flex:1;padding:9px;border-radius:6px;font-size:11.5px;font-weight:600;background:var(--panel3);border:1px solid var(--edge);color:var(--text);cursor:pointer;" onClick="{{ exportUnity }}">Unity shader</button>
+                </div>
+                <button style="padding:8px;border-radius:6px;font-size:11.5px;font-weight:600;background:transparent;border:1px solid var(--edge);color:var(--text2);cursor:pointer;" onClick="{{ exportFlipPNG }}">⬇ atlas .png</button>
+                <div style="font-size:10px;color:var(--text2);line-height:1.45;">A plain viewer shows frame 1. Drop the Godot / Unity shader onto the mesh (atlas → its texture slot) and the loop plays in-engine.</div>
+              </div>
+            </sc-if>
+
+          </div>
+        </sc-if>
+      </div>
+
       <div style="padding:12px;">
         <div style="display:flex;gap:9px;padding:9px 11px;border-radius:7px;font-size:11px;line-height:1.55;background:rgba(200,116,60,.10);border:1px solid rgba(200,116,60,.3);color:#e8cbb0;"><span style="flex:none;">✦</span><span>Hover the flat map to see the spot light up on the model. Paint on either side — the map is the texture, live. <b>Wheel</b> zooms the map, <b>middle-drag</b> pans it.</span></div>
       </div>
@@ -191,6 +275,10 @@ class Component extends DCLogic {
     hasModel: false, hasUVs: false, hadTexture: false, tris: 0,
     tool: 'brush', color: '#c8743c', size: 64, opacity: 100, hardness: 60,
     texW: 1024, texH: 1024,
+    // shader FX
+    fxOpen: false, shaderCat: 'All', activeShader: null, shaderName: '',
+    shaderParams: {}, shaderParamsMeta: [], shaderSpeed: 1,
+    flipFrames: 16, flipLoop: 3, flipRes: 2048, flip: null,
   };
 
   componentDidMount() { this.setupEmbed(); this.boot(); this.setupDrop(); }
@@ -328,6 +416,47 @@ class Component extends DCLogic {
     this.toast('Exported ' + name);
   }
 
+  // ---------- shader FX ----------
+  applyShader(id) {
+    const eng = this._eng; if (!eng || !eng.hasModel()) { this.toast('Load a mesh first'); return; }
+    if (!eng.hasUVs) { this.toast('Needs UVs — unwrap it first'); return; }
+    const r = eng.applyShader(id);
+    if (!r) return;
+    const params = {}; (r.params || []).forEach(p => params[p.key] = p.default);
+    this.setState({ activeShader: id, shaderName: r.name, shaderParamsMeta: r.params || [], shaderParams: params, shaderSpeed: 1, flip: null });
+  }
+  removeShader() { const eng = this._eng; if (eng) eng.clearShaderFX(); this.setState({ activeShader: null, shaderName: '', shaderParamsMeta: [], shaderParams: {}, flip: null }); }
+  doFreeze() {
+    const eng = this._eng; if (!eng || !eng.hasShader()) { this.toast('Apply a shader first'); return; }
+    const r = eng.freezeShaderToTexture();
+    if (r) { this.setState({ activeShader: null, shaderName: '', shaderParamsMeta: [], shaderParams: {}, flip: null }); this.refresh(); this.toast('Frozen into the texture — still editable'); }
+  }
+  doBakeFlipbook() {
+    const eng = this._eng; if (!eng || !eng.hasShader()) { this.toast('Apply a shader first'); return; }
+    this.setState({ loading: true, loadingMsg: 'Baking flipbook…' });
+    setTimeout(() => {
+      try {
+        const r = eng.bakeFlipbook({ frames: this.state.flipFrames, loopSeconds: this.state.flipLoop, atlasRes: this.state.flipRes });
+        this.setState({ loading: false, flip: eng.flipbookInfo() });
+        this.toast('Baked ' + r.frames + ' frames (' + r.grid + '×' + r.grid + ') · ' + r.fps + ' fps loop');
+      } catch (e) { this.setState({ loading: false }); this.toast('Bake failed: ' + (e && e.message || e)); }
+    }, 30);
+  }
+  async exportFlipPNG() { const eng = this._eng; const b = await eng.exportFlipbookPNG(); if (b) this.download(b, (eng.stats().name || 'flipbook') + '_atlas.png'); }
+  async exportFlipGLB() {
+    const eng = this._eng; if (!eng.hasFlipbook()) { this.toast('Bake a flipbook first'); return; }
+    try { const bin = await eng.exportFlipbookGLB(); this.download(new Blob([bin], { type: 'model/gltf-binary' }), (eng.stats().name || 'mesh') + '_flipbook.glb'); this.toast('Exported GLB — drop in the Godot/Unity shader to play it'); }
+    catch (e) { this.toast('GLB export failed: ' + (e && e.message || e)); }
+  }
+  exportFlipShader(engine) {
+    const eng = this._eng; if (!eng.hasFlipbook()) { this.toast('Bake a flipbook first'); return; }
+    const src = eng.flipbookShaderSource(engine);
+    const name = (eng.stats().name || 'flipbook') + (engine === 'godot' ? '_flipbook.gdshader' : '_flipbook.shader');
+    this.download(new Blob([src], { type: 'text/plain' }), name);
+    try { navigator.clipboard && navigator.clipboard.writeText(src); } catch (e) {}
+    this.toast((engine === 'godot' ? 'Godot' : 'Unity') + ' shader saved + copied to clipboard');
+  }
+
   routeToUV() {
     const eng = this._eng; if (!eng || !eng.hasModel()) return;
     if (!this._embedded) { this.toast('Open the UV tool from the dock to unwrap this mesh first.'); return; }
@@ -389,6 +518,34 @@ class Component extends DCLogic {
     const palette = ['#3a2a1c', '#8a6a4a', '#c8743c', '#e0a93b', '#6e9355', '#5a76b8', '#b23b3b', '#f2ead4'];
     const swatches = palette.map(hex => ({ hex, style: this.swatchStyle((st.color || '').toLowerCase() === hex) + 'background:' + hex + ';', onClick: () => { this.setState({ color: hex }); if (eng) eng.setColor(hex); } }));
 
+    // ---------- shader FX ----------
+    const cats = eng ? ['All', ...eng.shaderCategories()] : ['All'];
+    const catChips = cats.map(c => ({
+      label: c, style: 'font-size:10.5px;font-weight:600;padding:5px 10px;border-radius:14px;cursor:pointer;white-space:nowrap;border:1px solid '
+        + (st.shaderCat === c ? '#c8743c' : 'var(--edge)') + ';background:' + (st.shaderCat === c ? 'rgba(200,116,60,.18)' : 'var(--panel-3)') + ';color:' + (st.shaderCat === c ? '#e6c3a3' : 'var(--text2)') + ';',
+      onClick: () => this.setState({ shaderCat: c }),
+    }));
+    const presetList = (eng ? eng.shaderPresets(st.shaderCat) : []).map(p => ({
+      id: p.id, name: p.name,
+      style: 'display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:6px;cursor:pointer;text-align:left;width:100%;border:1px solid '
+        + (st.activeShader === p.id ? '#c8743c' : 'transparent') + ';background:' + (st.activeShader === p.id ? 'rgba(200,116,60,.14)' : 'transparent') + ';color:var(--text);',
+      swatchStyle: 'width:20px;height:20px;border-radius:5px;flex:none;border:1px solid var(--edge);background:' + (p.swatch || '#666') + ';',
+      onClick: () => this.applyShader(p.id),
+    }));
+    const shaderParamCtrls = (st.shaderParamsMeta || []).map(p => {
+      const val = st.shaderParams[p.key];
+      if (p.type === 'color') {
+        return { key: p.key, label: p.label, isColor: true, isNum: false, value: val,
+          onInput: (e) => { const v = e.target.value; this.setState({ shaderParams: Object.assign({}, this.state.shaderParams, { [p.key]: v }) }); eng && eng.setShaderParam(p.key, v); } };
+      }
+      return { key: p.key, label: p.label, isColor: false, isNum: true,
+        min: p.min != null ? p.min : 0, max: p.max != null ? p.max : 1, step: p.step != null ? p.step : 0.01,
+        value: val, valueLabel: (typeof val === 'number' ? (Math.round(val * 100) / 100) : val),
+        onInput: (e) => { const v = +e.target.value; this.setState({ shaderParams: Object.assign({}, this.state.shaderParams, { [p.key]: v }) }); eng && eng.setShaderParam(p.key, v); } };
+    });
+    const frameOpts = [9, 16, 25, 36].map(n => ({ n, label: n + '', style: 'flex:1;font-size:11px;font-weight:600;padding:6px 4px;border-radius:5px;cursor:pointer;border:1px solid ' + (st.flipFrames === n ? '#c8743c' : 'var(--edge)') + ';background:' + (st.flipFrames === n ? 'rgba(200,116,60,.16)' : 'var(--panel-3)') + ';color:' + (st.flipFrames === n ? '#e6c3a3' : 'var(--text)') + ';', onClick: () => this.setState({ flipFrames: n }) }));
+    const resOpts = [1024, 2048].map(n => ({ n, label: n + '²', style: 'flex:1;font-size:11px;font-weight:600;padding:6px 4px;border-radius:5px;cursor:pointer;border:1px solid ' + (st.flipRes === n ? '#c8743c' : 'var(--edge)') + ';background:' + (st.flipRes === n ? 'rgba(200,116,60,.16)' : 'var(--panel-3)') + ';color:' + (st.flipRes === n ? '#e6c3a3' : 'var(--text)') + ';', onClick: () => this.setState({ flipRes: n }) }));
+
     return {
       meshName: st.meshName, dotColor: st.hasModel ? 'var(--good)' : 'var(--muted)',
       noModel: !st.hasModel && !st.loading, loading: st.loading, loadingMsg: st.loadingMsg,
@@ -413,6 +570,26 @@ class Component extends DCLogic {
       fitView: () => this.fitView(),
       doExportPNG: async () => { if (!eng || !eng.hasModel()) { this.toast('Load a mesh first'); return; } const b = await eng.exportPNG(); this.download(b, (eng.stats().name || 'texture') + '.png'); },
       doExportGLB: async () => { if (!eng || !eng.hasModel()) { this.toast('Load a mesh first'); return; } try { const bin = await eng.exportGLB(); this.download(new Blob([bin], { type: 'model/gltf-binary' }), (eng.stats().name || 'mesh') + '_painted.glb'); } catch (e) { this.toast('GLB export failed: ' + (e && e.message || e)); } },
+      // shader FX
+      fxOpen: st.fxOpen, toggleFx: () => this.setState({ fxOpen: !st.fxOpen }),
+      fxChevron: st.fxOpen ? '▾' : '▸',
+      fxDisabled: !st.hasModel || !st.hasUVs,
+      catChips, presetList,
+      hasShader: !!st.activeShader, shaderName: st.shaderName,
+      shaderParamCtrls,
+      speedLabel: (Math.round(st.shaderSpeed * 100) / 100) + '×', speed: st.shaderSpeed,
+      onSpeed: (e) => { const v = +e.target.value; this.setState({ shaderSpeed: v }); eng && eng.setShaderSpeed(v); },
+      removeShader: () => this.removeShader(),
+      doFreeze: () => this.doFreeze(),
+      frameOpts, resOpts,
+      loopLabel: st.flipLoop + 's', loop: st.flipLoop, onLoop: (e) => this.setState({ flipLoop: +e.target.value }),
+      doBakeFlipbook: () => this.doBakeFlipbook(),
+      flip: st.flip, hasFlip: !!st.flip,
+      flipInfo: st.flip ? (st.flip.frames + ' frames · ' + st.flip.grid + '×' + st.flip.grid + ' · ' + st.flip.fps + ' fps') : '',
+      exportFlipPNG: () => this.exportFlipPNG(),
+      exportFlipGLB: () => this.exportFlipGLB(),
+      exportGodot: () => this.exportFlipShader('godot'),
+      exportUnity: () => this.exportFlipShader('unity'),
     };
   }
 }

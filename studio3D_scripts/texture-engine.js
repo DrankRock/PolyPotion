@@ -16,6 +16,7 @@ import { GLTFLoader } from 'https://esm.sh/three@0.160.0/examples/jsm/loaders/GL
 import { OBJLoader } from 'https://esm.sh/three@0.160.0/examples/jsm/loaders/OBJLoader.js';
 import { GLTFExporter } from 'https://esm.sh/three@0.160.0/examples/jsm/exporters/GLTFExporter.js';
 import { fetchAssetBuffer } from './chunk-loader.js';
+import { SHADER_PRESETS, buildShaderMaterial, presetDescriptors } from './shader-lib.js';
 
 const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
 
@@ -32,6 +33,7 @@ export class TexEngine {
     this.controls = new OrbitControls(this.camera, canvas);
     this.controls.enableDamping = true; this.controls.dampingFactor = 0.08;
     this.controls.target.set(0, 0.9, 0);
+    this.controls.zoomSpeed = 0.6; this.controls.zoomToCursor = true;
 
     const hemi = new THREE.HemisphereLight(0xeef2fb, 0x2b2f36, 1.0); this.scene.add(hemi);
     const key = new THREE.DirectionalLight(0xffffff, 1.5); key.position.set(3, 6, 4); this.scene.add(key);
@@ -62,6 +64,12 @@ export class TexEngine {
 
     this._fbx = new FBXLoader(); this._gltf = new GLTFLoader(); this._obj = new OBJLoader();
     this.onStatus = null; this.onChange = null; this.onPickColor = null;
+
+    // shader / FX state
+    this._shader = null;        // { preset, uniforms, material, values, speed, frozen }
+    this._shaderT0 = performance.now();
+    this._flip = null;          // { canvas, texture, grid, frames, fps, previewing, dur }
+    this._stdMat = null;        // the painted MeshStandardMaterial, kept for restore
 
     // 3D marker ring — shows where the brush lands on the surface
     const ringGeo = new THREE.RingGeometry(0.02, 0.028, 40);
@@ -163,6 +171,7 @@ export class TexEngine {
   }
 
   _clear() {
+    this.clearShaderFX(true);
     if (this.model) { this.wrap.remove(this.model); this.model.traverse(o => { if (o.isMesh) o.geometry && o.geometry.dispose(); }); }
     this.model = null; this.paintMesh = null; this.uvGrid = null; this.history = []; this.redoStack = [];
     this.cloneSrc = null; this.cloneAnchor = null; this.marker.visible = false;
@@ -189,6 +198,7 @@ export class TexEngine {
     this.texture.anisotropy = 4; this.texture.needsUpdate = true;
     const newMat = new THREE.MeshStandardMaterial({ map: this.texture, roughness: 0.85, metalness: 0.0, side: THREE.DoubleSide });
     mesh.material = newMat;
+    this._stdMat = newMat;
     this._pushHistory();
   }
   _fillBlank() {
@@ -215,7 +225,9 @@ export class TexEngine {
     const dirs = { persp: new THREE.Vector3(0.5, 0.28, 1).normalize(), front: new THREE.Vector3(0, 0, 1), back: new THREE.Vector3(0, 0, -1), side: new THREE.Vector3(1, 0, 0), top: new THREE.Vector3(0, 1, 0.001) };
     const d = dirs[view] || dirs.persp;
     this.camera.position.copy(c).addScaledVector(d, r * 2.6);
-    this.camera.near = Math.max(0.01, r / 100); this.camera.far = r * 100; this.camera.updateProjectionMatrix(); this.controls.update();
+    this.camera.near = Math.max(0.01, r / 100); this.camera.far = r * 100;
+    this.controls.minDistance = r * 0.45; this.controls.maxDistance = r * 14;
+    this.camera.updateProjectionMatrix(); this.controls.update();
   }
   setView(v) { this.frame(v); }
 
@@ -297,7 +309,7 @@ export class TexEngine {
     const up = () => { if (down) { down = false; this.controls.enabled = true; this._strokeEnd(); } };
     el.addEventListener('pointerup', up); el.addEventListener('pointerleave', () => { this.marker.visible = false; up(); });
   }
-  _paintDisabled() { return !this.paintMesh || !this.hasUVs || this.tool === 'orbit'; }
+  _paintDisabled() { return !this.paintMesh || !this.hasUVs || this.tool === 'orbit' || !!this._flip; }
   _placeMarkerAt(point, normal) {
     const rWorld = (this.size / this.texW) * this.modelRadius * 1.4;
     this.marker.position.copy(point);
@@ -448,6 +460,219 @@ export class TexEngine {
   }
   clearTexture(css) { this._pushHistory(); const g = this.texCtx; g.globalCompositeOperation = 'source-over'; g.fillStyle = css || '#d7cdbb'; g.fillRect(0, 0, this.texW, this.texH); this.texture.needsUpdate = true; this._changed(); }
 
+  // ============================================================
+  //  SHADER / FX  — apply an animated Showcase shader to the mesh, preview it
+  //  live, then BAKE it into something a game engine can actually load:
+  //    · Freeze  → one frame of the look painted into the texture (unlit, edits
+  //                keep working; exports as a plain glb that renders anywhere).
+  //    · Flipbook→ N frames of the loop packed into a sprite-sheet atlas; a
+  //                tiny per-engine shader scrolls the cells so the MOTION plays
+  //                in Godot / Unity / Unreal, not just three.js.
+  // ============================================================
+  shaderCategories() {
+    const seen = []; presetDescriptors().forEach(p => { if (p.category && !seen.includes(p.category)) seen.push(p.category); });
+    return seen;
+  }
+  shaderPresets(category) {
+    const all = presetDescriptors();
+    return (category && category !== 'All') ? all.filter(p => p.category === category) : all;
+  }
+
+  applyShader(id, values) {
+    if (!this.paintMesh) return;
+    const preset = SHADER_PRESETS.find(p => p.id === id);
+    if (!preset) { this._status('Unknown shader: ' + id); return; }
+    if (preset.kind === 'physical' || !preset.fragBody) { this._status('That preset can\u2019t be baked (not a GLSL look).'); return; }
+    this.clearFlipbook(true);
+    values = values || {};
+    (preset.params || []).forEach(p => { if (values[p.key] == null) values[p.key] = p.default; });
+    const built = buildShaderMaterial(preset, values, this.texture, values.__texMix != null ? values.__texMix : 1.0);
+    this.paintMesh.material = built.material;
+    this._shader = { preset, uniforms: built.uniforms, material: built.material, values, speed: values.speed != null ? values.speed : 1, frozen: false };
+    this._shaderT0 = performance.now();
+    this._changed();
+    return { id, name: preset.name, params: (preset.params || []) };
+  }
+  setShaderParam(key, value) {
+    const s = this._shader; if (!s) return;
+    s.values[key] = value;
+    const u = s.uniforms['u_' + key];
+    if (u) { if (u.value && u.value.isColor) u.value.set(value); else u.value = value; }
+  }
+  setShaderSpeed(v) { const s = this._shader; if (!s) return; s.speed = v; if (s.uniforms.u_speed) s.uniforms.u_speed.value = v; }
+  hasShader() { return !!this._shader; }
+  activeShaderId() { return this._shader ? this._shader.preset.id : null; }
+
+  clearShaderFX(silent) {
+    this.clearFlipbook(true);
+    if (this._shader) { try { this._shader.material.dispose(); } catch (e) {} this._shader = null; }
+    if (this.paintMesh && this._stdMat) { this.texture.needsUpdate = true; this.paintMesh.material = this._stdMat; }
+    if (!silent) this._changed();
+  }
+
+  _uvBakeMats() {
+    const src = this._shader.material;
+    const patchedVert = src.vertexShader.replace('gl_Position = projectionMatrix * viewMatrix * wp;', 'gl_Position = vec4(uv * 2.0 - 1.0, 0.0, 1.0);');
+    const common = { uniforms: src.uniforms, vertexShader: patchedVert, side: THREE.DoubleSide, transparent: false, blending: THREE.NoBlending, depthTest: false, depthWrite: false };
+    return {
+      bake: new THREE.ShaderMaterial(Object.assign({}, common, { fragmentShader: src.fragmentShader })),
+      mask: new THREE.ShaderMaterial(Object.assign({}, common, { fragmentShader: 'void main(){ gl_FragColor = vec4(1.0); }' })),
+    };
+  }
+  _dilate(buf, mask, res, passes) {
+    for (let pass = 0; pass < (passes || 6); pass++) {
+      const add = [];
+      for (let y = 0; y < res; y++) for (let x = 0; x < res; x++) {
+        const idx = y * res + x; if (mask[idx]) continue;
+        let r = 0, g = 0, b = 0, a = 0, c = 0;
+        for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+          const nx = x + dx, ny = y + dy; if (nx < 0 || ny < 0 || nx >= res || ny >= res) continue;
+          const ni = ny * res + nx; if (mask[ni] === 1) { r += buf[ni * 4]; g += buf[ni * 4 + 1]; b += buf[ni * 4 + 2]; a += buf[ni * 4 + 3]; c++; }
+        }
+        if (c) add.push([idx, r / c, g / c, b / c, a / c]);
+      }
+      for (const [idx, r, g, b, a] of add) { buf[idx * 4] = r; buf[idx * 4 + 1] = g; buf[idx * 4 + 2] = b; buf[idx * 4 + 3] = a; mask[idx] = 1; }
+      if (!add.length) break;
+    }
+  }
+  _renderUVFrame(res, mats, rt) {
+    const mesh = this.paintMesh, renderer = this.renderer;
+    const prevMat = mesh.material, prevCull = mesh.frustumCulled, prevBg = this.scene.background;
+    const hidden = []; this.scene.traverse(o => { if (o !== mesh && o.visible && (o.isMesh || o.isLine || o.isPoints || o.isSprite)) { o.visible = false; hidden.push(o); } });
+    this.scene.background = null; mesh.frustumCulled = false;
+    renderer.setRenderTarget(rt); renderer.setClearColor(0x000000, 0);
+    const color = new Uint8Array(res * res * 4), maskPx = new Uint8Array(res * res * 4);
+    try {
+      mesh.material = mats.bake; renderer.clear(); renderer.render(this.scene, this.camera);
+      renderer.readRenderTargetPixels(rt, 0, 0, res, res, color);
+      mesh.material = mats.mask; renderer.clear(); renderer.render(this.scene, this.camera);
+      renderer.readRenderTargetPixels(rt, 0, 0, res, res, maskPx);
+    } finally {
+      mesh.material = prevMat; mesh.frustumCulled = prevCull; this.scene.background = prevBg;
+      hidden.forEach(o => o.visible = true);
+      renderer.setRenderTarget(null);
+    }
+    const N = res * res, mask = new Uint8Array(N);
+    for (let i = 0; i < N; i++) mask[i] = maskPx[i * 4] > 8 ? 1 : 0;
+    this._dilate(color, mask, res, 8);
+    const flipped = new Uint8ClampedArray(N * 4), row = res * 4;
+    for (let y = 0; y < res; y++) { const s = (res - 1 - y) * row; flipped.set(color.subarray(s, s + row), y * row); }
+    return new ImageData(flipped, res, res);
+  }
+
+  freezeShaderToTexture() {
+    if (!this._shader) { this._status('Apply a shader first'); return; }
+    if (!this.paintMesh.geometry.getAttribute('uv')) { this._status('Needs UVs — unwrap first'); return; }
+    this._pushHistory();
+    const res = this.texW; const mats = this._uvBakeMats();
+    const rt = new THREE.WebGLRenderTarget(res, res, { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter });
+    const prevClear = this.renderer.getClearColor(new THREE.Color()), prevA = this.renderer.getClearAlpha();
+    let img;
+    try { img = this._renderUVFrame(res, mats, rt); }
+    finally { rt.dispose(); mats.bake.dispose(); mats.mask.dispose(); this.renderer.setClearColor(prevClear, prevA); }
+    this.texCtx.globalCompositeOperation = 'source-over';
+    this.texCtx.putImageData(img, 0, 0);
+    this.texture.needsUpdate = true;
+    this.clearShaderFX(true);
+    this._pushRedoClear();
+    this._changed();
+    this._status('Frozen into the texture — keep painting, or export .png / .glb');
+    return { res };
+  }
+
+  bakeFlipbook(opts) {
+    opts = opts || {};
+    if (!this._shader) { this._status('Apply a shader first'); return; }
+    if (!this.paintMesh.geometry.getAttribute('uv')) { this._status('Needs UVs — unwrap first'); return; }
+    const frames = opts.frames || 16;
+    const grid = Math.ceil(Math.sqrt(frames));
+    const atlasRes = opts.atlasRes || 2048;
+    const cell = Math.floor(atlasRes / grid);
+    const dur = opts.loopSeconds || 3;
+    const fps = frames / dur;
+    const presetName = this._shader.preset.name;
+
+    const atlas = document.createElement('canvas'); atlas.width = atlas.height = cell * grid;
+    const actx = atlas.getContext('2d');
+    const mats = this._uvBakeMats();
+    const rt = new THREE.WebGLRenderTarget(cell, cell, { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter });
+    const prevClear = this.renderer.getClearColor(new THREE.Color()), prevA = this.renderer.getClearAlpha();
+    const prevTime = this._shader.uniforms.u_time.value;
+    try {
+      for (let k = 0; k < frames; k++) {
+        this._shader.uniforms.u_time.value = (k / frames) * dur;
+        const img = this._renderUVFrame(cell, mats, rt);
+        const col = k % grid, r = Math.floor(k / grid);
+        actx.putImageData(img, col * cell, r * cell);
+      }
+    } finally {
+      rt.dispose(); mats.bake.dispose(); mats.mask.dispose();
+      this.renderer.setClearColor(prevClear, prevA);
+      this._shader.uniforms.u_time.value = prevTime;
+    }
+
+    const tex = new THREE.CanvasTexture(atlas);
+    tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 4;
+    tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+    tex.repeat.set(1 / grid, 1 / grid); tex.needsUpdate = true;
+    const mat = new THREE.MeshBasicMaterial({ map: tex, side: THREE.DoubleSide }); mat.toneMapped = false;
+    if (this._shader) { try { this._shader.material.dispose(); } catch (e) {} this._shader = null; }
+    this.paintMesh.material = mat;
+    this._flip = { canvas: atlas, texture: tex, material: mat, grid, frames, fps, dur, previewing: true, presetName };
+    this._changed();
+    this._status('Baked ' + frames + '-frame flipbook (' + grid + '\u00d7' + grid + ') \u2014 previewing the loop');
+    return { frames, grid, fps: Math.round(fps * 10) / 10, cell };
+  }
+  _flipCellOffset(k) {
+    const g = this._flip.grid, col = k % g, row = Math.floor(k / g);
+    return { x: col / g, y: (g - 1 - row) / g };
+  }
+  _flipTick() {
+    const f = this._flip; if (!f || !f.previewing) return;
+    const k = Math.floor((performance.now() / 1000 * f.fps)) % f.frames;
+    if (k === f._k) return; f._k = k;
+    const o = this._flipCellOffset(k); f.texture.offset.set(o.x, o.y);
+  }
+  setFlipPreview(on) { if (this._flip) { this._flip.previewing = on; if (!on) { const o = this._flipCellOffset(0); this._flip.texture.offset.set(o.x, o.y); } } }
+  hasFlipbook() { return !!this._flip; }
+  flipbookInfo() { return this._flip ? { frames: this._flip.frames, grid: this._flip.grid, fps: Math.round(this._flip.fps * 10) / 10 } : null; }
+  clearFlipbook(silent) {
+    if (this._flip) { try { this._flip.texture.dispose(); this._flip.material.dispose(); } catch (e) {} this._flip = null; if (this.paintMesh && this._stdMat) this.paintMesh.material = this._stdMat; if (!silent) this._changed(); }
+  }
+
+  exportFlipbookPNG() { return this._flip ? new Promise(res => this._flip.canvas.toBlob(b => res(b), 'image/png')) : null; }
+  async exportFlipbookGLB() {
+    if (!this._flip) throw new Error('Bake a flipbook first');
+    const o = this._flipCellOffset(0);
+    this._flip.texture.offset.set(o.x, o.y);
+    const exp = new GLTFExporter();
+    return await new Promise((res, rej) => exp.parse(this.model, res, rej, { binary: true, embedImages: true, onlyVisible: false }));
+  }
+  flipbookShaderSource(engine) {
+    const f = this._flip; if (!f) return '';
+    const G = f.grid, N = f.frames, F = Math.round(f.fps * 100) / 100;
+    if (engine === 'godot') {
+      return `// PolyPotion flipbook \u2014 Godot 4 (.gdshader). Assign the exported atlas PNG to "flipbook".\n`
+        + `shader_type spatial;\nrender_mode unshaded;\n\n`
+        + `uniform sampler2D flipbook : source_color, filter_linear;\n`
+        + `const int COLUMNS = ${G};\nconst int ROWS = ${G};\nconst int FRAMES = ${N};\nuniform float fps = ${F};\n\n`
+        + `void fragment() {\n`
+        + `    int frame = int(mod(TIME * fps, float(FRAMES)));\n`
+        + `    int col = frame % COLUMNS;\n    int row = frame / COLUMNS;\n`
+        + `    vec2 cell = vec2(float(col), float(row)) / vec2(float(COLUMNS), float(ROWS));\n`
+        + `    vec2 uv = UV / vec2(float(COLUMNS), float(ROWS)) + cell;\n`
+        + `    ALBEDO = texture(flipbook, uv).rgb;\n}\n`;
+    }
+    return `// PolyPotion flipbook \u2014 Unity unlit. Assign the exported atlas PNG to _MainTex.\n`
+      + `Shader "PolyPotion/Flipbook" {\n  Properties { _MainTex ("Atlas", 2D) = "white" {} _FPS ("FPS", Float) = ${F} }\n`
+      + `  SubShader {\n    Tags { "RenderType"="Opaque" }\n    Pass {\n      CGPROGRAM\n      #pragma vertex vert\n      #pragma fragment frag\n      #include "UnityCG.cginc"\n`
+      + `      sampler2D _MainTex; float _FPS;\n      static const int COLUMNS = ${G};\n      static const int ROWS = ${G};\n      static const int FRAMES = ${N};\n`
+      + `      struct appdata { float4 vertex : POSITION; float2 uv : TEXCOORD0; };\n      struct v2f { float4 pos : SV_POSITION; float2 uv : TEXCOORD0; };\n`
+      + `      v2f vert (appdata v) { v2f o; o.pos = UnityObjectToClipPos(v.vertex); o.uv = v.uv; return o; }\n`
+      + `      fixed4 frag (v2f i) : SV_Target {\n        int frame = (int)fmod(_Time.y * _FPS, (float)FRAMES);\n        int col = frame % COLUMNS;\n        int row = frame / COLUMNS;\n        int rowFromBottom = ROWS - 1 - row;\n`
+      + `        float2 uv = i.uv / float2(COLUMNS, ROWS) + float2(col, rowFromBottom) / float2(COLUMNS, ROWS);\n        return tex2D(_MainTex, uv);\n      }\n      ENDCG\n    }\n  }\n}\n`;
+  }
+
   // ---------- export ----------
   exportPNG() { return new Promise(res => this.texCanvas.toBlob(b => res(b), 'image/png')); }
   async exportGLB() {
@@ -459,6 +684,12 @@ export class TexEngine {
   stats() { return { name: this.modelName, tris: this.tris, hasUVs: this.hasUVs, hadTexture: this.hadTexture, w: this.texW, h: this.texH }; }
   hasModel() { return !!this.model; }
 
-  _loop() { requestAnimationFrame(this._loop); this.controls.update(); this.renderer.render(this.scene, this.camera); }
+  _loop() {
+    requestAnimationFrame(this._loop);
+    if (this._shader && !this._shader.frozen) this._shader.uniforms.u_time.value = (performance.now() - this._shaderT0) / 1000;
+    if (this._flip) this._flipTick();
+    this.controls.update();
+    this.renderer.render(this.scene, this.camera);
+  }
   dispose() { this._ro && this._ro.disconnect(); }
 }

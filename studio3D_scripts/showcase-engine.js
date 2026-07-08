@@ -124,12 +124,22 @@ export class SCEngine {
 
     this.camera = new THREE.PerspectiveCamera(42, 1, 0.01, 500);
     this.camera.position.set(1.8, 1.5, 3.4);
+    this.perspCamera = this.camera;
+    // orthographic twin for Blender's numpad-5 toggle (frustum synced on use)
+    this.orthoCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.01, 500);
+    this.orthoCamera.position.copy(this.camera.position);
+    this.isOrtho = false;
     this.controls = new OrbitControls(this.camera, canvas);
     this.controls.enableDamping = true;
     this.controls.dampingFactor = 0.08;
     this.controls.target.set(0, 0.95, 0);
-    this.controls.minDistance = 0.2;
-    this.controls.maxDistance = 60;
+    // gentler, cursor-anchored zoom so a wheel notch can't fling the camera
+    // super-far or clip inside the mesh (bounds are re-derived per model in frame())
+    this.controls.zoomSpeed = 0.6;
+    this.controls.zoomToCursor = true;
+    this.controls.minDistance = 0.5;
+    this.controls.maxDistance = 20;
+    this._installNavKeys(canvas);
 
     // lighting — warm key / cool rim, gentle fill
     const hemi = new THREE.HemisphereLight(0xeef2fb, 0x2b2f36, 0.95); this.scene.add(hemi);
@@ -204,7 +214,22 @@ export class SCEngine {
     const el = this.canvas.parentElement || this.canvas;
     const w = el.clientWidth || 1, h = el.clientHeight || 1;
     this.renderer.setSize(w, h, false);
-    this.camera.aspect = w / h; this.camera.updateProjectionMatrix();
+    this.perspCamera.aspect = w / h; this.perspCamera.updateProjectionMatrix();
+    this._updateOrthoFrustum();
+  }
+
+  // size the ortho frustum so it matches what the perspective camera frames at
+  // the current orbit distance (keeps the toggle visually seamless)
+  _updateOrthoFrustum() {
+    const el = this.canvas.parentElement || this.canvas;
+    const aspect = (el.clientWidth || 1) / (el.clientHeight || 1);
+    const dist = this.camera.position.distanceTo(this.controls.target) || 1;
+    const halfH = dist * Math.tan((this.perspCamera.fov * Math.PI / 180) / 2);
+    const halfW = halfH * aspect;
+    const o = this.orthoCamera;
+    o.left = -halfW; o.right = halfW; o.top = halfH; o.bottom = -halfH;
+    o.near = this.perspCamera.near; o.far = this.perspCamera.far;
+    o.updateProjectionMatrix();
   }
 
   setBackground(name) {
@@ -410,12 +435,75 @@ export class SCEngine {
     };
     const d = dirs[view] || dirs.persp;
     this.camera.position.copy(c).addScaledVector(d, dist);
-    this.camera.near = Math.max(0.01, r / 100); this.camera.far = r * 100;
-    this.camera.updateProjectionMatrix();
+    this.perspCamera.near = Math.max(0.01, r / 100); this.perspCamera.far = r * 100;
+    this.controls.minDistance = r * 0.45;
+    this.controls.maxDistance = r * 14;
+    this.perspCamera.updateProjectionMatrix();
+    this._updateOrthoFrustum();
     this.controls.update();
   }
 
   setView(v) { this.frame(v); }
+
+  // ---------- Blender-style viewport navigation ----------
+  toggleOrtho(force) {
+    const want = force != null ? force : !this.isOrtho;
+    if (want === this.isOrtho) return this.isOrtho;
+    const from = this.camera, to = want ? this.orthoCamera : this.perspCamera;
+    to.position.copy(from.position); to.quaternion.copy(from.quaternion);
+    this.camera = to; this.controls.object = to;
+    this.isOrtho = want;
+    this._updateOrthoFrustum(); this.perspCamera.updateProjectionMatrix();
+    this.controls.update(); this._changed();
+    this._status(want ? 'Orthographic' : 'Perspective');
+    return this.isOrtho;
+  }
+  // step-orbit the camera around the target (numpad 4/6/8/2), degrees
+  orbitStep(azDeg, elDeg) {
+    const c = this.controls.target;
+    const off = this.camera.position.clone().sub(c);
+    const sph = new THREE.Spherical().setFromVector3(off);
+    sph.theta -= (azDeg || 0) * Math.PI / 180;
+    sph.phi = Math.max(0.001, Math.min(Math.PI - 0.001, sph.phi - (elDeg || 0) * Math.PI / 180));
+    off.setFromSpherical(sph);
+    this.camera.position.copy(c).add(off);
+    this.controls.update();
+  }
+  zoomStep(factor) {
+    const c = this.controls.target;
+    const off = this.camera.position.clone().sub(c);
+    let len = off.length() * factor;
+    len = Math.max(this.controls.minDistance, Math.min(this.controls.maxDistance, len));
+    off.setLength(len); this.camera.position.copy(c).add(off);
+    this._updateOrthoFrustum(); this.controls.update();
+  }
+  _installNavKeys(canvas) {
+    const typing = (t) => t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable);
+    this._navKeyHandler = (e) => {
+      if (typing(e.target) || !this.model) return;
+      const k = e.key, ctrl = e.ctrlKey || e.metaKey;
+      const map = {
+        '1': () => this.setView(ctrl ? 'back' : 'front'),
+        '3': () => { this.frame(); this.camera.position.copy(this.modelCenter).addScaledVector(new THREE.Vector3(ctrl ? -1 : 1, 0, 0), this.modelRadius * 2.7); this.controls.update(); },
+        '7': () => { this.frame(); this.camera.position.copy(this.modelCenter).addScaledVector(new THREE.Vector3(0, ctrl ? -1 : 1, 0.001), this.modelRadius * 2.7); this.controls.update(); },
+        '5': () => this.toggleOrtho(),
+        '4': () => this.orbitStep(-15, 0),
+        '6': () => this.orbitStep(15, 0),
+        '8': () => this.orbitStep(0, 15),
+        '2': () => this.orbitStep(0, -15),
+        '.': () => this.frame(),
+        '+': () => this.zoomStep(1 / 1.15),
+        '=': () => this.zoomStep(1 / 1.15),
+        '-': () => this.zoomStep(1.15),
+      };
+      // accept both numpad (event.code NumpadN) and top-row digits
+      const code = e.code || '';
+      const numpad = code.startsWith('Numpad') ? code.slice(6) : null;
+      const fn = map[numpad] || map[k];
+      if (fn) { e.preventDefault(); fn(); }
+    };
+    window.addEventListener('keydown', this._navKeyHandler);
+  }
 
   // ---------- embedded clip playback ----------
   playClip(i) {
@@ -1060,5 +1148,5 @@ export class SCEngine {
     }
   }
 
-  dispose() { this._ro && this._ro.disconnect(); }
+  dispose() { this._ro && this._ro.disconnect(); if (this._navKeyHandler) window.removeEventListener('keydown', this._navKeyHandler); }
 }

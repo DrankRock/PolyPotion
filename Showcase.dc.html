@@ -91,10 +91,12 @@
       </sc-if>
 
       <!-- view row -->
-      <div style="position:absolute;left:50%;top:10px;transform:translateX(-50%);display:flex;align-items:center;gap:4px;background:rgba(15,15,15,.86);border:1px solid var(--edge);border-radius:8px;padding:5px 7px;">
+      <div style="position:absolute;left:50%;top:10px;transform:translateX(-50%);display:flex;flex-wrap:nowrap;white-space:nowrap;align-items:center;gap:4px;background:rgba(15,15,15,.86);border:1px solid var(--edge);border-radius:8px;padding:5px 7px;">
         <sc-for list="{{ views }}" as="v" hint-placeholder-count="5">
-          <button style="font-size:11px;font-weight:600;padding:5px 9px;border-radius:5px;cursor:pointer;background:transparent;border:none;color:var(--text2);" onClick="{{ v.onClick }}">{{ v.label }}</button>
+          <button style="font-size:11px;font-weight:600;padding:5px 9px;border-radius:5px;cursor:pointer;background:transparent;border:1px solid transparent;color:var(--text2);" onClick="{{ v.onClick }}">{{ v.label }}</button>
         </sc-for>
+        <span style="width:1px;height:16px;background:var(--edge);margin:0 2px;"></span>
+        <button style="{{ orthoChipStyle }}" onClick="{{ toggleOrtho }}" title="Toggle perspective / orthographic (Numpad 5)">{{ orthoLabel }}</button>
       </div>
 
       <!-- top-right toggles -->
@@ -105,6 +107,13 @@
 
       <div style="position:absolute;left:10px;top:10px;font-family:var(--font-mono);font-size:10px;letter-spacing:.1em;color:var(--text2);background:rgba(15,15,15,.6);padding:3px 7px;border-radius:3px;pointer-events:none;">{{ modeBadge }}</div>
       <div style="position:absolute;right:10px;bottom:12px;font-size:10.5px;color:var(--text2);background:rgba(15,15,15,.78);border:1px solid var(--edge);padding:6px 11px;border-radius:6px;pointer-events:none;max-width:250px;">drag orbits · right-drag pans · scroll zooms</div>
+
+      <!-- Blender-style keyboard shortcuts -->
+      <div style="position:absolute;left:10px;bottom:12px;font-family:var(--font-mono);font-size:9.5px;line-height:1.7;color:var(--text2);background:rgba(15,15,15,.78);border:1px solid var(--edge);padding:7px 10px;border-radius:6px;pointer-events:none;">
+        <div style="color:var(--muted);letter-spacing:.1em;margin-bottom:3px;">NUMPAD</div>
+        1 front · 3 side · 7 top <span style="color:var(--muted);">(+Ctrl = opposite)</span><br>
+        5 ortho/persp · 4 6 8 2 orbit · . frame · +/− zoom
+      </div>
 
       <!-- transport bar -->
       <sc-if value="{{ hasAnim }}" hint-placeholder-val="{{ false }}">
@@ -382,7 +391,7 @@ class Component extends DCLogic {
     clips: [], activeClip: -1, hasAnim: false, playing: false,
     time: 0, duration: 0, clipName: '',
     libAnims: [], activeLib: '',
-    spin: false, wire: false, bg: 'studio', ground: true, speed: 100,
+    spin: false, wire: false, bg: 'studio', ground: true, speed: 100, ortho: false,
     env: 'studio', envInt: 75, envBg: false, shadow: 34,
     hasUVs: false, hasTexture: false, suggestDismiss: false,
     presets: [], meshes: [], shaderTarget: 'all', activeShader: null, shaderParams: {}, texMix: 1,
@@ -418,7 +427,7 @@ class Component extends DCLogic {
     } });
     this.setState({
       hasModel: eng.hasModel(), tris: s.tris, bones: s.bones, hasSkeleton: s.hasSkeleton,
-      hasUVs, hasTexture, meshes: eng.listMeshes(),
+      hasUVs, hasTexture, meshes: eng.listMeshes(), ortho: !!eng.isOrtho,
       meshName: eng.hasModel() ? s.name : 'no model',
       clips: eng.clips.map((c, i) => ({ i, name: c.name || ('Clip ' + (i + 1)), duration: c.duration || 0 })),
       hasAnim: !!eng.activeAction, playing: eng.playing,
@@ -721,6 +730,9 @@ class Component extends DCLogic {
       groundOn: st.ground, toggleGround: (e) => { const on = e.target.checked; this.setState({ ground: on }); if (eng) eng.setGround(on); },
       spinChipStyle: this.chip(st.spin), toggleSpin: () => { const v = !st.spin; this.setState({ spin: v }); if (eng) eng.setAutoSpin(v); },
       wireChipStyle: this.chip(st.wire), toggleWire: () => { const v = !st.wire; this.setState({ wire: v }); if (eng) eng.setWire(v); },
+      orthoLabel: st.ortho ? '□ Ortho' : '◱ Persp',
+      orthoChipStyle: 'font-size:11px;font-weight:600;padding:5px 9px;border-radius:5px;cursor:pointer;border:1px solid ' + (st.ortho ? 'var(--accent)' : 'transparent') + ';background:' + (st.ortho ? 'var(--accent-dim)' : 'transparent') + ';color:' + (st.ortho ? 'var(--accent)' : 'var(--text2)') + ';',
+      toggleOrtho: () => { const v = eng ? eng.toggleOrtho() : !st.ortho; this.setState({ ortho: v }); },
       reframe: () => { if (eng) eng.frame(); },
     };
   }

@@ -13,6 +13,7 @@
 import * as THREE from 'https://esm.sh/three@0.160.0';
 import { fetchAssetBuffer } from './chunk-loader.js';
 import { voxelRemesh } from './remesh.js';
+import { EditSession } from './edit-session.js';
 import { OrbitControls } from 'https://esm.sh/three@0.160.0/examples/jsm/controls/OrbitControls.js';
 import { FBXLoader } from 'https://esm.sh/three@0.160.0/examples/jsm/loaders/FBXLoader.js';
 import { GLTFLoader } from 'https://esm.sh/three@0.160.0/examples/jsm/loaders/GLTFLoader.js';
@@ -68,6 +69,8 @@ export class MEEngine {
     this.explodeAmt = 0; this.xray = false;
     this.brush = 2;                // paint brush rings
     this.cut = null;
+    this.edit = null;              // active EditSession (verts mode)
+    this.onEdit = null;            // UI callback for edit-mode stats
     this.cloths = [];
     this.modelName = '';
     this.onSelect = null; this.onChange = null; this.onCut = null; this.onStatus = null;
@@ -261,9 +264,16 @@ export class MEEngine {
   // ---------------------------------------------------------- POINTER
   _bindPointer() {
     const c = this.canvas;
+    const rectXY = e => { const r = c.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; };
     const toNdc = e => { const r = c.getBoundingClientRect(); this._ndc.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1); };
     c.addEventListener('pointermove', e => {
+      const xy = rectXY(e); this._lastPx = xy.x; this._lastPy = xy.y;
       toNdc(e);
+      if (this.mode === 'verts' && this.edit) {
+        if (this._modalActive) { this.edit.updateTransform(xy.x, xy.y); return; }
+        if (this._boxSel) { this._boxSel.x1 = xy.x; this._boxSel.y1 = xy.y; this._drawBox(); return; }
+        return;
+      }
       if (this.mode === 'move' && this._moveDrag) { this._doMove(); return; }
       if (this.mode === 'paint' && this._painting) { this._paintAt(); return; }
       const hit = this._pick();
@@ -273,10 +283,23 @@ export class MEEngine {
     let down = null;
     c.addEventListener('pointerdown', e => {
       down = [e.clientX, e.clientY];
+      const xy = rectXY(e);
+      if (this.mode === 'verts' && this.edit) {
+        if (this._modalActive) { if (e.button === 2) this.edit.cancelTransform(); else this.edit.commitTransform(); this._modalActive = false; e.preventDefault(); return; }
+        if (e.button === 0) { this._boxSel = { x0: xy.x, y0: xy.y, x1: xy.x, y1: xy.y, add: e.shiftKey }; this.controls.enableRotate = false; }
+        return;
+      }
       if (this.mode === 'paint') { toNdc(e); const hit = this._pick(); if (hit) { this._painting = true; this.controls.enableRotate = false; this._paintAt(e.altKey); } }
       else if (this.mode === 'move') { toNdc(e); const hit = this._pick(); if (hit) { const id = hit.object.userData.elemId; if (!this.selected.has(id)) this.select(id, e.shiftKey || e.metaKey || e.ctrlKey); this._beginMove(hit.point); e.preventDefault(); } }
     });
     window.addEventListener('pointerup', e => {
+      if (this.mode === 'verts' && this.edit && this._boxSel) {
+        const b = this._boxSel; this._boxSel = null; this._clearBox(); this.controls.enableRotate = true;
+        const dx = Math.abs(b.x1 - b.x0), dy = Math.abs(b.y1 - b.y0);
+        if (dx > 4 || dy > 4) this.edit.boxSelect(b.x0, b.y0, b.x1, b.y1, b.add);
+        else this.edit.pick(b.x0, b.y0, b.add || e.shiftKey);
+        down = null; return;
+      }
       if (this._moveDrag) { this._endMove(); down = null; return; }
       if (this._painting) { this._painting = false; this.controls.enableRotate = true; this._changed(); }
       if (!down) return;
@@ -288,7 +311,41 @@ export class MEEngine {
       if (hit) this.select(hit.object.userData.elemId, e.shiftKey || e.metaKey || e.ctrlKey);
       else if (!e.shiftKey) this.clearSelection();
     });
+    c.addEventListener('contextmenu', e => { if (this.mode === 'verts') e.preventDefault(); });
+    this._installEditKeys();
   }
+  _installEditKeys() {
+    const typing = t => t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable);
+    this._editKeyHandler = (e) => {
+      if (this.mode !== 'verts' || !this.edit || typing(e.target)) return;
+      const k = e.key.toLowerCase();
+      if (this._modalActive) {
+        if (k === 'x' || k === 'y' || k === 'z') { this.edit.setAxis(k); e.preventDefault(); return; }
+        if (e.key === 'Enter') { this.edit.commitTransform(); this._modalActive = false; e.preventDefault(); return; }
+        if (e.key === 'Escape') { this.edit.cancelTransform(); this._modalActive = false; e.preventDefault(); return; }
+        return;
+      }
+      if (k === 'g') { this._modalActive = this.edit.beginTransform('grab', this._lastPx, this._lastPy); e.preventDefault(); }
+      else if (k === 'r') { this._modalActive = this.edit.beginTransform('rotate', this._lastPx, this._lastPy); e.preventDefault(); }
+      else if (k === 's') { this._modalActive = this.edit.beginTransform('scale', this._lastPx, this._lastPy); e.preventDefault(); }
+      else if (k === 'e') { this.edit.extrudeFaces(); e.preventDefault(); }
+      else if (k === 'a') { this.edit.selectAll(); e.preventDefault(); }
+      else if (e.key === 'Delete') { this.editDelete(); e.preventDefault(); }
+      else if (k === '1') { this.edit.setSelMode('vert'); this._emitEdit(this.edit.stats()); e.preventDefault(); }
+      else if (k === '2') { this.edit.setSelMode('edge'); this._emitEdit(this.edit.stats()); e.preventDefault(); }
+      else if (k === '3') { this.edit.setSelMode('face'); this._emitEdit(this.edit.stats()); e.preventDefault(); }
+      else if ((e.ctrlKey || e.metaKey) && k === 'z') { this.edit.undo(); e.preventDefault(); }
+    };
+    window.addEventListener('keydown', this._editKeyHandler);
+  }
+  _drawBox() {
+    const b = this._boxSel; if (!b) return;
+    let d = this._boxEl;
+    if (!d) { d = this._boxEl = document.createElement('div'); d.style.cssText = 'position:absolute;border:1px solid #ff7a2f;background:rgba(255,122,47,.12);pointer-events:none;z-index:20;'; (this.canvas.parentElement || document.body).appendChild(d); }
+    const x = Math.min(b.x0, b.x1), y = Math.min(b.y0, b.y1), w = Math.abs(b.x1 - b.x0), h = Math.abs(b.y1 - b.y0);
+    d.style.left = x + 'px'; d.style.top = y + 'px'; d.style.width = w + 'px'; d.style.height = h + 'px'; d.style.display = 'block';
+  }
+  _clearBox() { if (this._boxEl) this._boxEl.style.display = 'none'; }
   _pick() {
     this._ray.setFromCamera(this._ndc, this.camera);
     const hits = this._ray.intersectObjects(this.elements.map(e => e.mesh), false);
@@ -551,7 +608,52 @@ export class MEEngine {
   }
 
   // ---------------------------------------------------------- PLANE CUT
-  setMode(m) { this.mode = m; if (m !== 'cut') this.cancelCut(); if (m !== 'move') { this._moveDrag = null; this.controls.enableRotate = true; } this.canvas.style.cursor = m === 'cut' ? 'crosshair' : 'default'; }
+  setMode(m) {
+    if (this.mode === 'verts' && m !== 'verts') this._exitEdit();
+    this.mode = m;
+    if (m !== 'cut') this.cancelCut();
+    if (m !== 'move') { this._moveDrag = null; this.controls.enableRotate = true; }
+    if (m === 'verts') this._enterEdit();
+    this.canvas.style.cursor = m === 'cut' ? 'crosshair' : 'default';
+  }
+
+  // ---------------------------------------------------------- EDIT MODE (verts)
+  _enterEdit() {
+    // edit the single selected element (or the biggest, so there's always a target)
+    let el = [...this.selected].map(id => this.byId.get(id)).find(e => e && !e._cloth);
+    if (!el) { let big = null; for (const e of this.elements) if (!e._cloth && (!big || e.faceCount > big.faceCount)) big = e; el = big; }
+    if (!el) { this._emitEdit(null); return; }
+    this.selected.clear(); this.selected.add(el.id); this._applyColors();
+    // dim the other elements so the edit target reads clearly
+    this._editHidden = [];
+    for (const e of this.elements) { if (e !== el) { e.mesh.material.transparent = true; e.mesh.material.opacity = 0.12; e.mesh.material.depthWrite = false; this._editHidden.push(e); } }
+    el.mesh.material.transparent = false; el.mesh.material.opacity = 1; el.mesh.material.depthWrite = true;
+    el.mesh.material.emissive.setHex(0x000000);
+    this.edit = new EditSession(this, el);
+    this.edit.onChange = (st) => this._emitEdit(st);
+    this._emitEdit(this.edit.stats());
+  }
+  _exitEdit() {
+    if (this.edit) { this.edit.destroy(); this.edit = null; }
+    if (this._editHidden) { this._editHidden.forEach(e => { e.mesh.material.transparent = this.xray; e.mesh.material.opacity = 1; e.mesh.material.depthWrite = true; }); this._editHidden = null; }
+    this._applyColors(); this._emitEdit(null);
+  }
+  _emitEdit(st) { if (this.onEdit) this.onEdit(st); }
+  // thin pass-throughs the UI calls
+  editSetSelMode(m) { if (this.edit) this.edit.setSelMode(m); }
+  editSelectAll() { if (this.edit) this.edit.selectAll(); }
+  editSelectNone() { if (this.edit) this.edit.selectNone(); }
+  editInvert() { if (this.edit) this.edit.invert(); }
+  editGrow() { if (this.edit) this.edit.grow(); }
+  editNudge(axis, amt) { if (this.edit) this.edit.nudge(axis, amt); }
+  editRotate(axis, deg) { if (this.edit) this.edit.rotateStep(axis, deg); }
+  editScale(f) { if (this.edit) this.edit.scaleStep(f); }
+  editExtrude(d) { if (this.edit) this.edit.extrudeFaces(d); }
+  editSubdivide() { if (this.edit) this.edit.subdivide(); }
+  editDelete() { if (this.edit) { const r = this.edit.deleteSelection(); if (r === -1) { this.edit = null; this.setMode('select'); } } }
+  editMerge() { if (this.edit) this.edit.mergeAtCenter(); }
+  editUndo() { if (this.edit) this.edit.undo(); }
+  editBeginTransform(kind) { if (this.edit) { this._beginModal = kind; this._modalActive = this.edit.beginTransform(kind, this._lastPx, this._lastPy); } }
   beginCut(elemId) {
     this.cancelCut();
     const e = this.byId.get(elemId || [...this.selected][0]); if (!e) return null;
@@ -701,6 +803,7 @@ export class MEEngine {
 
   _changed() { if (this.onChange) this.onChange(); }
   _clear() {
+    if (this.edit) { this.edit.destroy(); this.edit = null; }
     this.elements.forEach(e => { this.root.remove(e.mesh); e.mesh.geometry.dispose(); });
     this.elements = []; this.byId.clear(); this.selected.clear(); this.selFaces.clear();
     this.cloths = []; this._rebuildOverlay();
@@ -723,7 +826,7 @@ export class MEEngine {
     this.renderer.render(this.scene, this.camera);
   }
   _maybeOverlay() { /* overlay follows mesh.position via rebuild only on demand to save cost */ }
-  dispose() { this._run = false; try { this._ro.disconnect(); } catch (e) {} this.renderer.dispose(); }
+  dispose() { this._run = false; if (this._editKeyHandler) window.removeEventListener('keydown', this._editKeyHandler); try { this._ro.disconnect(); } catch (e) {} this.renderer.dispose(); }
 }
 
 // ============================================================

@@ -21,7 +21,14 @@
   #me-root ::-webkit-scrollbar-track{background:var(--gutter);}
   #me-root ::-webkit-scrollbar-thumb{background:var(--panel-3);border:2px solid var(--gutter);border-radius:6px;}
   #me-root input[type=range]{-webkit-appearance:none;height:4px;border-radius:2px;background:var(--panel);outline:none;}
-  #me-root input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--accent);cursor:pointer;border:2px solid var(--panel);}
+  #me-root input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--accent);cursor:pointer;border:2px solid var(--panel);box-shadow:0 1px 3px rgba(0,0,0,.35);transition:transform .1s ease;}
+  #me-root input[type=range]:hover::-webkit-slider-thumb{transform:scale(1.18);}
+  /* premium interaction polish */
+  #me-root button{transition:filter .14s ease,transform .1s ease,border-color .14s ease,background-color .14s ease,box-shadow .14s ease;}
+  #me-root button:hover{filter:brightness(1.09);}
+  #me-root button:active{transform:translateY(1px);filter:brightness(.92);}
+  #me-root button:focus-visible{outline:2px solid var(--accent);outline-offset:1px;}
+  .me-kbd{display:inline-flex;align-items:center;justify-content:center;min-width:15px;height:15px;padding:0 4px;margin:0 1px;border-radius:3px;font-family:var(--font-mono);font-size:9px;line-height:1;background:rgba(0,0,0,.2);border:1px solid rgba(128,128,128,.35);box-shadow:0 1px 0 rgba(0,0,0,.25);vertical-align:middle;}
 </style>
 </helmet>
 
@@ -218,6 +225,67 @@
         <div style="padding:12px;"><div style="display:flex;gap:9px;padding:9px 11px;border-radius:7px;font-size:11px;line-height:1.5;background:var(--accentDim);border:1px solid rgba(255,79,0,.3);color:#ffd2bb;"><span style="flex:none;">✦</span><span>The loop: <b>Paint</b> or <b>Cut</b> a region off, come <b>here</b> to drag &amp; rotate the freed piece, then <b>Merge</b> it back with the body.</span></div></div>
       </sc-if>
 
+      <!-- EDIT (VERTS) MODE -->
+      <sc-if value="{{ isVerts }}" hint-placeholder-val="{{ false }}">
+        <div style="border-bottom:1px solid var(--seam);">
+          <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--header);border-bottom:1px solid var(--seam);"><span style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);">Edit mesh</span><span style="margin-left:auto;font-family:var(--font-mono);font-size:10px;color:var(--active);">{{ eSel }} sel</span></div>
+          <div style="padding:11px 12px;">
+            <div style="display:flex;gap:6px;margin-bottom:11px;">
+              <sc-for list="{{ editSelChips }}" as="c" hint-placeholder-count="3"><button style="{{ c.style }}" onClick="{{ c.onClick }}"><span style="font-size:12px;opacity:.92;">{{ c.icon }}</span><span>{{ c.label }}</span><span class="me-kbd">{{ c.key }}</span></button></sc-for>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:11px;">
+              <div style="display:flex;flex-direction:column;align-items:center;gap:3px;background:var(--panel-3);border:1px solid var(--seam);border-radius:6px;padding:7px 4px;"><span style="font-family:var(--font-mono);font-size:13px;font-weight:600;color:var(--text);">{{ eVerts }}</span><span style="font-size:8px;letter-spacing:.14em;color:var(--muted);">VERTS</span></div>
+              <div style="display:flex;flex-direction:column;align-items:center;gap:3px;background:var(--panel-3);border:1px solid var(--seam);border-radius:6px;padding:7px 4px;"><span style="font-family:var(--font-mono);font-size:13px;font-weight:600;color:var(--text);">{{ eEdges }}</span><span style="font-size:8px;letter-spacing:.14em;color:var(--muted);">EDGES</span></div>
+              <div style="display:flex;flex-direction:column;align-items:center;gap:3px;background:var(--panel-3);border:1px solid var(--seam);border-radius:6px;padding:7px 4px;"><span style="font-family:var(--font-mono);font-size:13px;font-weight:600;color:var(--text);">{{ eFaces }}</span><span style="font-size:8px;letter-spacing:.14em;color:var(--muted);">FACES</span></div>
+            </div>
+            <div style="display:flex;gap:5px;margin-bottom:12px;">
+              <button style="flex:1;font-size:10px;padding:6px 3px;border-radius:5px;cursor:pointer;background:var(--panel3);border:1px solid var(--edge);color:var(--text2);" onClick="{{ editSelectAll }}">All</button>
+              <button style="flex:1;font-size:10px;padding:6px 3px;border-radius:5px;cursor:pointer;background:var(--panel3);border:1px solid var(--edge);color:var(--text2);" onClick="{{ editSelectNone }}">None</button>
+              <button style="flex:1;font-size:10px;padding:6px 3px;border-radius:5px;cursor:pointer;background:var(--panel3);border:1px solid var(--edge);color:var(--text2);" onClick="{{ editInvert }}">Invert</button>
+              <button style="flex:1;font-size:10px;padding:6px 3px;border-radius:5px;cursor:pointer;background:var(--panel3);border:1px solid var(--edge);color:var(--text2);" onClick="{{ editGrow }}">Grow</button>
+            </div>
+
+            <label style="display:block;font-size:10.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:7px;">Step size</label>
+            <div style="display:flex;gap:5px;margin-bottom:13px;">
+              <sc-for list="{{ editStepChips }}" as="c" hint-placeholder-count="3"><button style="{{ c.style }}" onClick="{{ c.onClick }}">{{ c.label }}</button></sc-for>
+            </div>
+            <label style="display:block;font-size:10.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:7px;">Move selected · press G to drag</label>
+            <sc-for list="{{ editAxes }}" as="ax" hint-placeholder-count="3">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:7px;">
+                <span style="width:14px;font-family:var(--font-mono);font-size:11px;color:{{ ax.col }};">{{ ax.label }}</span>
+                <button style="flex:1;padding:7px;border-radius:6px;background:var(--panel3);border:1px solid var(--edge);color:var(--text);cursor:pointer;font-weight:600;" onClick="{{ ax.minus }}">–</button>
+                <button style="flex:1;padding:7px;border-radius:6px;background:var(--panel3);border:1px solid var(--edge);color:var(--text);cursor:pointer;font-weight:600;" onClick="{{ ax.plus }}">+</button>
+              </div>
+            </sc-for>
+            <label style="display:block;font-size:10.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:11px 0 7px;">Rotate · {{ rotStepLabel }} · press R</label>
+            <sc-for list="{{ editRotAxes }}" as="ax" hint-placeholder-count="3">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:7px;">
+                <span style="width:14px;font-family:var(--font-mono);font-size:11px;color:{{ ax.col }};">{{ ax.label }}</span>
+                <button style="flex:1;padding:7px;border-radius:6px;background:var(--panel3);border:1px solid var(--edge);color:var(--text);cursor:pointer;font-weight:600;" onClick="{{ ax.minus }}">⟲</button>
+                <button style="flex:1;padding:7px;border-radius:6px;background:var(--panel3);border:1px solid var(--edge);color:var(--text);cursor:pointer;font-weight:600;" onClick="{{ ax.plus }}">⟳</button>
+              </div>
+            </sc-for>
+            <label style="display:block;font-size:10.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:11px 0 7px;">Scale · press S</label>
+            <div style="display:flex;gap:7px;margin-bottom:13px;">
+              <button style="flex:1;padding:8px;border-radius:6px;background:var(--panel3);border:1px solid var(--edge);color:var(--text);cursor:pointer;font-weight:600;" onClick="{{ editScaleDown }}">− shrink</button>
+              <button style="flex:1;padding:8px;border-radius:6px;background:var(--panel3);border:1px solid var(--edge);color:var(--text);cursor:pointer;font-weight:600;" onClick="{{ editScaleUp }}">＋ grow</button>
+            </div>
+
+            <label style="display:block;font-size:10.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:7px;">Topology</label>
+            <div style="display:flex;gap:7px;margin-bottom:7px;">
+              <button style="flex:1;padding:9px;border-radius:6px;font-size:11.5px;font-weight:600;background:var(--active);border:1px solid var(--active);color:var(--on-accent);cursor:pointer;box-shadow:0 1px 0 rgba(255,255,255,.18) inset,0 2px 12px rgba(255,79,0,.35);" onClick="{{ editExtrude }}">⇧ Extrude</button>
+              <button style="flex:1;padding:9px;border-radius:6px;font-size:11.5px;font-weight:600;background:var(--panel3);border:1px solid var(--edge);color:var(--text);cursor:pointer;" onClick="{{ editSubdivide }}">⊞ Subdivide</button>
+            </div>
+            <div style="display:flex;gap:7px;">
+              <button style="flex:1;padding:8px;border-radius:6px;font-size:11.5px;font-weight:600;background:transparent;border:1px solid var(--edge);color:var(--text);cursor:pointer;" onClick="{{ editMerge }}">◎ Merge</button>
+              <button style="flex:1;padding:8px;border-radius:6px;font-size:11.5px;font-weight:600;background:transparent;border:1px solid var(--edge);color:var(--text);cursor:pointer;" onClick="{{ editUndo }}">↶ Undo</button>
+              <button style="flex:1;padding:8px;border-radius:6px;font-size:11.5px;font-weight:600;background:transparent;border:1px solid rgba(207,92,92,.5);color:#e79a9a;cursor:pointer;" onClick="{{ editDelete }}">🗑 Delete</button>
+            </div>
+          </div>
+        </div>
+        <div style="padding:12px;"><div style="display:flex;gap:9px;padding:9px 11px;border-radius:7px;font-size:11px;line-height:1.5;background:var(--activeDim);border:1px solid rgba(255,79,0,.28);color:#ffd2bb;"><span style="flex:none;">⌨</span><span><span class="me-kbd">1</span><span class="me-kbd">2</span><span class="me-kbd">3</span> vert·edge·face · <span class="me-kbd">G</span> grab <span class="me-kbd">R</span> rotate <span class="me-kbd">S</span> scale · lock <span class="me-kbd">X</span><span class="me-kbd">Y</span><span class="me-kbd">Z</span> · <span class="me-kbd">E</span> extrude · <span class="me-kbd">A</span> all · <span class="me-kbd">Del</span> delete · drag empty = box-select.</span></div></div>
+      </sc-if>
+
       <!-- PAINT MODE -->
       <sc-if value="{{ isPaint }}" hint-placeholder-val="{{ false }}">
         <div style="border-bottom:1px solid var(--seam);">
@@ -315,6 +383,7 @@ class Component extends DCLogic {
     cutInfo: null, cutT: 50, cutAxis: 'y',
     wind: 40, grav: 100, stiff: 85,
     remeshRes: 96, remeshSmooth: 3,
+    editStats: null, editSelMode: 'vert', editStep: 'med',
   };
 
   componentDidMount() { this.setupEmbed(); this.boot(); this.setupDrop(); }
@@ -327,6 +396,7 @@ class Component extends DCLogic {
       eng.onSelect = (sel) => { const a = sel[0]; this.setState({ sel, selName: a ? a.label : '—', selTris: a ? a.tris : 0, faceCount: eng.faceCount() }); };
       eng.onChange = () => this.refresh();
       eng.onCut = (info) => this.setState({ cutInfo: info, cutT: 50, cutAxis: info ? (this._eng.cut ? this._eng.cut.axis : 'y') : 'y' });
+      eng.onEdit = (st) => this.setState({ editStats: st });
       eng.onStatus = (msg) => this.setState({ loading: !!msg, loadingMsg: msg || '' });
       // honour a model queued before the engine finished booting
       if (this._pending) { const p = this._pending; this._pending = null; p(); }
@@ -391,6 +461,7 @@ class Component extends DCLogic {
       else this.toast('Remeshed → ' + r.tris.toLocaleString() + ' tris · watertight · grid ' + r.grid.join('×'));
     } catch (e) { this.setState({ loading: false }); this.toast('Remesh failed: ' + (e && e.message || e)); }
   }
+  _stepAmt() { const S = { fine: { n: 0.01, r: 5, s: 1.04 }, med: { n: 0.03, r: 15, s: 1.1 }, coarse: { n: 0.08, r: 45, s: 1.25 } }; return S[this.state.editStep] || S.med; }
   setMode(m) { this.setState({ mode: m }); if (this._eng) this._eng.setMode(m); }
   seg(on) { return 'font-size:11px;font-weight:600;padding:6px 11px;border-radius:5px;cursor:pointer;border:none;background:' + (on ? 'var(--panel-3)' : 'transparent') + ';color:' + (on ? 'var(--text)' : 'var(--text-2)') + ';box-shadow:' + (on ? '0 1px 2px rgba(0,0,0,.3)' : 'none') + ';'; }
   chip(on) { return 'font-family:IBM Plex Mono,monospace;font-size:10px;padding:5px 10px;border-radius:5px;cursor:pointer;background:rgba(15,15,15,.6);border:1px solid ' + (on ? 'var(--accent)' : 'var(--edge)') + ';color:' + (on ? '#ffd2bb' : 'var(--text-2)') + ';'; }
@@ -402,6 +473,7 @@ class Component extends DCLogic {
 
     const modes = [
       { key: 'select', label: '◈ Select', tip: 'Select & move whole elements' },
+      { key: 'verts', label: '◆ Edit', tip: 'Blender-style vertex / edge / face editing' },
       { key: 'paint', label: '✋ Paint', tip: 'Paint triangles to separate' },
       { key: 'cut', label: '✂ Cut', tip: 'Slice an element with a plane' },
       { key: 'move', label: '✥ Move', tip: 'Drag cut pieces freely, then merge back' },
@@ -428,7 +500,7 @@ class Component extends DCLogic {
     const ax = (label, axis, col) => ({ label, col, minus: () => eng && eng.nudgeSelected(axis, -0.03), plus: () => eng && eng.nudgeSelected(axis, 0.03) });
     const cutAxes = ['x', 'y', 'z'].map(a => ({ label: a.toUpperCase(), style: 'flex:1;font-size:11px;font-weight:600;padding:7px;border-radius:5px;cursor:pointer;border:1px solid ' + (st.cutAxis === a ? 'var(--new)' : 'var(--edge)') + ';background:' + (st.cutAxis === a ? 'rgba(67,182,196,0.16)' : 'var(--panel-3)') + ';color:' + (st.cutAxis === a ? '#86d3dd' : 'var(--text)') + ';', onClick: () => { this.setState({ cutAxis: a }); if (eng) eng.setCutAxis(a); } }));
 
-    const modeLabel = st.mode === 'paint' ? 'PAINT — drag to select faces (alt erases)' : st.mode === 'cut' ? 'CUT — click an element' : st.mode === 'move' ? 'MOVE — drag pieces · merge to weld back' : st.mode === 'remesh' ? 'REMESH — voxel-fuse to one watertight skin' : st.mode === 'cloth' ? 'CLOTH' : 'SELECT — click element · shift adds';
+    const modeLabel = st.mode === 'paint' ? 'PAINT — drag to select faces (alt erases)' : st.mode === 'cut' ? 'CUT — click an element' : st.mode === 'move' ? 'MOVE — drag pieces · merge to weld back' : st.mode === 'remesh' ? 'REMESH — voxel-fuse to one watertight skin' : st.mode === 'cloth' ? 'CLOTH' : st.mode === 'verts' ? 'EDIT — 1/2/3 mode · G grab R rotate S scale E extrude · box-select drag' : 'SELECT — click element · shift adds';
 
     return {
       modes, tree, views, cutAxes,
@@ -436,7 +508,7 @@ class Component extends DCLogic {
       dotColor: st.hasModel ? 'var(--good)' : 'var(--muted)',
       loading: st.loading, loadingMsg: st.loadingMsg,
       modeBadge: st.hasModel ? modeLabel : 'IMPORT A MESH',
-      vpHint: st.mode === 'paint' ? 'drag paints · alt erases · scroll zoom' : st.mode === 'cut' ? 'click element → slice' : st.mode === 'move' ? 'drag a piece to reposition · empty space orbits' : st.mode === 'remesh' ? 'set resolution, then Fuse — orbit/zoom as normal' : 'click select · shift add · drag orbit',
+      vpHint: st.mode === 'paint' ? 'drag paints · alt erases · scroll zoom' : st.mode === 'cut' ? 'click element → slice' : st.mode === 'move' ? 'drag a piece to reposition · empty space orbits' : st.mode === 'remesh' ? 'set resolution, then Fuse — orbit/zoom as normal' : st.mode === 'verts' ? 'drag box-selects · G/R/S transform · lock axis with X/Y/Z' : 'click select · shift add · drag orbit',
       pickFile: () => document.getElementById('me-file').click(),
       loadSample: () => this.loadVia(() => this._eng.loadUrl('data/characters/Humanoid.fbx', 'fbx'), 'Humanoid'),
       selectAll: () => eng && eng.selectAll(),
@@ -452,6 +524,43 @@ class Component extends DCLogic {
       onExplode: (e) => { const v = +e.target.value; this.setState({ explode: v }); if (eng) eng.setExplode(v / 100); },
       xrayChipStyle: this.chip(st.xray), toggleXray: () => { const x = !st.xray; this.setState({ xray: x }); if (eng) eng.setXray(x); },
       isSelect: st.mode === 'select', isPaint: st.mode === 'paint', isCut: st.mode === 'cut', isMove: st.mode === 'move', isRemesh: st.mode === 'remesh', isCloth: st.mode === 'cloth',
+      // ---- EDIT (verts) mode ----
+      isVerts: st.mode === 'verts',
+      editHasSel: !!(st.editStats && st.editStats.sel > 0),
+      eVerts: st.editStats ? st.editStats.verts.toLocaleString() : '0',
+      eEdges: st.editStats ? st.editStats.edges.toLocaleString() : '0',
+      eFaces: st.editStats ? st.editStats.faces.toLocaleString() : '0',
+      eSel: st.editStats ? st.editStats.sel : 0,
+      editSelChips: [['vert','Vertex','●','1'],['edge','Edge','╱','2'],['face','Face','▲','3']].map(([m,label,icon,key]) => ({
+        label, icon, key, style: 'flex:1;display:flex;align-items:center;justify-content:center;gap:5px;font-size:11px;font-weight:600;padding:8px 4px;border-radius:6px;cursor:pointer;border:1px solid ' + (st.editSelMode===m ? 'var(--active)':'var(--edge)') + ';background:' + (st.editSelMode===m ? 'var(--active)':'var(--panel-3)') + ';color:' + (st.editSelMode===m ? 'var(--on-accent)':'var(--text)') + ';',
+        onClick: () => { this.setState({ editSelMode: m }); if(eng){ eng.editSetSelMode(m); this.setState({ editStats: eng.edit ? eng.edit.stats() : null }); } },
+      })),
+      editStepChips: [['fine','Fine'],['med','Medium'],['coarse','Coarse']].map(([m,label]) => ({
+        label, style: 'flex:1;font-family:var(--font-mono);font-size:10px;font-weight:' + ((st.editStep||'med')===m ? '600':'500') + ';padding:6px 4px;border-radius:5px;cursor:pointer;border:1px solid ' + ((st.editStep||'med')===m ? 'var(--active)':'var(--edge)') + ';background:' + ((st.editStep||'med')===m ? 'var(--accent-dim)':'var(--panel-3)') + ';color:' + ((st.editStep||'med')===m ? 'var(--text)':'var(--text-2)') + ';box-shadow:' + ((st.editStep||'med')===m ? '0 0 0 1px var(--active) inset':'none') + ';',
+        onClick: () => this.setState({ editStep: m }),
+      })),
+      rotStepLabel: this._stepAmt().r + '\u00b0',
+      editAxes: [
+        { label:'X', col:'var(--danger)', minus:()=>eng&&eng.editNudge('x',-this._stepAmt().n), plus:()=>eng&&eng.editNudge('x',this._stepAmt().n) },
+        { label:'Y', col:'var(--good)',   minus:()=>eng&&eng.editNudge('y',-this._stepAmt().n), plus:()=>eng&&eng.editNudge('y',this._stepAmt().n) },
+        { label:'Z', col:'var(--accent)', minus:()=>eng&&eng.editNudge('z',-this._stepAmt().n), plus:()=>eng&&eng.editNudge('z',this._stepAmt().n) },
+      ],
+      editRotAxes: [
+        { label:'X', col:'var(--danger)', minus:()=>eng&&eng.editRotate('x',-this._stepAmt().r), plus:()=>eng&&eng.editRotate('x',this._stepAmt().r) },
+        { label:'Y', col:'var(--good)',   minus:()=>eng&&eng.editRotate('y',-this._stepAmt().r), plus:()=>eng&&eng.editRotate('y',this._stepAmt().r) },
+        { label:'Z', col:'var(--accent)', minus:()=>eng&&eng.editRotate('z',-this._stepAmt().r), plus:()=>eng&&eng.editRotate('z',this._stepAmt().r) },
+      ],
+      editScaleUp: () => eng && eng.editScale(this._stepAmt().s),
+      editScaleDown: () => eng && eng.editScale(1/this._stepAmt().s),
+      editSelectAll: () => eng && eng.editSelectAll(),
+      editSelectNone: () => eng && eng.editSelectNone(),
+      editInvert: () => eng && eng.editInvert(),
+      editGrow: () => eng && eng.editGrow(),
+      editExtrude: () => { if(eng){ eng.editExtrude(); this.toast('Extruded selected faces'); } },
+      editSubdivide: () => { if(eng){ eng.editSubdivide(); this.toast('Subdivided'); } },
+      editMerge: () => { if(eng){ eng.editMerge(); this.toast('Merged to center'); } },
+      editDelete: () => { if(eng) eng.editDelete(); },
+      editUndo: () => { if(eng) eng.editUndo(); },
       // move/separate
       axes: [ax('X', 'x', 'var(--danger)'), ax('Y', 'y', 'var(--good)'), ax('Z', 'z', 'var(--accent)')],
       rotAxes: [
