@@ -196,7 +196,7 @@ function buildParts(THREE, p) {
     { y: crotch + 0.058, cx: 0.060, rx: 0.048 + 0.020 * bt, rz: 0.032 + 0.045 * bt, cz: -(0.065 + 0.045 * bt) },
     { y: crotch + 0.112, cx: 0.055, rx: 0.038 + 0.014 * bt, rz: 0.020 + 0.026 * bt, cz: -(0.058 + 0.034 * bt) },
   ], { capStart: 0.6, capEnd: 0.6 }, null, true);
-  
+
   // — breasts (sized by `bust`) — TEARDROP profile: tapers into the chest at
   //   the top, rounds out full at the bottom, nipple projects forward + slightly
   //   down. Built as its own vertical loft so it isn't a plain ellipsoid. —
@@ -209,19 +209,19 @@ function buildParts(THREE, p) {
     const drop = 0.030 + 0.045 * bu;              // how far the round underside hangs
     part([
       // upper slope — feathered thin where it melts into the chest
-      { y: cy + rr * 1.15, cx: cxc,        rx: rr * 0.32, rz: 0.006,        cz: z0 - proj * 0.20 },
-      { y: cy + rr * 0.62, cx: cxc,        rx: rr * 0.70, rz: proj * 0.34,  cz: z0 - proj * 0.42 },
+      { y: cy + rr * 1.15, cx: cxc,        rx: rr * 0.32, rz: 0.006,        cz: z0 + proj * 0.20 },
+      { y: cy + rr * 0.62, cx: cxc,        rx: rr * 0.70, rz: proj * 0.34,  cz: z0 + proj * 0.42 },
       // apex ring — widest AND most forward (this is where the nipple sits)
-      { y: cy,             cx: cxc,        rx: rr,        rz: proj,         cz: z0 - proj },
+      { y: cy,             cx: cxc,        rx: rr,        rz: proj,         cz: z0 + proj },
       // full rounded underside, tucked back toward the ribcage (the teardrop belly)
-      { y: cy - drop * 0.7, cx: cxc,       rx: rr * 0.92, rz: proj * 0.80,  cz: z0 - proj * 0.50 },
-      { y: cy - drop * 1.15, cx: cxc * 0.96, rx: rr * 0.52, rz: proj * 0.34, cz: z0 - proj * 0.12 },
+      { y: cy - drop * 0.7, cx: cxc,       rx: rr * 0.92, rz: proj * 0.80,  cz: z0 + proj * 0.50 },
+      { y: cy - drop * 1.15, cx: cxc * 0.96, rx: rr * 0.52, rz: proj * 0.34, cz: z0 + proj * 0.12 },
     ], { capStart: 0.35, capEnd: 0.4 }, null, true);
 
     // nipple — tiny nub proud of the apex
     part([
-      { y: cy - 0.004, cx: cxc, rx: 0.008 + 0.004 * bu, rz: 0.008 + 0.004 * bu, cz: z0 - proj - 0.004 },
-      { y: cy + 0.004, cx: cxc, rx: 0.006 + 0.003 * bu, rz: 0.006 + 0.003 * bu, cz: z0 - proj - 0.010 - 0.004 * bu },
+      { y: cy - 0.004, cx: cxc, rx: 0.008 + 0.004 * bu, rz: 0.008 + 0.004 * bu, cz: z0 + proj + 0.004 },
+      { y: cy + 0.004, cx: cxc, rx: 0.006 + 0.003 * bu, rz: 0.006 + 0.003 * bu, cz: z0 + proj + 0.010 + 0.004 * bu },
     ], { capStart: 0.6, capEnd: 1.0 }, null, true);
   }
 
