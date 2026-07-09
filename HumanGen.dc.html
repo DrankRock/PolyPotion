@@ -14,85 +14,121 @@
   <style>
     *{box-sizing:border-box}
     html,body{margin:0;height:100%;background:#0e0f13;font-family:'Space Grotesk',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+    a{color:#5fe3c0}a:hover{color:#8fecd4}
     @keyframes hgspin{to{transform:rotate(360deg)}}
-    @keyframes hgfade{from{opacity:0}to{opacity:1}}
+    input[type=range]{-webkit-appearance:none;appearance:none;height:4px;border-radius:2px;background:rgba(255,255,255,.12);outline:none;margin:0}
+    input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:14px;height:14px;border-radius:50%;background:#5fe3c0;border:none;cursor:pointer;box-shadow:0 0 0 3px rgba(95,227,192,.15)}
+    input[type=range]::-moz-range-thumb{width:14px;height:14px;border-radius:50%;background:#5fe3c0;border:none;cursor:pointer}
   </style>
 </helmet>
 <div style="position:fixed;inset:0;display:flex;background:#0e0f13;color:#e9ecf1;overflow:hidden">
+
+  <!-- LEFT PANEL — PROPORTIONS -->
+  <aside style="width:300px;flex-shrink:0;height:100%;display:flex;flex-direction:column;background:#15171e;border-right:1px solid rgba(255,255,255,.07)">
+    <div style="padding:20px 20px 16px;border-bottom:1px solid rgba(255,255,255,.06)">
+      <div style="display:flex;align-items:center;gap:9px">
+        <div style="width:9px;height:9px;border-radius:50%;background:#5fe3c0;box-shadow:0 0 10px #5fe3c0"></div>
+        <span style="font:600 13px 'JetBrains Mono';letter-spacing:.22em;text-transform:uppercase">Human&nbsp;Gen</span>
+      </div>
+      <div style="margin-top:8px;font:700 16px 'Space Grotesk'">Proportions</div>
+      <div style="margin-top:3px;font:400 12px 'Space Grotesk';color:#8b929e;line-height:1.45">Body lives in <span style="font:400 10.5px 'JetBrains Mono';color:#aab1bc">human-body.js</span></div>
+    </div>
+
+    <div style="flex:1;overflow-y:auto;padding:20px 20px 10px">
+      <sc-for list="{{ sliders }}" as="item" hint-placeholder-count="9">
+        <div style="margin-bottom:16px">
+          <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:7px">
+            <span style="font:500 12.5px 'Space Grotesk';color:#cfd4dc">{{ item.label }}</span>
+            <span style="font:400 11px 'JetBrains Mono';color:#5fe3c0">{{ item.valueText }}</span>
+          </div>
+          <input type="range" min="{{ item.min }}" max="{{ item.max }}" step="{{ item.step }}" value="{{ item.value }}" onChange="{{ item.onChange }}" style="width:100%;display:block">
+        </div>
+      </sc-for>
+    </div>
+
+    <div style="padding:14px 20px 20px;border-top:1px solid rgba(255,255,255,.06);display:grid;grid-template-columns:1fr 1fr;gap:9px">
+      <button onClick="{{ randomize }}" style="display:flex;align-items:center;justify-content:center;gap:7px;padding:11px 8px;border-radius:10px;border:none;cursor:pointer;background:#5fe3c0;color:#06231d;font:700 13px 'Space Grotesk';transition:transform .1s" style-hover="transform:translateY(-1px)" style-active="transform:translateY(0)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#06231d" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3h5v5"/><path d="M4 20 21 3"/><path d="M21 16v5h-5"/><path d="m15 15 6 6"/><path d="M4 4l5 5"/></svg>
+        Random
+      </button>
+      <button onClick="{{ reset }}" style="padding:11px 8px;border-radius:10px;cursor:pointer;background:rgba(255,255,255,.04);color:#cfd4dc;border:1px solid rgba(255,255,255,.12);font:600 13px 'Space Grotesk';transition:background .12s" style-hover="background:rgba(255,255,255,.08)">Reset</button>
+    </div>
+  </aside>
 
   <!-- VIEWPORT -->
   <div style="position:relative;flex:1;min-width:0;background:radial-gradient(120% 100% at 50% 20%, #2b303d 0%, #181b22 55%, #0f1116 100%)">
     <div ref="{{ viewportRef }}" style="position:absolute;inset:0"></div>
 
-    <!-- title -->
-    <div style="position:absolute;top:22px;left:24px;pointer-events:none">
-      <div style="display:flex;align-items:center;gap:9px">
-        <div style="width:9px;height:9px;border-radius:50%;background:#5fe3c0;box-shadow:0 0 10px #5fe3c0"></div>
-        <span style="font:600 13px 'JetBrains Mono';letter-spacing:.22em;text-transform:uppercase;color:#e9ecf1">Human&nbsp;Gen</span>
-      </div>
-      <div style="margin-top:6px;font:400 12px 'JetBrains Mono';color:#7f8794;letter-spacing:.02em">procedural neutral mannequin · v1</div>
+    <!-- T-pose badge -->
+    <div style="position:absolute;top:20px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:7px;padding:6px 11px;border-radius:7px;background:rgba(95,227,192,.08);border:1px solid rgba(95,227,192,.25);pointer-events:none">
+      <span style="font:500 10.5px 'JetBrains Mono';letter-spacing:.12em;color:#5fe3c0">{{ badgeText }}</span>
     </div>
 
     <!-- orbit hint -->
-    <div style="position:absolute;bottom:20px;left:24px;font:400 11px 'JetBrains Mono';color:#69707c;letter-spacing:.04em;pointer-events:none">drag to orbit · scroll to zoom</div>
+    <div style="position:absolute;bottom:18px;left:50%;transform:translateX(-50%);font:400 11px 'JetBrains Mono';color:#69707c;letter-spacing:.04em;pointer-events:none;white-space:nowrap">drag to orbit · scroll to zoom</div>
 
-    <!-- rotate toggle -->
-    <button onClick="{{ toggleRotate }}" style="position:absolute;bottom:18px;right:20px;display:flex;align-items:center;gap:7px;padding:7px 12px;border-radius:8px;cursor:pointer;background:{{ rotateBg }};border:1px solid {{ rotateBorder }};color:{{ rotateColor }};font:500 11px 'JetBrains Mono';letter-spacing:.05em">
-      <span style="width:6px;height:6px;border-radius:50%;background:{{ rotateColor }}"></span>{{ rotateLabel }}
-    </button>
-
-    <!-- loading -->
-    <sc-if value="{{ loading }}" hint-placeholder-val="{{ true }}">
-      <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;background:rgba(14,15,19,.4)">
+    <!-- loading / fusing -->
+    <sc-if value="{{ busy }}" hint-placeholder-val="{{ true }}">
+      <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;background:rgba(14,15,19,.45)">
         <div style="width:34px;height:34px;border-radius:50%;border:3px solid rgba(95,227,192,.2);border-top-color:#5fe3c0;animation:hgspin .8s linear infinite"></div>
-        <span style="font:500 12px 'JetBrains Mono';letter-spacing:.1em;color:#9aa1ad;text-transform:uppercase">building scene</span>
+        <span style="font:500 12px 'JetBrains Mono';letter-spacing:.1em;color:#9aa1ad;text-transform:uppercase">{{ busyText }}</span>
       </div>
     </sc-if>
   </div>
 
-  <!-- PANEL -->
-  <aside style="width:336px;flex-shrink:0;height:100%;display:flex;flex-direction:column;background:#15171e;border-left:1px solid rgba(255,255,255,.07)">
-    <div style="padding:22px 22px 18px;border-bottom:1px solid rgba(255,255,255,.06)">
-      <div style="font:700 17px 'Space Grotesk';letter-spacing:-.01em">Generator</div>
-      <div style="margin-top:3px;font:400 12.5px 'Space Grotesk';color:#8b929e">Skin, hair & color — everything else stays neutral.</div>
+  <!-- RIGHT PANEL — APPEARANCE + ACTIONS -->
+  <aside style="width:280px;flex-shrink:0;height:100%;display:flex;flex-direction:column;background:#15171e;border-left:1px solid rgba(255,255,255,.07)">
+    <div style="padding:20px 20px 16px;border-bottom:1px solid rgba(255,255,255,.06)">
+      <div style="font:700 16px 'Space Grotesk'">Appearance</div>
+      <div style="margin-top:3px;font:400 12px 'Space Grotesk';color:#8b929e">Material · mesh · display</div>
     </div>
 
-    <div style="flex:1;overflow-y:auto;padding:22px">
+    <div style="flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:22px">
 
-      <!-- SKIN -->
-      <div style="font:500 11px 'JetBrains Mono';letter-spacing:.13em;text-transform:uppercase;color:#7f8794;margin-bottom:11px">Skin tone</div>
-      <div style="display:flex;flex-wrap:wrap;gap:9px;margin-bottom:26px">
-        <sc-for list="{{ skinSwatches }}" as="item" hint-placeholder-count="7">
-          <button onClick="{{ item.onClick }}" title="{{ item.label }}" style="width:34px;height:34px;border-radius:50%;border:none;cursor:pointer;padding:0;background:{{ item.color }};box-shadow:inset 0 0 0 2.5px {{ item.ring }}, 0 1px 3px rgba(0,0,0,.45);transition:transform .12s" style-hover="transform:scale(1.08)"></button>
-        </sc-for>
+      <!-- clay color -->
+      <div>
+        <div style="font:500 11px 'JetBrains Mono';letter-spacing:.14em;text-transform:uppercase;color:#8b929e;margin-bottom:10px">Clay color</div>
+        <div style="display:flex;gap:9px">
+          <sc-for list="{{ swatches }}" as="item" hint-placeholder-count="4">
+            <button onClick="{{ item.pick }}" title="{{ item.hex }}" style="width:34px;height:34px;border-radius:9px;cursor:pointer;background:{{ item.hex }};border:2px solid {{ item.ring }};transition:transform .1s" style-hover="transform:scale(1.08)"></button>
+          </sc-for>
+        </div>
       </div>
 
-      <!-- HAIR STYLE -->
-      <div style="font:500 11px 'JetBrains Mono';letter-spacing:.13em;text-transform:uppercase;color:#7f8794;margin-bottom:11px">Hair style</div>
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:26px">
-        <sc-for list="{{ hairStyles }}" as="item" hint-placeholder-count="8">
-          <button onClick="{{ item.onClick }}" style="display:flex;align-items:center;justify-content:center;padding:10px 4px;border-radius:9px;cursor:pointer;font:600 11.5px 'Space Grotesk';background:{{ item.bg }};color:{{ item.color }};border:1px solid {{ item.border }};transition:all .12s">{{ item.name }}</button>
-        </sc-for>
+      <!-- fuse -->
+      <div>
+        <div style="font:500 11px 'JetBrains Mono';letter-spacing:.14em;text-transform:uppercase;color:#8b929e;margin-bottom:10px">Mesh</div>
+        <button onClick="{{ fuse }}" style="display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:12px;border-radius:11px;cursor:pointer;background:{{ fuseBg }};color:{{ fuseColor }};border:1px solid {{ fuseBorder }};font:700 13px 'Space Grotesk';transition:transform .1s" style-hover="transform:translateY(-1px)">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 12a4 4 0 1 1 8 0 4 4 0 0 1-8 0"/><path d="M12 2v4"/><path d="M12 18v4"/><path d="M2 12h4"/><path d="M18 12h4"/></svg>
+          {{ fuseLabel }}
+        </button>
+        <div style="margin-top:8px;font:400 11px 'Space Grotesk';color:#767d89;line-height:1.5">{{ fuseHint }}</div>
+        <div style="margin-top:14px">
+          <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:7px">
+            <span style="font:500 12px 'Space Grotesk';color:#cfd4dc">Fillet size</span>
+            <span style="font:400 11px 'JetBrains Mono';color:#5fe3c0">{{ smoothPowerText }}</span>
+          </div>
+          <input type="range" min="0.05" max="1" step="0.01" value="{{ smoothPower }}" onChange="{{ setSmoothPower }}" style="width:100%;display:block">
+        </div>
       </div>
 
-      <!-- HAIR COLOR -->
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:11px">
-        <span style="font:500 11px 'JetBrains Mono';letter-spacing:.13em;text-transform:uppercase;color:#7f8794">Hair color</span>
-        <span style="font:400 11px 'JetBrains Mono';color:#5a616c">{{ hairColorName }}</span>
-      </div>
-      <div style="display:flex;flex-wrap:wrap;gap:9px">
-        <sc-for list="{{ hairColSwatches }}" as="item" hint-placeholder-count="7">
-          <button onClick="{{ item.onClick }}" title="{{ item.label }}" style="width:34px;height:34px;border-radius:9px;border:none;cursor:pointer;padding:0;background:{{ item.color }};box-shadow:inset 0 0 0 2.5px {{ item.ring }}, 0 1px 3px rgba(0,0,0,.45);transition:transform .12s" style-hover="transform:scale(1.08)"></button>
-        </sc-for>
+      <!-- display toggles -->
+      <div style="display:flex;flex-direction:column;gap:9px">
+        <div style="font:500 11px 'JetBrains Mono';letter-spacing:.14em;text-transform:uppercase;color:#8b929e;margin-bottom:1px">Display</div>
+        <button onClick="{{ toggleWire }}" style="display:flex;align-items:center;justify-content:space-between;width:100%;padding:11px 13px;border-radius:10px;cursor:pointer;background:{{ wireBg }};border:1px solid {{ wireBorder }};color:{{ wireColor }};font:500 12.5px 'Space Grotesk';transition:background .12s">
+          <span>Wireframe overlay</span>
+          <span style="width:8px;height:8px;border-radius:50%;background:{{ wireColor }}"></span>
+        </button>
+        <button onClick="{{ toggleRotate }}" style="display:flex;align-items:center;justify-content:space-between;width:100%;padding:11px 13px;border-radius:10px;cursor:pointer;background:{{ rotateBg }};border:1px solid {{ rotateBorder }};color:{{ rotateColor }};font:500 12.5px 'Space Grotesk';transition:background .12s">
+          <span>Auto-rotate</span>
+          <span style="width:8px;height:8px;border-radius:50%;background:{{ rotateColor }}"></span>
+        </button>
       </div>
     </div>
 
     <!-- ACTIONS -->
-    <div style="padding:18px 22px 22px;border-top:1px solid rgba(255,255,255,.06);display:flex;flex-direction:column;gap:10px">
-      <button onClick="{{ randomize }}" style="display:flex;align-items:center;justify-content:center;gap:9px;width:100%;padding:13px;border-radius:11px;border:none;cursor:pointer;background:#5fe3c0;color:#06231d;font:700 14px 'Space Grotesk';letter-spacing:.01em;box-shadow:0 4px 16px rgba(95,227,192,.22);transition:transform .1s" style-hover="transform:translateY(-1px)" style-active="transform:translateY(0)">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#06231d" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3h5v5"/><path d="M4 20 21 3"/><path d="M21 16v5h-5"/><path d="m15 15 6 6"/><path d="M4 4l5 5"/></svg>
-        Randomize
-      </button>
+    <div style="padding:16px 20px 20px;border-top:1px solid rgba(255,255,255,.06);display:flex;flex-direction:column;gap:10px">
+      <div style="font:400 11px 'JetBrains Mono';color:#5a616c;text-align:center">{{ statsText }}</div>
       <button onClick="{{ exportGLB }}" style="display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:12px;border-radius:11px;cursor:pointer;background:rgba(255,255,255,.04);color:#cfd4dc;border:1px solid rgba(255,255,255,.12);font:600 13px 'Space Grotesk';transition:background .12s" style-hover="background:rgba(255,255,255,.08)">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
         {{ exportLabel }}
@@ -109,39 +145,41 @@
 </x-dc>
 <script type="text/x-dc" data-dc-script>
 class Component extends DCLogic {
-  state = { skin: 2, hstyle: 2, hcol: 1, rotate: true, loading: true, exporting: false, sending: false, embedded: false };
+  state = {
+    params: null, rotate: true, loading: true, wire: false, fused: false, fusing: false,
+    exporting: false, sending: false, embedded: false, stats: '\u2014', clay: '#bfc5cf',
+    smoothPower: 0.4,
+  };
 
-  SKIN = [
-    { c: '#f4ddca', n: 'Porcelain' }, { c: '#eec3a0', n: 'Light' },
-    { c: '#dca877', n: 'Medium' },   { c: '#c08a5a', n: 'Tan' },
-    { c: '#9a6440', n: 'Brown' },    { c: '#6e442b', n: 'Deep' },
-    { c: '#46291a', n: 'Espresso' },
-  ];
-  HAIRCOL = [
-    { c: '#15110e', n: 'Black' },    { c: '#3a2618', n: 'Dark brown' },
-    { c: '#6b4327', n: 'Brown' },    { c: '#9a5a2c', n: 'Auburn' },
-    { c: '#c9923f', n: 'Dark blonde' }, { c: '#e3c483', n: 'Blonde' },
-    { c: '#b9bcc2', n: 'Silver' },
-  ];
-  HAIRSTYLES = ['Bald', 'Buzz', 'Short', 'Side Part', 'Bob', 'Ponytail', 'Bun', 'Afro'];
+
+
   ACCENT = '#5fe3c0';
-
+  SWATCHES = ['#bfc5cf', '#c8ad92', '#77808d', '#a5b8ae'];
   viewportRef = (el) => { this.viewportEl = el; };
 
   // ---------- lifecycle ----------
   async componentDidMount() {
-    const T = await import('https://esm.sh/three@0.160.0');
-    const { OrbitControls } = await import('https://esm.sh/three@0.160.0/examples/jsm/controls/OrbitControls.js');
-    this.T = T; this.OrbitControls = OrbitControls;
+    const [T, oc, HB] = await Promise.all([
+      import('https://esm.sh/three@0.160.0'),
+      import('https://esm.sh/three@0.160.0/examples/jsm/controls/OrbitControls.js'),
+      import('./studio3D_scripts/human-body.js'),
+    ]);
+    this.T = T; this.OrbitControls = oc.OrbitControls; this.HB = HB;
     if (!this.viewportEl) return;
+    const params = HB.defaults();
     this.initScene();
-    this.buildFigure();
-    this.applyAll();
+    this.buildFigure(params);
     this.animate();
     this.ro = new ResizeObserver(() => this.resize());
     this.ro.observe(this.viewportEl);
-    this.setState({ loading: false });
+    this.setState({ loading: false, params, stats: this.stats });
     this.setupBridge();
+  }
+
+  componentWillUnmount() {
+    cancelAnimationFrame(this.raf);
+    if (this.ro) this.ro.disconnect();
+    if (this.renderer) { this.renderer.dispose(); this.renderer.domElement.remove(); }
   }
 
   // ---------- studio bridge ----------
@@ -149,7 +187,6 @@ class Component extends DCLogic {
     const params = new URLSearchParams(location.search);
     const embedded = params.get('embed') === '1' || window.parent !== window;
     this._post = (type, payload, transfer) => { try { window.parent && window.parent.postMessage(Object.assign({ __studio: true, type }, payload || {}), '*', transfer || []); } catch (e) {} };
-    if (embedded) { const hide = () => { const h = document.querySelector('#hg-embed-hide'); if (h) h.style.display = 'none'; }; hide(); setTimeout(hide, 80); }
     this.setState({ embedded });
     setTimeout(() => this._post('studio:ready', { tool: 'humangen' }), 0);
   }
@@ -158,33 +195,22 @@ class Component extends DCLogic {
     return new Promise(async (res, rej) => {
       try {
         const { GLTFExporter } = await import('https://esm.sh/three@0.160.0/examples/jsm/exporters/GLTFExporter.js');
-        new GLTFExporter().parse(this.figure, (buf) => res(buf instanceof ArrayBuffer ? buf : new Uint8Array(buf).buffer), (err) => rej(err), { binary: true });
+        const grp = new this.T.Group(); grp.name = 'Human';
+        const m = this.mesh.clone(); m.name = 'Body'; grp.add(m);
+        new GLTFExporter().parse(grp, (buf) => res(buf instanceof ArrayBuffer ? buf : new Uint8Array(buf).buffer), (err) => rej(err), { binary: true });
       } catch (e) { rej(e); }
     });
   }
 
   sendToStudio = async () => {
-    if (this.state.sending || !this.figure) return;
+    if (this.state.sending || !this.mesh) return;
     this.setState({ sending: true });
     try {
       const buf = await this.buildGLB();
-      const name = 'human_' + this.HAIRSTYLES[this.state.hstyle].toLowerCase().replace(/ /g, '') + '.glb';
-      this._post('studio:saveChar', { buffer: buf, name, goto: 'showcase' }, [buf]);
+      this._post('studio:saveChar', { buffer: buf, name: 'human_tpose.glb', goto: 'showcase' }, [buf]);
       this.setState({ sending: false });
     } catch (e) { console.error(e); this.setState({ sending: false }); }
   };
-  componentWillUnmount() {
-    cancelAnimationFrame(this.raf);
-    if (this.ro) this.ro.disconnect();
-    if (this.renderer) { this.renderer.dispose(); this.renderer.domElement.remove(); }
-  }
-  componentDidUpdate(_p, prev) {
-    if (!this.T || this.state.loading) return;
-    if (prev.skin !== this.state.skin) this.skinMat.color.set(this.SKIN[this.state.skin].c);
-    if (prev.hcol !== this.state.hcol) this.hairMat.color.set(this.HAIRCOL[this.state.hcol].c);
-    if (prev.hstyle !== this.state.hstyle) this.buildHair();
-    if (prev.rotate !== this.state.rotate && this.controls) this.controls.autoRotate = this.state.rotate;
-  }
 
   // ---------- scene ----------
   initScene() {
@@ -204,9 +230,9 @@ class Component extends DCLogic {
     cam.position.set(0.4, 1.05, 4.0); this.cam = cam;
 
     const ctr = new this.OrbitControls(cam, r.domElement);
-    ctr.target.set(0, 0.98, 0);
+    ctr.target.set(0, 0.95, 0);
     ctr.enableDamping = true; ctr.dampingFactor = 0.08;
-    ctr.minDistance = 2.2; ctr.maxDistance = 7;
+    ctr.minDistance = 1.6; ctr.maxDistance = 7;
     ctr.minPolarAngle = 0.35; ctr.maxPolarAngle = 1.62;
     ctr.enablePan = false;
     ctr.autoRotate = this.state.rotate; ctr.autoRotateSpeed = 1.1;
@@ -227,6 +253,41 @@ class Component extends DCLogic {
     ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true; scene.add(ground);
   }
 
+  buildFigure(params) {
+    const T = this.T;
+    this.mat = new T.MeshStandardMaterial({ color: this.state.clay, roughness: 0.55, metalness: 0.05 });
+    this.wireMat = new T.MeshBasicMaterial({ color: this.ACCENT, wireframe: true, transparent: true, opacity: 0.16, depthTest: true });
+    const geo = this.HB.buildHumanGeometry(T, params);
+    this.mesh = new T.Mesh(geo, this.mat);
+    this.mesh.name = 'Body';
+    this.mesh.castShadow = this.mesh.receiveShadow = true;
+    this.wireMesh = new T.Mesh(geo, this.wireMat);
+    this.wireMesh.visible = this.state.wire;
+    this.wireMesh.scale.setScalar(1.002);
+    this.figure = new T.Group(); this.figure.name = 'Human';
+    this.figure.add(this.mesh, this.wireMesh);
+    this.scene.add(this.figure);
+    this.updateStats(geo);
+  }
+
+  swapGeometry(geo) {
+    this.mesh.geometry.dispose();
+    this.mesh.geometry = geo;
+    this.wireMesh.geometry = geo;
+    this.updateStats(geo);
+  }
+
+  applyGeometry(params) {
+    if (!this.mesh) return;
+    this.swapGeometry(this.HB.buildHumanGeometry(this.T, params));
+    if (this.controls) this.controls.target.y = 0.545 * params.height;
+  }
+
+  updateStats(geo) {
+    const fmt = (n) => n.toLocaleString('en-US');
+    this.stats = fmt(geo.attributes.position.count) + ' verts \u00b7 ' + fmt(geo.getIndex().count / 3) + ' tris';
+  }
+
   resize() {
     const el = this.viewportEl; if (!el || !this.renderer) return;
     const w = el.clientWidth, h = el.clientHeight; if (!w || !h) return;
@@ -234,152 +295,136 @@ class Component extends DCLogic {
   }
   animate = () => { this.raf = requestAnimationFrame(this.animate); if (this.controls) this.controls.update(); this.renderer.render(this.scene, this.cam); };
 
-  // ---------- figure ----------
-  _limb(rad, len) {
-    const T = this.T;
-    return new T.Mesh(new T.CapsuleGeometry(rad, Math.max(0.02, len - 2 * rad), 6, 18), this.skinMat);
-  }
-  _cast(o) { o.traverse(n => { if (n.isMesh) { n.castShadow = true; n.receiveShadow = true; } }); return o; }
-
-  buildFigure() {
-    const T = this.T;
-    this.skinMat = new T.MeshStandardMaterial({ color: this.SKIN[this.state.skin].c, roughness: 0.78, metalness: 0.02 });
-    this.hairMat = new T.MeshStandardMaterial({ color: this.HAIRCOL[this.state.hcol].c, roughness: 0.62, metalness: 0.04 });
-    const fig = new T.Group(); this.figure = fig; this.scene.add(fig);
-
-    // torso + pelvis
-    const pelvis = this._limb(0.135, 0.16); pelvis.position.y = 0.97; pelvis.scale.set(1.02, 1, 0.74); fig.add(pelvis);
-    const chest = this._limb(0.14, 0.30); chest.position.y = 1.24; chest.scale.set(1.08, 1, 0.72); fig.add(chest);
-    const neck = this._limb(0.046, 0.10); neck.position.y = 1.49; fig.add(neck);
-
-    // head
-    const headG = new T.Group(); headG.position.y = 1.62; this.headG = headG; fig.add(headG);
-    const head = new T.Mesh(new T.SphereGeometry(0.115, 32, 32), this.skinMat);
-    head.scale.set(0.96, 1.13, 1.0); headG.add(head);
-    this.hairGroup = new T.Group(); headG.add(this.hairGroup);
-
-    this.buildArm(1); this.buildArm(-1);
-    this.buildLeg(1); this.buildLeg(-1);
-    this._cast(fig);
-  }
-
-  buildArm(s) {
-    const T = this.T;
-    const sh = new T.Group(); sh.position.set(s * 0.205, 1.40, 0); sh.rotation.z = -s * 0.20;
-    const ua = this._limb(0.050, 0.30); ua.position.y = -0.15; sh.add(ua);
-    const elbow = new T.Group(); elbow.position.y = -0.30; elbow.rotation.z = -s * 0.06; sh.add(elbow);
-    const la = this._limb(0.044, 0.28); la.position.y = -0.14; elbow.add(la);
-    const hand = new T.Mesh(new T.SphereGeometry(0.052, 18, 16), this.skinMat);
-    hand.scale.set(0.85, 1.15, 0.5); hand.position.y = -0.31; elbow.add(hand);
-    this.figure.add(sh);
-  }
-  buildLeg(s) {
-    const T = this.T;
-    const hip = new T.Group(); hip.position.set(s * 0.095, 0.92, 0); hip.rotation.z = -s * 0.03;
-    const ul = this._limb(0.078, 0.44); ul.position.y = -0.22; hip.add(ul);
-    const knee = new T.Group(); knee.position.y = -0.44; hip.add(knee);
-    const ll = this._limb(0.060, 0.42); ll.position.y = -0.21; knee.add(ll);
-    const foot = new T.Mesh(new T.BoxGeometry(0.10, 0.055, 0.25), this.skinMat);
-    foot.position.set(0, -0.43, 0.055); foot.geometry.translate(0, 0, 0); knee.add(foot);
-    this.figure.add(hip);
-  }
-
-  buildHair() {
-    const T = this.T, g = this.hairGroup, name = this.HAIRSTYLES[this.state.hstyle];
-    while (g.children.length) g.remove(g.children[0]);
-    if (name === 'Bald') return;
-    const mat = this.hairMat;
-    const dome = (rad, phi, yoff) => {
-      const m = new T.Mesh(new T.SphereGeometry(rad, 30, 24, 0, Math.PI * 2, 0, phi), mat);
-      m.position.y = yoff || 0; m.castShadow = true; m.receiveShadow = true; return m;
-    };
-    if (name === 'Buzz') g.add(dome(0.119, Math.PI * 0.46, 0.004));
-    else if (name === 'Short') g.add(dome(0.127, Math.PI * 0.54, 0.006));
-    else if (name === 'Side Part') {
-      const c = dome(0.128, Math.PI * 0.56, 0.006); g.add(c);
-      const fr = new T.Mesh(new T.SphereGeometry(0.066, 18, 14), mat);
-      fr.scale.set(1.5, 0.5, 0.7); fr.position.set(0.05, 0.07, 0.085); fr.castShadow = true; g.add(fr);
-    } else if (name === 'Bob') {
-      const c = dome(0.132, Math.PI * 0.62, 0.004); c.scale.set(1, 1, 1.02); g.add(c);
-      [-1, 1].forEach(sx => {
-        const side = new T.Mesh(new T.CapsuleGeometry(0.044, 0.10, 4, 12), mat);
-        side.position.set(sx * 0.115, -0.05, -0.01); side.castShadow = true; g.add(side);
-      });
-    } else if (name === 'Ponytail') {
-      g.add(dome(0.126, Math.PI * 0.52, 0.006));
-      const tie = new T.Mesh(new T.SphereGeometry(0.034, 14, 12), mat); tie.position.set(0, 0.03, -0.12); g.add(tie);
-      const tail = new T.Mesh(new T.CapsuleGeometry(0.038, 0.22, 6, 14), mat);
-      tail.position.set(0, -0.10, -0.135); tail.rotation.x = -0.28; tail.castShadow = true; g.add(tail);
-    } else if (name === 'Bun') {
-      g.add(dome(0.124, Math.PI * 0.52, 0.006));
-      const bun = new T.Mesh(new T.SphereGeometry(0.058, 18, 16), mat); bun.position.set(0, 0.10, -0.085); bun.castShadow = true; g.add(bun);
-    } else if (name === 'Afro') {
-      const a = new T.Mesh(new T.SphereGeometry(0.165, 28, 24, 0, Math.PI * 2, 0, Math.PI * 0.82), mat);
-      a.position.y = 0.028; a.castShadow = true; a.receiveShadow = true; g.add(a);
-    }
-  }
-
-  applyAll() {
-    this.skinMat.color.set(this.SKIN[this.state.skin].c);
-    this.hairMat.color.set(this.HAIRCOL[this.state.hcol].c);
-    this.buildHair();
-  }
-
   // ---------- actions ----------
+  setParam(key, val) {
+    const params = Object.assign({}, this.state.params, { [key]: val });
+    this.applyGeometry(params);
+    this.setState({ params, fused: false, stats: this.stats });
+  }
   randomize = () => {
-    const ri = n => Math.floor(Math.random() * n);
-    let h = ri(this.HAIRSTYLES.length);
-    if (h === this.state.hstyle) h = (h + 1) % this.HAIRSTYLES.length;
-    this.setState({ skin: ri(this.SKIN.length), hstyle: h, hcol: ri(this.HAIRCOL.length) });
+    const params = this.HB.randomParams();
+    this.applyGeometry(params);
+    this.setState({ params, fused: false, stats: this.stats });
   };
-  toggleRotate = () => this.setState(s => ({ rotate: !s.rotate }));
+  reset = () => {
+    const params = this.HB.defaults();
+    this.applyGeometry(params);
+    this.setState({ params, fused: false, stats: this.stats });
+  };
+
+  // set three.js state directly in the handlers — never via componentDidUpdate,
+  // which is unreliable across hot-reloads
+  toggleRotate = () => {
+    const rotate = !this.state.rotate;
+    if (this.controls) this.controls.autoRotate = rotate;
+    this.setState({ rotate });
+  };
+  toggleWire = () => {
+    const wire = !this.state.wire;
+    if (this.wireMesh) this.wireMesh.visible = wire;
+    this.setState({ wire });
+  };
+  pickClay = (hex) => {
+    if (this.mat) this.mat.color.set(hex);
+    this.setState({ clay: hex });
+  };
+
+  fuse = async () => {
+    if (this.state.fusing || !this.mesh) return;
+    if (this.state.fused) { // back to raw lofted mesh
+      this.applyGeometry(this.state.params);
+      this.setState({ fused: false, stats: this.stats });
+      return;
+    }
+    this.setState({ fusing: true });
+    await new Promise(r => setTimeout(r, 30)); // let the overlay paint
+    try {
+      const { MarchingCubes } = await import('https://esm.sh/three@0.160.0/examples/jsm/objects/MarchingCubes.js');
+      this._MC = MarchingCubes;
+      const geo = this.HB.buildSmoothGeometry(this.T, MarchingCubes, this.state.params, { power: this.state.smoothPower, resolution: 144 });
+      this.swapGeometry(geo);
+      this.setState({ fusing: false, fused: true, stats: this.stats });
+    } catch (e) { console.error(e); this.setState({ fusing: false }); }
+  };
+
+  setSmoothPower = (e) => {
+    const smoothPower = parseFloat(e.target.value);
+    this.setState({ smoothPower });
+    // live re-weld while the model is in smoothed mode
+    if (this.state.fused && !this.state.fusing && this._MC) {
+      clearTimeout(this._smoothT);
+      this._smoothT = setTimeout(() => {
+        const geo = this.HB.buildSmoothGeometry(this.T, this._MC, this.state.params, { power: smoothPower, resolution: 144 });
+        this.swapGeometry(geo);
+        this.setState({ stats: this.stats });
+      }, 120);
+    }
+  };
 
   exportGLB = async () => {
-    if (this.state.exporting || !this.figure) return;
+    if (this.state.exporting || !this.mesh) return;
     this.setState({ exporting: true });
     try {
-      const { GLTFExporter } = await import('https://esm.sh/three@0.160.0/examples/jsm/exporters/GLTFExporter.js');
-      const exp = new GLTFExporter();
-      exp.parse(this.figure, (buf) => {
-        const blob = new Blob([buf], { type: 'model/gltf-binary' });
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = 'human_' + this.HAIRSTYLES[this.state.hstyle].toLowerCase().replace(/ /g, '') + '.glb';
-        a.click(); URL.revokeObjectURL(a.href);
-        this.setState({ exporting: false });
-      }, (err) => { console.error(err); this.setState({ exporting: false }); }, { binary: true });
+      const buf = await this.buildGLB();
+      const blob = new Blob([buf], { type: 'model/gltf-binary' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'human_tpose.glb';
+      a.click(); URL.revokeObjectURL(a.href);
+      this.setState({ exporting: false });
     } catch (e) { console.error(e); this.setState({ exporting: false }); }
   };
+
+  fmtVal(def, v) {
+    if (def.fmt === 'm') return v.toFixed(2) + ' m';
+    if (def.fmt === 'pct') return Math.round(v * 100) + '';
+    return v.toFixed(2) + '\u00d7';
+  }
 
   // ---------- render ----------
   renderVals() {
     const A = this.ACCENT, st = this.state;
-    const off = 'rgba(255,255,255,.10)';
-    const skinSwatches = this.SKIN.map((x, i) => ({ color: x.c, label: x.n, ring: i === st.skin ? A : off, onClick: () => this.setState({ skin: i }) }));
-    const hairColSwatches = this.HAIRCOL.map((x, i) => ({ color: x.c, label: x.n, ring: i === st.hcol ? A : off, onClick: () => this.setState({ hcol: i }) }));
-    const hairStyles = this.HAIRSTYLES.map((n, i) => ({
-      name: n,
-      bg: i === st.hstyle ? 'rgba(95,227,192,.13)' : 'rgba(255,255,255,.03)',
-      border: i === st.hstyle ? A : 'rgba(255,255,255,.09)',
-      color: i === st.hstyle ? A : '#cfd4dc',
-      onClick: () => this.setState({ hstyle: i }),
+    const sliders = (this.HB && st.params) ? this.HB.HUMAN_PARAMS.map(def => ({
+      label: def.label, min: def.min, max: def.max, step: def.step,
+      value: st.params[def.key],
+      valueText: this.fmtVal(def, st.params[def.key]),
+      onChange: (e) => this.setParam(def.key, parseFloat(e.target.value)),
+    })) : [];
+    const swatches = this.SWATCHES.map(hex => ({
+      hex, pick: () => this.pickClay(hex),
+      ring: st.clay === hex ? A : 'rgba(255,255,255,.14)',
     }));
     return {
       viewportRef: this.viewportRef,
-      loading: st.loading,
-      skinSwatches, hairColSwatches, hairStyles,
-      hairColorName: this.HAIRCOL[st.hcol].n,
+      busy: st.loading || st.fusing,
+      busyText: st.fusing ? 'smoothing mesh' : 'building scene',
+      badgeText: st.fused ? 'T-POSE \u00b7 SMOOTHED \u00b7 RIG READY' : 'T-POSE \u00b7 RIG READY',
+      sliders, swatches,
+      statsText: st.stats,
       randomize: this.randomize,
+      reset: this.reset,
+      fuse: this.fuse,
+      fuseLabel: st.fusing ? 'Welding\u2026' : (st.fused ? 'Back to raw' : 'Weld joints'),
+      fuseHint: st.fused ? 'Seams filled with a fillet. Moving a proportion slider rebuilds the raw mesh.' : 'Fuses parts into one shape, filling the crease at each joint with a clay-like fillet.',
+      smoothPower: st.smoothPower,
+      smoothPowerText: Math.round(st.smoothPower * 100) + '',
+      setSmoothPower: this.setSmoothPower,
+      fuseBg: st.fused ? 'rgba(95,227,192,.12)' : '#5fe3c0',
+      fuseColor: st.fused ? A : '#06231d',
+      fuseBorder: st.fused ? 'rgba(95,227,192,.4)' : 'transparent',
       exportGLB: this.exportGLB,
-      exportLabel: st.exporting ? 'Exporting…' : 'Export GLB',
+      exportLabel: st.exporting ? 'Exporting\u2026' : 'Export GLB',
       embedded: st.embedded,
       sendToStudio: this.sendToStudio,
-      sendLabel: st.sending ? 'Sending…' : 'Use in Studio',
+      sendLabel: st.sending ? 'Sending\u2026' : 'Use in Studio',
       toggleRotate: this.toggleRotate,
-      rotateLabel: st.rotate ? 'Spin' : 'Static',
       rotateColor: st.rotate ? A : '#8b929e',
       rotateBg: st.rotate ? 'rgba(95,227,192,.10)' : 'rgba(255,255,255,.03)',
       rotateBorder: st.rotate ? 'rgba(95,227,192,.4)' : 'rgba(255,255,255,.1)',
+      toggleWire: this.toggleWire,
+      wireColor: st.wire ? A : '#8b929e',
+      wireBg: st.wire ? 'rgba(95,227,192,.08)' : 'rgba(255,255,255,.03)',
+      wireBorder: st.wire ? 'rgba(95,227,192,.35)' : 'rgba(255,255,255,.09)',
     };
   }
 }

@@ -12,7 +12,7 @@
        plane. (True vendoring is still better; this is the client-side half.)
    Bump CACHE_VERSION whenever shell files change so clients pick them up.
    ============================================================ */
-const CACHE_VERSION = 'pp-v6';
+const CACHE_VERSION = 'pp-v17';
 const CORE_CACHE = CACHE_VERSION + '-core';
 const RUNTIME_CACHE = CACHE_VERSION + '-runtime';
 const CDN_CACHE = CACHE_VERSION + '-cdn';
@@ -85,6 +85,19 @@ self.addEventListener('fetch', (e) => {
   }
   // only handle our own origin otherwise
   if (url.origin !== self.location.origin) return;
+
+  // the basic-human module is under active iteration → network-first so edits
+  // show up on plain reload (cache only as offline fallback)
+  if (url.pathname.endsWith('/studio3D_scripts/human-body.js')) {
+    e.respondWith((async () => {
+      try {
+        const res = await fetch(new Request(req.url, { cache: 'reload' }));
+        if (res && res.ok) { const c = await caches.open(RUNTIME_CACHE); c.put(req, res.clone()); }
+        return res;
+      } catch (err) { return (await caches.match(req)) || Response.error(); }
+    })());
+    return;
+  }
 
   // navigations → cache-first on index, network fallback
   if (req.mode === 'navigate') {
