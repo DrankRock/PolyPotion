@@ -207,16 +207,18 @@ function buildParts(THREE, p) {
     const rr  = 0.040 + 0.030 * bu;               // half-width at the fullest
     const proj = 0.018 + 0.058 * bu;              // forward projection of the apex
     const drop = 0.030 + 0.045 * bu;              // how far the round underside hangs
+    // NOTE: like every other part, sections run bottom→up (y increasing) so the
+    //   face winding stays outward. Reading top-to-bottom here renders inside-out.
     part([
-      // upper slope — feathered thin where it melts into the chest
-      { y: cy + rr * 1.15, cx: cxc,        rx: rr * 0.32, rz: 0.006,        cz: z0 + proj * 0.20 },
-      { y: cy + rr * 0.62, cx: cxc,        rx: rr * 0.70, rz: proj * 0.34,  cz: z0 + proj * 0.42 },
+      // full rounded underside, tucked back toward the ribcage (the teardrop belly)
+      { y: cy - drop * 1.15, cx: cxc * 0.96, rx: rr * 0.52, rz: proj * 0.34, cz: z0 + proj * 0.12 },
+      { y: cy - drop * 0.7, cx: cxc,       rx: rr * 0.92, rz: proj * 0.80,  cz: z0 + proj * 0.50 },
       // apex ring — widest AND most forward (this is where the nipple sits)
       { y: cy,             cx: cxc,        rx: rr,        rz: proj,         cz: z0 + proj },
-      // full rounded underside, tucked back toward the ribcage (the teardrop belly)
-      { y: cy - drop * 0.7, cx: cxc,       rx: rr * 0.92, rz: proj * 0.80,  cz: z0 + proj * 0.50 },
-      { y: cy - drop * 1.15, cx: cxc * 0.96, rx: rr * 0.52, rz: proj * 0.34, cz: z0 + proj * 0.12 },
-    ], { capStart: 0.35, capEnd: 0.4 }, null, true);
+      // upper slope — feathered thin where it melts into the chest
+      { y: cy + rr * 0.62, cx: cxc,        rx: rr * 0.70, rz: proj * 0.34,  cz: z0 + proj * 0.42 },
+      { y: cy + rr * 1.15, cx: cxc,        rx: rr * 0.32, rz: 0.006,        cz: z0 + proj * 0.20 },
+    ], { capStart: 0.4, capEnd: 0.35 }, null, true);
 
     // nipple — tiny nub proud of the apex
     part([
