@@ -21,6 +21,14 @@
 // smoothed, hemispherically capped, mirrored (limbs) and merged.
 // To refine anatomy, edit the section tables in buildParts() below —
 // each line is one cross-section (radii in metres at a 1.75 m base figure).
+//
+// SLIDER COUPLING — the sliders blend into each other (see the derived vars
+// at the top of buildParts): `build` (body-fat) also grows the bust, glutes,
+// hips, belly, love handles, face and neck, and BURIES muscle definition;
+// `muscle` adds bulk (traps, lats, shoulders, limbs, glutes) plus definition
+// (abs, pecs, quad cuts) that only shows on a lean-enough figure. Anatomy
+// mounted on the torso surface (breasts, abs, pecs, navel) rides frontZ(),
+// so it stays glued to the skin as the belly grows.
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const HUMAN_PARAMS = [
@@ -155,10 +163,22 @@ function mergeGeos(THREE, list) {
 // Each part = sampled rings + optional rigid transform + mirror flag.
 
 function buildParts(THREE, p) {
-  const g     = lerp(0.86, 1.18, p.build);          // overall girth
+  const clamp01 = (v) => (v < 0 ? 0 : v > 1 ? 1 : v);
+
+  // ── derived body composition — the sliders BLEND into each other here ──
+  // `build` is body-fat: it feeds overall girth, belly, love handles, bust,
+  //   glutes, hips, face and neck.
+  // `muscle` feeds bulk (shoulders, traps, lats, limbs, glutes) and
+  //   *definition* — but fat buries definition, so abs / pecs / quad cuts
+  //   fade out as build rises.
   const mus   = p.muscle;                            // 0..1
+  const fat   = clamp01((p.build - 0.5) / 0.5);      // 0 average → 1 heavy
+  const lean  = clamp01((0.5 - p.build) / 0.5);      // 0 average → 1 skinny
+  const g     = lerp(0.86, 1.18, p.build) * (1 + 0.035 * mus); // overall girth
   const belly = Math.max(0, p.build - 0.55) * 2;     // extra midsection past "solid"
-  const bt    = p.butt, bu = p.bust;
+  const def   = clamp01(mus * (1 - 1.05 * fat) - 0.35 * belly); // visible cuts
+  const bu    = clamp01(p.bust + 0.22 * fat - 0.05 * lean * mus); // fat grows the bust
+  const bt    = clamp01(p.butt + 0.16 * fat + 0.12 * mus);        // fat + glute muscle
 
   // landmarks (base H = 1.75)
   const crown     = 1.75;
@@ -168,8 +188,8 @@ function buildParts(THREE, p) {
   const crotch    = 0.82 + (p.legs - 1) * 0.38;
   const ankleY    = 0.07;
   const kneeY     = ankleY + (crotch - ankleY) * 0.53;
-  const hipX      = 0.094 * p.hips;
-  const shX       = 0.158 * p.shoulders;
+  const hipX      = 0.094 * p.hips * (1 + 0.05 * fat);
+  const shX       = 0.158 * p.shoulders * (1 + 0.045 * mus);
 
   const parts = [];
   const part = (sections, opts, matrix, mirror) => {
@@ -179,16 +199,39 @@ function buildParts(THREE, p) {
     parts.push({ rings, matrix: matrix || null, mirror: !!mirror });
   };
 
-  // — torso: crotch → traps —
+  // — torso: crotch → traps — (definition pinches the waist; fat adds love handles)
   part([
     { y: crotch + 0.015,    rx: 0.112 * g * p.hips,                    rz: 0.094 * g },
     { y: crotch + 0.06,     rx: 0.132 * g * p.hips,                    rz: 0.104 * g,                        cz: -0.006 },
-    { y: crotch + 0.155,    rx: (0.118 + 0.010 * mus) * g + belly * 0.010, rz: 0.090 * g + belly * 0.034,    cz: 0.004 + belly * 0.014 },
-    { y: crotch + 0.27,     rx: (0.136 + 0.010 * mus) * g,             rz: (0.100 + 0.006 * mus) * g,        cz: 0.004 },
+    { y: crotch + 0.155,    rx: (0.118 + 0.010 * mus) * g + belly * 0.010 + 0.010 * fat, rz: 0.090 * g + belly * 0.034, cz: 0.004 + belly * 0.014 },
+    { y: crotch + 0.27,     rx: (0.136 + 0.010 * mus - 0.013 * def) * g + 0.014 * fat, rz: (0.100 + 0.006 * mus) * g, cz: 0.004 },
     { y: shoulderY - 0.075, rx: (0.152 + 0.016 * mus) * g * p.shoulders, rz: (0.106 + 0.010 * mus) * g,      cz: 0.006 },
     { y: shoulderY - 0.01,  rx: (0.146 + 0.014 * mus) * g * p.shoulders, rz: 0.094 * g,                      cz: 0.002 },
     { y: shoulderY + 0.035, rx: 0.100 * g * p.shoulders,               rz: 0.078 * g },
   ], { capStart: 0.5, capEnd: 0.55 });
+
+  // front-of-torso z on the midline at height yy — mirrors the torso table
+  // above (keep in sync if you edit it). Surface-mounted anatomy (abs, pecs,
+  // breasts, navel) rides on this so it stays glued to the skin when build /
+  // muscle / belly change.
+  const FZ = [
+    [crotch + 0.015,     0.094 * g],
+    [crotch + 0.06,     -0.006 + 0.104 * g],
+    [crotch + 0.155,     0.004 + belly * 0.014 + 0.090 * g + belly * 0.034],
+    [crotch + 0.27,      0.004 + (0.100 + 0.006 * mus) * g],
+    [shoulderY - 0.075,  0.006 + (0.106 + 0.010 * mus) * g],
+    [shoulderY - 0.01,   0.002 + 0.094 * g],
+  ];
+  const frontZ = (yy) => {
+    if (yy <= FZ[0][0]) return FZ[0][1];
+    for (let i = 0; i < FZ.length - 1; i++) {
+      if (yy <= FZ[i + 1][0]) {
+        const t = (yy - FZ[i][0]) / (FZ[i + 1][0] - FZ[i][0]);
+        return lerp(FZ[i][1], FZ[i + 1][1], t);
+      }
+    }
+    return FZ[FZ.length - 1][1];
+  };
 
   // — glutes (sized by `butt`; tucked into the pelvis when small) —
   part([
@@ -197,40 +240,122 @@ function buildParts(THREE, p) {
     { y: crotch + 0.112, cx: 0.055, rx: 0.038 + 0.014 * bt, rz: 0.020 + 0.026 * bt, cz: -(0.058 + 0.034 * bt) },
   ], { capStart: 0.6, capEnd: 0.6 }, null, true);
 
-  // — breasts (sized by `bust`) — TEARDROP profile: tapers into the chest at
-  //   the top, rounds out full at the bottom, nipple projects forward + slightly
-  //   down. Built as its own vertical loft so it isn't a plain ellipsoid. —
+  // — breasts (sized by effective `bu` = bust + fat) — NATURAL PTOSIS profile:
+  //   the gland descends from a long, gently-sloped upper pole (melts into the
+  //   chest high, near the 2nd rib) into a FULL ROUND LOWER POLE hanging above
+  //   a tucked inframammary fold. Max projection (the nipple) sits LOW on the
+  //   mound — just above the under-curve — splayed slightly outward and tilted
+  //   slightly UP. Round from the front (wide rx at the apex), teardrop from
+  //   the side (the cz+rz envelope). Muscle lifts the whole gland a touch
+  //   (pec support); size drops the fold, the apex and thins the upper pole.
+  //   NOTE: like every other part, sections run bottom→up (y increasing) so
+  //   the face winding stays outward. Reading top-to-bottom renders inside-out.
   {
-    const cy  = shoulderY - 0.10 - 0.02 * bu;    // apex (nipple) height; drops as it grows
-    const cxc = 0.072;                            // sideways offset of the breast axis
-    const z0  = 0.072 * g;                        // chest wall (root) z
-    const rr  = 0.040 + 0.030 * bu;               // half-width at the fullest
-    const proj = 0.018 + 0.058 * bu;              // forward projection of the apex
-    const drop = 0.030 + 0.045 * bu;              // how far the round underside hangs
-    // NOTE: like every other part, sections run bottom→up (y increasing) so the
-    //   face winding stays outward. Reading top-to-bottom here renders inside-out.
+    const chestRx = (0.150 + 0.015 * mus) * g * p.shoulders;    // ribcage half-width
+    const rootTop = shoulderY - 0.042 + 0.012 * mus;            // upper pole melts in here
+    const foldY   = shoulderY - (0.148 + 0.052 * bu) + 0.010 * mus; // inframammary fold (drops as it grows)
+    const span    = rootTop - foldY;                            // gland height on the chest
+    const tApex   = 0.40 - 0.07 * bu;                           // nipple height fraction — LOW on the mound
+    const cy      = foldY + span * tApex;
+    const cxc     = 0.068;                                      // root axis sideways offset
+    const cxa     = cxc + 0.006 + 0.010 * bu;                   // apex splays slightly outward
+    const lat     = Math.sqrt(Math.max(0.15, 1 - (cxc / chestRx) ** 2));
+    const z0      = frontZ(cy) * lat - 0.002;                   // chest skin under the gland
+    const rr      = 0.040 + 0.042 * bu;                         // half-width at the apex
+    const P       = 0.016 + 0.058 * bu;                         // max projection past the skin
+    // Each ring is defined by its FRONT surface (fraction f of P) and width;
+    // depth (rz, cz) is then derived so the ring's BACK sits ~1.4 cm inside
+    // the ribcage — the gland is always welded into the torso, never a
+    // stuck-on cone floating proud of the chest.
+    const ring = (t, f, w, x) => {
+      const front = z0 + P * f;
+      const rz = Math.max(0.006, (P * f + 0.014) / 2);
+      return { y: foldY + span * t, cx: x, rx: rr * w, rz, cz: front - rz };
+    };
     part([
-      // full rounded underside, tucked back toward the ribcage (the teardrop belly)
-      { y: cy - drop * 1.15, cx: cxc * 0.96, rx: rr * 0.52, rz: proj * 0.34, cz: z0 + proj * 0.12 },
-      { y: cy - drop * 0.7, cx: cxc,       rx: rr * 0.92, rz: proj * 0.80,  cz: z0 + proj * 0.50 },
-      // apex ring — widest AND most forward (this is where the nipple sits)
-      { y: cy,             cx: cxc,        rx: rr,        rz: proj,         cz: z0 + proj },
-      // upper slope — feathered thin where it melts into the chest
-      { y: cy + rr * 0.62, cx: cxc,        rx: rr * 0.70, rz: proj * 0.34,  cz: z0 + proj * 0.42 },
-      { y: cy + rr * 1.15, cx: cxc,        rx: rr * 0.32, rz: 0.006,        cz: z0 + proj * 0.20 },
-    ], { capStart: 0.4, capEnd: 0.35 }, null, true);
+      ring(0.00, 0.12, 0.42, cxc * 0.94),   // inframammary fold
+      ring(0.16, 0.82, 0.86, cxc),          // full round lower pole — the hang
+      ring(tApex, 1.00, 1.00, cxa),         // apex: widest AND most forward
+      ring(0.62, 0.60, 0.86, cxc + 0.004),  // upper slope, long and shallow
+      ring(0.84, 0.24, 0.55, cxc),
+      ring(1.00, 0.04, 0.24, cxc * 0.94),   // feathers flat near the 2nd rib
+    ], { capStart: 0.45, capEnd: 0.4 }, null, true);
 
-    // nipple — tiny nub proud of the apex
+    // nipple + areola — SUBTLE: ~5 mm proud of the apex, tip a touch above and
+    // outside the base so the axis tilts gently up-and-out.
+    const nr = 0.006 + 0.0035 * bu;
+    const F  = z0 + P;
     part([
-      { y: cy - 0.004, cx: cxc, rx: 0.008 + 0.004 * bu, rz: 0.008 + 0.004 * bu, cz: z0 + proj + 0.004 },
-      { y: cy + 0.004, cx: cxc, rx: 0.006 + 0.003 * bu, rz: 0.006 + 0.003 * bu, cz: z0 + proj + 0.010 + 0.004 * bu },
-    ], { capStart: 0.6, capEnd: 1.0 }, null, true);
+      { y: cy - nr * 1.5, cx: cxa,             rx: nr * 2.0,  rz: nr * 0.6,  cz: F - nr * 0.55 }, // areola
+      { y: cy + nr * 0.2, cx: cxa + nr * 0.15, rx: nr,        rz: nr * 0.55, cz: F - nr * 0.05 },
+      { y: cy + nr * 1.1, cx: cxa + nr * 0.25, rx: nr * 0.55, rz: nr * 0.4,  cz: F + nr * 0.30 }, // tip
+    ], { capStart: 0.5, capEnd: 0.9 }, null, true);
+  }
+
+  // — pectorals — soft broad mound (no hard shelf); fades as the bust grows.
+  const pec = def * clamp01(1 - 1.8 * bu);
+  if (pec > 0.03) {
+    const P2 = 0.003 + 0.010 * pec;
+    const pr = (yy, f, w, x) => {
+      const front = frontZ(yy) * 0.93 + P2 * f;
+      const rz = Math.max(0.005, (P2 * f + 0.016) / 2);
+      return { y: yy, cx: x, rx: w, rz, cz: front - rz };
+    };
+    part([
+      pr(shoulderY - 0.138, 0.05, 0.044, 0.058),
+      pr(shoulderY - 0.110, 1.00, 0.062, 0.064),
+      pr(shoulderY - 0.066, 0.75, 0.056, 0.060),
+      pr(shoulderY - 0.026, 0.10, 0.038, 0.046),
+    ], { capStart: 0.5, capEnd: 0.5 }, null, true);
+  }
+
+  // — rectus abdominis — ONE wavy loft per side (bump/groove/bump along y):
+  //   rings inside a part HARD-union, so the pack keeps its cuts instead of
+  //   being filleted away; the linea alba groove appears between the mirrored
+  //   columns. 3 rows above the navel line + 1 below. Fat buries it (`def`).
+  if (def > 0.05) {
+    const A   = 0.0025 + 0.0045 * def; // wave amplitude (bump vs valley)
+    const B   = 0.0035 + 0.0065 * def; // plate protrusion — B > A, so valleys
+    const ax  = 0.026;                 //   never cut below the skin (no slashes)
+    const fzA = (yy) => frontZ(yy) * 0.985;
+    const row = (yy, w) => ({ y: yy, cx: ax, rx: 0.021, rz: 0.012, cz: fzA(yy) - 0.012 + B + w * A });
+    part([
+      { y: crotch + 0.135, cx: ax, rx: 0.018, rz: 0.008, cz: fzA(crotch + 0.135) - 0.010 },
+      row(crotch + 0.170, +1),    // pack below the navel
+      row(crotch + 0.205, -0.6),  // navel line
+      row(crotch + 0.240, +1),
+      row(crotch + 0.272, -1),
+      row(crotch + 0.305, +1),
+      row(crotch + 0.335, -1),
+      row(crotch + 0.365, +0.9),  // top pack, tucking under the ribs
+      { y: crotch + 0.395, cx: ax, rx: 0.018, rz: 0.007, cz: fzA(crotch + 0.395) - 0.010 },
+    ], { capStart: 0.4, capEnd: 0.4, over: 3 }, null, true);
+  }
+
+  // — trapezius — the neck→shoulder slope; grows with muscle.
+  if (mus > 0.02) {
+    const T = 0.014 + 0.030 * mus;
+    part([
+      { y: shoulderY - 0.012, cx: shX * 0.72, cz: -0.012, rx: 0.042, rz: 0.020 + T * 0.5 },
+      { y: shoulderY + 0.028, cx: shX * 0.45, cz: -0.010, rx: 0.040, rz: 0.018 + T * 0.6 },
+      { y: shoulderY + 0.058, cx: shX * 0.22, cz: -0.006, rx: 0.026, rz: 0.014 + T * 0.4 },
+    ], { capStart: 0.5, capEnd: 0.5 }, null, true);
+  }
+
+  // — lats — back/armpit wings for the V-taper; grow with muscle.
+  if (mus > 0.05) {
+    const L = 0.006 + 0.020 * mus;
+    part([
+      { y: shoulderY - 0.205, cx: 0.090,              cz: -(0.052 * g), rx: 0.026, rz: 0.010 + L * 0.4 },
+      { y: shoulderY - 0.150, cx: 0.110 * p.shoulders, cz: -(0.056 * g), rx: 0.036, rz: 0.012 + L },
+      { y: shoulderY - 0.095, cx: 0.118 * p.shoulders, cz: -(0.050 * g), rx: 0.034, rz: 0.010 + L * 0.8 },
+    ], { capStart: 0.5, capEnd: 0.5 }, null, true);
   }
 
   // — navel: a small dimple set into the belly front —
   {
     const ny = crotch + 0.20;
-    const nz = (0.090 + belly * 0.034) * g;   // ride the belly surface
+    const nz = frontZ(ny) - 0.004;            // ride the belly surface
     part([
       { y: ny + 0.018, cx: 0, rx: 0.014, rz: 0.006, cz: nz + 0.004 },
       { y: ny,         cx: 0, rx: 0.011, rz: 0.010, cz: nz - 0.010 },  // recessed centre
@@ -240,15 +365,15 @@ function buildParts(THREE, p) {
 
   // — neck —
   part([
-    { y: shoulderY - 0.02, rx: (0.056 + 0.006 * mus) * g, rz: 0.052 * g, cz: 0.004 },
-    { y: chin + 0.005,     rx: (0.044 + 0.006 * mus) * g, rz: 0.043 * g, cz: 0.008 },
+    { y: shoulderY - 0.02, rx: (0.056 + 0.008 * mus + 0.008 * fat) * g, rz: (0.052 + 0.006 * fat) * g, cz: 0.004 },
+    { y: chin + 0.005,     rx: (0.044 + 0.006 * mus + 0.005 * fat) * g, rz: (0.043 + 0.004 * fat) * g, cz: 0.008 },
   ], { capStart: 0.4, capEnd: 0.4 });
 
   // — head (chin → crown; cz shapes the face front / skull back) —
   part([
-    { y: chin,              rx: 0.030 * hs, rz: 0.034 * hs, cz: 0.040 * hs },
-    { y: chin + 0.030 * hs, rx: 0.058 * hs, rz: 0.070 * hs, cz: 0.012 * hs },
-    { y: chin + 0.072 * hs, rx: 0.072 * hs, rz: 0.090 * hs, cz: 0.004 * hs },
+    { y: chin,              rx: 0.030 * hs * (1 + 0.08 * fat), rz: 0.034 * hs * (1 + 0.05 * fat), cz: 0.040 * hs },
+    { y: chin + 0.030 * hs, rx: 0.058 * hs * (1 + 0.06 * fat), rz: 0.070 * hs * (1 + 0.03 * fat), cz: 0.012 * hs },
+    { y: chin + 0.072 * hs, rx: 0.072 * hs * (1 + 0.04 * fat), rz: 0.090 * hs, cz: 0.004 * hs },
     { y: chin + 0.115 * hs, rx: 0.078 * hs, rz: 0.099 * hs, cz: 0 },
     { y: chin + 0.163 * hs, rx: 0.077 * hs, rz: 0.095 * hs, cz: -0.005 * hs },
     { y: chin + 0.200 * hs, rx: 0.061 * hs, rz: 0.076 * hs, cz: -0.008 * hs },
@@ -265,9 +390,9 @@ function buildParts(THREE, p) {
   part([
     { y: -0.025, rx: 0.050 * g,                  rz: 0.050 * g },
     { y: 0.03,   rx: (0.060 + 0.022 * mus) * g,  rz: (0.058 + 0.020 * mus) * g },  // deltoid
-    { y: 0.115,  rx: (0.046 + 0.014 * mus) * g,  rz: (0.044 + 0.012 * mus) * g },  // biceps
+    { y: 0.115,  rx: (0.046 + 0.016 * mus) * g,  rz: (0.044 + 0.014 * mus) * g, cz: 0.006 * mus }, // biceps (peak rolls forward)
     { y: 0.215,  rx: 0.036 * g,                  rz: 0.035 * g },                  // elbow
-    { y: 0.30,   rx: (0.041 + 0.010 * mus) * g,  rz: (0.038 + 0.008 * mus) * g },  // forearm
+    { y: 0.30,   rx: (0.041 + 0.012 * mus) * g,  rz: (0.038 + 0.010 * mus) * g },  // forearm
     { y: 0.42,   rx: 0.026 * g,                  rz: 0.024 * g },
     { y: 0.455,  rx: 0.020 * g,                  rz: 0.027 * g },                  // wrist
     { y: 0.505,  rx: 0.016 * g,                  rz: 0.044 },                      // palm
@@ -302,7 +427,7 @@ function buildParts(THREE, p) {
   part([
     { y: ankleY,                      cx: hipX - 0.012, rx: 0.030 * g,                 rz: 0.034 * g },
     { y: (kneeY - 0.07 + ankleY) / 2, cx: hipX - 0.010, rx: 0.040 * g,                 rz: 0.045 * g, cz: -0.002 },
-    { y: kneeY - 0.07,                cx: hipX - 0.008, rx: (0.056 + 0.012 * mus) * g, rz: (0.061 + 0.012 * mus) * g, cz: -0.007 },  // calf
+    { y: kneeY - 0.07,                cx: hipX - 0.008, rx: (0.056 + 0.014 * mus) * g, rz: (0.061 + 0.016 * mus) * g, cz: -0.007 - 0.007 * mus },  // calf (gastroc rolls back)
     { y: kneeY + 0.02,                cx: hipX - 0.007, rx: 0.054 * g,                 rz: 0.058 * g, cz: 0.003 },
     { y: (crotch + kneeY) / 2,        cx: hipX - 0.004, rx: 0.074 * g,                 rz: 0.080 * g },
     { y: crotch - 0.005,              cx: hipX,         rx: (0.090 + 0.008 * mus) * g, rz: (0.096 + 0.008 * mus) * g, cz: -0.004 },
@@ -315,6 +440,21 @@ function buildParts(THREE, p) {
     { y: kneeY + 0.005, cx: hipX - 0.007, cz: 0.060 * g, rx: 0.032 * g, rz: 0.020 * g },
     { y: kneeY + 0.04,  cx: hipX - 0.007, cz: 0.050 * g, rx: 0.024 * g, rz: 0.014 * g },
   ], { capStart: 0.6, capEnd: 0.6 }, null, true);
+
+  // — quads (only when defined): vastus medialis teardrop on the inner-front
+  //   just above the knee, and a rectus femoris ridge up the thigh front.
+  if (def > 0.08) {
+    part([
+      { y: kneeY + 0.020, cx: hipX - 0.034, cz: 0.044 * g,               rx: 0.017, rz: 0.008 },
+      { y: kneeY + 0.065, cx: hipX - 0.030, cz: 0.050 * g + 0.010 * def, rx: 0.024, rz: 0.010 + 0.008 * def },
+      { y: kneeY + 0.110, cx: hipX - 0.024, cz: 0.046 * g,               rx: 0.018, rz: 0.007 },
+    ], { capStart: 0.5, capEnd: 0.5 }, null, true);
+    part([
+      { y: kneeY + 0.10,                cx: hipX - 0.006, cz: 0.052 * g,               rx: 0.024, rz: 0.008 },
+      { y: (crotch + kneeY) / 2 + 0.02, cx: hipX - 0.004, cz: 0.070 * g + 0.008 * def, rx: 0.030, rz: 0.009 + 0.007 * def },
+      { y: crotch - 0.03,               cx: hipX - 0.002, cz: 0.074 * g,               rx: 0.026, rz: 0.007 },
+    ], { capStart: 0.5, capEnd: 0.5 }, null, true);
+  }
 
   // — right foot (built along +Y = heel→toe, rotated onto +Z; flat sole on y=0).
   //   In foot-local space +Y→world +Z (foot length), local +X→world +X (toe
