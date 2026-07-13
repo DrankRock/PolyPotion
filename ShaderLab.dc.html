@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Spline+Sans+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="theme.js"></script>
+<style>
+  html,body{margin:0;padding:0;height:100%;background:var(--gutter);}
+  *{box-sizing:border-box;}
+  a{color:var(--accent);} a:hover{color:var(--text);}
+  @keyframes sl-spin{to{transform:rotate(360deg);}}
+  @keyframes sl-tin{from{transform:translateX(120%);opacity:0;}to{transform:translateX(0);opacity:1;}}
+  #sl-root ::-webkit-scrollbar{width:10px;height:10px;}
+  #sl-root ::-webkit-scrollbar-track{background:var(--gutter);}
+  #sl-root ::-webkit-scrollbar-thumb{background:var(--panel-3);border:2px solid var(--gutter);border-radius:6px;}
+  #sl-root input[type="range"]{-webkit-appearance:none;appearance:none;background:var(--panel-3);border-radius:3px;height:4px;outline:none;}
+  #sl-root input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:11px;height:11px;border-radius:50%;background:#7fd7b8;cursor:pointer;border:none;}
+</style>
+</helmet>
+
+<div id="sl-root" style="display:flex;flex-direction:column;height:100vh;width:100%;overflow:hidden;background:var(--gutter);color:var(--text);font-family:var(--font-ui);font-size:13px;-webkit-font-smoothing:antialiased;user-select:none;">
+
+  <!-- TOP BAR -->
+  <header style="height:46px;flex:none;display:flex;align-items:center;gap:14px;padding:0 14px;background:var(--header);border-bottom:1px solid var(--seam);">
+    <div style="display:flex;align-items:center;gap:9px;">
+      <div style="width:26px;height:26px;border-radius:5px;display:flex;align-items:center;justify-content:center;background:#7b6fd8;color:#14102a;font-weight:700;font-size:14px;box-shadow:0 1px 2px rgba(0,0,0,.4),0 0 0 1px rgba(255,255,255,.08) inset;">◈</div>
+      <div>
+        <div style="font-weight:700;letter-spacing:.04em;font-size:14px;">SHADER LAB</div>
+        <div style="font-family:var(--font-mono);font-size:10px;color:var(--muted);letter-spacing:.1em;margin-top:1px;">NODE GRAPH → GLSL · LIVE ON YOUR CHARACTER</div>
+      </div>
+    </div>
+    <div style="flex:1;"></div>
+    <sc-if value="{{ hasErr }}" hint-placeholder-val="{{ false }}">
+      <div style="font-size:11px;color:#d94f2f;background:rgba(217,79,47,.12);border:1px solid rgba(217,79,47,.35);padding:4px 10px;border-radius:5px;">{{ errText }}</div>
+    </sc-if>
+    <div style="display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--text2);padding:4px 10px;background:var(--panel);border:1px solid var(--seam);border-radius:5px;">
+      <span style="width:7px;height:7px;border-radius:50%;flex:none;background:{{ dotColor }};"></span>
+      <span style="font-family:var(--font-mono);">{{ meshName }}</span>
+    </div>
+  </header>
+
+  <div style="flex:1;display:flex;min-height:0;">
+
+    <!-- PALETTE -->
+    <aside style="width:148px;flex:none;background:var(--panel);border-right:1px solid var(--seam);overflow-y:auto;padding:8px 8px 16px;">
+      <sc-for list="{{ palette }}" as="pg" hint-placeholder-count="4">
+        <div style="margin-bottom:10px;">
+          <div style="font-size:10px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:{{ pg.color }};padding:4px 4px 5px;">{{ pg.group }}</div>
+          <div style="display:flex;flex-direction:column;gap:3px;">
+            <sc-for list="{{ pg.items }}" as="it" hint-placeholder-count="3">
+              <button style="display:flex;align-items:center;gap:6px;padding:6px 8px;border-radius:5px;font-size:11.5px;font-weight:500;background:var(--panel3);border:1px solid var(--edge);color:var(--text);cursor:pointer;text-align:left;" onClick="{{ it.onAdd }}"><span style="color:{{ pg.color }};font-size:9px;">＋</span>{{ it.title }}</button>
+            </sc-for>
+          </div>
+        </div>
+      </sc-for>
+      <div style="font-size:10.5px;line-height:1.55;color:var(--muted);padding:6px 4px;">Wire nodes into <b style="color:#2fa07c;">Output</b>. Drag from a dot to connect, click a wire to cut it.</div>
+    </aside>
+
+    <!-- NODE CANVAS -->
+    <div id="sl-canvas" onMouseDown="{{ onCanvasDown }}" style="flex:1;position:relative;min-width:0;min-height:0;overflow:hidden;background:var(--viewport);cursor:{{ canvasCursor }};background-image:radial-gradient(circle, rgba(255,255,255,.055) 1px, transparent 1px);background-size:26px 26px;">
+      <div id="sl-world" style="position:absolute;left:0;top:0;width:0;height:0;transform:{{ worldTransform }};transform-origin:0 0;">
+        <svg style="position:absolute;left:0;top:0;width:10px;height:10px;overflow:visible;pointer-events:none;">
+          <sc-for list="{{ wireItems }}" as="w" hint-placeholder-count="4">
+            <g>
+              <path d="{{ w.d }}" style="fill:none;stroke:{{ w.stroke }};stroke-width:2;pointer-events:none;"></path>
+              <path d="{{ w.d }}" onClick="{{ w.onClick }}" style="fill:none;stroke:rgba(255,255,255,0.001);stroke-width:12;pointer-events:stroke;cursor:pointer;"></path>
+            </g>
+          </sc-for>
+          <sc-if value="{{ hasDragWire }}" hint-placeholder-val="{{ false }}">
+            <path d="{{ dragWireD }}" style="fill:none;stroke:#7fd7b8;stroke-width:2;stroke-dasharray:5 4;pointer-events:none;"></path>
+          </sc-if>
+        </svg>
+
+        <sc-for list="{{ nodeItems }}" as="nd" hint-placeholder-count="5">
+          <div style="{{ nd.style }}">
+            <div onMouseDown="{{ nd.onDragStart }}" style="{{ nd.headStyle }}">
+              <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ nd.title }}</span>
+              <sc-if value="{{ nd.canDelete }}" hint-placeholder-val="{{ false }}">
+                <span onMouseDown="{{ nd.onDelete }}" style="cursor:pointer;color:var(--muted);font-size:14px;line-height:1;padding:0 2px;">×</span>
+              </sc-if>
+            </div>
+            <sc-for list="{{ nd.outs }}" as="pt" hint-placeholder-count="1">
+              <div style="height:22px;display:flex;align-items:center;justify-content:flex-end;gap:6px;padding:0 6px;">
+                <span style="font-size:10px;color:var(--muted);">{{ pt.label }}</span>
+                <span onMouseDown="{{ pt.onDown }}" style="{{ pt.dotStyle }}"></span>
+              </div>
+            </sc-for>
+            <sc-for list="{{ nd.ins }}" as="pt" hint-placeholder-count="2">
+              <div style="height:22px;display:flex;align-items:center;gap:5px;padding:0 6px;">
+                <span onMouseDown="{{ pt.onDown }}" onMouseUp="{{ pt.onUp }}" style="{{ pt.dotStyle }}"></span>
+                <span style="font-size:10px;color:var(--text2);flex:none;width:33px;overflow:hidden;white-space:nowrap;">{{ pt.label }}</span>
+                <sc-if value="{{ pt.hasRange }}" hint-placeholder-val="{{ false }}">
+                  <input type="range" min="{{ pt.min }}" max="{{ pt.max }}" step="{{ pt.step }}" value="{{ pt.val }}" onChange="{{ pt.onVal }}" style="flex:1;min-width:0;">
+                  <span style="font-size:9px;font-family:var(--font-mono);color:var(--muted);width:23px;text-align:right;flex:none;">{{ pt.valLabel }}</span>
+                </sc-if>
+                <sc-if value="{{ pt.hasColor }}" hint-placeholder-val="{{ false }}">
+                  <input type="color" value="{{ pt.val }}" onChange="{{ pt.onVal }}" style="flex:1;min-width:0;height:15px;border:none;background:transparent;padding:0;cursor:pointer;">
+                </sc-if>
+              </div>
+            </sc-for>
+            <sc-for list="{{ nd.ctrls }}" as="ct" hint-placeholder-count="1">
+              <div style="display:flex;align-items:center;gap:6px;padding:3px 6px 5px;">
+                <sc-if value="{{ ct.hasRange }}" hint-placeholder-val="{{ false }}">
+                  <input type="range" min="{{ ct.min }}" max="{{ ct.max }}" step="{{ ct.step }}" value="{{ ct.val }}" onChange="{{ ct.onVal }}" style="flex:1;min-width:0;">
+                  <span style="font-size:9px;font-family:var(--font-mono);color:var(--muted);width:23px;text-align:right;flex:none;">{{ ct.valLabel }}</span>
+                </sc-if>
+                <sc-if value="{{ ct.hasColor }}" hint-placeholder-val="{{ false }}">
+                  <input type="color" value="{{ ct.val }}" onChange="{{ ct.onVal }}" style="flex:1;min-width:0;height:18px;border:none;background:transparent;padding:0;cursor:pointer;">
+                </sc-if>
+                <sc-if value="{{ ct.hasSelect }}" hint-placeholder-val="{{ false }}">
+                  <select value="{{ ct.val }}" onChange="{{ ct.onVal }}" style="flex:1;min-width:0;background:var(--panel3);border:1px solid var(--edge);color:var(--text);font-size:10.5px;border-radius:4px;padding:2px 4px;">
+                    <sc-for list="{{ ct.options }}" as="op" hint-placeholder-count="4"><option value="{{ op.v }}">{{ op.v }}</option></sc-for>
+                  </select>
+                </sc-if>
+                <sc-if value="{{ ct.hasExpose }}" hint-placeholder-val="{{ false }}">
+                  <button onClick="{{ ct.onToggle }}" style="{{ ct.exposeStyle }}">{{ ct.exposeLabel }}</button>
+                </sc-if>
+                <sc-if value="{{ ct.hasName }}" hint-placeholder-val="{{ false }}">
+                  <input type="text" value="{{ ct.val }}" onChange="{{ ct.onVal }}" placeholder="tweak label" style="flex:1;min-width:0;background:var(--panel3);border:1px solid var(--edge);color:var(--text);font-size:10.5px;border-radius:4px;padding:3px 6px;">
+                </sc-if>
+              </div>
+            </sc-for>
+          </div>
+        </sc-for>
+      </div>
+
+      <div style="position:absolute;left:10px;bottom:10px;display:flex;gap:5px;align-items:center;background:rgba(15,15,15,.8);border:1px solid var(--edge);border-radius:7px;padding:4px 6px;">
+        <button style="width:24px;height:24px;border-radius:5px;background:var(--panel3);border:1px solid var(--edge);color:var(--text);cursor:pointer;font-size:13px;line-height:1;" onClick="{{ zoomOut }}">−</button>
+        <span style="font-family:var(--font-mono);font-size:10px;color:var(--text2);width:36px;text-align:center;">{{ zoomLabel }}</span>
+        <button style="width:24px;height:24px;border-radius:5px;background:var(--panel3);border:1px solid var(--edge);color:var(--text);cursor:pointer;font-size:13px;line-height:1;" onClick="{{ zoomIn }}">＋</button>
+      </div>
+      <div style="position:absolute;right:10px;bottom:10px;font-size:10.5px;color:var(--text2);background:rgba(15,15,15,.78);border:1px solid var(--edge);padding:5px 10px;border-radius:6px;pointer-events:none;">drag background to pan · scroll to zoom</div>
+    </div>
+
+    <!-- RIGHT : PREVIEW + LOOK -->
+    <aside style="width:330px;flex:none;background:var(--panel);border-left:1px solid var(--seam);display:flex;flex-direction:column;min-height:0;overflow-y:auto;">
+      <div style="border-bottom:1px solid var(--seam);">
+        <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--header);border-bottom:1px solid var(--seam);">
+          <span style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);">Preview</span>
+          <button style="margin-left:auto;font-size:10px;font-family:var(--font-mono);padding:3px 8px;border-radius:4px;background:var(--panel3);border:1px solid var(--edge);color:var(--text2);cursor:pointer;" onClick="{{ pickMeshFile }}">⬇ mesh…</button>
+        </div>
+        <div style="position:relative;height:264px;background:var(--viewport);">
+          <canvas id="sl-gl" style="position:absolute;inset:0;width:100%;height:100%;display:block;"></canvas>
+          <sc-if value="{{ loading }}" hint-placeholder-val="{{ false }}">
+            <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;background:rgba(18,20,24,.75);color:var(--muted);">
+              <div style="width:28px;height:28px;border:3px solid var(--panel-3);border-top-color:#7b6fd8;border-radius:50%;animation:sl-spin .9s linear infinite;"></div>
+              <div style="font-size:11px;">{{ loadingMsg }}</div>
+            </div>
+          </sc-if>
+        </div>
+        <div style="display:flex;gap:5px;padding:8px 10px;flex-wrap:wrap;">
+          <sc-for list="{{ meshChips }}" as="mc" hint-placeholder-count="4">
+            <button style="{{ mc.style }}" onClick="{{ mc.onClick }}">{{ mc.label }}</button>
+          </sc-for>
+        </div>
+      </div>
+
+      <div style="border-bottom:1px solid var(--seam);">
+        <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--header);border-bottom:1px solid var(--seam);"><span style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);">Look</span></div>
+        <div style="padding:11px 12px;display:flex;flex-direction:column;gap:9px;">
+          <input type="text" value="{{ lookName }}" onChange="{{ onName }}" placeholder="Name your look…" style="width:100%;background:var(--panel3);border:1px solid var(--edge);color:var(--text);font-size:12.5px;border-radius:6px;padding:8px 10px;font-family:var(--font-ui);">
+          <div style="display:flex;gap:6px;">
+            <sc-for list="{{ toggles }}" as="tg" hint-placeholder-count="3">
+              <button style="{{ tg.style }}" onClick="{{ tg.onClick }}" title="{{ tg.hint }}">{{ tg.label }}</button>
+            </sc-for>
+          </div>
+          <div style="font-size:10.5px;color:var(--muted);line-height:1.5;">{{ exposeNote }}</div>
+        </div>
+      </div>
+
+      <div style="border-bottom:1px solid var(--seam);">
+        <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--header);border-bottom:1px solid var(--seam);"><span style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);">Bottle it</span></div>
+        <div style="padding:11px 12px;display:flex;flex-direction:column;gap:7px;">
+          <button style="display:flex;align-items:center;justify-content:center;gap:7px;padding:10px;border-radius:6px;font-size:12.5px;font-weight:700;background:#7b6fd8;border:1px solid #7b6fd8;color:#14102a;width:100%;cursor:pointer;box-shadow:0 1px 0 rgba(255,255,255,.18) inset,0 2px 12px rgba(123,111,216,.35);" onClick="{{ doPublish }}">◈ Publish to Showcase shelf</button>
+          <button style="display:flex;align-items:center;justify-content:center;gap:7px;padding:9px;border-radius:6px;font-size:12px;font-weight:600;background:var(--panel3);border:1px solid var(--edge);color:var(--text);width:100%;cursor:pointer;" onClick="{{ doDownload }}">⬇ Download preset .js</button>
+          <button style="display:flex;align-items:center;justify-content:center;gap:7px;padding:8px;border-radius:6px;font-size:11.5px;font-weight:600;background:transparent;border:1px solid var(--edge);color:var(--text2);width:100%;cursor:pointer;" onClick="{{ toggleGlsl }}">{{ glslBtnLabel }}</button>
+        </div>
+      </div>
+
+      <sc-if value="{{ showGlsl }}" hint-placeholder-val="{{ false }}">
+        <div style="padding:10px 12px;">
+          <pre style="margin:0;font-family:var(--font-mono);font-size:9.5px;line-height:1.5;color:var(--text2);background:var(--viewport);border:1px solid var(--seam);border-radius:6px;padding:10px;white-space:pre-wrap;word-break:break-word;user-select:text;max-height:340px;overflow:auto;">{{ glslText }}</pre>
+        </div>
+      </sc-if>
+
+      <div style="padding:12px;">
+        <div style="display:flex;gap:9px;padding:9px 11px;border-radius:7px;font-size:11px;line-height:1.5;background:rgba(123,111,216,.12);border:1px solid rgba(123,111,216,.3);color:var(--text2);"><span style="flex:none;color:#9c92e8;">◈</span><span>Published looks join the <b>Shader Lab</b> shelf in Showcase, with every ◈-exposed Value / Colour node as a live slider. Same GLSL, same engine — zero conversion.</span></div>
+      </div>
+    </aside>
+  </div>
+
+  <input type="file" id="sl-file" accept=".glb,.gltf,.fbx,.obj" style="display:none;">
+  <div id="sl-toasts" style="position:fixed;bottom:16px;right:16px;z-index:300;display:flex;flex-direction:column;gap:8px;"></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { rev: 0, ready: false, loading: false, loadingMsg: '', glslErr: '', showGlsl: false };
+
+  componentDidMount() {
+    this._view = { x: 70, y: 46, z: 1 };
+    this._settings = { name: 'My potion', lit: true, transparent: false, additive: false };
+    this._nid = 0;
+    this._g = { nodes: [], wires: [] };
+    this._starter();
+    this.setupEmbed();
+    this.boot();
+    this._onMove = (e) => this.onMove(e);
+    this._onUp = () => this.onUp();
+    window.addEventListener('mousemove', this._onMove);
+    window.addEventListener('mouseup', this._onUp);
+    const cv = document.getElementById('sl-canvas');
+    if (cv) { this._wheel = (e) => { e.preventDefault(); this.zoomAt(e, e.deltaY < 0 ? 1.12 : 1 / 1.12); }; cv.addEventListener('wheel', this._wheel, { passive: false }); }
+    const inp = document.getElementById('sl-file');
+    if (inp) inp.addEventListener('change', (e) => { const f = e.target.files[0]; if (f) { this.loadMeshFile(f); e.target.value = ''; } });
+  }
+  componentWillUnmount() {
+    window.removeEventListener('mousemove', this._onMove);
+    window.removeEventListener('mouseup', this._onUp);
+    if (this._eng) this._eng.dispose();
+  }
+
+  _starter() {
+    const add = (type, x, y, vals) => { const n = { id: ++this._nid, type, x, y, vals: vals || {}, expose: {}, labels: {} }; this._g.nodes.push(n); return n; };
+    const p = add('pos', 26, 168);
+    const nz = add('noise', 218, 96);
+    const c1 = add('color', 218, 268, { val: '#1b2b55' });
+    const c2 = add('color', 218, 396, { val: '#6fd7c0' });
+    const mx = add('mix', 438, 168);
+    const ot = add('output', 648, 188);
+    this._g.wires = [
+      { from: [p.id, 'out'], to: [nz.id, 'pos'] },
+      { from: [nz.id, 'out'], to: [mx.id, 't'] },
+      { from: [c1.id, 'out'], to: [mx.id, 'a'] },
+      { from: [c2.id, 'out'], to: [mx.id, 'b'] },
+      { from: [mx.id, 'out'], to: [ot.id, 'col'] },
+    ];
+  }
+
+  async boot() {
+    try {
+      let mod;
+      try { mod = await import('./studio3D_scripts/shaderlab-engine.js'); }
+      catch (e) { mod = await import('./shaderlab-engine.js'); }
+      this._mod = mod;
+      const eng = new mod.LabEngine(document.getElementById('sl-gl'));
+      this._eng = eng;
+      eng.onStatus = (m) => this.setState({ loading: !!m, loadingMsg: m || '' });
+      this.setState({ ready: true });
+      this.recompile();
+      if (this._pending) { const p = this._pending; this._pending = null; p(); }
+    } catch (e) {
+      this.toast('Engine failed: ' + (e && e.message || e));
+      if (this._post) this._post('studio:error', { tool: 'shaderlab', message: String(e && e.message || e) });
+    }
+  }
+
+  bump() { this.setState({ rev: this.state.rev + 1 }); }
+  recompile() {
+    if (!this._mod || !this._eng) { this.bump(); return; }
+    const r = this._mod.compileGraph(this._g.nodes, this._g.wires, this._settings, 'preview');
+    if (r.error) { this.setState({ glslErr: r.error, rev: this.state.rev + 1 }); return; }
+    const s = this._settings;
+    this._eng.apply({ id: 'lab-live', name: 'lab', transparent: !!s.transparent, depthWrite: !s.transparent, additive: !!s.additive, params: r.params, fragUniforms: r.fragUniforms, fragBody: r.fragBody }, r.values);
+    this.setState({ glslErr: '', rev: this.state.rev + 1 });
+  }
+
+  // ---------- graph mutations ----------
+  addNode(type) {
+    const cv = document.getElementById('sl-canvas'), r = cv.getBoundingClientRect(), v = this._view;
+    const j = () => (Math.random() - 0.5) * 60;
+    this._g.nodes.push({ id: ++this._nid, type, x: (r.width / 2 - v.x) / v.z - 85 + j(), y: (r.height / 2 - v.y) / v.z - 60 + j(), vals: {}, expose: {}, labels: {} });
+    this.recompile();
+  }
+  deleteNode(id) {
+    this._g.nodes = this._g.nodes.filter(n => n.id !== id);
+    this._g.wires = this._g.wires.filter(w => w.from[0] !== id && w.to[0] !== id);
+    this.recompile();
+  }
+  canReach(a, b) {
+    const seen = new Set(), stack = [a];
+    while (stack.length) {
+      const cur = stack.pop();
+      if (cur === b) return true;
+      if (seen.has(cur)) continue; seen.add(cur);
+      this._g.wires.forEach(w => { if (w.from[0] === cur) stack.push(w.to[0]); });
+    }
+    return false;
+  }
+  connect(from, to) {
+    if (from[0] === to[0]) return;
+    if (this.canReach(to[0], from[0])) { this.toast('That connection would loop the graph back on itself'); return; }
+    this._g.wires = this._g.wires.filter(w => !(w.to[0] === to[0] && w.to[1] === to[1]));
+    this._g.wires.push({ from, to });
+    this.recompile();
+  }
+
+  // ---------- pointer machinery ----------
+  toGraph(e) {
+    const r = document.getElementById('sl-canvas').getBoundingClientRect(), v = this._view;
+    return { x: (e.clientX - r.left - v.x) / v.z, y: (e.clientY - r.top - v.y) / v.z };
+  }
+  onMove(e) {
+    if (this._panD) { this._view.x = this._panD.px + (e.clientX - this._panD.sx); this._view.y = this._panD.py + (e.clientY - this._panD.sy); this.bump(); }
+    else if (this._nodeD) { const g = this.toGraph(e); const n = this._g.nodes.find(n => n.id === this._nodeD.id); if (n) { n.x = g.x - this._nodeD.dx; n.y = g.y - this._nodeD.dy; this.bump(); } }
+    else if (this._wireD) { this._wireCur = this.toGraph(e); this.bump(); }
+  }
+  onUp() {
+    const had = this._panD || this._nodeD || this._wireD;
+    this._panD = null; this._nodeD = null;
+    if (this._wireD) { this._wireD = null; }
+    if (had) this.bump();
+  }
+  zoomAt(e, f) {
+    const v = this._view, r = document.getElementById('sl-canvas').getBoundingClientRect();
+    const nz = Math.min(1.6, Math.max(0.45, v.z * f)); f = nz / v.z;
+    const mx = e.clientX !== undefined ? e.clientX - r.left : r.width / 2;
+    const my = e.clientY !== undefined ? e.clientY - r.top : r.height / 2;
+    v.x = mx - (mx - v.x) * f; v.y = my - (my - v.y) * f; v.z = nz;
+    this.bump();
+  }
+
+  // ---------- port geometry (mirrors node CSS: 170w + 1px border, 26px head, 22px rows) ----------
+  portPos(n, key, isOut) {
+    const def = this._mod.NODE_DEFS[n.type];
+    const outs = def.outs || [], ins = def.ins || [];
+    const idx = isOut ? outs.findIndex(o => o.k === key) : outs.length + ins.findIndex(i => i.k === key);
+    return { x: n.x + (isOut ? 172 : 0), y: n.y + 27 + idx * 22 + 11 };
+  }
+  wireD(x1, y1, x2, y2) {
+    const b = Math.min(70, Math.max(24, Math.abs(x2 - x1) * 0.5));
+    return 'M ' + x1 + ' ' + y1 + ' C ' + (x1 + b) + ' ' + y1 + ', ' + (x2 - b) + ' ' + y2 + ', ' + x2 + ' ' + y2;
+  }
+
+  // ---------- mesh / bridge ----------
+  loadVia(fn, label) {
+    if (!this._eng) { this._pending = () => this.loadVia(fn, label); return; }
+    this.setState({ loading: true, loadingMsg: 'Loading ' + (label || 'model') + '…' });
+    Promise.resolve().then(fn).then(() => { this.setState({ loading: false }); this.bump(); })
+      .catch(e => { this.setState({ loading: false }); this.toast('Load failed: ' + (e && e.message || e)); });
+  }
+  async loadMeshFile(f) {
+    const buf = await f.arrayBuffer();
+    this._charBuf = { buf, name: f.name };
+    this.loadVia(() => this._eng.loadBuffer(buf.slice(0), f.name), f.name);
+  }
+  setupEmbed() {
+    const params = new URLSearchParams(location.search);
+    this._embedded = params.get('embed') === '1' || window.parent !== window;
+    this._post = (type, payload, transfer) => { try { window.parent && window.parent.postMessage(Object.assign({ __studio: true, type }, payload || {}), '*', transfer || []); } catch (e) {} };
+    if (this._embedded) { const hide = () => { const h = document.querySelector('#sl-root > header'); if (h && h.firstElementChild) h.firstElementChild.style.display = 'none'; }; hide(); setTimeout(hide, 60); setTimeout(hide, 300); }
+    window.addEventListener('message', (e) => {
+      const d = e.data; if (!d || !d.__studio) return;
+      if (d.type === 'studio:loadCharUrl') { this._charUrl = { url: d.url, ext: d.ext, opts: { chunked: d.chunked, chunks: d.chunks } }; this.loadVia(() => this._eng.loadUrl(d.url, d.ext, this._charUrl.opts), d.label || 'character'); }
+      else if (d.type === 'studio:loadCharBuffer') { this._charBuf = { buf: d.buffer, name: d.name }; this.loadVia(() => this._eng.loadBuffer(d.buffer, d.name), d.name || 'character'); }
+    });
+    setTimeout(() => this._post('studio:ready', { tool: 'shaderlab' }), 0);
+  }
+
+  // ---------- bottle it ----------
+  exportPreset() {
+    const r = this._mod.compileGraph(this._g.nodes, this._g.wires, this._settings, 'export');
+    if (r.error) { this.toast(r.error); return null; }
+    const name = (this._settings.name || '').trim() || 'Lab look';
+    const cs = this._g.nodes.filter(n => n.type === 'color');
+    const s = this._settings;
+    return {
+      id: 'lab-' + name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''),
+      name, category: 'Shader Lab', kind: 'shader',
+      swatch: [cs[0] && cs[0].vals.val || '#6fd7c0', cs[1] && cs[1].vals.val || '#141d38'],
+      params: r.params, fragUniforms: r.fragUniforms, fragBody: r.fragBody,
+      transparent: !!s.transparent, additive: !!s.additive,
+    };
+  }
+  doPublish() {
+    const p = this.exportPreset(); if (!p) return;
+    let arr = [];
+    try { arr = JSON.parse(localStorage.getItem('pp_custom_shaders') || '[]'); } catch (e) { arr = []; }
+    if (!Array.isArray(arr)) arr = [];
+    arr = arr.filter(x => x && x.id !== p.id);
+    arr.push(p);
+    try { localStorage.setItem('pp_custom_shaders', JSON.stringify(arr)); } catch (e) { this.toast('Could not save: ' + e.message); return; }
+    this.toast('Published "' + p.name + '" — it joins the Shader Lab shelf next time Showcase loads');
+  }
+  doDownload() {
+    const p = this.exportPreset(); if (!p) return;
+    const txt = '// Shader Lab preset — generated by PolyPotion Shader Lab.\n// Drop into studio3D_scripts/presets/ and spread into a category list,\n// or leave it on the Shader Lab shelf (localStorage key pp_custom_shaders).\nexport const LAB_PRESET = [\n' + JSON.stringify(p, null, 2) + '\n];\n';
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([txt], { type: 'text/javascript' }));
+    a.download = p.id + '.js';
+    document.body.appendChild(a); a.click();
+    setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+    this.toast('Downloaded ' + a.download);
+  }
+
+  toast(msg) {
+    const wrap = document.getElementById('sl-toasts'); if (!wrap) return;
+    const el = document.createElement('div');
+    el.style.cssText = 'padding:11px 15px;border-radius:7px;font-size:12px;background:var(--panel-3);border:1px solid var(--edge);border-left:3px solid #7b6fd8;box-shadow:0 8px 24px rgba(0,0,0,.45);max-width:340px;color:var(--text);animation:sl-tin .25s cubic-bezier(.2,1,.3,1);';
+    el.textContent = msg; wrap.appendChild(el);
+    setTimeout(() => { el.style.transition = 'opacity .3s'; el.style.opacity = '0'; setTimeout(() => el.remove(), 300); }, 3600);
+  }
+
+  // ---------- render ----------
+  renderVals() {
+    const st = this.state, mod = this._mod, eng = this._eng, v = this._view || { x: 0, y: 0, z: 1 };
+    const GC = { Input: '#5a8fd8', Pattern: '#b07bd8', Math: '#e0a93b', Colour: '#d87ba3', Output: '#2fa07c' };
+
+    let palette = [], nodeItems = [], wireItems = [];
+    if (mod) {
+      const DEFS = mod.NODE_DEFS;
+      const groups = ['Input', 'Pattern', 'Math', 'Colour'];
+      palette = groups.map(g => ({
+        group: g, color: GC[g],
+        items: Object.keys(DEFS).filter(k => DEFS[k].group === g).map(k => ({ title: DEFS[k].title, onAdd: () => this.addNode(k) })),
+      }));
+
+      const inConnected = new Set(this._g.wires.map(w => w.to[0] + '¦' + w.to[1]));
+      const outConnected = new Set(this._g.wires.map(w => w.from[0] + '¦' + w.from[1]));
+      const byId = new Map(this._g.nodes.map(n => [n.id, n]));
+
+      wireItems = this._g.wires.map((w, i) => {
+        const a = byId.get(w.from[0]), b = byId.get(w.to[0]);
+        if (!a || !b) return null;
+        const p1 = this.portPos(a, w.from[1], true), p2 = this.portPos(b, w.to[1], false);
+        return { d: this.wireD(p1.x, p1.y, p2.x, p2.y), stroke: 'rgba(127,215,184,.75)', onClick: () => { this._g.wires.splice(i, 1); this.recompile(); } };
+      }).filter(Boolean);
+
+      const dot = (col, filled) => 'width:9px;height:9px;border-radius:50%;flex:none;cursor:crosshair;border:1.5px solid ' + col + ';background:' + (filled ? col : 'var(--panel)') + ';';
+
+      nodeItems = this._g.nodes.map(n => {
+        const def = DEFS[n.type], gc = GC[def.group];
+        const outs = (def.outs || []).map(o => ({
+          label: o.label,
+          dotStyle: dot(gc, outConnected.has(n.id + '¦' + o.k)) + 'margin-right:-11px;',
+          onDown: (e) => { e.stopPropagation(); this._wireD = { from: [n.id, o.k] }; this._wireCur = this.toGraph(e); this.bump(); },
+        }));
+        const ins = (def.ins || []).map(d => {
+          const conn = inConnected.has(n.id + '¦' + d.k);
+          const val = n.vals[d.k] !== undefined ? n.vals[d.k] : d.def;
+          const isNum = !conn && !d.defExpr && d.t === 'f';
+          const isCol = !conn && !d.defExpr && d.t === 'c';
+          return {
+            label: d.label,
+            dotStyle: dot(gc, conn) + 'margin-left:-11px;',
+            onDown: (e) => {
+              e.stopPropagation();
+              const wi = this._g.wires.findIndex(w => w.to[0] === n.id && w.to[1] === d.k);
+              if (wi >= 0) { const w = this._g.wires.splice(wi, 1)[0]; this._wireD = { from: w.from }; this._wireCur = this.toGraph(e); this.recompile(); }
+            },
+            onUp: (e) => { if (this._wireD) { const from = this._wireD.from; this._wireD = null; this.connect(from, [n.id, d.k]); } },
+            hasRange: isNum, hasColor: isCol,
+            min: d.min !== undefined ? d.min : 0, max: d.max !== undefined ? d.max : 1, step: d.step || 0.01,
+            val: isCol ? String(val) : +val,
+            valLabel: isNum ? (+val).toFixed((d.step || 0.01) >= 1 ? 0 : 2) : '',
+            onVal: (e) => {
+              const nv = isCol ? e.target.value : parseFloat(e.target.value);
+              n.vals[d.k] = nv;
+              if (eng) eng.setUniform('n' + n.id + '_' + d.k, nv);
+              this.bump();
+            },
+          };
+        });
+        const ctrls = [];
+        (def.ctrls || []).forEach(c => {
+          if (c.type === 'range' || c.type === 'color') {
+            const val = n.vals[c.k] !== undefined ? n.vals[c.k] : c.def;
+            ctrls.push({
+              hasRange: c.type === 'range', hasColor: c.type === 'color', hasSelect: false, hasExpose: false, hasName: false,
+              min: c.min, max: c.max, step: c.step, val: c.type === 'color' ? String(val) : +val,
+              valLabel: c.type === 'range' ? (+val).toFixed(2) : '',
+              onVal: (e) => { const nv = c.type === 'color' ? e.target.value : parseFloat(e.target.value); n.vals[c.k] = nv; if (eng) eng.setUniform('n' + n.id + '_' + c.k, nv); this.bump(); },
+            });
+          } else if (c.type === 'select') {
+            ctrls.push({
+              hasSelect: true, hasRange: false, hasColor: false, hasExpose: false, hasName: false,
+              val: n.vals[c.k] || c.def, options: c.options.map(o => ({ v: o })),
+              onVal: (e) => { n.vals[c.k] = e.target.value; this.recompile(); },
+            });
+          } else if (c.type === 'expose') {
+            const on = !!(n.expose && n.expose.val);
+            ctrls.push({
+              hasExpose: true, hasRange: false, hasColor: false, hasSelect: false, hasName: false,
+              exposeLabel: on ? '◈ exposed as tweak' : '◇ expose as tweak',
+              exposeStyle: 'flex:1;font-size:10px;font-weight:600;padding:4px 6px;border-radius:4px;cursor:pointer;background:' + (on ? 'rgba(123,111,216,.18)' : 'var(--panel3)') + ';border:1px solid ' + (on ? '#7b6fd8' : 'var(--edge)') + ';color:' + (on ? '#9c92e8' : 'var(--text2)') + ';',
+              onToggle: () => { n.expose = n.expose || {}; n.expose.val = !n.expose.val; this.bump(); },
+            });
+            if (on) ctrls.push({
+              hasName: true, hasRange: false, hasColor: false, hasSelect: false, hasExpose: false,
+              val: (n.labels && n.labels.val) || '',
+              onVal: (e) => { n.labels = n.labels || {}; n.labels.val = e.target.value; this.bump(); },
+            });
+          }
+        });
+        return {
+          style: 'position:absolute;left:' + n.x + 'px;top:' + n.y + 'px;width:170px;background:var(--panel);border:1px solid var(--edge);border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,.35);',
+          headStyle: 'display:flex;align-items:center;gap:4px;height:26px;padding:0 7px;cursor:grab;border-bottom:1px solid var(--seam);border-radius:8px 8px 0 0;background:' + gc + '22;color:' + gc + ';font-size:11px;font-weight:700;letter-spacing:.03em;',
+          title: def.title, canDelete: n.type !== 'output',
+          onDragStart: (e) => { e.stopPropagation(); const g = this.toGraph(e); this._nodeD = { id: n.id, dx: g.x - n.x, dy: g.y - n.y }; },
+          onDelete: (e) => { e.stopPropagation(); this.deleteNode(n.id); },
+          outs, ins, ctrls,
+        };
+      });
+    }
+
+    let dragWireD = '';
+    if (this._wireD && this._wireCur && mod) {
+      const a = this._g.nodes.find(n => n.id === this._wireD.from[0]);
+      if (a) { const p1 = this.portPos(a, this._wireD.from[1], true); dragWireD = this.wireD(p1.x, p1.y, this._wireCur.x, this._wireCur.y); }
+    }
+
+    const s = this._settings || {};
+    const toggles = [
+      { k: 'lit', label: '☀ lit', hint: 'multiply by the key light' },
+      { k: 'transparent', label: '◍ transparent', hint: 'alpha blending on' },
+      { k: 'additive', label: '✦ additive', hint: 'additive glow blending' },
+    ].map(t => ({
+      label: t.label, hint: t.hint,
+      style: 'flex:1;font-size:11px;font-weight:600;padding:7px 4px;border-radius:5px;cursor:pointer;background:' + (s[t.k] ? 'rgba(123,111,216,.18)' : 'var(--panel3)') + ';border:1px solid ' + (s[t.k] ? '#7b6fd8' : 'var(--edge)') + ';color:' + (s[t.k] ? '#9c92e8' : 'var(--text2)') + ';',
+      onClick: () => { s[t.k] = !s[t.k]; this.recompile(); },
+    }));
+
+    const kinds = [['sphere', 'Sphere'], ['knot', 'Knot'], ['torus', 'Torus'], ['cube', 'Cube']];
+    const meshChips = kinds.map(([k, label]) => ({
+      label,
+      style: 'font-size:10.5px;font-weight:600;padding:5px 10px;border-radius:5px;cursor:pointer;background:' + (eng && eng.kind === k ? 'rgba(123,111,216,.18)' : 'var(--panel3)') + ';border:1px solid ' + (eng && eng.kind === k ? '#7b6fd8' : 'var(--edge)') + ';color:' + (eng && eng.kind === k ? '#9c92e8' : 'var(--text2)') + ';',
+      onClick: () => { if (eng) { eng.setPrimitive(k); this.bump(); } },
+    }));
+    if (this._charBuf || this._charUrl) {
+      const active = eng && eng.kind === 'char';
+      meshChips.push({
+        label: '☺ ' + ((this._charBuf && this._charBuf.name) || 'character').replace(/\.\w+$/, ''),
+        style: 'font-size:10.5px;font-weight:600;padding:5px 10px;border-radius:5px;cursor:pointer;background:' + (active ? 'rgba(123,111,216,.18)' : 'var(--panel3)') + ';border:1px solid ' + (active ? '#7b6fd8' : 'var(--edge)') + ';color:' + (active ? '#9c92e8' : 'var(--text2)') + ';',
+        onClick: () => {
+          if (!eng || active) return;
+          if (this._charBuf) this.loadVia(() => eng.loadBuffer(this._charBuf.buf.slice(0), this._charBuf.name), this._charBuf.name);
+          else this.loadVia(() => eng.loadUrl(this._charUrl.url, this._charUrl.ext, this._charUrl.opts), 'character');
+        },
+      });
+    }
+
+    const exposedCount = this._g.nodes.reduce((a, n) => a + (n.expose && n.expose.val ? 1 : 0), 0);
+    let glslText = '';
+    if (st.showGlsl && mod) {
+      const r = mod.compileGraph(this._g.nodes, this._g.wires, s, 'export');
+      glslText = r.error ? ('// ' + r.error) : ((r.fragUniforms ? r.fragUniforms + '\n\n' : '') + r.fragBody);
+    }
+
+    return {
+      hasErr: !!st.glslErr, errText: st.glslErr,
+      dotColor: eng && eng.kind === 'char' ? 'var(--good)' : 'var(--muted)',
+      meshName: eng ? eng.modelName || 'sphere' : 'loading…',
+      loading: st.loading, loadingMsg: st.loadingMsg,
+      palette, nodeItems, wireItems,
+      hasDragWire: !!dragWireD, dragWireD,
+      worldTransform: 'translate(' + v.x + 'px,' + v.y + 'px) scale(' + v.z + ')',
+      canvasCursor: this._panD ? 'grabbing' : 'grab',
+      onCanvasDown: (e) => {
+        const t = e.target;
+        if (t && (t.id === 'sl-canvas' || t.id === 'sl-world' || t.tagName === 'svg')) {
+          this._panD = { sx: e.clientX, sy: e.clientY, px: v.x, py: v.y }; this.bump();
+        }
+      },
+      zoomIn: () => this.zoomAt({}, 1.2), zoomOut: () => this.zoomAt({}, 1 / 1.2),
+      zoomLabel: Math.round(v.z * 100) + '%',
+      pickMeshFile: () => document.getElementById('sl-file').click(),
+      meshChips,
+      lookName: s.name || '', onName: (e) => { s.name = e.target.value; this.bump(); },
+      toggles,
+      exposeNote: exposedCount ? (exposedCount + ' tweak' + (exposedCount > 1 ? 's' : '') + ' will appear as sliders in Showcase.') : 'Tip: ◈-expose a Value or Colour node and it becomes a live slider in Showcase.',
+      doPublish: () => this.doPublish(),
+      doDownload: () => this.doDownload(),
+      toggleGlsl: () => this.setState({ showGlsl: !st.showGlsl }),
+      glslBtnLabel: st.showGlsl ? '▲ Hide GLSL' : '▼ View compiled GLSL',
+      showGlsl: st.showGlsl, glslText,
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Spline+Sans+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="theme.js"></script>
+<style>
+  html,body{margin:0;padding:0;height:100%;background:var(--gutter);}
+  *{box-sizing:border-box;}
+  a{color:var(--accent);} a:hover{color:var(--text);}
+  @keyframes rt-spin{to{transform:rotate(360deg);}}
+  @keyframes rt-tin{from{transform:translateX(120%);opacity:0;}to{transform:translateX(0);opacity:1;}}
+  #rt-root ::-webkit-scrollbar{width:10px;height:10px;}
+  #rt-root ::-webkit-scrollbar-track{background:var(--gutter);}
+  #rt-root ::-webkit-scrollbar-thumb{background:var(--panel-3);border:2px solid var(--gutter);border-radius:6px;}
+  #rt-root input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:4px;border-radius:2px;background:var(--panel-3);outline:none;}
+  #rt-root input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:13px;height:13px;border-radius:50%;background:#e0894f;cursor:pointer;border:2px solid var(--gutter);}
+</style>
+</helmet>
+
+<div id="rt-root" style="display:flex;flex-direction:column;height:100vh;width:100%;overflow:hidden;background:var(--gutter);color:var(--text);font-family:var(--font-ui);font-size:13px;-webkit-font-smoothing:antialiased;user-select:none;">
+
+  <!-- TOP BAR -->
+  <header style="height:46px;flex:none;display:flex;align-items:center;gap:14px;padding:0 14px;background:var(--header);border-bottom:1px solid var(--seam);">
+    <div style="display:flex;align-items:center;gap:9px;">
+      <div style="width:26px;height:26px;border-radius:5px;display:flex;align-items:center;justify-content:center;background:#e0894f;color:#241105;font-weight:700;font-size:15px;box-shadow:0 1px 2px rgba(0,0,0,.4),0 0 0 1px rgba(255,255,255,.08) inset;">▱</div>
+      <div>
+        <div style="font-weight:700;letter-spacing:.04em;font-size:14px;">RETOPO</div>
+        <div style="font-family:var(--font-mono);font-size:10px;color:var(--muted);letter-spacing:.1em;margin-top:1px;">QUAD DRAW · X-SYMMETRY · RELAX · LOCAL</div>
+      </div>
+    </div>
+    <div style="flex:1;"></div>
+    <button style="display:inline-flex;align-items:center;gap:7px;height:30px;padding:0 13px;border-radius:6px;font-size:11.5px;font-weight:600;background:var(--panel3);border:1px solid var(--edge);color:var(--text);cursor:pointer;" onClick="{{ pickFile }}">⬇ Import model…</button>
+    <div style="display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--text2);padding:4px 10px;background:var(--panel);border:1px solid var(--seam);border-radius:5px;">
+      <span style="width:7px;height:7px;border-radius:50%;flex:none;background:{{ dotColor }};"></span>
+      <span style="font-family:var(--font-mono);">{{ meshName }}</span>
+    </div>
+  </header>
+
+  <div style="flex:1;display:flex;min-height:0;">
+
+    <!-- VIEWPORT -->
+    <div style="flex:1;position:relative;min-width:0;min-height:0;background:var(--viewport);">
+      <canvas id="rt-gl" style="position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none;"></canvas>
+
+      <sc-if value="{{ noModel }}" hint-placeholder-val="{{ true }}">
+        <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;background:rgba(18,20,24,.86);">
+          <div style="width:70px;height:70px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:30px;background:rgba(224,137,79,.16);border:1px solid rgba(224,137,79,.4);color:#e0894f;">▱</div>
+          <div style="text-align:center;">
+            <div style="font-size:16px;font-weight:700;margin-bottom:6px;">Draw clean quads over any mesh</div>
+            <div style="font-size:12.5px;color:var(--text2);max-width:460px;line-height:1.6;">Drop a <b>.glb / .fbx / .obj</b> here, or open one from the Library. It becomes a clay reference — click 4 points on its surface to lay your first quad, then click near a green boundary edge to grow the next one. Symmetry mirrors everything across X.</div>
+          </div>
+          <div style="display:flex;gap:10px;">
+            <button style="padding:10px 18px;border-radius:7px;font-size:12.5px;font-weight:600;background:#e0894f;border:1px solid #e0894f;color:#241105;cursor:pointer;box-shadow:0 2px 12px rgba(224,137,79,.35);" onClick="{{ pickFile }}">⬇ Import file…</button>
+            <button style="padding:10px 18px;border-radius:7px;font-size:12.5px;font-weight:600;background:var(--panel3);border:1px solid var(--edge);color:var(--text);cursor:pointer;" onClick="{{ loadSample }}">Load sample figure</button>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ loading }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:rgba(18,20,24,.8);color:var(--muted);z-index:5;">
+          <div style="width:38px;height:38px;border:3px solid var(--panel-3);border-top-color:#e0894f;border-radius:50%;animation:rt-spin .9s linear infinite;"></div>
+          <div style="font-size:12px;">{{ loadingMsg }}</div>
+        </div>
+      </sc-if>
+
+      <div style="position:absolute;left:50%;top:10px;transform:translateX(-50%);display:flex;align-items:center;gap:4px;background:rgba(15,15,15,.86);border:1px solid var(--edge);border-radius:8px;padding:5px 7px;">
+        <sc-for list="{{ views }}" as="v" hint-placeholder-count="5">
+          <button style="font-size:11px;font-weight:600;padding:5px 9px;border-radius:5px;cursor:pointer;background:transparent;border:none;color:var(--text2);" onClick="{{ v.onClick }}">{{ v.label }}</button>
+        </sc-for>
+      </div>
+      <div style="position:absolute;right:10px;top:10px;display:flex;gap:6px;">
+        <button style="{{ symChipStyle }}" onClick="{{ toggleSym }}" title="Mirror every point, quad and move across X=0">⇋ Symmetry</button>
+        <button style="{{ xrayChipStyle }}" onClick="{{ toggleXray }}" title="See the cage through the reference">◍ X-ray</button>
+        <button style="{{ refChipStyle }}" onClick="{{ toggleRef }}" title="Hide the reference — inspect the cage alone">👁 Reference</button>
+      </div>
+      <div style="position:absolute;left:10px;top:10px;font-family:var(--font-mono);font-size:10px;letter-spacing:.1em;color:var(--text2);background:rgba(15,15,15,.6);padding:3px 7px;border-radius:3px;pointer-events:none;">{{ modeBadge }}</div>
+
+      <sc-if value="{{ hasModel }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute;left:10px;bottom:12px;display:flex;flex-direction:column;gap:4px;font-family:var(--font-mono);font-size:10px;color:var(--text2);background:rgba(15,15,15,.78);border:1px solid var(--edge);padding:8px 11px;border-radius:6px;pointer-events:none;">
+          <span style="display:flex;align-items:center;gap:7px;"><span style="width:14px;height:2px;background:#ffa15e;flex:none;"></span>cage edge</span>
+          <span style="display:flex;align-items:center;gap:7px;"><span style="width:14px;height:2px;background:#39c58f;flex:none;"></span>boundary — click near it to grow a quad</span>
+          <span style="display:flex;align-items:center;gap:7px;"><span style="width:8px;height:8px;border-radius:50%;background:#7fd7b8;flex:none;margin:0 3px;"></span>draft point ({{ draftLabel }})</span>
+        </div>
+      </sc-if>
+      <div style="position:absolute;right:10px;bottom:12px;font-size:10.5px;color:var(--text2);background:rgba(15,15,15,.78);border:1px solid var(--edge);padding:6px 11px;border-radius:6px;pointer-events:none;max-width:250px;">left click uses the tool · right-drag orbits · scroll zooms · Esc cancels draft points</div>
+    </div>
+
+    <!-- RIGHT : TOOLS + CAGE -->
+    <aside style="width:320px;flex:none;background:var(--panel);border-left:1px solid var(--seam);display:flex;flex-direction:column;min-height:0;overflow-y:auto;">
+
+      <!-- TOOL -->
+      <div style="border-bottom:1px solid var(--seam);">
+        <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--header);border-bottom:1px solid var(--seam);"><span style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);">Tool</span></div>
+        <div style="padding:11px 12px;display:flex;flex-direction:column;gap:6px;">
+          <sc-for list="{{ modes }}" as="m" hint-placeholder-count="4">
+            <button style="{{ m.style }}" onClick="{{ m.onClick }}">
+              <span style="flex:none;width:18px;text-align:center;">{{ m.icon }}</span>
+              <span style="flex:1;text-align:left;">
+                <span style="display:block;font-size:12px;font-weight:700;">{{ m.label }}</span>
+                <span style="display:block;font-size:10.5px;color:var(--text2);margin-top:1px;">{{ m.desc }}</span>
+              </span>
+            </button>
+          </sc-for>
+        </div>
+      </div>
+
+      <!-- RELAX BRUSH -->
+      <div style="border-bottom:1px solid var(--seam);">
+        <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--header);border-bottom:1px solid var(--seam);"><span style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);">Relax brush</span></div>
+        <div style="padding:12px;display:flex;flex-direction:column;gap:11px;">
+          <div>
+            <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:6px;"><span style="color:var(--muted);">Radius</span><span style="font-family:var(--font-mono);color:var(--text);">{{ radiusLabel }}</span></div>
+            <input type="range" min="4" max="40" value="{{ radiusVal }}" onInput="{{ onRadius }}">
+          </div>
+          <div>
+            <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:6px;"><span style="color:var(--muted);">Strength</span><span style="font-family:var(--font-mono);color:var(--text);">{{ strengthLabel }}</span></div>
+            <input type="range" min="5" max="100" value="{{ strengthVal }}" onInput="{{ onStrength }}">
+          </div>
+          <div style="font-size:10.5px;color:var(--muted);line-height:1.5;">Brushed vertices are Laplacian-smoothed, then re-glued to the reference surface — spacing evens out without drifting off the model.</div>
+        </div>
+      </div>
+
+      <!-- CAGE -->
+      <div style="border-bottom:1px solid var(--seam);">
+        <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--header);border-bottom:1px solid var(--seam);">
+          <span style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);">New cage</span>
+          <span style="margin-left:auto;font-family:var(--font-mono);font-size:10px;color:#e0894f;background:var(--panel);padding:1px 7px;border-radius:9px;border:1px solid var(--seam);">{{ quadBadge }}</span>
+        </div>
+        <div style="padding:12px;">
+          <div style="display:flex;justify-content:space-between;font-size:11px;padding:2px 0;"><span style="color:var(--muted);">Quads</span><span style="font-family:var(--font-mono);color:var(--text);">{{ quadsLabel }}</span></div>
+          <div style="display:flex;justify-content:space-between;font-size:11px;padding:2px 0;"><span style="color:var(--muted);">Vertices</span><span style="font-family:var(--font-mono);color:var(--text);">{{ vertsLabel }}</span></div>
+          <div style="display:flex;justify-content:space-between;font-size:11px;padding:2px 0;"><span style="color:var(--muted);">Triangles (export)</span><span style="font-family:var(--font-mono);color:var(--text);">{{ trisLabel }}</span></div>
+          <div style="display:flex;gap:6px;margin-top:10px;">
+            <button style="{{ undoStyle }}" onClick="{{ doUndo }}">↶ Undo</button>
+            <button style="{{ cancelStyle }}" onClick="{{ doCancelDraft }}">✕ Draft</button>
+            <button style="flex:1;padding:8px;border-radius:6px;font-size:11.5px;font-weight:600;background:transparent;border:1px solid var(--edge);color:var(--text2);cursor:pointer;" onClick="{{ doClear }}">⌫ Clear</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- HAND OFF -->
+      <div style="border-bottom:1px solid var(--seam);">
+        <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--header);border-bottom:1px solid var(--seam);"><span style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);">Hand off</span></div>
+        <div style="padding:11px 12px;display:flex;flex-direction:column;gap:7px;">
+          <sc-if value="{{ embedded }}" hint-placeholder-val="{{ false }}">
+            <button style="display:flex;align-items:center;justify-content:center;gap:7px;padding:10px;border-radius:6px;font-size:12.5px;font-weight:700;background:#e0894f;border:1px solid #e0894f;color:#241105;width:100%;cursor:pointer;box-shadow:0 1px 0 rgba(255,255,255,.18) inset,0 2px 12px rgba(224,137,79,.35);" onClick="{{ doSave }}">▤ Save cage to Library</button>
+          </sc-if>
+          <button style="display:flex;align-items:center;justify-content:center;gap:7px;padding:9px;border-radius:6px;font-size:12px;font-weight:600;background:var(--panel3);border:1px solid var(--edge);color:var(--text);width:100%;cursor:pointer;" onClick="{{ doDownload }}">⬇ Download .glb</button>
+        </div>
+      </div>
+
+      <div style="padding:12px;">
+        <div style="display:flex;gap:9px;padding:9px 11px;border-radius:7px;font-size:11px;line-height:1.5;background:rgba(224,137,79,.1);border:1px solid rgba(224,137,79,.3);color:var(--text2);"><span style="flex:none;color:#e0894f;">▱</span><span>Retopo turns a messy scan or sculpt into animation-ready quads. Draw big loops around the eyes, mouth and joints first — then <b>Relax</b> to even the spacing, and send the cage to <b>UV Unwrap → Bake Maps</b> to carry the detail across.</span></div>
+      </div>
+    </aside>
+  </div>
+
+  <input type="file" id="rt-file" accept=".glb,.gltf,.fbx,.obj" style="display:none;">
+  <div id="rt-toasts" style="position:fixed;bottom:16px;right:16px;z-index:300;display:flex;flex-direction:column;gap:8px;"></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = {
+    meshName: 'no model', loading: false, loadingMsg: '',
+    hasModel: false, mode: 'draw', symmetry: true, xray: false, refOn: true,
+    radius: 12, strength: 50,
+    verts: 0, quads: 0, tris: 0, draft: 0, canUndo: false,
+  };
+
+  componentDidMount() { this.setupEmbed(); this.boot(); this.setupDrop(); this.setupKeys(); }
+
+  async boot() {
+    try {
+      const canvas = document.getElementById('rt-gl');
+      let mod;
+      try { mod = await import('./studio3D_scripts/retopo-engine.js'); }
+      catch (e) { mod = await import('./retopo-engine.js'); }
+      const eng = new mod.RetopoEngine(canvas); this._eng = eng;
+      eng.onChange = () => this.refresh();
+      eng.onStatus = (msg) => this.setState({ loading: !!msg, loadingMsg: msg || '' });
+      eng.setBrush({ radius: this.state.radius / 100, strength: this.state.strength / 100 });
+      if (this._pending) { const p = this._pending; this._pending = null; p(); }
+    } catch (e) {
+      this.toast('Engine failed: ' + (e && e.message || e));
+      if (this._post) this._post('studio:error', { tool: 'retopo', message: String(e && e.message || e) });
+    }
+  }
+
+  refresh() {
+    if (!this._eng) return;
+    const s = this._eng.stats();
+    this.setState({
+      hasModel: this._eng.hasModel(), meshName: this._eng.hasModel() ? s.name : 'no model',
+      verts: s.verts, quads: s.quads, tris: s.tris, draft: s.draft, canUndo: s.canUndo,
+    });
+  }
+
+  async loadVia(fn, label) {
+    if (!this._eng) { this._pending = () => this.loadVia(fn, label); return; }
+    this.setState({ loading: true, loadingMsg: 'Loading ' + (label || 'model') + '…' });
+    try {
+      const r = await fn();
+      this.refresh(); this.setState({ loading: false });
+      if (r && r.name) this.toast(r.name + ' is on the table — click 4 surface points to lay the first quad');
+    } catch (e) {
+      this.setState({ loading: false }); this.toast('Load failed: ' + (e && e.message || e));
+      if (this._post) this._post('studio:error', { tool: 'retopo', message: String(e && e.message || e) });
+    }
+  }
+
+  setMode(m) { this.setState({ mode: m }); if (this._eng) this._eng.setMode(m); }
+
+  async doSave() {
+    const eng = this._eng;
+    if (!eng || !this.state.quads) { this.toast('Draw some quads first'); return; }
+    this.setState({ loading: true, loadingMsg: 'Packing GLB…' });
+    try {
+      const glb = await eng.exportGLB();
+      const name = (this.state.meshName || 'mesh').replace(/\.\w+$/, '') + ' (retopo).glb';
+      this._post('studio:saveChar', { buffer: glb, name }, [glb]);
+      this.setState({ loading: false });
+      this.toast('Saved to Library as ' + name);
+    } catch (e) { this.setState({ loading: false }); this.toast('Save failed: ' + (e && e.message || e)); }
+  }
+
+  async doDownload() {
+    const eng = this._eng;
+    if (!eng || !this.state.quads) { this.toast('Draw some quads first'); return; }
+    this.setState({ loading: true, loadingMsg: 'Packing GLB…' });
+    try {
+      const glb = await eng.exportGLB();
+      const blob = new Blob([glb], { type: 'model/gltf-binary' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = (this.state.meshName || 'mesh').replace(/\.\w+$/, '') + '_retopo.glb';
+      document.body.appendChild(a); a.click();
+      setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+      this.setState({ loading: false });
+      this.toast('Exported ' + a.download);
+    } catch (e) { this.setState({ loading: false }); this.toast('Export failed: ' + (e && e.message || e)); }
+  }
+
+  setupDrop() {
+    const root = document.getElementById('rt-root'); if (!root) return;
+    root.addEventListener('dragover', e => { e.preventDefault(); });
+    root.addEventListener('drop', e => { e.preventDefault(); const f = e.dataTransfer.files && e.dataTransfer.files[0]; if (f) this.loadVia(() => this._eng.loadFile(f), f.name); });
+    const inp = document.getElementById('rt-file');
+    if (inp) inp.addEventListener('change', e => { const f = e.target.files[0]; if (f) { this.loadVia(() => this._eng.loadFile(f), f.name); e.target.value = ''; } });
+  }
+
+  setupKeys() {
+    window.addEventListener('keydown', e => {
+      const typing = /input|textarea|select/i.test((e.target && e.target.tagName) || '');
+      if (typing) return;
+      if (e.key === 'Escape') { if (this._eng) { this._eng.cancelDraft(); this.refresh(); } return; }
+      if ((e.metaKey || e.ctrlKey) && (e.key === 'z' || e.key === 'Z')) { e.preventDefault(); this.doUndo(); return; }
+      const k = e.key.toLowerCase();
+      if (k === 'q') this.setMode('draw');
+      else if (k === 'g') this.setMode('move');
+      else if (k === 'r') this.setMode('relax');
+      else if (k === 'x') this.setMode('delete');
+    });
+  }
+
+  doUndo() {
+    if (!this._eng) return;
+    if (this._eng.undo()) { this.refresh(); } else { this.toast('Nothing to undo'); }
+  }
+
+  setupEmbed() {
+    const params = new URLSearchParams(location.search);
+    this._embedded = params.get('embed') === '1' || window.parent !== window;
+    this._post = (type, payload, transfer) => { try { window.parent && window.parent.postMessage(Object.assign({ __studio: true, type }, payload || {}), '*', transfer || []); } catch (e) {} };
+    if (this._embedded) { const hide = () => { const h = document.querySelector('#rt-root > header'); if (h && h.firstElementChild) h.firstElementChild.style.display = 'none'; }; hide(); setTimeout(hide, 60); setTimeout(hide, 300); }
+    window.addEventListener('message', (e) => {
+      const d = e.data; if (!d || !d.__studio) return;
+      if (d.type === 'studio:loadCharUrl') this.loadVia(() => this._eng.loadUrl(d.url, d.ext, { chunked: d.chunked, chunks: d.chunks }), d.label || 'character');
+      else if (d.type === 'studio:loadCharBuffer') this.loadVia(() => this._eng.loadBuffer(d.buffer, d.name, (d.name || '').split('.').pop()), d.name || 'mesh');
+      else if (d.type === 'studio:undo') this.doUndo();
+    });
+    setTimeout(() => this._post('studio:ready', { tool: 'retopo' }), 0);
+  }
+
+  toast(msg) {
+    const wrap = document.getElementById('rt-toasts'); if (!wrap) return;
+    const el = document.createElement('div');
+    el.style.cssText = 'padding:11px 15px;border-radius:7px;font-size:12px;background:var(--panel-3);border:1px solid var(--edge);border-left:3px solid #e0894f;box-shadow:0 8px 24px rgba(0,0,0,.45);max-width:340px;color:var(--text);animation:rt-tin .25s cubic-bezier(.2,1,.3,1);';
+    el.textContent = msg; wrap.appendChild(el);
+    setTimeout(() => { el.style.transition = 'opacity .3s'; el.style.opacity = '0'; setTimeout(() => el.remove(), 300); }, 3200);
+  }
+
+  chip(on) { return 'font-family:var(--font-mono);font-size:10px;padding:5px 10px;border-radius:5px;cursor:pointer;background:rgba(15,15,15,.6);border:1px solid ' + (on ? '#e0894f' : 'var(--edge)') + ';color:' + (on ? '#ffc79a' : 'var(--text-2)') + ';'; }
+  modeBtn(on) {
+    return 'display:flex;align-items:flex-start;gap:9px;padding:9px 10px;border-radius:6px;width:100%;cursor:pointer;text-align:left;'
+      + 'background:' + (on ? 'rgba(224,137,79,.14)' : 'var(--panel3)') + ';border:1px solid ' + (on ? '#e0894f' : 'var(--edge)') + ';color:var(--text);';
+  }
+
+  renderVals() {
+    const st = this.state, eng = this._eng;
+    const views = ['Persp', 'Front', 'Side', 'Top', 'Back'].map(v => ({ label: v, onClick: () => eng && eng.setView(v.toLowerCase()) }));
+
+    const MODES = [
+      { k: 'draw', icon: '▱', label: 'Quad draw', key: 'Q', desc: 'Click 4 points → a quad. Click near a green edge → grow the strip.' },
+      { k: 'move', icon: '✥', label: 'Move', key: 'G', desc: 'Drag a vertex along the surface. Drop it on another to weld.' },
+      { k: 'relax', icon: '≈', label: 'Relax', key: 'R', desc: 'Brush to even out spacing — verts stay glued to the reference.' },
+      { k: 'delete', icon: '✕', label: 'Delete', key: 'X', desc: 'Click a quad to remove it (its mirror goes too).' },
+    ].map(m => ({
+      icon: m.icon, label: m.label + '  ·  ' + m.key, desc: m.desc,
+      style: this.modeBtn(st.mode === m.k),
+      onClick: () => this.setMode(m.k),
+    }));
+
+    const badge = { draw: 'QUAD DRAW — 4 clicks per quad · click a green edge to extend', move: 'MOVE — drag a vertex, drop on another to weld', relax: 'RELAX — brush over the cage to even the spacing', delete: 'DELETE — click a quad to remove it' };
+
+    const actBtn = (enabled) => 'flex:1;padding:8px;border-radius:6px;font-size:11.5px;font-weight:600;background:var(--panel3);border:1px solid var(--edge);color:var(--text);cursor:' + (enabled ? 'pointer' : 'default') + ';opacity:' + (enabled ? '1' : '.45') + ';';
+
+    return {
+      meshName: st.meshName, dotColor: st.hasModel ? 'var(--good)' : 'var(--muted)',
+      noModel: !st.hasModel && !st.loading, hasModel: st.hasModel,
+      loading: st.loading, loadingMsg: st.loadingMsg,
+      modeBadge: st.hasModel ? (badge[st.mode] || '') : 'IMPORT A MESH',
+      pickFile: () => document.getElementById('rt-file').click(),
+      loadSample: () => this.loadVia(() => this._eng.loadUrl('data/characters/Humanoid.fbx', 'fbx'), 'Humanoid'),
+      views, modes: MODES,
+      symChipStyle: this.chip(st.symmetry), toggleSym: () => { const v = !st.symmetry; this.setState({ symmetry: v }); if (eng) eng.setSymmetry(v); },
+      xrayChipStyle: this.chip(st.xray), toggleXray: () => { const v = !st.xray; this.setState({ xray: v }); if (eng) eng.setXray(v); },
+      refChipStyle: this.chip(st.refOn), toggleRef: () => { const v = !st.refOn; this.setState({ refOn: v }); if (eng) eng.setRefVisible(v); },
+      radiusVal: st.radius, radiusLabel: (st.radius / 100).toFixed(2) + ' × model',
+      strengthVal: st.strength, strengthLabel: st.strength + '%',
+      onRadius: (e) => { const v = +e.target.value; this.setState({ radius: v }); if (eng) eng.setBrush({ radius: v / 100 }); },
+      onStrength: (e) => { const v = +e.target.value; this.setState({ strength: v }); if (eng) eng.setBrush({ strength: v / 100 }); },
+      quadBadge: st.quads ? (st.quads + ' QUADS') : 'EMPTY',
+      quadsLabel: st.quads.toLocaleString(), vertsLabel: st.verts.toLocaleString(), trisLabel: st.tris.toLocaleString(),
+      draftLabel: st.draft + ' / 4',
+      undoStyle: actBtn(st.canUndo), doUndo: () => this.doUndo(),
+      cancelStyle: actBtn(st.draft > 0), doCancelDraft: () => { if (eng) { eng.cancelDraft(); this.refresh(); } },
+      doClear: () => { if (eng) { eng.clearTopo(); this.refresh(); this.toast('Cage cleared'); } },
+      doSave: () => this.doSave(),
+      doDownload: () => this.doDownload(),
+      embedded: !!this._embedded,
+    };
+  }
+}
+</script>
+</body>
+</html>

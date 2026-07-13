@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Spline+Sans+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="theme.js"></script>
+<style>
+  html,body{margin:0;padding:0;height:100%;background:var(--gutter);}
+  *{box-sizing:border-box;}
+  a{color:var(--accent);} a:hover{color:var(--text);}
+  @keyframes rc-spin{to{transform:rotate(360deg);}}
+  @keyframes rc-tin{from{transform:translateX(120%);opacity:0;}to{transform:translateX(0);opacity:1;}}
+  @keyframes rc-pulse{0%,100%{opacity:.5;}50%{opacity:1;}}
+  #rc-root ::-webkit-scrollbar{width:10px;height:10px;}
+  #rc-root ::-webkit-scrollbar-track{background:var(--gutter);}
+  #rc-root ::-webkit-scrollbar-thumb{background:var(--panel-3);border:2px solid var(--gutter);border-radius:6px;}
+  #rc-root input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:4px;border-radius:2px;background:var(--panel-3);outline:none;}
+  #rc-root input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:13px;height:13px;border-radius:50%;background:#b8a3e8;cursor:pointer;border:2px solid var(--gutter);}
+</style>
+</helmet>
+
+<div id="rc-root" style="display:flex;flex-direction:column;height:100vh;width:100%;overflow:hidden;background:var(--gutter);color:var(--text);font-family:var(--font-ui);font-size:13px;-webkit-font-smoothing:antialiased;user-select:none;">
+
+  <!-- TOP BAR -->
+  <header style="height:46px;flex:none;display:flex;align-items:center;gap:14px;padding:0 14px;background:var(--header);border-bottom:1px solid var(--seam);">
+    <div style="display:flex;align-items:center;gap:9px;">
+      <div style="width:26px;height:26px;border-radius:5px;display:flex;align-items:center;justify-content:center;background:#b8a3e8;color:#1c1030;font-weight:700;font-size:15px;box-shadow:0 1px 2px rgba(0,0,0,.4),0 0 0 1px rgba(255,255,255,.08) inset;">⧉</div>
+      <div>
+        <div style="font-weight:700;letter-spacing:.04em;font-size:14px;">RECIPE</div>
+        <div style="font-family:var(--font-mono);font-size:10px;color:var(--muted);letter-spacing:.1em;margin-top:1px;">NON-DESTRUCTIVE PIPELINE · GLB WIRES · LOCAL</div>
+      </div>
+    </div>
+    <div style="flex:1;"></div>
+    <span style="font-family:var(--font-mono);font-size:10.5px;color:{{ runColor }};">{{ runLabel }}</span>
+    <button style="display:inline-flex;align-items:center;gap:7px;height:30px;padding:0 13px;border-radius:6px;font-size:11.5px;font-weight:600;background:var(--panel3);border:1px solid var(--edge);color:var(--text);cursor:pointer;" onClick="{{ pickFile }}">⬇ Import source…</button>
+    <div style="display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--text2);padding:4px 10px;background:var(--panel);border:1px solid var(--seam);border-radius:5px;">
+      <span style="width:7px;height:7px;border-radius:50%;flex:none;background:{{ dotColor }};"></span>
+      <span style="font-family:var(--font-mono);">{{ srcName }}</span>
+    </div>
+  </header>
+
+  <div style="flex:1;display:flex;min-height:0;">
+
+    <!-- PALETTE -->
+    <aside style="width:198px;flex:none;background:var(--panel);border-right:1px solid var(--seam);display:flex;flex-direction:column;min-height:0;overflow-y:auto;">
+      <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--header);border-bottom:1px solid var(--seam);"><span style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);">Steps</span></div>
+      <div style="padding:9px;display:flex;flex-direction:column;gap:6px;">
+        <sc-for list="{{ palette }}" as="p" hint-placeholder-count="7">
+          <button style="display:flex;gap:8px;align-items:flex-start;padding:8px 9px;border-radius:6px;background:var(--panel3);border:1px solid var(--edge);color:var(--text);cursor:pointer;text-align:left;" onClick="{{ p.onAdd }}" title="{{ p.desc }}">
+            <span style="flex:none;width:20px;height:20px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:12px;background:{{ p.tint }};color:#101215;">{{ p.icon }}</span>
+            <span>
+              <span style="display:block;font-size:11.5px;font-weight:700;">{{ p.name }}</span>
+              <span style="display:block;font-size:10px;color:var(--muted);margin-top:1px;line-height:1.4;">{{ p.hint }}</span>
+            </span>
+          </button>
+        </sc-for>
+      </div>
+      <div style="padding:10px 12px;margin-top:auto;">
+        <div style="display:flex;gap:8px;padding:8px 10px;border-radius:7px;font-size:10.5px;line-height:1.5;background:rgba(184,163,232,.1);border:1px solid rgba(184,163,232,.3);color:var(--text2);"><span style="flex:none;color:#b8a3e8;">⧉</span><span>Click a step to add it, then drag from a node's <b>right port</b> to another's <b>left port</b>. Change anything — everything downstream re-brews itself.</span></div>
+      </div>
+    </aside>
+
+    <!-- GRAPH CANVAS -->
+    <div id="rc-scroll" style="flex:1;position:relative;min-width:0;min-height:0;overflow:auto;background:var(--viewport);">
+      <div id="rc-canvas" style="position:relative;width:2400px;height:1500px;background-image:radial-gradient(circle, rgba(128,140,160,.16) 1px, transparent 1px);background-size:26px 26px;" onPointerMove="{{ canvasMove }}" onPointerUp="{{ canvasUp }}" onClick="{{ canvasClick }}">
+        <div style="position:absolute;inset:0;pointer-events:none;">{{ wiresSvg }}</div>
+
+        <sc-for list="{{ nodes }}" as="n" hint-placeholder-count="3">
+          <div style="{{ n.style }}" onClick="{{ n.onSelect }}">
+            <div style="display:flex;align-items:center;gap:7px;padding:7px 9px;border-radius:7px 7px 0 0;background:var(--header);border-bottom:1px solid var(--seam);cursor:grab;" onPointerDown="{{ n.onDragStart }}">
+              <span style="flex:none;width:17px;height:17px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:10.5px;background:{{ n.tint }};color:#101215;">{{ n.icon }}</span>
+              <span style="flex:1;font-size:11.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ n.name }}</span>
+              <span style="{{ n.dotStyle }}" title="{{ n.statusTitle }}"></span>
+              <sc-if value="{{ n.canDelete }}" hint-placeholder-val="{{ false }}">
+                <span style="flex:none;font-size:11px;color:var(--muted);cursor:pointer;padding:0 2px;" onClick="{{ n.onDelete }}" title="Remove node">✕</span>
+              </sc-if>
+            </div>
+            <div style="padding:7px 9px;font-family:var(--font-mono);font-size:9.5px;color:var(--text2);line-height:1.6;pointer-events:none;">{{ n.line1 }}<br>{{ n.line2 }}</div>
+            <sc-if value="{{ n.hasIn }}" hint-placeholder-val="{{ false }}">
+              <span style="position:absolute;left:-7px;top:15px;width:13px;height:13px;border-radius:50%;background:var(--panel);border:2.5px solid #b8a3e8;cursor:crosshair;" onClick="{{ n.onInPort }}" title="input — click while dragging a wire"></span>
+            </sc-if>
+            <span style="position:absolute;right:-7px;top:15px;width:13px;height:13px;border-radius:50%;background:#b8a3e8;border:2.5px solid var(--panel);cursor:crosshair;" onClick="{{ n.onOutPort }}" title="output — click, then click another node's input"></span>
+          </div>
+        </sc-for>
+
+        <sc-if value="{{ emptyGraph }}" hint-placeholder-val="{{ false }}">
+          <div style="position:absolute;left:230px;top:120px;max-width:420px;font-size:12.5px;color:var(--text2);line-height:1.7;background:rgba(15,15,15,.6);border:1px dashed var(--edge);border-radius:10px;padding:16px 18px;pointer-events:none;">
+            <b style="color:var(--text);">This is a pipeline you keep.</b><br>Import a source mesh, add steps from the left, wire them → → →, and tune the sliders. Change the source or any knob and everything after it re-runs. Try: <span style="font-family:var(--font-mono);font-size:11px;">weld → decimate → ground → bake AO</span>.
+          </div>
+        </sc-if>
+      </div>
+    </div>
+
+    <!-- INSPECTOR + PREVIEW -->
+    <aside style="width:300px;flex:none;background:var(--panel);border-left:1px solid var(--seam);display:flex;flex-direction:column;min-height:0;">
+      <div style="flex:1;overflow-y:auto;min-height:0;">
+        <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--header);border-bottom:1px solid var(--seam);">
+          <span style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);">Node</span>
+          <span style="margin-left:auto;font-family:var(--font-mono);font-size:10px;color:#b8a3e8;background:var(--panel);padding:1px 7px;border-radius:9px;border:1px solid var(--seam);">{{ selBadge }}</span>
+        </div>
+
+        <sc-if value="{{ hasSel }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:12px;border-bottom:1px solid var(--seam);">
+            <div style="font-size:13px;font-weight:700;margin-bottom:4px;">{{ selName }}</div>
+            <div style="font-size:11px;color:var(--text2);line-height:1.55;">{{ selDesc }}</div>
+          </div>
+          <div style="padding:12px;display:flex;flex-direction:column;gap:11px;border-bottom:1px solid var(--seam);">
+            <sc-for list="{{ selParams }}" as="pp" hint-placeholder-count="2">
+              <div>
+                <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:6px;"><span style="color:var(--muted);">{{ pp.label }}</span><span style="font-family:var(--font-mono);color:var(--text);">{{ pp.valueLabel }}</span></div>
+                <input type="range" min="{{ pp.min }}" max="{{ pp.max }}" step="{{ pp.step }}" value="{{ pp.value }}" onInput="{{ pp.onInput }}">
+              </div>
+            </sc-for>
+            <sc-if value="{{ selNoParams }}" hint-placeholder-val="{{ false }}">
+              <div style="font-size:10.5px;color:var(--muted);">No knobs on this step.</div>
+            </sc-if>
+          </div>
+          <div style="padding:12px;border-bottom:1px solid var(--seam);">
+            <div style="display:flex;justify-content:space-between;font-size:11px;padding:2px 0;"><span style="color:var(--muted);">Status</span><span style="font-family:var(--font-mono);color:{{ selStatusColor }};">{{ selStatus }}</span></div>
+            <div style="display:flex;justify-content:space-between;font-size:11px;padding:2px 0;"><span style="color:var(--muted);">Triangles</span><span style="font-family:var(--font-mono);color:var(--text);">{{ selTris }}</span></div>
+            <div style="display:flex;justify-content:space-between;font-size:11px;padding:2px 0;"><span style="color:var(--muted);">Vertices</span><span style="font-family:var(--font-mono);color:var(--text);">{{ selVerts }}</span></div>
+            <div style="display:flex;justify-content:space-between;font-size:11px;padding:2px 0;"><span style="color:var(--muted);">Output · time</span><span style="font-family:var(--font-mono);color:var(--text);">{{ selCost }}</span></div>
+            <sc-if value="{{ selHasErr }}" hint-placeholder-val="{{ false }}">
+              <div style="margin-top:8px;padding:8px 10px;border-radius:6px;font-size:11px;line-height:1.5;background:rgba(217,79,47,.12);border:1px solid rgba(217,79,47,.4);color:#e8907a;">{{ selErr }}</div>
+            </sc-if>
+          </div>
+          <div style="padding:11px 12px;display:flex;flex-direction:column;gap:7px;">
+            <sc-if value="{{ embedded }}" hint-placeholder-val="{{ false }}">
+              <button style="display:flex;align-items:center;justify-content:center;gap:7px;padding:9px;border-radius:6px;font-size:12px;font-weight:700;background:#b8a3e8;border:1px solid #b8a3e8;color:#1c1030;width:100%;cursor:pointer;" onClick="{{ doSave }}">▤ Save this output to Library</button>
+            </sc-if>
+            <button style="display:flex;align-items:center;justify-content:center;gap:7px;padding:9px;border-radius:6px;font-size:12px;font-weight:600;background:var(--panel3);border:1px solid var(--edge);color:var(--text);width:100%;cursor:pointer;" onClick="{{ doDownload }}">⬇ Download this output .glb</button>
+          </div>
+        </sc-if>
+        <sc-if value="{{ noSel }}" hint-placeholder-val="{{ true }}">
+          <div style="padding:14px 12px;font-size:11.5px;line-height:1.6;color:var(--text2);">Select a node to tune its knobs and grab its output. The preview below always shows the selected node's result.</div>
+        </sc-if>
+      </div>
+
+      <!-- PREVIEW -->
+      <div style="flex:none;height:264px;border-top:1px solid var(--seam);position:relative;background:var(--viewport);">
+        <canvas id="rc-gl" style="position:absolute;inset:0;width:100%;height:100%;display:block;"></canvas>
+        <div style="position:absolute;left:8px;top:7px;font-family:var(--font-mono);font-size:9.5px;letter-spacing:.1em;color:var(--text2);background:rgba(15,15,15,.6);padding:2px 6px;border-radius:3px;pointer-events:none;">PREVIEW — {{ previewLabel }}</div>
+        <button style="{{ wireChipStyle }};position:absolute;right:8px;top:6px;" onClick="{{ toggleWire }}">▦ wire</button>
+      </div>
+    </aside>
+  </div>
+
+  <input type="file" id="rc-file" accept=".glb,.gltf,.fbx,.obj" style="display:none;">
+  <div id="rc-toasts" style="position:fixed;bottom:16px;right:16px;z-index:300;display:flex;flex-direction:column;gap:8px;"></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = {
+    srcName: 'no source', running: false, runMsg: '',
+    nodes: [], edges: [], selId: null,
+    pendingFrom: null, pendingXY: null,
+    wireOn: false, rev: 0,
+  };
+
+  componentDidMount() {
+    this._buf = {};        // nodeId -> ArrayBuffer (cached output)
+    this._meta = {};       // step registry metadata
+    this._dirty = new Set();
+    this.setupEmbed(); this.boot(); this.setupDrop();
+  }
+
+  // ---------------------------------------------------------- BOOT
+  async boot() {
+    try {
+      let mod;
+      try { mod = await import('./studio3D_scripts/recipe-engine.js'); }
+      catch (e) { mod = await import('./recipe-engine.js'); }
+      this._mod = mod;
+      this._meta = mod.stepMeta();
+      const canvas = document.getElementById('rc-gl');
+      this._eng = new mod.RecipeEngine(canvas);
+      this.restoreGraph();
+      if (this._pending) { const p = this._pending; this._pending = null; p(); }
+    } catch (e) {
+      this.toast('Engine failed: ' + (e && e.message || e));
+      if (this._post) this._post('studio:error', { tool: 'recipe', message: String(e && e.message || e) });
+    }
+  }
+
+  defaultGraph() {
+    return {
+      nodes: [{ id: 'src', kind: 'source', x: 60, y: 90, params: {}, status: 'empty', stats: null, err: '' }],
+      edges: [],
+    };
+  }
+
+  restoreGraph() {
+    let g = null;
+    try { g = JSON.parse(localStorage.getItem('pp.recipe.graph') || 'null'); } catch (e) {}
+    if (!g || !g.nodes || !g.nodes.some(n => n.id === 'src')) g = this.defaultGraph();
+    g.nodes.forEach(n => { n.status = n.kind === 'source' ? 'empty' : 'wait'; n.stats = null; n.err = ''; });
+    this.setState({ nodes: g.nodes, edges: g.edges || [], selId: 'src' });
+  }
+
+  persistGraph() {
+    try {
+      const g = { nodes: this.state.nodes.map(n => ({ id: n.id, kind: n.kind, x: n.x, y: n.y, params: n.params })), edges: this.state.edges };
+      localStorage.setItem('pp.recipe.graph', JSON.stringify(g));
+    } catch (e) {}
+  }
+
+  // ---------------------------------------------------------- GRAPH MODEL
+  node(id) { return this.state.nodes.find(n => n.id === id); }
+  inEdge(id) { return this.state.edges.find(e => e.to === id); }
+
+  addNode(kind) {
+    const m = this._meta[kind]; if (!m) return;
+    const id = kind + '_' + Math.random().toString(36).slice(2, 7);
+    const params = {};
+    (m.params || []).forEach(p => { params[p.k] = p.def; });
+    const count = this.state.nodes.length;
+    const nx = 90 + ((count - 1) % 5) * 230, ny = 90 + Math.floor((count - 1) / 5) * 150 + 90;
+    const nodes = this.state.nodes.concat([{ id, kind, x: nx, y: ny, params, status: 'wait', stats: null, err: '' }]);
+    this.setState({ nodes, selId: id }, () => this.persistGraph());
+  }
+
+  deleteNode(id) {
+    if (id === 'src') return;
+    const downstream = this.state.edges.filter(e => e.from === id).map(e => e.to);
+    const nodes = this.state.nodes.filter(n => n.id !== id);
+    const edges = this.state.edges.filter(e => e.from !== id && e.to !== id);
+    delete this._buf[id];
+    this.setState({ nodes, edges, selId: this.state.selId === id ? null : this.state.selId }, () => {
+      downstream.forEach(d => this.markDirty(d));
+      this.persistGraph(); this.scheduleRun();
+    });
+  }
+
+  connect(from, to) {
+    if (from === to) return;
+    if (this.node(to) && this.node(to).kind === 'source') return;
+    // no cycles: walk downstream of `to`, must not reach `from`
+    const seen = new Set([to]); const stack = [to];
+    while (stack.length) {
+      const cur = stack.pop();
+      this.state.edges.forEach(e => { if (e.from === cur && !seen.has(e.to)) { seen.add(e.to); stack.push(e.to); } });
+    }
+    if (seen.has(from)) { this.toast('That would make a loop — recipes flow one way'); return; }
+    const edges = this.state.edges.filter(e => e.to !== to).concat([{ from, to }]);
+    this.setState({ edges, pendingFrom: null, pendingXY: null }, () => {
+      this.markDirty(to); this.persistGraph(); this.scheduleRun();
+    });
+  }
+
+  disconnect(to) {
+    const edges = this.state.edges.filter(e => e.to !== to);
+    this.setState({ edges }, () => { this.markDirty(to); this.persistGraph(); this.scheduleRun(); });
+  }
+
+  markDirty(id) {
+    this._dirty.add(id);
+    this.state.edges.forEach(e => { if (e.from === id) this.markDirty(e.to); });
+  }
+
+  setParam(id, key, val) {
+    const nodes = this.state.nodes.map(n => n.id === id ? Object.assign({}, n, { params: Object.assign({}, n.params, { [key]: val }) }) : n);
+    this.setState({ nodes }, () => { this.markDirty(id); this.persistGraph(); this.scheduleRun(); });
+  }
+
+  topoOrder() {
+    const order = []; const seen = new Set();
+    const visit = (id) => {
+      if (seen.has(id)) return; seen.add(id);
+      const e = this.inEdge(id);
+      if (e) visit(e.from);
+      order.push(id);
+    };
+    this.state.nodes.forEach(n => visit(n.id));
+    return order;
+  }
+
+  // ---------------------------------------------------------- EVALUATION
+  scheduleRun() {
+    clearTimeout(this._runT);
+    this._runT = setTimeout(() => this.runGraph(), 380);
+  }
+
+  async runGraph() {
+    if (this._running) { this._rerun = true; return; }
+    this._running = true;
+    this.setState({ running: true, runMsg: 'brewing…' });
+    try {
+      const order = this.topoOrder();
+      for (const id of order) {
+        const n = this.node(id); if (!n) continue;
+        if (n.kind === 'source') { this.patchNode(id, { status: this._buf.src ? 'ok' : 'empty' }); continue; }
+        const e = this.inEdge(id);
+        const inBuf = e ? this._buf[e.from] : null;
+        if (!inBuf) {
+          delete this._buf[id];
+          this.patchNode(id, { status: 'wait', stats: null, err: '' });
+          continue;
+        }
+        if (!this._dirty.has(id) && this._buf[id]) continue;
+        this.patchNode(id, { status: 'run', err: '' });
+        try {
+          const r = await this._mod.runStep(n.kind, inBuf, n.params, (msg) => this.setState({ runMsg: (this._meta[n.kind] || {}).name + ' — ' + msg }));
+          this._buf[id] = r.buffer;
+          this._dirty.delete(id);
+          this.patchNode(id, { status: 'ok', stats: r.stats, err: '' });
+        } catch (err) {
+          delete this._buf[id];
+          this._dirty.delete(id);
+          this.patchNode(id, { status: 'err', stats: null, err: String(err && err.message || err) });
+        }
+      }
+    } finally {
+      this._running = false;
+      this.setState({ running: false, runMsg: '' });
+      this.updatePreview();
+      if (this._rerun) { this._rerun = false; this.scheduleRun(); }
+    }
+  }
+
+  patchNode(id, patch) {
+    this.setState({ nodes: this.state.nodes.map(n => n.id === id ? Object.assign({}, n, patch) : n) });
+  }
+
+  updatePreview() {
+    if (!this._eng) return;
+    const id = this.state.selId;
+    const buf = id ? this._buf[id] : null;
+    const n = id ? this.node(id) : null;
+    const tag = id + ':' + (buf ? buf.byteLength : 0) + ':' + (n ? n.status : '');
+    this._eng.show(buf || null, tag).then(() => { if (this.state.wireOn) this._eng.setWire(true); });
+  }
+
+  // ---------------------------------------------------------- SOURCE
+  async setSource(fn, label) {
+    if (!this._mod) { this._pending = () => this.setSource(fn, label); return; }
+    this.setState({ running: true, runMsg: 'Converting ' + (label || 'source') + ' → GLB…' });
+    try {
+      const raw = await fn();
+      const r = await this._mod.normalize(raw.buffer, raw.ext, { onStatus: (m) => this.setState({ runMsg: m }) });
+      this._buf.src = r.buffer;
+      this.setState({ srcName: label || 'source', running: false, runMsg: '' });
+      this.patchNode('src', { status: 'ok', stats: r.stats, err: '' });
+      this.markDirty('src'); this._dirty.delete('src');
+      this.state.edges.forEach(e => { if (e.from === 'src') this.markDirty(e.to); });
+      this.scheduleRun();
+      this.toast(label + ' is the source — the recipe re-brews from it');
+    } catch (e) {
+      this.setState({ running: false, runMsg: '' });
+      this.toast('Load failed: ' + (e && e.message || e));
+      if (this._post) this._post('studio:error', { tool: 'recipe', message: String(e && e.message || e) });
+    }
+  }
+
+  setupDrop() {
+    const root = document.getElementById('rc-root'); if (!root) return;
+    root.addEventListener('dragover', e => { e.preventDefault(); });
+    root.addEventListener('drop', e => {
+      e.preventDefault();
+      const f = e.dataTransfer.files && e.dataTransfer.files[0]; if (!f) return;
+      this.setSource(async () => ({ buffer: await f.arrayBuffer(), ext: (f.name.split('.').pop() || 'glb') }), f.name);
+    });
+    const inp = document.getElementById('rc-file');
+    if (inp) inp.addEventListener('change', e => {
+      const f = e.target.files[0]; if (!f) return;
+      this.setSource(async () => ({ buffer: await f.arrayBuffer(), ext: (f.name.split('.').pop() || 'glb') }), f.name);
+      e.target.value = '';
+    });
+    window.addEventListener('keydown', e => {
+      if (e.key === 'Escape' && this.state.pendingFrom) this.setState({ pendingFrom: null, pendingXY: null });
+    });
+  }
+
+  // ---------------------------------------------------------- OUTPUT
+  selBuffer() { const id = this.state.selId; return id ? this._buf[id] : null; }
+
+  doDownload() {
+    const buf = this.selBuffer();
+    if (!buf) { this.toast('That node has no output yet'); return; }
+    const blob = new Blob([buf], { type: 'model/gltf-binary' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    const n = this.node(this.state.selId);
+    a.download = (this.state.srcName || 'mesh').replace(/\.\w+$/, '') + '_' + (n ? n.kind : 'out') + '.glb';
+    document.body.appendChild(a); a.click();
+    setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+    this.toast('Exported ' + a.download);
+  }
+
+  doSave() {
+    const buf = this.selBuffer();
+    if (!buf) { this.toast('That node has no output yet'); return; }
+    const n = this.node(this.state.selId);
+    const name = (this.state.srcName || 'mesh').replace(/\.\w+$/, '') + ' (' + (n ? (this._meta[n.kind] ? this._meta[n.kind].name : n.kind) : 'recipe') + ').glb';
+    const copy = buf.slice(0);
+    this._post('studio:saveChar', { buffer: copy, name }, [copy]);
+    this.toast('Saved to Library as ' + name);
+  }
+
+  // ---------------------------------------------------------- CANVAS INTERACTION
+  canvasXY(e) {
+    const cv = document.getElementById('rc-canvas');
+    const r = cv.getBoundingClientRect();
+    return { x: e.clientX - r.left, y: e.clientY - r.top };
+  }
+
+  startDrag(id, e) {
+    e.stopPropagation();
+    const n = this.node(id); if (!n) return;
+    const p = this.canvasXY(e);
+    this._drag = { id, dx: p.x - n.x, dy: p.y - n.y };
+  }
+
+  // ---------------------------------------------------------- EMBED / MISC
+  setupEmbed() {
+    const params = new URLSearchParams(location.search);
+    this._embedded = params.get('embed') === '1' || window.parent !== window;
+    this._post = (type, payload, transfer) => { try { window.parent && window.parent.postMessage(Object.assign({ __studio: true, type }, payload || {}), '*', transfer || []); } catch (e) {} };
+    if (this._embedded) { const hide = () => { const h = document.querySelector('#rc-root > header'); if (h && h.firstElementChild) h.firstElementChild.style.display = 'none'; }; hide(); setTimeout(hide, 60); setTimeout(hide, 300); }
+    window.addEventListener('message', (e) => {
+      const d = e.data; if (!d || !d.__studio) return;
+      if (d.type === 'studio:loadCharUrl') {
+        this.setSource(async () => {
+          const mod = this._mod;
+          const buf = await mod.fetchAssetBuffer(d.url, { chunked: d.chunked, chunks: d.chunks });
+          return { buffer: buf, ext: d.ext || (d.url.split('.').pop() || 'glb') };
+        }, d.label || 'character');
+      } else if (d.type === 'studio:loadCharBuffer') {
+        this.setSource(async () => ({ buffer: d.buffer, ext: (d.name || '').split('.').pop() || 'glb' }), d.name || 'mesh');
+      }
+    });
+    setTimeout(() => this._post('studio:ready', { tool: 'recipe' }), 0);
+  }
+
+  toast(msg) {
+    const wrap = document.getElementById('rc-toasts'); if (!wrap) return;
+    const el = document.createElement('div');
+    el.style.cssText = 'padding:11px 15px;border-radius:7px;font-size:12px;background:var(--panel-3);border:1px solid var(--edge);border-left:3px solid #b8a3e8;box-shadow:0 8px 24px rgba(0,0,0,.45);max-width:340px;color:var(--text);animation:rc-tin .25s cubic-bezier(.2,1,.3,1);';
+    el.textContent = msg; wrap.appendChild(el);
+    setTimeout(() => { el.style.transition = 'opacity .3s'; el.style.opacity = '0'; setTimeout(() => el.remove(), 300); }, 3200);
+  }
+
+  chip(on) { return 'font-family:var(--font-mono);font-size:9.5px;padding:4px 8px;border-radius:4px;cursor:pointer;background:rgba(15,15,15,.6);border:1px solid ' + (on ? '#b8a3e8' : 'var(--edge)') + ';color:' + (on ? '#d8c9f5' : 'var(--text-2)') + ';'; }
+
+  // ---------------------------------------------------------- RENDER
+  renderVals() {
+    const st = this.state;
+    const NW = 176, PORT_Y = 21;
+    const statusMeta = {
+      empty: ['var(--muted)', 'no source loaded'],
+      wait: ['var(--muted)', 'waiting for an input wire'],
+      run: ['#e0a93b', 'running…'],
+      ok: ['var(--good)', 'up to date'],
+      err: ['#d94f2f', 'failed — see inspector'],
+    };
+
+    const palette = Object.keys(this._meta || {}).map(k => {
+      const m = this._meta[k];
+      return {
+        name: m.name, icon: m.icon, tint: m.tint, desc: m.desc,
+        hint: m.desc.split('—')[0].trim(),
+        onAdd: () => this.addNode(k),
+      };
+    });
+
+    const nodes = st.nodes.map(n => {
+      const isSrc = n.kind === 'source';
+      const m = isSrc ? { name: 'Source', icon: '⬇', tint: '#9fb8a8', desc: '' } : (this._meta[n.kind] || { name: n.kind, icon: '?', tint: '#888' });
+      const sm = statusMeta[n.status] || statusMeta.wait;
+      const sel = st.selId === n.id;
+      const s = n.stats;
+      return {
+        name: isSrc ? ('Source · ' + (st.srcName === 'no source' ? 'empty' : st.srcName)) : m.name,
+        icon: m.icon, tint: m.tint,
+        style: 'position:absolute;left:' + n.x + 'px;top:' + n.y + 'px;width:' + NW + 'px;background:var(--panel);border:1.5px solid ' + (sel ? '#b8a3e8' : 'var(--edge)') + ';border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,.35);cursor:default;' + (sel ? 'z-index:3;' : 'z-index:2;'),
+        dotStyle: 'flex:none;width:8px;height:8px;border-radius:50%;background:' + sm[0] + ';' + (n.status === 'run' ? 'animation:rc-pulse .8s ease-in-out infinite;' : ''),
+        statusTitle: sm[1],
+        line1: s ? (Math.round(s.tris).toLocaleString() + ' tris · ' + s.verts.toLocaleString() + ' verts') : (isSrc ? 'drop a mesh / import' : sm[1]),
+        line2: s ? ((s.kb != null ? s.kb.toLocaleString() + ' KB' : '') + (s.ms != null ? ' · ' + s.ms.toLocaleString() + ' ms' : '')) : ' ',
+        hasIn: !isSrc,
+        canDelete: !isSrc,
+        onSelect: (e) => { e.stopPropagation(); this.setState({ selId: n.id }, () => this.updatePreview()); },
+        onDragStart: (e) => this.startDrag(n.id, e),
+        onDelete: (e) => { e.stopPropagation(); this.deleteNode(n.id); },
+        onOutPort: (e) => { e.stopPropagation(); this.setState({ pendingFrom: n.id, pendingXY: this.canvasXY(e) }); },
+        onInPort: (e) => {
+          e.stopPropagation();
+          if (st.pendingFrom) this.connect(st.pendingFrom, n.id);
+          else if (this.inEdge(n.id)) this.disconnect(n.id);
+        },
+      };
+    });
+
+    const pos = {}; st.nodes.forEach(n => { pos[n.id] = n; });
+    const mkPath = (x1, y1, x2, y2) => {
+      const dx = Math.max(40, Math.abs(x2 - x1) * 0.5);
+      return 'M' + x1 + ',' + y1 + ' C' + (x1 + dx) + ',' + y1 + ' ' + (x2 - dx) + ',' + y2 + ' ' + x2 + ',' + y2;
+    };
+    const wirePaths = st.edges.filter(e => pos[e.from] && pos[e.to]).map((e, i) => {
+      const a = pos[e.from], b = pos[e.to];
+      const ok = this._buf && this._buf[e.from];
+      return React.createElement('path', {
+        key: e.from + '>' + e.to,
+        d: mkPath(a.x + NW, a.y + PORT_Y, b.x, b.y + PORT_Y),
+        fill: 'none', stroke: ok ? '#b8a3e8' : 'rgba(128,140,160,.45)', strokeWidth: 2.5,
+        style: { pointerEvents: 'stroke', cursor: 'pointer' },
+        onClick: (ev) => { ev.stopPropagation(); this.disconnect(e.to); },
+      });
+    });
+    if (st.pendingFrom && pos[st.pendingFrom] && st.pendingXY) {
+      const a = pos[st.pendingFrom];
+      wirePaths.push(React.createElement('path', {
+        key: '__pending',
+        d: mkPath(a.x + NW, a.y + PORT_Y, st.pendingXY.x, st.pendingXY.y),
+        fill: 'none', stroke: '#b8a3e8', strokeWidth: 2, strokeDasharray: '6 5',
+      }));
+    }
+    const wiresSvg = React.createElement('svg', { width: 2400, height: 1500, style: { position: 'absolute', inset: 0, pointerEvents: 'none' } }, wirePaths);
+
+    // inspector
+    const sel = st.selId ? this.node(st.selId) : null;
+    const selMeta = sel ? (sel.kind === 'source' ? { name: 'Source', desc: 'The mesh the recipe starts from. Import a file, drop one anywhere, or let the active character follow you in from the Library. Any format becomes a flattened static GLB here (rig + animation are dropped — recipes work on geometry).', params: [] } : this._meta[sel.kind]) : null;
+    const selParams = (sel && selMeta && selMeta.params || []).map(p => ({
+      label: p.label, min: p.min, max: p.max, step: p.step,
+      value: sel.params[p.k] != null ? sel.params[p.k] : p.def,
+      valueLabel: (sel.params[p.k] != null ? sel.params[p.k] : p.def) + (p.unit ? ' ' + p.unit : ''),
+      onInput: (e) => this.setParam(sel.id, p.k, +e.target.value),
+    }));
+    const selSM = sel ? (statusMeta[sel.status] || statusMeta.wait) : null;
+
+    return {
+      srcName: st.srcName, dotColor: this._buf && this._buf.src ? 'var(--good)' : 'var(--muted)',
+      runLabel: st.running ? (st.runMsg || 'brewing…') : '',
+      runColor: '#e0a93b',
+      pickFile: () => document.getElementById('rc-file').click(),
+      palette, nodes, wiresSvg,
+      emptyGraph: st.nodes.length <= 1 && !(this._buf && this._buf.src),
+      canvasMove: (e) => {
+        if (this._drag) {
+          const p = this.canvasXY(e);
+          const n = this.node(this._drag.id);
+          if (n) { n.x = Math.max(0, p.x - this._drag.dx); n.y = Math.max(0, p.y - this._drag.dy); this.forceUpdate(); }
+          return;
+        }
+        if (st.pendingFrom) this.setState({ pendingXY: this.canvasXY(e) });
+      },
+      canvasUp: () => { if (this._drag) { this._drag = null; this.persistGraph(); } },
+      canvasClick: () => { if (st.pendingFrom) this.setState({ pendingFrom: null, pendingXY: null }); },
+      selBadge: sel ? sel.kind.toUpperCase() : '—',
+      hasSel: !!sel, noSel: !sel,
+      selName: selMeta ? selMeta.name : '',
+      selDesc: selMeta ? selMeta.desc : '',
+      selParams, selNoParams: selParams.length === 0,
+      selStatus: selSM ? selSM[1] : '—', selStatusColor: selSM ? selSM[0] : 'var(--muted)',
+      selTris: sel && sel.stats ? Math.round(sel.stats.tris).toLocaleString() : '—',
+      selVerts: sel && sel.stats ? sel.stats.verts.toLocaleString() : '—',
+      selCost: sel && sel.stats && sel.stats.kb != null ? (sel.stats.kb.toLocaleString() + ' KB · ' + (sel.stats.ms || 0).toLocaleString() + ' ms') : '—',
+      selHasErr: !!(sel && sel.err), selErr: sel ? sel.err : '',
+      doSave: () => this.doSave(), doDownload: () => this.doDownload(),
+      previewLabel: sel ? (this._buf[sel.id] ? (selMeta ? selMeta.name : sel.kind) : 'no output yet') : 'select a node',
+      wireChipStyle: this.chip(st.wireOn),
+      toggleWire: () => { const v = !st.wireOn; this.setState({ wireOn: v }); if (this._eng) this._eng.setWire(v); },
+      embedded: !!this._embedded,
+    };
+  }
+}
+</script>
+</body>
+</html>

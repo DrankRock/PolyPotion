@@ -282,6 +282,13 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
       <div class="dock-item" data-tool="bake" title="Bake — raytraced AO + cavity into the mesh"><span class="ic">☀</span><span class="lb">Bake</span></div>
       <div class="dock-item" data-tool="decimate" title="Decimate — reduce poly count (QEM)"><span class="ic">◇</span><span class="lb">Decimate</span></div>
       <div class="dock-item" data-tool="csg" title="Boolean — exact cut / union / intersect (Manifold WASM)"><span class="ic">⊘</span><span class="lb">Boolean</span></div>
+      <div class="dock-item" data-tool="doctor" title="Mesh Doctor — audit topology &amp; auto-fix (manifold, winding, UVs, scale)"><span class="ic">✚</span><span class="lb">Doctor</span></div>
+      <div class="dock-item" data-tool="shaderlab" title="Shader Lab — node-graph shader editor; publish looks to Showcase's shelf"><span class="ic">◈</span><span class="lb">Shaders</span></div>
+      <div class="dock-item" data-tool="director" title="Director — cut camera shots over your character's animation, render to .webm video"><span class="ic">🎬</span><span class="lb">Director</span></div>
+      <div class="dock-item" data-tool="lipsync" title="Lipsync — record or load audio, drive the mouth from it, bake the take into the GLB"><span class="ic">👄</span><span class="lb">Lipsync</span></div>
+      <div class="dock-item" data-tool="timeline" title="Timeline — lay clips out, trim, crossfade, bake one performance (NLA)"><span class="ic">≡</span><span class="lb">Timeline</span></div>
+      <div class="dock-item" data-tool="retopo" title="Retopo — draw clean quads over any mesh: quad-draw, X-symmetry, relax brush"><span class="ic">▱</span><span class="lb">Retopo</span></div>
+      <div class="dock-item" data-tool="recipe" title="Recipe — wire processing steps into a re-runnable pipeline; change anything upstream and it re-brews"><span class="ic">⧉</span><span class="lb">Recipe</span></div>
       <div class="dock-item" data-tool="uv" title="UV Unwrap — seams, LSCM conformal unwrap, pack (WASM)"><span class="ic">⬚</span><span class="lb">UV</span></div>
       <div class="dock-item" data-tool="paint" title="Paint — texture painting, clone stamp, live surface preview"><span class="ic">▧</span><span class="lb">Paint</span></div>
       <div class="dock-item" data-tool="weightpaint" title="Weight Paint — hand-paint skin influence per bone"><span class="ic">✋</span><span class="lb">Weight</span></div>
@@ -339,6 +346,41 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
       <!-- Decimate tool -->
       <div class="tool-pane" id="pane-decimate">
         <div class="tool-loading" id="load-decimate"><div class="ring"></div><div>Loading Decimate workspace…</div></div>
+      </div>
+
+      <!-- Mesh Doctor tool -->
+      <div class="tool-pane" id="pane-doctor">
+        <div class="tool-loading" id="load-doctor"><div class="ring"></div><div>Loading Mesh Doctor…</div></div>
+      </div>
+
+      <!-- Shader Lab tool -->
+      <div class="tool-pane" id="pane-shaderlab">
+        <div class="tool-loading" id="load-shaderlab"><div class="ring"></div><div>Loading Shader Lab…</div></div>
+      </div>
+
+      <!-- Director tool -->
+      <div class="tool-pane" id="pane-director">
+        <div class="tool-loading" id="load-director"><div class="ring"></div><div>Loading Director…</div></div>
+      </div>
+
+      <!-- Lipsync tool -->
+      <div class="tool-pane" id="pane-lipsync">
+        <div class="tool-loading" id="load-lipsync"><div class="ring"></div><div>Loading Lipsync…</div></div>
+      </div>
+
+      <!-- Timeline tool -->
+      <div class="tool-pane" id="pane-timeline">
+        <div class="tool-loading" id="load-timeline"><div class="ring"></div><div>Loading Timeline…</div></div>
+      </div>
+
+      <!-- Retopo tool -->
+      <div class="tool-pane" id="pane-retopo">
+        <div class="tool-loading" id="load-retopo"><div class="ring"></div><div>Loading Retopo…</div></div>
+      </div>
+
+      <!-- Recipe tool -->
+      <div class="tool-pane" id="pane-recipe">
+        <div class="tool-loading" id="load-recipe"><div class="ring"></div><div>Loading Recipe…</div></div>
       </div>
 
       <!-- Bake tool -->
@@ -575,6 +617,13 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
       { k:'pose', label:'Pose', icon:'⟁', key:'6' },
       { k:'physics', label:'Physics', icon:'≈', key:'7' },
       { k:'bake', label:'Bake', icon:'☀', key:'8' },
+      { k:'doctor', label:'Mesh Doctor — audit & auto-fix topology', icon:'✚', key:'' },
+      { k:'shaderlab', label:'Shader Lab — node-graph shader editor', icon:'◈', key:'' },
+      { k:'director', label:'Director — camera sequencer + video render-out', icon:'🎬', key:'' },
+      { k:'lipsync', label:'Lipsync — audio → talking character', icon:'👄', key:'' },
+      { k:'timeline', label:'Timeline — blend clips into one performance (NLA)', icon:'≡', key:'' },
+      { k:'retopo', label:'Retopo — draw clean quads over any mesh', icon:'▱', key:'' },
+      { k:'recipe', label:'Recipe — non-destructive pipeline graph', icon:'⧉', key:'' },
       { k:'uv', label:'UV Unwrap', icon:'⬚', key:'' },
       { k:'paint', label:'Paint', icon:'▧', key:'' },
       { k:'weightpaint', label:'Weight Paint', icon:'✋', key:'' },
@@ -698,6 +747,13 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
     pose:  { src: 'Pose.dc.html?embed=1', frame: null, ready: false, label: 'Pose' },
     physics:{ src: 'Physics.dc.html?embed=1', frame: null, ready: false, label: 'Physics' },
     decimate:{ src: 'Decimate.dc.html?embed=1', frame: null, ready: false, label: 'Decimate' },
+    doctor:{ src: 'MeshDoctor.dc.html?embed=1', frame: null, ready: false, label: 'Mesh Doctor' },
+    shaderlab:{ src: 'ShaderLab.dc.html?embed=1', frame: null, ready: false, label: 'Shader Lab' },
+    director:{ src: 'Director.dc.html?embed=1', frame: null, ready: false, label: 'Director' },
+    lipsync:{ src: 'Lipsync.dc.html?embed=1', frame: null, ready: false, label: 'Lipsync' },
+    timeline:{ src: 'Timeline.dc.html?embed=1', frame: null, ready: false, label: 'Timeline' },
+    retopo:{ src: 'Retopo.dc.html?embed=1', frame: null, ready: false, label: 'Retopo' },
+    recipe:{ src: 'Recipe.dc.html?embed=1', frame: null, ready: false, label: 'Recipe' },
     bake:  { src: 'Bake.dc.html?embed=1', frame: null, ready: false, label: 'Bake' },
     csg:   { src: 'Boolean.dc.html?embed=1', frame: null, ready: false, label: 'Boolean' },
     uv:    { src: 'UVUnwrap.dc.html?embed=1', frame: null, ready: false, label: 'UV Unwrap' },
@@ -720,7 +776,7 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
   function saveLibPrefs(){ ppCookie('pp.libFilters', [...libFilters].join(',')); ppCookie('pp.libSort', libSort); ppCookie('pp.libNsfw', libNsfw ? '1' : '0'); }
   let libSearchQ = '';          // library name search
   let activeChar = null;        // shared character state — { it, deliveredTo:Set } follows you across tools
-  const CHAR_TOOLS = ['showcase', 'mocap', 'pose', 'edit', 'sculpt', 'physics', 'decimate', 'bake', 'hair', 'csg', 'uv', 'paint', 'weightpaint', 'morph', 'bakemaps', 'curves'];
+  const CHAR_TOOLS = ['showcase', 'mocap', 'pose', 'edit', 'sculpt', 'physics', 'decimate', 'doctor', 'shaderlab', 'director', 'lipsync', 'timeline', 'retopo', 'recipe', 'bake', 'hair', 'csg', 'uv', 'paint', 'weightpaint', 'morph', 'bakemaps', 'curves'];
   let lastLoadedName = '';
 
   // ---------- toasts ----------
@@ -844,7 +900,7 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
     activeTool = tool;
     $$('.dock-item').forEach(d => { const on = d.dataset.tool === tool; d.classList.toggle('active', on); d.setAttribute('aria-selected', on ? 'true' : 'false'); });
     $('#lib').classList.toggle('show', tool === 'library');
-    ['showcase', 'rig', 'mocap', 'edit', 'motion', 'sculpt', 'hair', 'pose', 'physics', 'decimate', 'bake', 'csg', 'uv', 'paint', 'weightpaint', 'morph', 'bakemaps', 'curves', 'humangen', 'hairstudio'].forEach(t => {
+    ['showcase', 'rig', 'mocap', 'edit', 'motion', 'sculpt', 'hair', 'pose', 'physics', 'decimate', 'doctor', 'shaderlab', 'director', 'lipsync', 'timeline', 'retopo', 'recipe', 'bake', 'csg', 'uv', 'paint', 'weightpaint', 'morph', 'bakemaps', 'curves', 'humangen', 'hairstudio'].forEach(t => {
       const pane = $('#pane-' + t);
       const on = t === tool;
       pane.classList.toggle('show', on);
@@ -879,6 +935,13 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
     else if (tool === 'morph') $('#stHint').textContent = 'Sculpt blendshapes — blink, smile, jaw — and drive them with sliders; export as glTF morph targets, on-device';
     else if (tool === 'bakemaps') $('#stHint').textContent = 'Bake normal / AO / curvature from a high-res sculpt onto the low-poly UVs — download the maps, on-device';
     else if (tool === 'curves') $('#stHint').textContent = 'Hand-edit the F-curves, trim the loop, and onion-skin the arc — motion editing, on-device';
+    else if (tool === 'doctor') $('#stHint').textContent = 'Audit the mesh — manifoldness, winding, degenerates, UVs, scale — then fix it in one click';
+    else if (tool === 'shaderlab') $('#stHint').textContent = 'Wire nodes into shaders — preview live on your character, publish to Showcase\u2019s shelf';
+    else if (tool === 'director') $('#stHint').textContent = 'Cut camera shots over your character\u2019s animation, then render the sequence to .webm';
+    else if (tool === 'lipsync') $('#stHint').textContent = 'Record or load a voice line — the mouth performs it, and the take bakes into the GLB';
+    else if (tool === 'timeline') $('#stHint').textContent = 'Lay clips on a timeline — trim, speed, crossfade — then bake one continuous performance';
+    else if (tool === 'retopo') $('#stHint').textContent = 'Draw clean quads on the surface — 4 clicks per quad, grow from boundary edges, relax to even the flow';
+    else if (tool === 'recipe') $('#stHint').textContent = 'Wire steps into a pipeline — weld, decimate, remesh, ground, bake AO — change anything and it re-brews downstream';
     else if (tool === 'humangen') $('#stHint').textContent = 'Generate a neutral base human — then “Use in Studio” to rig, pose and dress it. Zero assets needed';
     else if (tool === 'hairstudio') $('#stHint').textContent = 'Style procedural hair, then “Use in Studio” to drape it under gravity in Physics';
     else $('#stHint').textContent = 'Pick a character to rig, or jump straight to MoCap';

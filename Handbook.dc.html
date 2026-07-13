@@ -59,6 +59,13 @@
     <section style="margin:26px 0 10px;padding:18px 20px;border:1px solid var(--seam);border-radius:12px;background:var(--panel);">
       <div style="font-family:var(--font-mono);font-size:11px;letter-spacing:.14em;color:var(--accent);margin-bottom:12px;">⚗ RECENTLY BREWED</div>
       <ul style="margin:0;padding-left:18px;font-size:13.5px;line-height:1.75;color:var(--text2);">
+        <li><b style="color:var(--text);">Recipe</b> — ⧉ non-destructive pipelines: wire steps (weld → decimate → ground → bake AO…) into a graph whose wires carry GLB buffers. Change the source mesh or any slider and everything downstream re-brews itself; grab any node's output as a .glb. The graph is saved, so a cleanup you designed once becomes a recipe you reuse.</li>
+        <li><b style="color:var(--text);">Retopo</b> — ▱ guided retopology: your mesh becomes a clay reference and you draw clean quads straight onto it — 4 clicks per quad, click a boundary edge to grow the strip, X-symmetry mirrors everything, a relax brush evens the spacing, and the cage exports as a fresh GLB.</li>
+        <li><b style="color:var(--text);">Timeline</b> — ≡ non-linear animation: lay your clips out as blocks, trim / re-time / crossfade them, borrow clips from other files (retargeted by bone name), and bake it all into one continuous performance clip.</li>
+        <li><b style="color:var(--text);">Lipsync</b> — 👄 record a voice line (or load audio) and the character speaks it: viseme morphs, jaw bone, or an auto-built jaw shape, with the take baked into the GLB as an animation clip.</li>
+        <li><b style="color:var(--text);">Director</b> — a 🎬 camera sequencer. Cut orbits, push-ins and close-ups over your character’s animation on a timeline, then render the sequence straight to a .webm video — all on-device.</li>
+        <li><b style="color:var(--text);">Shader Lab</b> — a ◈ node-graph shader editor. Wire noise, voronoi, fresnel and colour ramps into your own animated looks, preview them live on your character, and publish them straight onto Showcase’s shelf with your exposed sliders intact.</li>
+        <li><b style="color:var(--text);">Mesh Doctor</b> — a new ✚ tool in the dock. It audits any mesh (non-manifold edges, flipped faces, degenerate triangles, duplicate verts, UV overlap, scale mixups), scores its health out of 100, highlights each finding on the model and fixes most of them in one click.</li>
         <li><b style="color:var(--text);">Play any clip on your character</b> — every animation card in the Library now has <i>◈ Play on character</i>: one click retargets the clip onto whichever character you last opened and plays it in Showcase.</li>
         <li><b style="color:var(--text);">Text to pose</b> — in the Pose tool’s left panel, describe a pose in plain words (“kneeling, arms raised”) and an AI drafts it onto the skeleton. Pick Claude, DeepSeek V4 Pro / Flash, DeepSeek V3 or Gemini; the ⚙ cog stores your API keys locally. Refine the result by dragging handles as usual.</li>
         <li><b style="color:var(--text);">Drop-imports now survive a reload</b> — meshes you drop into the Library are saved in your browser alongside baked rigs.</li>
@@ -370,6 +377,166 @@ class Component extends DCLogic {
         advanced: [
           'It always re-runs from the original, so the slider is predictable — there\u2019s no slow build-up of damage.',
           'Great for making a light game-ready version of a heavy scan.',
+        ],
+      },
+      {
+        id: 'doctor', name: 'Mesh Doctor', glyph: '✚', color: '#2fa07c', tag: 'AUDIT · AUTO-FIX',
+        shot: 'a mesh with red non-manifold edges and orange flipped faces highlighted',
+        what: 'A health check for any mesh. It examines every triangle — non-manifold edges, flipped faces, zero-area slivers, duplicate vertices, UV trouble, scale mixups — scores the patient out of 100, and fixes most findings in one click.',
+        basics: [
+          'Open a mesh and the audit runs by itself — the score and diagnosis appear on the right.',
+          'Click a finding to light it up on the model (X-ray helps see inside).',
+          'Press Fix everything, or apply treatments one at a time; Reload original undoes it all.',
+        ],
+        ctrlLabel: 'Diagnosis & treatment',
+        params: [
+          { k: 'Health score', v: 'One number, 0–100, with a grade — how much the mesh will fight the other tools.' },
+          { k: 'Diagnosis rows', v: 'Each check with its count; clickable ones highlight the problem in the viewport.' },
+          { k: 'Weld duplicates', v: 'Merges coincident vertices left by exports.' },
+          { k: 'Unify winding', v: 'Turns flipped faces (and whole inside-out shells) right-side out.' },
+          { k: 'Remove zero-area tris', v: 'Deletes collapsed slivers that break normals and bakes.' },
+          { k: 'Ground at origin', v: 'Centres the model and sets its feet on the floor.' },
+          { k: 'Discharge', v: 'Save the cleaned mesh to the Library, or download it as .glb.' },
+        ],
+        advanced: [
+          'Run the doctor before Rig, Boolean or Bake Maps — most “tool is broken” reports are really topology problems it can catch first.',
+          'Open boundary edges are normal for clothes and hair cards; watertight only matters for booleans and 3D printing.',
+        ],
+      },
+      {
+        id: 'recipe', name: 'Recipe', glyph: '⧉', color: '#b8a3e8', tag: 'PIPELINE · GRAPH · RE-RUNS',
+        shot: 'nodes wired left to right with a mesh preview in the corner',
+        what: 'A non-destructive pipeline. Every other tool changes the mesh once; a Recipe is that work as a graph you keep — nodes are steps (weld, decimate, voxel remesh, rebuild normals, ground & centre, scale to height, bake vertex AO), wires carry the actual GLB between them. Change the source mesh or any knob and everything downstream re-runs itself; untouched branches serve from cache. The graph persists across sessions.',
+        basics: [
+          'Import a source (or drop a mesh anywhere — the active character also follows you in).',
+          'Click steps in the left palette to add them; drag from a node’s right port to another’s left port to wire.',
+          'Select a node to tune its sliders — the preview shows that node’s output; download or save any node’s .glb.',
+        ],
+        ctrlLabel: 'Steps',
+        params: [
+          { k: 'Weld verts', v: 'Merge duplicates within a tolerance — closes seams, smooths normals across them.' },
+          { k: 'Decimate', v: 'Quadric edge-collapse to a % of triangles (qem, same kernel as the Decimate tool).' },
+          { k: 'Voxel remesh', v: 'Rebuild everything as one watertight surface — the fix for hole-riddled scans.' },
+          { k: 'Ground · Scale · Normals', v: 'Feet on floor & centred; exact height in meters; fresh smooth normals.' },
+          { k: 'Bake vertex AO', v: 'Raytraced ambient occlusion into vertex colors (BVH + seeded hemisphere rays).' },
+        ],
+        advanced: [
+          'Every step obeys the headless contract in RECIPES.md — GLB in, GLB out, no DOM — so steps can move into workers, and other engines can join the palette by exporting one function.',
+          'Recipes are static-geometry pipelines: rig, animation and morphs are dropped at the source node (v1).',
+          'A wire’s colour shows whether real data is flowing on it yet; click a wire to disconnect it.',
+        ],
+      },
+      {
+        id: 'retopo', name: 'Retopo', glyph: '▱', color: '#e0894f', tag: 'QUAD DRAW · SYMMETRY · RELAX',
+        shot: 'orange quad strips drawn over a grey clay figure',
+        what: 'Guided retopology. A scan or sculpt loads as a grey clay reference, and you draw a brand-new all-quad cage directly on its surface: click 4 points for the first quad, then click near any green boundary edge to grow the next one from it — every point snaps to the surface. X-symmetry mirrors each point, quad, move and delete across the centreline, and the relax brush evens out spacing without letting vertices drift off the model. The cage exports as its own clean GLB.',
+        basics: [
+          'Import a mesh (or it follows you in from the Library) — it becomes the clay reference.',
+          'Quad draw: 4 clicks = first quad. Then click near a green boundary edge to extrude the strip toward the cursor.',
+          'Move (drop a vert on another to weld loops closed), Relax to even spacing, Delete to remove quads.',
+          'Download the cage as .glb or save it to the Library, then UV-unwrap and bake maps onto it.',
+        ],
+        ctrlLabel: 'Tools & brushes',
+        params: [
+          { k: 'Quad draw · Q', v: '4 surface clicks make a quad; clicking near an open boundary edge grows a new quad from it.' },
+          { k: 'Move · G', v: 'Drag a cage vertex — it stays glued to the reference. Drop it onto another vertex to weld them.' },
+          { k: 'Relax · R', v: 'Brush over the cage: Laplacian smoothing, re-projected onto the surface. Radius and strength sliders.' },
+          { k: 'Delete · X', v: 'Click a quad to remove it (its mirrored twin goes with it).' },
+          { k: '⇋ Symmetry', v: 'Mirror everything across X=0; points near the centreline weld exactly onto it.' },
+        ],
+        advanced: [
+          'Winding is auto-oriented against the reference surface normal, so the exported cage faces outward consistently.',
+          'Draw the big loops first — around eyes, mouth, shoulders, knees — then fill between them and Relax; that is what keeps a rig from pinching later.',
+          'Esc cancels draft points; right-drag orbits so left click always belongs to the tool.',
+        ],
+      },
+      {
+        id: 'timeline', name: 'Timeline', glyph: '≡', color: '#5a8fd8', tag: 'NLA · CROSSFADE · BAKE',
+        shot: 'clip blocks with crossfade wedges on a timeline under a character',
+        what: 'Non-linear animation. Every clip inside the file lands on a shelf; lay them out on a timeline as blocks — trim where each starts, stretch its length, dial its speed, and crossfade into the next — then bake the whole performance into one new 30fps clip inside the GLB. Clips can also be borrowed from a second file and retargeted onto your skeleton by bone name.',
+        basics: [
+          'Cast a character; its clips appear on the shelf. Press ＋ lay to drop one on the timeline.',
+          'Click a block to trim, re-time, or crossfade it; drag the timeline to scrub the blend.',
+          'Bake → Library or download: one clip called timeline_mix, playable anywhere.',
+        ],
+        ctrlLabel: 'Blocks & baking',
+        params: [
+          { k: 'length', v: 'How long the block plays on the timeline (loops its clip if longer than the source).' },
+          { k: 'start in clip', v: 'Trim — where inside the source clip this block begins.' },
+          { k: 'speed', v: '0.2–2.5× playback rate for just that block.' },
+          { k: 'crossfade', v: 'Seconds of overlap blended with the previous block.' },
+          { k: '＋ borrow…', v: 'Pull clips out of another .glb/.fbx — tracks are retargeted by bone name (Mixamo naming works).' },
+        ],
+        advanced: [
+          'Scrubbing and baking use the same exact evaluator — what you scrub is literally what bakes.',
+          'Bake keeps the original clips too, so the file stays a library; Director can then film the new timeline_mix.',
+        ],
+      },
+      {
+        id: 'lipsync', name: 'Lipsync', glyph: '👄', color: '#d87ba3', tag: 'AUDIO → MOUTH · BAKED CLIP',
+        shot: 'a character face mid-vowel beside an audio waveform',
+        what: 'Gives your character a voice. Record a line on the mic or load an audio file — the mouth is driven from the audio itself, entirely on-device. It finds the best way to move the mouth automatically: viseme morph targets if the mesh has them, the jaw bone if not, or a procedural jaw-open shape built on the fly. The finished take bakes into the GLB as a normal animation clip.',
+        basics: [
+          'Cast a character, then ● record the mic or load .mp3 / .wav.',
+          'Press “Perform the take” — audio and mouth play in sync; tune gain and settle until it reads well.',
+          'Save to Library or download — the clip travels inside the GLB.',
+        ],
+        ctrlLabel: 'Voice & mouth',
+        params: [
+          { k: 'gain', v: 'How wide the mouth opens for a given loudness.' },
+          { k: 'settle', v: 'How quickly the mouth relaxes after a syllable — higher reads mumblier.' },
+          { k: 'jaw swing', v: 'Maximum jaw-bone rotation (bone-driven characters only).' },
+          { k: 'open / wide / round', v: 'Remap which morph target plays each mouth role — vowels open, “ee” widens, “oo” rounds.' },
+          { k: 'head bob', v: 'A subtle speech-driven nod so the whole head performs, not just the lips.' },
+        ],
+        advanced: [
+          'Loudness maps to open, and the sound\u2019s brightness (zero-crossing rate) chooses between wide and rounded shapes — crude visemes, no cloud, no ML download.',
+          'Sculpt jawOpen / ee / oo shapes in Morph first and Lipsync will find them by name and use all three.',
+        ],
+      },
+      {
+        id: 'director', name: 'Director', glyph: '🎬', color: '#d8935a', tag: 'CAMERA CUTS · .WEBM',
+        shot: 'a timeline of camera shots under a character mid-orbit',
+        what: 'A camera sequencer. Cut a sequence of shots — orbit, arc, push-in, low rise, close-up — over your character\u2019s own animation clip, scrub it on a timeline, then record the whole sequence off the viewport into a .webm video. All framing is computed from the model\u2019s bounding box, so one sequence works on any character.',
+        basics: [
+          'Cast a character (Library, or drop a file) and pick which of its clips performs.',
+          'Add shots from the timeline bar; click a block to set its move, length, easing and direction.',
+          'Press ▶ to preview, drag the timeline to scrub, then Render sequence → .webm.',
+        ],
+        ctrlLabel: 'Shots & rendering',
+        params: [
+          { k: 'Moves', v: 'Orbit, Arc, Push-in, Pull-out, Low rise, Close-up, Still — each with a reversible direction.' },
+          { k: 'Length & easing', v: 'Per-shot duration (0.5–12s) and linear / ease curves.' },
+          { k: 'Performance', v: 'Any animation clip inside the file, with a speed dial.' },
+          { k: 'Render', v: 'Real-time capture of the viewport at 1× or 2× resolution, saved as .webm.' },
+          { k: 'Free camera', v: 'Drop out of the sequence any time to orbit by hand.' },
+        ],
+        advanced: [
+          'Keep the tab visible while it films — browsers throttle hidden tabs and the recording would stutter.',
+          'A classic recipe: Low rise (2.5s, ease in-out) → Orbit (5s, linear) → Close-up (3s, ease in-out).',
+        ],
+      },
+      {
+        id: 'shaderlab', name: 'Shader Lab', glyph: '◈', color: '#7b6fd8', tag: 'NODE GRAPH · GLSL',
+        shot: 'a node graph wired into a live shader preview on a character',
+        what: 'Brew your own shader looks by wiring nodes together — noise, voronoi, fresnel, colour ramps, math — previewed live on a primitive or your character, then published straight onto Showcase\u2019s shader shelf.',
+        basics: [
+          'Add nodes from the left palette and drag from dot to dot to wire them; everything flows into the Output node.',
+          'Every slider updates the shader live — no compile button, no waiting.',
+          'Name your look and press Publish — it appears as a new shelf category in Showcase.',
+        ],
+        ctrlLabel: 'Graph & look',
+        params: [
+          { k: 'Patterns', v: 'Noise (fbm), Voronoi and Stripes, all animated by the same clock Showcase uses.' },
+          { k: 'Math & colour', v: 'Value, Math ops, Smoothstep, Posterize, Mix, HSV — enough to build ramps, bands and glows.' },
+          { k: '◈ expose as tweak', v: 'Marks a Value or Colour node as a live slider — it shows up in Showcase\u2019s parameter panel.' },
+          { k: 'lit / transparent / additive', v: 'How the look sits in the scene: key-lit shading, alpha blending, or additive glow.' },
+          { k: 'View compiled GLSL', v: 'Peek at (and copy) the exact fragment code your graph became.' },
+          { k: 'Download preset .js', v: 'The look as a preset file you can keep, share, or drop into the presets folder for good.' },
+        ],
+        advanced: [
+          'The Lab compiles to the same preset format as the built-in library and renders with the same engine — published looks skin and morph with your character like any core shader.',
+          'Wire Fresnel through Smoothstep into Mix for rim-light looks; Voronoi through Posterize for scales and cracked glaze.',
         ],
       },
       {

@@ -235,8 +235,21 @@ function normalizeWild(list) {
 // that dedupe-by-last keeps the same winners as the original single file).
 const WILD_PRESETS = [...WILD_POTIONS_LIQUIDS, ...WILD_RADIANT_COSMIC, ...WILD_CANDY_CRYSTAL, ...WILD_SPOOKY_GLITCH, ...WILD_MIND_BENDING, ...WILD_BIOMIMETIC_ORGANIC, ...WILD_AGED_WEATHERED, ...WILD_STRUCTURAL_COLOR, ...WILD_CYBERPUNK_NEON, ...WILD_ELEMENTAL_ENERGY, ...WILD_MATERIALS_SURFACES, ...WILD_GLASS_TRANSMISSION];
 
-// Full library: core looks + the (normalized) wild shelf.
-export const SHADER_PRESETS = [...CORE_PRESETS, ...normalizeWild(WILD_PRESETS)];
+// Full library: core looks + the (normalized) wild shelf + anything the user
+// brewed in Shader Lab (stored as plain preset objects in localStorage).
+function customPresets() {
+  try {
+    if (typeof localStorage === 'undefined') return [];
+    const raw = localStorage.getItem('pp_custom_shaders');
+    if (!raw) return [];
+    const arr = JSON.parse(raw);
+    if (!Array.isArray(arr)) return [];
+    return arr
+      .filter(p => p && p.id && p.name && typeof p.fragBody === 'string')
+      .map(p => Object.assign({ category: 'Shader Lab', kind: 'shader' }, p));
+  } catch (e) { return []; }
+}
+export const SHADER_PRESETS = [...CORE_PRESETS, ...normalizeWild(WILD_PRESETS), ...customPresets()];
 
 // Build a live ShaderMaterial from a shader preset + a values map (param key -> value).
 // baseMap (optional): the mesh's own albedo texture, so the shader paints OVER it.

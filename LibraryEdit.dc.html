@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LibraryEdit — admin</title>
+<script src="./studio3D_scripts/support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Spline+Sans+Mono:wght@400;500&family=Nunito:wght@400;600;700;800&family=Pixelify+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="theme.js"></script>
+<style>
+  html,body{margin:0;padding:0;height:100%;background:var(--bg);}
+  *{box-sizing:border-box;}
+  @keyframes le-in{from{transform:translateY(8px);opacity:0;}to{transform:translateY(0);opacity:1;}}
+  #le-root ::-webkit-scrollbar{width:11px;height:11px;}
+  #le-root ::-webkit-scrollbar-track{background:transparent;}
+  #le-root ::-webkit-scrollbar-thumb{background:var(--panel-3);border:3px solid var(--bg);border-radius:7px;}
+  #le-root button{transition:filter .13s ease,transform .1s ease,box-shadow .13s ease,background .13s ease,border-color .13s ease;}
+  #le-root button:hover{filter:brightness(1.05);}
+  #le-root button:active{transform:translateY(1px);}
+  #le-root button:focus-visible{outline:2px solid var(--clay);outline-offset:2px;}
+  #le-root input[type=text]:focus,#le-root input[type=search]:focus,#le-root textarea:focus{outline:none;border-color:var(--clay);}
+  .le-hard{box-shadow:0 4px 0 rgba(107,74,43,.28);}
+</style>
+</helmet>
+
+<div id="le-root" style="display:flex;flex-direction:column;height:100vh;width:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:var(--font-ui);font-size:13px;font-weight:600;-webkit-font-smoothing:antialiased;">
+
+  <!-- TOP BAR -->
+  <header style="flex:none;display:flex;align-items:center;gap:14px;padding:12px 18px;background:var(--cream-2);border-bottom:5px solid var(--wood-dark);">
+    <div style="display:flex;align-items:center;gap:11px;">
+      <div style="width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;background:linear-gradient(180deg,var(--clay),#a85a2c);color:#fff6e0;font-size:18px;border:3px solid var(--wood-dark);box-shadow:0 4px 0 rgba(107,74,43,.3);">▤</div>
+      <div>
+        <div style="font-family:var(--font-mono);font-weight:700;font-size:16px;color:var(--ink);letter-spacing:.01em;">LibraryEdit</div>
+        <div style="font-family:var(--font-mono);font-size:9.5px;letter-spacing:.16em;color:var(--ink-soft);margin-top:1px;">ADMIN · CURATE · TAG · EXPORT MANIFEST</div>
+      </div>
+    </div>
+    <span style="font-family:var(--font-mono);font-size:9.5px;font-weight:700;padding:4px 10px;border-radius:20px;background:#f6d8da;border:2px solid var(--wood-dark);color:#8a3b2a;letter-spacing:.08em;">UNLISTED</span>
+    <div style="flex:1;"></div>
+    <span style="font-family:var(--font-mono);font-size:11px;color:var(--ink-soft);">{{ sourceLabel }}</span>
+    <button style="{{ ghostBtn }}" onClick="{{ loadManifest }}" title="Fetch data/characters/manifest.json">↻ Reload</button>
+    <button style="{{ ghostBtn }}" onClick="{{ pickFile }}" title="Open a manifest.json from disk">⬆ Open…</button>
+    <button style="{{ ghostBtn }}" onClick="{{ addItem }}">＋ Add item</button>
+    <button style="{{ primaryBtn }}" onClick="{{ exportOpen }}">⬇ Export manifest.json</button>
+  </header>
+
+  <div style="flex:1;display:flex;min-height:0;">
+
+    <!-- LEFT : ITEM LIST -->
+    <aside style="width:340px;flex:none;background:var(--cream-2);border-right:5px solid var(--wood-dark);display:flex;flex-direction:column;min-height:0;">
+      <div style="flex:none;padding:12px 14px 8px;">
+        <input type="search" placeholder="🔍  Search items…" value="{{ search }}" onInput="{{ onSearch }}" style="width:100%;padding:9px 12px;border-radius:12px;border:3px solid var(--wood-dark);background:var(--cream);color:var(--ink);font-family:var(--font-mono);font-size:12px;font-weight:600;">
+        <div style="display:flex;align-items:center;gap:8px;margin-top:9px;font-family:var(--font-mono);font-size:10.5px;color:var(--ink-soft);">
+          <span>{{ countLabel }}</span>
+          <span style="flex:1;"></span>
+          <label style="display:inline-flex;align-items:center;gap:5px;cursor:pointer;" title="Show items marked hidden"><input type="checkbox" checked="{{ showHidden }}" onChange="{{ toggleShowHidden }}">hidden</label>
+          <label style="display:inline-flex;align-items:center;gap:5px;cursor:pointer;" title="Show items marked NSFW"><input type="checkbox" checked="{{ showNsfw }}" onChange="{{ toggleShowNsfw }}">nsfw</label>
+        </div>
+      </div>
+      <div style="flex:1;min-height:0;overflow-y:auto;padding:4px 10px 14px;">
+        <sc-if value="{{ hasItems }}" hint-placeholder-val="{{ false }}">
+          <sc-for list="{{ rows }}" as="r" hint-placeholder-count="6">
+            <div style="{{ r.rowStyle }}" onClick="{{ r.onClick }}">
+              <div style="{{ r.thumbStyle }}"><span style="font-size:20px;opacity:.85;">{{ r.glyph }}</span><img src="{{ r.pfp }}" onload="this.style.display=''" onerror="this.style.display='none'" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:top center;border-radius:7px;"></div>
+              <div style="flex:1;min-width:0;">
+                <div style="font-family:var(--font-mono);font-size:13px;font-weight:700;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ r.label }}</div>
+                <div style="font-family:var(--font-mono);font-size:9.5px;color:var(--ink-soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px;">{{ r.sub }}</div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:3px;align-items:flex-end;">
+                <span style="{{ r.nsfwStyle }}">NSFW</span>
+                <span style="{{ r.hiddenStyle }}">HIDDEN</span>
+              </div>
+            </div>
+          </sc-for>
+        </sc-if>
+        <sc-if value="{{ noItems }}" hint-placeholder-val="{{ true }}">
+          <div style="padding:26px 14px;color:var(--ink-soft);font-size:12px;line-height:1.7;">
+            No items loaded. <b style="color:var(--ink);">Reload</b> pulls <span style="font-family:var(--font-mono);">data/characters/manifest.json</span>, <b style="color:var(--ink);">Open…</b> loads a manifest from disk, or <b style="color:var(--ink);">＋ Add item</b> to start a fresh catalog by hand.
+          </div>
+        </sc-if>
+      </div>
+    </aside>
+
+    <!-- RIGHT : EDITOR -->
+    <div style="flex:1;min-width:0;min-height:0;overflow-y:auto;background:var(--bg);">
+      <sc-if value="{{ hasSel }}" hint-placeholder-val="{{ false }}">
+        <div style="max-width:760px;margin:0 auto;padding:26px 30px 60px;animation:le-in .18s ease;">
+
+          <!-- preview + identity -->
+          <div style="display:flex;gap:22px;margin-bottom:26px;">
+            <div style="{{ heroStyle }}"><span style="font-size:52px;opacity:.85;">{{ selGlyph }}</span><img src="{{ selPfp }}" onload="this.style.display=''" onerror="this.style.display='none'" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:top center;border-radius:13px;"></div>
+            <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:12px;">
+              <div>
+                <label style="{{ fieldLabel }}">Display name</label>
+                <input type="text" value="{{ selLabel }}" onInput="{{ onLabelInput }}" onBlur="{{ onBlurRefresh }}" style="width:100%;padding:10px 13px;border-radius:11px;border:3px solid var(--wood-dark);background:var(--cream);color:var(--ink);font-family:var(--font-mono);font-size:17px;font-weight:700;">
+              </div>
+              <div>
+                <label style="{{ fieldLabel }}">Asset path</label>
+                <input type="text" value="{{ selPath }}" onInput="{{ onPathInput }}" onBlur="{{ onBlurRefresh }}" style="width:100%;padding:8px 12px;border-radius:10px;border:3px solid var(--wood-dark);background:var(--cream);color:var(--ink-soft);font-family:var(--font-mono);font-size:12px;font-weight:600;">
+              </div>
+            </div>
+          </div>
+
+          <!-- content flags -->
+          <div style="display:flex;gap:12px;margin-bottom:26px;flex-wrap:wrap;">
+            <div style="{{ nsfwCardStyle }}" onClick="{{ toggleNsfw }}">
+              <div style="display:flex;align-items:center;gap:10px;">
+                <span style="{{ nsfwSwStyle }}"><span style="{{ nsfwKnobStyle }}"></span></span>
+                <div>
+                  <div style="font-family:var(--font-mono);font-size:13px;font-weight:700;color:var(--ink);">Mature (NSFW)</div>
+                  <div style="font-size:10.5px;color:var(--ink-soft);margin-top:1px;">Gated behind the NSFW toggle in the library.</div>
+                </div>
+              </div>
+            </div>
+            <div style="{{ hiddenCardStyle }}" onClick="{{ toggleHidden }}">
+              <div style="display:flex;align-items:center;gap:10px;">
+                <span style="{{ hiddenSwStyle }}"><span style="{{ hiddenKnobStyle }}"></span></span>
+                <div>
+                  <div style="font-family:var(--font-mono);font-size:13px;font-weight:700;color:var(--ink);">Hidden</div>
+                  <div style="font-size:10.5px;color:var(--ink-soft);margin-top:1px;">Never appears in the public library at all.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- categories -->
+          <div style="margin-bottom:22px;">
+            <label style="{{ fieldLabel }}">Categories <span style="color:var(--ink-soft);font-weight:600;">· {{ selCatCount }} set</span></label>
+            <sc-for list="{{ groups }}" as="g" hint-placeholder-count="5">
+              <div style="margin-bottom:14px;">
+                <div style="font-family:var(--font-mono);font-size:9.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-soft);margin:0 0 8px;">{{ g.name }}</div>
+                <div style="display:flex;flex-wrap:wrap;gap:8px;">
+                  <sc-for list="{{ g.chips }}" as="c" hint-placeholder-count="5">
+                    <button style="{{ c.style }}" onClick="{{ c.onClick }}">{{ c.label }}</button>
+                  </sc-for>
+                </div>
+              </div>
+            </sc-for>
+            <div style="margin-top:14px;">
+              <div style="font-family:var(--font-mono);font-size:9.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-soft);margin:0 0 8px;">Custom / extra tags</div>
+              <sc-if value="{{ hasCustom }}" hint-placeholder-val="{{ false }}">
+                <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:9px;">
+                  <sc-for list="{{ customChips }}" as="c" hint-placeholder-count="2">
+                    <button style="{{ c.style }}" onClick="{{ c.onClick }}">{{ c.label }} ✕</button>
+                  </sc-for>
+                </div>
+              </sc-if>
+              <div style="display:flex;gap:8px;">
+                <input type="text" placeholder="add a custom tag…" value="{{ customCat }}" onInput="{{ onCustomInput }}" onKeyDown="{{ onCustomKey }}" style="flex:1;padding:8px 12px;border-radius:10px;border:3px solid var(--wood-dark);background:var(--cream);color:var(--ink);font-family:var(--font-mono);font-size:12px;font-weight:600;">
+                <button style="{{ ghostBtn }}" onClick="{{ addCustomCat }}">＋ Add</button>
+              </div>
+            </div>
+          </div>
+
+          <div style="border-top:3px solid var(--panel-3);padding-top:16px;">
+            <button style="font-family:var(--font-mono);font-size:12px;font-weight:700;padding:9px 15px;border-radius:11px;background:transparent;border:3px solid #c2562f;color:#a8452a;cursor:pointer;" onClick="{{ delItem }}">🗑 Delete this item from the catalog</button>
+          </div>
+        </div>
+      </sc-if>
+      <sc-if value="{{ noSel }}" hint-placeholder-val="{{ true }}">
+        <div style="height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;color:var(--ink-soft);padding:40px;text-align:center;">
+          <div style="font-size:46px;opacity:.7;">◧</div>
+          <div style="font-size:15px;font-weight:700;color:var(--ink);">Pick an item to curate it</div>
+          <div style="font-size:12px;max-width:400px;line-height:1.7;">Select an entry on the left to view its image, tag its categories, mark it mature or hidden. Everything you change is written into the exported <span style="font-family:var(--font-mono);">manifest.json</span>.</div>
+        </div>
+      </sc-if>
+    </div>
+  </div>
+
+  <!-- EXPORT DRAWER -->
+  <sc-if value="{{ showExport }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed;inset:0;z-index:60;background:rgba(45,30,18,.6);backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;padding:30px;" onClick="{{ exportBackdrop }}">
+      <div style="width:640px;max-width:94vw;max-height:88vh;display:flex;flex-direction:column;background:var(--cream-2);border:4px solid var(--wood-dark);border-radius:18px;overflow:hidden;box-shadow:0 24px 70px rgba(45,30,18,.5);" onClick="{{ stop }}">
+        <div style="display:flex;align-items:center;gap:11px;padding:15px 20px;background:var(--header);border-bottom:4px solid var(--wood-dark);">
+          <span style="width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;background:var(--clay);color:#fff6e0;font-size:15px;border:3px solid var(--wood-dark);">⬇</span>
+          <div style="font-family:var(--font-mono);font-size:15px;font-weight:700;color:var(--ink);">manifest.json</div>
+          <span style="font-family:var(--font-mono);font-size:10.5px;color:var(--ink-soft);">{{ exportMeta }}</span>
+          <div style="flex:1;"></div>
+          <button style="{{ ghostBtn }}" onClick="{{ exportClose }}">✕ Close</button>
+        </div>
+        <textarea readonly value="{{ exportJson }}" onChange="{{ stop }}" style="flex:1;min-height:0;margin:0;padding:16px 18px;border:none;resize:none;background:#1a1815;color:#e9e6dd;font-family:var(--font-mono);font-size:11.5px;line-height:1.55;white-space:pre;overflow:auto;"></textarea>
+        <div style="display:flex;gap:10px;padding:14px 18px;background:var(--header);border-top:4px solid var(--wood-dark);">
+          <button style="{{ ghostBtn }}" onClick="{{ copyJson }}">⧉ Copy to clipboard</button>
+          <div style="flex:1;"></div>
+          <button style="{{ primaryBtn }}" onClick="{{ downloadJson }}">⬇ Download manifest.json</button>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <input type="file" id="le-file" accept=".json,application/json" style="display:none;">
+  <div id="le-toasts" style="position:fixed;bottom:16px;right:16px;z-index:80;display:flex;flex-direction:column;gap:8px;"></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = {
+    items: [], sel: -1, search: '', customCat: '',
+    showHidden: true, showNsfw: true, showExport: false,
+    source: '', loaded: false,
+  };
+
+  componentDidMount() {
+    const inp = document.getElementById('le-file');
+    if (inp) inp.addEventListener('change', (e) => { const f = e.target.files[0]; if (f) this.readFile(f); e.target.value = ''; });
+    this.loadManifest();
+  }
+
+  // ---- taxonomy (kept in sync with the shell library) ----
+  groupsDef() {
+    return [
+      { name: 'Type', cats: ['human', 'non-human', 'humanoid', 'creature', 'animal', 'robot'] },
+      { name: 'Objects & props', cats: ['object', 'weapon', 'prop', 'vehicle', 'environment', 'building', 'furniture', 'clothing', 'accessory', 'food', 'plant'] },
+      { name: 'Gender', cats: ['male', 'female', 'androgynous'] },
+      { name: 'Style', cats: ['realistic', 'stylized', 'anime', 'cartoon', 'lowpoly', 'pixel'] },
+      { name: 'Rig', cats: ['rigged', 'unrigged', 't-pose'] },
+    ];
+  }
+  knownCats() { const s = new Set(); this.groupsDef().forEach(g => g.cats.forEach(c => s.add(c))); return s; }
+
+  norm(it) {
+    it.label = it.label || (it.path ? String(it.path).split('/').pop().replace(/\.[^.]+$/, '') : 'Untitled');
+    it.path = it.path || '';
+    it.categories = Array.isArray(it.categories) ? it.categories.map(x => String(x).toLowerCase()) : [];
+    // fold any legacy `tags` into categories once
+    if (Array.isArray(it.tags)) { it.tags.forEach(t => { const k = String(t).toLowerCase(); if (!it.categories.includes(k)) it.categories.push(k); }); delete it.tags; }
+    it.nsfw = it.nsfw === true || it.nsfw === 'true';
+    it.hidden = it.hidden === true || it.hidden === 'true';
+    return it;
+  }
+
+  async loadManifest() {
+    try {
+      const r = await fetch('data/characters/manifest.json', { cache: 'no-store' });
+      if (!r.ok) throw new Error('no manifest (' + r.status + ')');
+      const data = await r.json();
+      const arr = (Array.isArray(data) ? data : (data.characters || [])).map(it => this.norm(Object.assign({}, it)));
+      this.setState({ items: arr, source: 'data/characters/manifest.json', loaded: true, sel: arr.length ? 0 : -1 });
+      this.toast('Loaded ' + arr.length + ' item' + (arr.length === 1 ? '' : 's'));
+    } catch (e) {
+      this.setState({ source: 'no manifest found — start fresh', loaded: true });
+    }
+  }
+  pickFile() { const f = document.getElementById('le-file'); if (f) f.click(); }
+  readFile(file) {
+    const rd = new FileReader();
+    rd.onload = () => {
+      try {
+        const data = JSON.parse(rd.result);
+        const arr = (Array.isArray(data) ? data : (data.characters || [])).map(it => this.norm(Object.assign({}, it)));
+        this.setState({ items: arr, source: file.name, loaded: true, sel: arr.length ? 0 : -1 });
+        this.toast('Opened ' + file.name + ' — ' + arr.length + ' items');
+      } catch (e) { this.toast('Not valid JSON: ' + (e && e.message || e)); }
+    };
+    rd.readAsText(file);
+  }
+
+  addItem() {
+    const it = this.norm({ label: 'New item', path: 'data/characters/new-item.glb', ext: 'glb', categories: [] });
+    const items = [it, ...this.state.items];
+    this.setState({ items, sel: 0, search: '' });
+  }
+  delItem() {
+    const { items, sel } = this.state; if (sel < 0) return;
+    const label = items[sel] && items[sel].label;
+    const next = items.slice(); next.splice(sel, 1);
+    this.setState({ items: next, sel: next.length ? Math.min(sel, next.length - 1) : -1 });
+    this.toast('Deleted “' + label + '”');
+  }
+
+  cur() { return this.state.items[this.state.sel] || null; }
+  toggleCat(cat) { const it = this.cur(); if (!it) return; const i = it.categories.indexOf(cat); if (i >= 0) it.categories.splice(i, 1); else it.categories.push(cat); this.forceUpdate(); }
+  addCustomCat() {
+    const it = this.cur(); const raw = (this.state.customCat || '').trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+    if (!it || !raw) { this.setState({ customCat: '' }); return; }
+    if (!it.categories.includes(raw)) it.categories.push(raw);
+    this.setState({ customCat: '' });
+  }
+
+  // export
+  clean(it) {
+    const o = {};
+    ['id', 'label', 'path', 'ext', 'source', 'size', 'ts', 'rig', 'rigged', 'chunked', 'chunks', 'pfp'].forEach(k => { if (it[k] !== undefined && it[k] !== null && it[k] !== '') o[k] = it[k]; });
+    o.categories = it.categories.slice();
+    if (it.nsfw) o.nsfw = true;
+    if (it.hidden) o.hidden = true;
+    return o;
+  }
+  exportText() { return JSON.stringify({ characters: this.state.items.map(it => this.clean(it)) }, null, 2); }
+  copyJson() { const t = this.exportText(); try { navigator.clipboard.writeText(t); this.toast('Copied manifest to clipboard'); } catch (e) { this.toast('Copy failed — select the text manually'); } }
+  downloadJson() {
+    const blob = new Blob([this.exportText()], { type: 'application/json' });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'manifest.json';
+    document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+    this.toast('Downloaded manifest.json — drop it in data/characters/');
+  }
+
+  toast(msg) {
+    const wrap = document.getElementById('le-toasts'); if (!wrap) return;
+    const el = document.createElement('div');
+    el.style.cssText = 'padding:11px 15px;border-radius:11px;font-family:var(--font-mono);font-size:12px;font-weight:600;background:var(--cream-2);border:3px solid var(--wood-dark);color:var(--ink);box-shadow:0 6px 0 rgba(107,74,43,.25);max-width:340px;animation:le-in .2s ease;';
+    el.textContent = msg; wrap.appendChild(el);
+    setTimeout(() => { el.style.transition = 'opacity .3s,transform .3s'; el.style.opacity = '0'; el.style.transform = 'translateY(6px)'; setTimeout(() => el.remove(), 300); }, 2600);
+  }
+
+  pfpFor(it) {
+    if (it.pfp) return it.pfp;
+    const base = (it.path || '').split('/').pop().replace(/\.[^.]+$/, '');
+    const id = it.id || base; if (!id) return '';
+    return 'data/characters/pfp/' + id + '.png';
+  }
+  glyphFor(it) {
+    const c = it.categories || [];
+    if (c.includes('weapon')) return '⚔'; if (c.includes('vehicle')) return '⛟'; if (c.includes('object') || c.includes('prop')) return '◆';
+    if (c.includes('environment') || c.includes('building')) return '⛰'; if (c.includes('creature') || c.includes('animal')) return '⛬';
+    if (c.includes('robot')) return '⛭'; if (c.includes('plant')) return '❀'; if (c.includes('food')) return '✦';
+    if (c.includes('clothing') || c.includes('accessory')) return '❍';
+    return '⦿';
+  }
+
+  renderVals() {
+    const st = this.state, it = this.cur();
+    const ghostBtn = 'font-family:var(--font-mono);font-size:12px;font-weight:700;padding:8px 13px;border-radius:11px;background:var(--cream);border:3px solid var(--wood-dark);color:var(--wood-dark);cursor:pointer;box-shadow:0 3px 0 rgba(107,74,43,.22);';
+    const primaryBtn = 'font-family:var(--font-mono);font-size:12px;font-weight:700;padding:8px 15px;border-radius:11px;background:var(--clay);border:3px solid var(--wood-dark);color:#fff6e0;cursor:pointer;box-shadow:0 3px 0 rgba(107,74,43,.32);';
+    const fieldLabel = 'display:block;font-family:var(--font-mono);font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-soft);margin:0 0 7px;';
+
+    const q = st.search.trim().toLowerCase();
+    let list = st.items.map((x, i) => ({ x, i }));
+    if (!st.showHidden) list = list.filter(o => !o.x.hidden);
+    if (!st.showNsfw) list = list.filter(o => !o.x.nsfw);
+    if (q) list = list.filter(o => ((o.x.label || '') + ' ' + (o.x.path || '') + ' ' + (o.x.categories || []).join(' ')).toLowerCase().includes(q));
+
+    const rows = list.map(({ x, i }) => {
+      const on = i === st.sel;
+      const nBadge = 'font-family:var(--font-mono);font-size:7.5px;font-weight:700;letter-spacing:.06em;padding:1px 5px;border-radius:8px;border:2px solid var(--wood-dark);';
+      return {
+        label: x.label, sub: (x.categories && x.categories.length ? x.categories.slice(0, 4).join(' · ') : (x.path || '').replace('data/characters/', '')) || 'untagged',
+        pfp: this.pfpFor(x), glyph: this.glyphFor(x),
+        rowStyle: 'display:flex;align-items:center;gap:11px;padding:8px 9px;margin-bottom:6px;border-radius:13px;cursor:pointer;border:3px solid ' + (on ? 'var(--wood-dark)' : 'transparent') + ';background:' + (on ? 'var(--cream)' : 'transparent') + ';box-shadow:' + (on ? '0 3px 0 rgba(107,74,43,.22)' : 'none') + ';',
+        thumbStyle: 'position:relative;width:46px;height:46px;flex:none;border-radius:9px;border:3px solid var(--wood-dark);background:linear-gradient(180deg,var(--wood),var(--wood-dark));display:flex;align-items:center;justify-content:center;color:#fff6e0;overflow:hidden;',
+        nsfwStyle: nBadge + (x.nsfw ? 'background:#f6d8da;color:#8a3b2a;' : 'display:none;'),
+        hiddenStyle: nBadge + (x.hidden ? 'background:var(--panel-3);color:var(--ink-soft);' : 'display:none;'),
+        onClick: () => this.setState({ sel: i }),
+      };
+    });
+
+    const known = this.knownCats();
+    const groups = it ? this.groupsDef().map(g => ({
+      name: g.name,
+      chips: g.cats.map(cat => {
+        const active = it.categories.includes(cat);
+        return {
+          label: cat,
+          style: 'font-family:var(--font-mono);font-size:11.5px;font-weight:700;padding:6px 12px;border-radius:20px;cursor:pointer;border:3px solid var(--wood-dark);box-shadow:0 3px 0 rgba(107,74,43,.2);background:' + (active ? 'var(--clay)' : 'var(--cream)') + ';color:' + (active ? '#fff6e0' : 'var(--wood-dark)') + ';',
+          onClick: () => this.toggleCat(cat),
+        };
+      }),
+    })) : [];
+    const customList = it ? it.categories.filter(c => !known.has(c)) : [];
+    const customChips = customList.map(cat => ({
+      label: cat,
+      style: 'font-family:var(--font-mono);font-size:11.5px;font-weight:700;padding:6px 12px;border-radius:20px;cursor:pointer;border:3px dashed var(--wood-dark);background:var(--cream);color:var(--wood-dark);',
+      onClick: () => this.toggleCat(cat),
+    }));
+
+    const sw = (on) => 'width:42px;height:24px;flex:none;border-radius:20px;border:3px solid var(--wood-dark);position:relative;background:' + (on ? '#c2562f' : 'var(--cream)') + ';';
+    const knob = (on) => 'position:absolute;top:1px;left:1px;width:16px;height:16px;border-radius:50%;background:' + (on ? '#fff6e0' : 'var(--wood-dark)') + ';transform:translateX(' + (on ? '18px' : '0') + ');transition:transform .15s;';
+    const flagCard = (on, danger) => 'flex:1;min-width:220px;padding:14px 15px;border-radius:15px;cursor:pointer;border:3px solid var(--wood-dark);box-shadow:0 4px 0 rgba(107,74,43,.24);background:' + (on ? (danger ? '#f6d8da' : 'var(--cream)') : 'var(--cream-2)') + ';';
+
+    return {
+      ghostBtn, primaryBtn, fieldLabel, imgErr: (e) => { e.target.style.display = 'none'; },
+      sourceLabel: st.source || '', countLabel: rows.length + ' / ' + st.items.length + ' items',
+      search: st.search, onSearch: (e) => this.setState({ search: e.target.value }),
+      showHidden: st.showHidden, showNsfw: st.showNsfw,
+      toggleShowHidden: () => this.setState({ showHidden: !st.showHidden }),
+      toggleShowNsfw: () => this.setState({ showNsfw: !st.showNsfw }),
+      hasItems: rows.length > 0, noItems: rows.length === 0, rows,
+      loadManifest: () => this.loadManifest(), pickFile: () => this.pickFile(),
+      addItem: () => this.addItem(), delItem: () => this.delItem(),
+      hasSel: !!it, noSel: !it,
+      selLabel: it ? it.label : '', selPath: it ? it.path : '',
+      selPfp: it ? this.pfpFor(it) : '', selGlyph: it ? this.glyphFor(it) : '⦿',
+      selCatCount: it ? it.categories.length : 0,
+      heroStyle: 'position:relative;width:150px;height:150px;flex:none;border-radius:16px;border:4px solid var(--wood-dark);background:linear-gradient(180deg,var(--wood),var(--wood-dark));display:flex;align-items:center;justify-content:center;color:#fff6e0;overflow:hidden;box-shadow:0 5px 0 rgba(107,74,43,.28);',
+      onLabelInput: (e) => { if (it) it.label = e.target.value; },
+      onPathInput: (e) => { if (it) it.path = e.target.value; },
+      onBlurRefresh: () => this.forceUpdate(),
+      nsfwCardStyle: flagCard(it && it.nsfw, true), hiddenCardStyle: flagCard(it && it.hidden, false),
+      nsfwSwStyle: sw(it && it.nsfw), nsfwKnobStyle: knob(it && it.nsfw),
+      hiddenSwStyle: sw(it && it.hidden), hiddenKnobStyle: knob(it && it.hidden),
+      toggleNsfw: () => { if (it) { it.nsfw = !it.nsfw; this.forceUpdate(); } },
+      toggleHidden: () => { if (it) { it.hidden = !it.hidden; this.forceUpdate(); } },
+      groups, hasCustom: customChips.length > 0, customChips,
+      customCat: st.customCat, onCustomInput: (e) => this.setState({ customCat: e.target.value }),
+      onCustomKey: (e) => { if (e.key === 'Enter') this.addCustomCat(); },
+      addCustomCat: () => this.addCustomCat(),
+      // export
+      showExport: st.showExport, exportJson: st.showExport ? this.exportText() : '',
+      exportMeta: st.items.length + ' items · ' + st.items.filter(x => x.nsfw).length + ' nsfw · ' + st.items.filter(x => x.hidden).length + ' hidden',
+      exportOpen: () => this.setState({ showExport: true }), exportClose: () => this.setState({ showExport: false }),
+      exportBackdrop: () => this.setState({ showExport: false }), stop: (e) => e.stopPropagation(),
+      copyJson: () => this.copyJson(), downloadJson: () => this.downloadJson(),
+    };
+  }
+}
+</script>
+</body>
+</html>

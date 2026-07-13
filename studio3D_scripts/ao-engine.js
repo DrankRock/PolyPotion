@@ -26,7 +26,7 @@ const V = (x, y, z) => new THREE.Vector3(x, y, z);
 const LEAF = 4;
 const RAY_STACK = new Int32Array(128);
 
-function buildBVH(pos) {
+export function buildBVH(pos) {
   const triCount = pos.length / 9;
   const cent = new Float32Array(triCount * 3);
   const tmin = new Float32Array(triCount * 3);
@@ -94,7 +94,7 @@ function buildBVH(pos) {
 // any-hit occlusion test: returns true on the FIRST triangle hit within
 // (EPS, tmax). Early-exits, so it is far cheaper than a nearest query —
 // exactly what AO needs (we only care *whether* a direction is blocked).
-function rayOccluded(bvh, ox, oy, oz, dx, dy, dz, tmax) {
+export function rayOccluded(bvh, ox, oy, oz, dx, dy, dz, tmax) {
   const { pos, triIdx, nMin, nMax, nLeft, nCount } = bvh;
   const invx = 1 / dx, invy = 1 / dy, invz = 1 / dz;
   const EPS = 1e-5;

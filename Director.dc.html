@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Spline+Sans+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="theme.js"></script>
+<style>
+  html,body{margin:0;padding:0;height:100%;background:var(--gutter);}
+  *{box-sizing:border-box;}
+  a{color:var(--accent);} a:hover{color:var(--text);}
+  @keyframes dt-spin{to{transform:rotate(360deg);}}
+  @keyframes dt-tin{from{transform:translateX(120%);opacity:0;}to{transform:translateX(0);opacity:1;}}
+  @keyframes dt-blink{0%,100%{opacity:1;}50%{opacity:.25;}}
+  #dt-root ::-webkit-scrollbar{width:10px;height:10px;}
+  #dt-root ::-webkit-scrollbar-track{background:var(--gutter);}
+  #dt-root ::-webkit-scrollbar-thumb{background:var(--panel-3);border:2px solid var(--gutter);border-radius:6px;}
+  #dt-root input[type="range"]{-webkit-appearance:none;appearance:none;background:var(--panel-3);border-radius:3px;height:4px;outline:none;}
+  #dt-root input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:12px;height:12px;border-radius:50%;background:#d8935a;cursor:pointer;border:none;}
+</style>
+</helmet>
+
+<div id="dt-root" style="display:flex;flex-direction:column;height:100vh;width:100%;overflow:hidden;background:var(--gutter);color:var(--text);font-family:var(--font-ui);font-size:13px;-webkit-font-smoothing:antialiased;user-select:none;">
+
+  <!-- TOP BAR -->
+  <header style="height:46px;flex:none;display:flex;align-items:center;gap:14px;padding:0 14px;background:var(--header);border-bottom:1px solid var(--seam);">
+    <div style="display:flex;align-items:center;gap:9px;">
+      <div style="width:26px;height:26px;border-radius:5px;display:flex;align-items:center;justify-content:center;background:#d8935a;color:#2a1608;font-weight:700;font-size:13px;box-shadow:0 1px 2px rgba(0,0,0,.4),0 0 0 1px rgba(255,255,255,.08) inset;">🎬</div>
+      <div>
+        <div style="font-weight:700;letter-spacing:.04em;font-size:14px;">DIRECTOR</div>
+        <div style="font-family:var(--font-mono);font-size:10px;color:var(--muted);letter-spacing:.1em;margin-top:1px;">CAMERA SEQUENCER · VIDEO RENDER-OUT · LOCAL</div>
+      </div>
+    </div>
+    <div style="flex:1;"></div>
+    <button style="display:inline-flex;align-items:center;gap:7px;height:30px;padding:0 13px;border-radius:6px;font-size:11.5px;font-weight:600;background:var(--panel3);border:1px solid var(--edge);color:var(--text);cursor:pointer;" onClick="{{ pickFile }}">⬇ Import model…</button>
+    <div style="display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--text2);padding:4px 10px;background:var(--panel);border:1px solid var(--seam);border-radius:5px;">
+      <span style="width:7px;height:7px;border-radius:50%;flex:none;background:{{ dotColor }};"></span>
+      <span style="font-family:var(--font-mono);">{{ meshName }}</span>
+    </div>
+  </header>
+
+  <div style="flex:1;display:flex;min-height:0;">
+
+    <!-- VIEWPORT -->
+    <div style="flex:1;position:relative;min-width:0;min-height:0;background:var(--viewport);">
+      <canvas id="dt-gl" style="position:absolute;inset:0;width:100%;height:100%;display:block;"></canvas>
+
+      <sc-if value="{{ noModel }}" hint-placeholder-val="{{ true }}">
+        <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;background:rgba(18,20,24,.86);">
+          <div style="width:70px;height:70px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:28px;background:rgba(216,147,90,.16);border:1px solid rgba(216,147,90,.35);">🎬</div>
+          <div style="text-align:center;">
+            <div style="font-size:16px;font-weight:700;margin-bottom:6px;">Direct a short film of your character</div>
+            <div style="font-size:12.5px;color:var(--text2);max-width:440px;line-height:1.6;">Drop a <b>.glb / .fbx</b> here or open one from the Library. Cut camera shots — orbits, push-ins, low rises, close-ups — over the character's own animation, scrub the sequence, and render the whole thing to a <b>.webm</b> video. Entirely on-device.</div>
+          </div>
+          <div style="display:flex;gap:10px;">
+            <button style="padding:10px 18px;border-radius:7px;font-size:12.5px;font-weight:600;background:#d8935a;border:1px solid #d8935a;color:#2a1608;cursor:pointer;box-shadow:0 2px 12px rgba(216,147,90,.35);" onClick="{{ pickFile }}">⬇ Import file…</button>
+            <button style="padding:10px 18px;border-radius:7px;font-size:12.5px;font-weight:600;background:var(--panel3);border:1px solid var(--edge);color:var(--text);cursor:pointer;" onClick="{{ loadSample }}">Load sample figure</button>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ loading }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:rgba(18,20,24,.8);color:var(--muted);z-index:5;">
+          <div style="width:38px;height:38px;border:3px solid var(--panel-3);border-top-color:#d8935a;border-radius:50%;animation:dt-spin .9s linear infinite;"></div>
+          <div style="font-size:12px;">{{ loadingMsg }}</div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ recording }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute;left:12px;top:12px;display:flex;align-items:center;gap:8px;background:rgba(15,15,15,.85);border:1px solid rgba(217,79,47,.5);border-radius:7px;padding:7px 12px;z-index:6;">
+          <span style="width:9px;height:9px;border-radius:50%;background:#d94f2f;animation:dt-blink 1s ease infinite;"></span>
+          <span style="font-family:var(--font-mono);font-size:11px;letter-spacing:.1em;color:#ff8f73;">REC</span>
+          <button style="margin-left:6px;font-size:10.5px;padding:3px 8px;border-radius:4px;background:var(--panel3);border:1px solid var(--edge);color:var(--text2);cursor:pointer;" onClick="{{ cancelRec }}">cancel</button>
+        </div>
+      </sc-if>
+
+      <div style="position:absolute;left:10px;bottom:12px;font-family:var(--font-mono);font-size:10px;letter-spacing:.1em;color:var(--text2);background:rgba(15,15,15,.6);padding:3px 7px;border-radius:3px;pointer-events:none;">{{ camBadge }}</div>
+      <sc-if value="{{ hasModel }}" hint-placeholder-val="{{ false }}">
+        <button style="position:absolute;right:10px;bottom:12px;font-size:10.5px;font-weight:600;padding:5px 10px;border-radius:5px;background:rgba(15,15,15,.7);border:1px solid var(--edge);color:var(--text2);cursor:pointer;" onClick="{{ freeCamBtn }}">✋ free camera</button>
+      </sc-if>
+    </div>
+
+    <!-- RIGHT PANEL -->
+    <aside style="width:300px;flex:none;background:var(--panel);border-left:1px solid var(--seam);display:flex;flex-direction:column;min-height:0;overflow-y:auto;">
+      <div style="border-bottom:1px solid var(--seam);">
+        <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--header);border-bottom:1px solid var(--seam);"><span style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);">Performance</span></div>
+        <div style="padding:11px 12px;">
+          <sc-if value="{{ hasClips }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px;">
+              <sc-for list="{{ clipChips }}" as="cc" hint-placeholder-count="3">
+                <button style="{{ cc.style }}" onClick="{{ cc.onClick }}">{{ cc.label }}</button>
+              </sc-for>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span style="font-size:10.5px;color:var(--muted);flex:none;">speed</span>
+              <input type="range" min="0.2" max="2" step="0.05" value="{{ clipSpeed }}" onChange="{{ onSpeed }}" style="flex:1;min-width:0;">
+              <span style="font-family:var(--font-mono);font-size:10px;color:var(--text2);width:30px;text-align:right;">{{ speedLabel }}</span>
+            </div>
+          </sc-if>
+          <sc-if value="{{ noClips }}" hint-placeholder-val="{{ true }}">
+            <div style="font-size:11px;color:var(--muted);line-height:1.55;">No animation clips in this file — the camera work still plays over the static pose. Add motion in MoCap or Motion first for a livelier film.</div>
+          </sc-if>
+        </div>
+      </div>
+
+      <sc-if value="{{ hasSel }}" hint-placeholder-val="{{ false }}">
+        <div style="border-bottom:1px solid var(--seam);">
+          <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--header);border-bottom:1px solid var(--seam);">
+            <span style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);">Shot {{ selNum }}</span>
+            <span style="margin-left:auto;display:flex;gap:4px;">
+              <button style="font-size:11px;width:22px;height:20px;border-radius:4px;background:var(--panel3);border:1px solid var(--edge);color:var(--text2);cursor:pointer;" onClick="{{ selLeft }}" title="move earlier">◂</button>
+              <button style="font-size:11px;width:22px;height:20px;border-radius:4px;background:var(--panel3);border:1px solid var(--edge);color:var(--text2);cursor:pointer;" onClick="{{ selRight }}" title="move later">▸</button>
+              <button style="font-size:11px;width:22px;height:20px;border-radius:4px;background:var(--panel3);border:1px solid var(--edge);color:#d94f2f;cursor:pointer;" onClick="{{ selDelete }}" title="delete shot">×</button>
+            </span>
+          </div>
+          <div style="padding:11px 12px;display:flex;flex-direction:column;gap:10px;">
+            <div style="display:flex;flex-wrap:wrap;gap:4px;">
+              <sc-for list="{{ moveChips }}" as="mc" hint-placeholder-count="7">
+                <button style="{{ mc.style }}" onClick="{{ mc.onClick }}" title="{{ mc.hint }}">{{ mc.label }}</button>
+              </sc-for>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span style="font-size:10.5px;color:var(--muted);flex:none;width:44px;">length</span>
+              <input type="range" min="0.5" max="12" step="0.25" value="{{ selDur }}" onChange="{{ onDur }}" style="flex:1;min-width:0;">
+              <span style="font-family:var(--font-mono);font-size:10px;color:var(--text2);width:30px;text-align:right;">{{ selDurLabel }}</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span style="font-size:10.5px;color:var(--muted);flex:none;width:44px;">easing</span>
+              <select value="{{ selEase }}" onChange="{{ onEase }}" style="flex:1;min-width:0;background:var(--panel3);border:1px solid var(--edge);color:var(--text);font-size:11px;border-radius:4px;padding:4px 6px;">
+                <sc-for list="{{ easeOpts }}" as="eo" hint-placeholder-count="4"><option value="{{ eo.v }}">{{ eo.v }}</option></sc-for>
+              </select>
+              <button style="flex:none;font-size:11px;padding:4px 9px;border-radius:4px;background:var(--panel3);border:1px solid var(--edge);color:var(--text2);cursor:pointer;" onClick="{{ onDir }}" title="reverse the move's direction">{{ dirLabel }}</button>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+      <div style="border-bottom:1px solid var(--seam);">
+        <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--header);border-bottom:1px solid var(--seam);"><span style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);">Render</span></div>
+        <div style="padding:11px 12px;display:flex;flex-direction:column;gap:8px;">
+          <div style="display:flex;gap:5px;">
+            <sc-for list="{{ qualChips }}" as="qc" hint-placeholder-count="2">
+              <button style="{{ qc.style }}" onClick="{{ qc.onClick }}">{{ qc.label }}</button>
+            </sc-for>
+          </div>
+          <button style="display:flex;align-items:center;justify-content:center;gap:8px;padding:10px;border-radius:6px;font-size:12.5px;font-weight:700;background:#d8935a;border:1px solid #d8935a;color:#2a1608;width:100%;cursor:pointer;box-shadow:0 1px 0 rgba(255,255,255,.18) inset,0 2px 12px rgba(216,147,90,.35);" onClick="{{ doRecord }}"><span style="width:9px;height:9px;border-radius:50%;background:#8f1f00;flex:none;"></span>Render sequence → .webm</button>
+          <div style="font-size:10.5px;color:var(--muted);line-height:1.5;">Plays the sequence once from the top and records the viewport in real time. Keep this tab visible while it films.</div>
+        </div>
+      </div>
+
+      <div style="padding:12px;">
+        <div style="display:flex;gap:9px;padding:9px 11px;border-radius:7px;font-size:11px;line-height:1.5;background:rgba(216,147,90,.12);border:1px solid rgba(216,147,90,.3);color:var(--text2);"><span style="flex:none;">🎬</span><span>Grammar of a good turntable: open on a <b>low rise</b>, hold an <b>orbit</b>, end tight on a <b>close-up</b>. Vary the lengths — a long middle shot reads calm, short cuts read punchy.</span></div>
+      </div>
+    </aside>
+  </div>
+
+  <!-- TIMELINE -->
+  <footer style="flex:none;background:var(--panel);border-top:1px solid var(--seam);">
+    <div style="display:flex;align-items:center;gap:10px;padding:7px 12px;border-bottom:1px solid var(--seam);">
+      <button style="width:30px;height:26px;border-radius:5px;background:var(--panel3);border:1px solid var(--edge);color:var(--text);cursor:pointer;font-size:12px;" onClick="{{ toStart }}" title="back to start">⏮</button>
+      <button style="width:38px;height:26px;border-radius:5px;background:#d8935a;border:1px solid #d8935a;color:#2a1608;cursor:pointer;font-size:12px;font-weight:700;" onClick="{{ togglePlay }}">{{ playLabel }}</button>
+      <span id="dt-time" style="font-family:var(--font-mono);font-size:11px;color:var(--text2);">0.0s</span>
+      <span style="font-family:var(--font-mono);font-size:11px;color:var(--muted);">/ {{ totalLabel }}</span>
+      <div style="flex:1;"></div>
+      <span style="font-size:10.5px;color:var(--muted);">add shot:</span>
+      <sc-for list="{{ addChips }}" as="ac" hint-placeholder-count="7">
+        <button style="font-size:10.5px;font-weight:600;padding:4px 9px;border-radius:4px;background:var(--panel3);border:1px solid var(--edge);color:var(--text2);cursor:pointer;" onClick="{{ ac.onClick }}" title="{{ ac.hint }}">＋ {{ ac.label }}</button>
+      </sc-for>
+    </div>
+    <div id="dt-track" onMouseDown="{{ onTrackDown }}" style="position:relative;height:64px;margin:10px 12px 12px;border-radius:7px;background:var(--viewport);border:1px solid var(--seam);cursor:col-resize;overflow:hidden;">
+      <div style="position:absolute;inset:0;display:flex;">
+        <sc-for list="{{ shotBlocks }}" as="sb" hint-placeholder-count="3">
+          <div style="{{ sb.style }}" onMouseDown="{{ sb.onClick }}">
+            <div style="font-size:10.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ sb.label }}</div>
+            <div style="font-family:var(--font-mono);font-size:9px;opacity:.75;">{{ sb.durLabel }}</div>
+          </div>
+        </sc-for>
+      </div>
+      <div id="dt-playhead" style="position:absolute;top:0;bottom:0;left:0;width:2px;background:#ffd9b3;box-shadow:0 0 8px rgba(255,217,179,.8);pointer-events:none;"></div>
+    </div>
+  </footer>
+
+  <input type="file" id="dt-file" accept=".glb,.gltf,.fbx,.obj" style="display:none;">
+  <div id="dt-toasts" style="position:fixed;bottom:96px;right:16px;z-index:300;display:flex;flex-direction:column;gap:8px;"></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { rev: 0, loading: false, loadingMsg: '', sel: -1, quality: 2 };
+
+  componentDidMount() {
+    this._shots = [
+      { id: 1, move: 'rise', dur: 2.5, ease: 'ease in-out', dir: 1 },
+      { id: 2, move: 'orbit', dur: 5, ease: 'linear', dir: 1 },
+      { id: 3, move: 'closeup', dur: 3, ease: 'ease in-out', dir: 1 },
+    ];
+    this._sid = 3;
+    this.setupEmbed();
+    this.boot();
+    this.setupDrop();
+    this._onMove = (e) => { if (this._scrub) this.scrubTo(e); };
+    this._onUp = () => { this._scrub = false; };
+    window.addEventListener('mousemove', this._onMove);
+    window.addEventListener('mouseup', this._onUp);
+  }
+  componentWillUnmount() {
+    window.removeEventListener('mousemove', this._onMove);
+    window.removeEventListener('mouseup', this._onUp);
+    if (this._eng) this._eng.dispose();
+  }
+
+  async boot() {
+    try {
+      let mod;
+      try { mod = await import('./studio3D_scripts/director-engine.js'); }
+      catch (e) { mod = await import('./director-engine.js'); }
+      this._mod = mod;
+      const eng = new mod.DirectorEngine(document.getElementById('dt-gl'));
+      this._eng = eng;
+      eng.setShots(this._shots);
+      eng.onStatus = (m) => this.setState({ loading: !!m, loadingMsg: m || '' });
+      eng.onState = () => this.bump();
+      eng.onTick = (t) => {
+        const total = eng.totalDur() || 1;
+        const ph = document.getElementById('dt-playhead');
+        if (ph) ph.style.left = Math.min(100, t / total * 100) + '%';
+        const tl = document.getElementById('dt-time');
+        if (tl) tl.textContent = t.toFixed(1) + 's';
+      };
+      this.bump();
+      if (this._pending) { const p = this._pending; this._pending = null; p(); }
+    } catch (e) {
+      this.toast('Engine failed: ' + (e && e.message || e));
+      if (this._post) this._post('studio:error', { tool: 'director', message: String(e && e.message || e) });
+    }
+  }
+
+  bump() { this.setState({ rev: this.state.rev + 1 }); }
+
+  loadVia(fn, label) {
+    if (!this._eng) { this._pending = () => this.loadVia(fn, label); return; }
+    this.setState({ loading: true, loadingMsg: 'Loading ' + (label || 'model') + '…' });
+    Promise.resolve().then(fn).then((r) => {
+      this.setState({ loading: false });
+      if (r) this.toast('Cast ' + r.name + (r.clips && r.clips.length ? ' — ' + r.clips.length + ' clip' + (r.clips.length > 1 ? 's' : '') + ' found' : ' (no clips)'));
+      this.bump();
+    }).catch(e => { this.setState({ loading: false }); this.toast('Load failed: ' + (e && e.message || e)); });
+  }
+
+  setupDrop() {
+    const root = document.getElementById('dt-root'); if (!root) return;
+    root.addEventListener('dragover', e => e.preventDefault());
+    root.addEventListener('drop', e => { e.preventDefault(); const f = e.dataTransfer.files && e.dataTransfer.files[0]; if (f) this.loadVia(() => this._eng.loadFile(f), f.name); });
+    const inp = document.getElementById('dt-file');
+    if (inp) inp.addEventListener('change', e => { const f = e.target.files[0]; if (f) { this.loadVia(() => this._eng.loadFile(f), f.name); e.target.value = ''; } });
+  }
+
+  setupEmbed() {
+    const params = new URLSearchParams(location.search);
+    this._embedded = params.get('embed') === '1' || window.parent !== window;
+    this._post = (type, payload, transfer) => { try { window.parent && window.parent.postMessage(Object.assign({ __studio: true, type }, payload || {}), '*', transfer || []); } catch (e) {} };
+    if (this._embedded) { const hide = () => { const h = document.querySelector('#dt-root > header'); if (h && h.firstElementChild) h.firstElementChild.style.display = 'none'; }; hide(); setTimeout(hide, 60); setTimeout(hide, 300); }
+    window.addEventListener('message', (e) => {
+      const d = e.data; if (!d || !d.__studio) return;
+      if (d.type === 'studio:loadCharUrl') this.loadVia(() => this._eng.loadUrl(d.url, d.ext, { chunked: d.chunked, chunks: d.chunks }), d.label || 'character');
+      else if (d.type === 'studio:loadCharBuffer') this.loadVia(() => this._eng.loadBuffer(d.buffer, d.name), d.name || 'character');
+    });
+    setTimeout(() => this._post('studio:ready', { tool: 'director' }), 0);
+  }
+
+  scrubTo(e) {
+    const tr = document.getElementById('dt-track'); if (!tr || !this._eng) return;
+    const r = tr.getBoundingClientRect();
+    const u = Math.min(1, Math.max(0, (e.clientX - r.left) / r.width));
+    const eng = this._eng;
+    eng.pause();
+    eng.seek(u * eng.totalDur());
+    eng.onTick(eng.time, false);
+  }
+
+  async doRecord() {
+    const eng = this._eng;
+    if (!eng || !eng.hasChar) { this.toast('Cast a character first'); return; }
+    if (eng.isRecording()) return;
+    try {
+      this.bump();
+      const blob = await eng.record(this.state.quality);
+      if (!blob || !blob.size) { this.toast('Recording cancelled'); this.bump(); return; }
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = (eng.modelName || 'sequence').replace(/\.\w+$/, '') + '_directed.webm';
+      document.body.appendChild(a); a.click();
+      setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+      this.toast('That\u2019s a wrap — saved ' + a.download + ' (' + (blob.size / 1048576).toFixed(1) + ' MB)');
+      this.bump();
+    } catch (e) { this.toast('Render failed: ' + (e && e.message || e)); this.bump(); }
+  }
+
+  toast(msg) {
+    const wrap = document.getElementById('dt-toasts'); if (!wrap) return;
+    const el = document.createElement('div');
+    el.style.cssText = 'padding:11px 15px;border-radius:7px;font-size:12px;background:var(--panel-3);border:1px solid var(--edge);border-left:3px solid #d8935a;box-shadow:0 8px 24px rgba(0,0,0,.45);max-width:340px;color:var(--text);animation:dt-tin .25s cubic-bezier(.2,1,.3,1);';
+    el.textContent = msg; wrap.appendChild(el);
+    setTimeout(() => { el.style.transition = 'opacity .3s'; el.style.opacity = '0'; setTimeout(() => el.remove(), 300); }, 3600);
+  }
+
+  chip(on, accent) {
+    const a = accent || '#d8935a';
+    return 'font-size:10.5px;font-weight:600;padding:5px 10px;border-radius:5px;cursor:pointer;background:' + (on ? 'rgba(216,147,90,.18)' : 'var(--panel3)') + ';border:1px solid ' + (on ? a : 'var(--edge)') + ';color:' + (on ? '#eebd8f' : 'var(--text2)') + ';';
+  }
+
+  renderVals() {
+    const st = this.state, eng = this._eng, mod = this._mod;
+    const MOVES = mod ? mod.MOVES : {};
+    const MCOL = { orbit: '#d8935a', arc: '#c9a44a', push: '#7b6fd8', pull: '#9c92e8', rise: '#5a8fd8', closeup: '#d87ba3', still: '#6aa88a' };
+    const shots = this._shots || [];
+    const total = shots.reduce((a, s) => a + s.dur, 0);
+    const sel = shots[st.sel];
+
+    const shotBlocks = shots.map((s, i) => ({
+      label: (MOVES[s.move] ? MOVES[s.move].name : s.move) + (s.dir < 0 ? ' ⟲' : ''),
+      durLabel: s.dur.toFixed(2).replace(/\.?0+$/, '') + 's',
+      style: 'flex:' + s.dur + ' 0 0;display:flex;flex-direction:column;justify-content:center;gap:1px;padding:0 9px;min-width:0;cursor:pointer;border-right:1px solid var(--seam);color:#14100a;background:' + (MCOL[s.move] || '#888') + (i === st.sel ? '' : 'bb') + ';' + (i === st.sel ? 'box-shadow:0 0 0 2px #ffd9b3 inset;' : ''),
+      onClick: (e) => { e.stopPropagation(); this.setState({ sel: i }); },
+    }));
+
+    const addChips = Object.keys(MOVES).map(k => ({
+      label: MOVES[k].name, hint: MOVES[k].desc,
+      onClick: () => {
+        this._shots.push({ id: ++this._sid, move: k, dur: k === 'orbit' ? 5 : 3, ease: k === 'orbit' ? 'linear' : 'ease in-out', dir: 1 });
+        this.setState({ sel: this._shots.length - 1 });
+      },
+    }));
+
+    const moveChips = Object.keys(MOVES).map(k => ({
+      label: MOVES[k].name, hint: MOVES[k].desc,
+      style: this.chip(sel && sel.move === k, MCOL[k]),
+      onClick: () => { if (sel) { sel.move = k; this.bump(); if (eng) eng.seek(this.shotStart(st.sel)); } },
+    }));
+
+    const clips = eng && eng.clips || [];
+    const clipChips = [{ label: '∅ none', i: -1 }].concat(clips.map((c, i) => ({ label: c.name || ('clip ' + (i + 1)), i })))
+      .map(c => ({
+        label: c.label.length > 22 ? c.label.slice(0, 21) + '…' : c.label,
+        style: this.chip(eng && eng.clipIndex === c.i),
+        onClick: () => { if (eng) { eng.setClip(c.i); this.bump(); } },
+      }));
+
+    const qualChips = [[1, 'Draft 1×'], [2, 'Crisp 2×']].map(([q, label]) => ({
+      label, style: this.chip(st.quality === q), onClick: () => this.setState({ quality: q }),
+    }));
+
+    return {
+      meshName: eng && eng.hasChar ? eng.modelName : 'no model',
+      dotColor: eng && eng.hasChar ? 'var(--good)' : 'var(--muted)',
+      noModel: !(eng && eng.hasChar) && !st.loading,
+      hasModel: !!(eng && eng.hasChar),
+      loading: st.loading, loadingMsg: st.loadingMsg,
+      recording: !!(eng && eng.isRecording()),
+      cancelRec: () => { if (eng) eng.cancelRecord(); },
+      camBadge: eng && !eng.freeCam ? 'SEQUENCE CAMERA — scrub the timeline' : 'FREE CAMERA — drag orbits · scroll zooms',
+      freeCamBtn: () => { if (eng) { eng.pause(); eng.release(); this.bump(); } },
+      pickFile: () => document.getElementById('dt-file').click(),
+      loadSample: () => this.loadVia(() => this._eng.loadUrl('data/characters/Humanoid.fbx', 'fbx'), 'Humanoid'),
+      hasClips: clips.length > 0, noClips: !(clips.length > 0),
+      clipChips,
+      clipSpeed: eng ? eng.clipSpeed : 1,
+      speedLabel: (eng ? eng.clipSpeed : 1).toFixed(2).replace(/0$/, '') + '×',
+      onSpeed: (e) => { if (eng) { eng.setClipSpeed(parseFloat(e.target.value)); this.bump(); } },
+      hasSel: !!sel, selNum: st.sel + 1,
+      selLeft: () => { if (st.sel > 0) { const a = this._shots; [a[st.sel - 1], a[st.sel]] = [a[st.sel], a[st.sel - 1]]; this.setState({ sel: st.sel - 1 }); } },
+      selRight: () => { if (st.sel < shots.length - 1) { const a = this._shots; [a[st.sel + 1], a[st.sel]] = [a[st.sel], a[st.sel + 1]]; this.setState({ sel: st.sel + 1 }); } },
+      selDelete: () => { this._shots.splice(st.sel, 1); this.setState({ sel: -1 }); },
+      moveChips,
+      selDur: sel ? sel.dur : 3, selDurLabel: sel ? sel.dur.toFixed(2).replace(/\.?0+$/, '') + 's' : '',
+      onDur: (e) => { if (sel) { sel.dur = parseFloat(e.target.value); this.bump(); } },
+      selEase: sel ? sel.ease : 'ease in-out',
+      easeOpts: ['linear', 'ease in-out', 'ease in', 'ease out'].map(v => ({ v })),
+      onEase: (e) => { if (sel) { sel.ease = e.target.value; this.bump(); } },
+      dirLabel: sel && sel.dir < 0 ? '⟲ reversed' : '⟳ forward',
+      onDir: () => { if (sel) { sel.dir = (sel.dir || 1) * -1; this.bump(); } },
+      qualChips,
+      doRecord: () => this.doRecord(),
+      toStart: () => { if (eng) { eng.pause(); eng.seek(0); } },
+      togglePlay: () => { if (!eng) return; if (eng.playing) eng.pause(); else eng.play(); this.bump(); },
+      playLabel: eng && eng.playing ? '⏸' : '▶',
+      totalLabel: total.toFixed(1) + 's',
+      addChips, shotBlocks,
+      onTrackDown: (e) => { this._scrub = true; this.scrubTo(e); },
+    };
+  }
+
+  shotStart(i) {
+    let acc = 0;
+    for (let k = 0; k < i; k++) acc += this._shots[k].dur;
+    return acc + 0.001;
+  }
+}
+</script>
+</body>
+</html>
