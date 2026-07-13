@@ -682,6 +682,24 @@ export class SCEngine {
     return { name: this.modelName, verts: this.nUnique, tris: Math.round(this.nCorner / 3), masked: m };
   }
 
+  // ---------------------------------------------------------- EXPORT
+  // Pack the current sculpted surface as an indexed GLB — unique verts +
+  // corner indices (the welded topology), fresh smooth normals.
+  async exportGLB() {
+    if (!this.mesh) throw new Error('Nothing to export — load a model first');
+    const { GLTFExporter } = await import('https://esm.sh/three@0.160.0/examples/jsm/exporters/GLTFExporter.js');
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(this.vpos.slice(0, this.nUnique * 3), 3));
+    g.setIndex(new THREE.BufferAttribute(Uint32Array.from(this.corner.subarray(0, this.nCorner)), 1));
+    g.computeVertexNormals();
+    const mesh = new THREE.Mesh(g, new THREE.MeshStandardMaterial({ color: 0xcfcfcf, roughness: 0.85 }));
+    mesh.name = (this.modelName || 'model') + '_sculpt';
+    const scene = new THREE.Scene(); scene.add(mesh);
+    const glb = await new Promise((res, rej) => new GLTFExporter().parse(scene, res, rej, { binary: true }));
+    g.dispose();
+    return glb;
+  }
+
   _disposeMesh() {
     if (this.mesh) { this.root.remove(this.mesh); this.mesh.geometry.dispose(); this.mesh.material.dispose(); this.mesh = null; }
     if (this._wireMesh) { this.root.remove(this._wireMesh); this._wireMesh.geometry.dispose(); this._wireMesh = null; }

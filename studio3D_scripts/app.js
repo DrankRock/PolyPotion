@@ -36,11 +36,11 @@ vw.addEventListener('drop', e => { e.preventDefault(); const f = e.dataTransfer.
 $('#sampleTag').addEventListener('click', async e => {
   e.preventDefault(); e.stopPropagation();
   try {
-    showLoading('Loading sample', 'fetching humanoid.fbx');
-    setProgress('downloading', 0.3);
-    const res = await fetch('data/characters/humanoid_unrigged.fbx');
-    const blob = await res.blob();
-    await handleFile(new File([blob], 'humanoid.fbx'), true);
+    showLoading('Brewing sample', 'building a mannequin figure');
+    setProgress('generating', 0.3);
+    const SS = await import('./sample-shapes.js');
+    const r = await SS.sampleGLB('figure');
+    await handleFile(new File([r.buffer], 'Sample Figure.glb'), true);
   } catch (err) { hideLoading(); toast('Sample failed: ' + err.message, 'error'); }
 });
 

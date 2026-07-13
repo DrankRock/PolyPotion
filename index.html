@@ -82,6 +82,17 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
 .dock-item.active{background:var(--active-dim);border-color:var(--clay);color:var(--clay);box-shadow:0 4px 0 rgba(200,116,60,.30);}
 .dock-item.active .ic{color:var(--clay);}
 .dock-sep{width:40px;height:3px;border-radius:2px;background:repeating-linear-gradient(90deg,var(--wood) 0 5px,transparent 5px 9px);margin:4px 0;opacity:.5;}
+.dock-group{display:flex;flex-direction:column;align-items:center;gap:3px;width:100%;flex:none;margin-top:7px;}
+.dock-group-items{display:flex;flex-direction:column;align-items:center;gap:3px;width:100%;}
+.dock-group.closed .dock-group-items{display:none;}
+.dock-cat{width:64px;flex:none;display:flex;align-items:center;justify-content:center;gap:4px;padding:4px 0 3px;
+  font-family:var(--font-mono);font-size:9.5px;font-weight:700;letter-spacing:.05em;text-transform:lowercase;
+  color:var(--wood-dark);background:var(--cream);border:2px solid var(--wood-dark);border-radius:9px;
+  box-shadow:0 3px 0 rgba(107,74,43,.22);cursor:pointer;transition:transform .12s ease, box-shadow .12s ease;}
+.dock-cat:hover{transform:translateY(-1px);box-shadow:0 4px 0 rgba(107,74,43,.26);}
+.dock-cat:active{transform:translateY(1px);box-shadow:0 1px 0 rgba(107,74,43,.26);}
+.dock-cat .chev{font-size:8px;line-height:1;}
+.dock-group.closed .dock-cat{opacity:.82;}
 .dock-spacer{flex:1;}
 .dock-item.disabled{opacity:.34;cursor:not-allowed;}
 .dock-item:focus-visible{outline:3px solid var(--clay);outline-offset:2px;}
@@ -270,33 +281,62 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
     <nav class="dock" id="dock" role="tablist" aria-orientation="vertical" aria-label="Tools">
       <div class="dock-item" data-tool="library"><span class="ic">▤</span><span class="lb">Library</span></div>
       <div class="dock-item" data-tool="showcase" title="Showcase — view, spin & animate a finished character"><span class="ic">◈</span><span class="lb">Show</span></div>
-      <div class="dock-sep"></div>
-      <div class="dock-item" data-tool="rig"><span class="ic">⦿</span><span class="lb">Rig</span></div>
-      <div class="dock-item" data-tool="mocap"><span class="ic">⛷</span><span class="lb">MoCap</span></div>
-      <div class="dock-item" data-tool="motion" title="Motion editor — layer, merge, pose"><span class="ic">⌗</span><span class="lb">Motion</span></div>
-      <div class="dock-item" data-tool="edit" title="Edit mesh — separate, cut, simulate"><span class="ic">✎</span><span class="lb">Edit</span></div>
-      <div class="dock-item" data-tool="sculpt" title="Sculpt mesh — draw, grab, smooth, mask"><span class="ic">✺</span><span class="lb">Sculpt</span></div>
-      <div class="dock-item" data-tool="hair" title="Hair Extract — paint, split & drape hair"><span class="ic">〰</span><span class="lb">Hair</span></div>
-      <div class="dock-item" data-tool="pose" title="Pose rig — IK / FK joint handles"><span class="ic">⟁</span><span class="lb">Pose</span></div>
-      <div class="dock-item" data-tool="physics" title="Physics — soft-body & cloth (WASM)"><span class="ic">≈</span><span class="lb">Physics</span></div>
-      <div class="dock-item" data-tool="bake" title="Bake — raytraced AO + cavity into the mesh"><span class="ic">☀</span><span class="lb">Bake</span></div>
-      <div class="dock-item" data-tool="decimate" title="Decimate — reduce poly count (QEM)"><span class="ic">◇</span><span class="lb">Decimate</span></div>
-      <div class="dock-item" data-tool="csg" title="Boolean — exact cut / union / intersect (Manifold WASM)"><span class="ic">⊘</span><span class="lb">Boolean</span></div>
-      <div class="dock-item" data-tool="doctor" title="Mesh Doctor — audit topology &amp; auto-fix (manifold, winding, UVs, scale)"><span class="ic">✚</span><span class="lb">Doctor</span></div>
-      <div class="dock-item" data-tool="shaderlab" title="Shader Lab — node-graph shader editor; publish looks to Showcase's shelf"><span class="ic">◈</span><span class="lb">Shaders</span></div>
-      <div class="dock-item" data-tool="director" title="Director — cut camera shots over your character's animation, render to .webm video"><span class="ic">🎬</span><span class="lb">Director</span></div>
-      <div class="dock-item" data-tool="lipsync" title="Lipsync — record or load audio, drive the mouth from it, bake the take into the GLB"><span class="ic">👄</span><span class="lb">Lipsync</span></div>
-      <div class="dock-item" data-tool="timeline" title="Timeline — lay clips out, trim, crossfade, bake one performance (NLA)"><span class="ic">≡</span><span class="lb">Timeline</span></div>
-      <div class="dock-item" data-tool="retopo" title="Retopo — draw clean quads over any mesh: quad-draw, X-symmetry, relax brush"><span class="ic">▱</span><span class="lb">Retopo</span></div>
-      <div class="dock-item" data-tool="recipe" title="Recipe — wire processing steps into a re-runnable pipeline; change anything upstream and it re-brews"><span class="ic">⧉</span><span class="lb">Recipe</span></div>
-      <div class="dock-item" data-tool="uv" title="UV Unwrap — seams, LSCM conformal unwrap, pack (WASM)"><span class="ic">⬚</span><span class="lb">UV</span></div>
-      <div class="dock-item" data-tool="paint" title="Paint — texture painting, clone stamp, live surface preview"><span class="ic">▧</span><span class="lb">Paint</span></div>
-      <div class="dock-item" data-tool="weightpaint" title="Weight Paint — hand-paint skin influence per bone"><span class="ic">✋</span><span class="lb">Weight</span></div>
-      <div class="dock-item" data-tool="morph" title="Morph — blendshape / expression editor"><span class="ic">◕</span><span class="lb">Morph</span></div>
-      <div class="dock-item" data-tool="bakemaps" title="Bake Maps — normal / AO / curvature high→low"><span class="ic">☰</span><span class="lb">Bake+</span></div>
-      <div class="dock-item" data-tool="curves" title="Curves — F-curve editor + onion skinning"><span class="ic">∿</span><span class="lb">Curves</span></div>
-      <div class="dock-item" data-tool="humangen" title="HumanGen — generate a neutral base human (start here)"><span class="ic">☺</span><span class="lb">Human</span></div>
-      <div class="dock-item" data-tool="hairstudio" title="Hair Studio — style procedural hair"><span class="ic">〰</span><span class="lb">Hair+</span></div>
+      <div class="dock-group" data-cat="create">
+        <button class="dock-cat" type="button" aria-expanded="true"><span class="chev">▾</span>create</button>
+        <div class="dock-group-items">
+          <div class="dock-item" data-tool="humangen" title="HumanGen — generate a neutral base human (start here)"><span class="ic">☺</span><span class="lb">Human</span></div>
+          <div class="dock-item" data-tool="hairstudio" title="Hair Studio — style procedural hair"><span class="ic">〰</span><span class="lb">Hair+</span></div>
+          <div class="dock-item" data-tool="hair" title="Hair Extract — paint, split & drape hair"><span class="ic">〰</span><span class="lb">Hair</span></div>
+        </div>
+      </div>
+      <div class="dock-group" data-cat="shape">
+        <button class="dock-cat" type="button" aria-expanded="true"><span class="chev">▾</span>shape</button>
+        <div class="dock-group-items">
+          <div class="dock-item" data-tool="edit" title="Edit mesh — separate, cut, simulate"><span class="ic">✎</span><span class="lb">Edit</span></div>
+          <div class="dock-item" data-tool="sculpt" title="Sculpt mesh — draw, grab, smooth, mask"><span class="ic">✺</span><span class="lb">Sculpt</span></div>
+          <div class="dock-item" data-tool="retopo" title="Retopo — draw clean quads over any mesh: quad-draw, X-symmetry, relax brush"><span class="ic">▱</span><span class="lb">Retopo</span></div>
+          <div class="dock-item" data-tool="csg" title="Boolean — exact cut / union / intersect (Manifold WASM)"><span class="ic">⊘</span><span class="lb">Boolean</span></div>
+          <div class="dock-item" data-tool="decimate" title="Decimate — reduce poly count (QEM)"><span class="ic">◇</span><span class="lb">Decimate</span></div>
+          <div class="dock-item" data-tool="doctor" title="Mesh Doctor — audit topology &amp; auto-fix (manifold, winding, UVs, scale)"><span class="ic">✚</span><span class="lb">Doctor</span></div>
+          <div class="dock-item" data-tool="recipe" title="Recipe — wire processing steps into a re-runnable pipeline; change anything upstream and it re-brews"><span class="ic">⧉</span><span class="lb">Recipe</span></div>
+        </div>
+      </div>
+      <div class="dock-group" data-cat="surface">
+        <button class="dock-cat" type="button" aria-expanded="true"><span class="chev">▾</span>surface</button>
+        <div class="dock-group-items">
+          <div class="dock-item" data-tool="uv" title="UV Unwrap — seams, LSCM conformal unwrap, pack (WASM)"><span class="ic">⬚</span><span class="lb">UV</span></div>
+          <div class="dock-item" data-tool="paint" title="Paint — texture painting, clone stamp, live surface preview"><span class="ic">▧</span><span class="lb">Paint</span></div>
+          <div class="dock-item" data-tool="bake" title="Bake — raytraced AO + cavity into the mesh"><span class="ic">☀</span><span class="lb">Bake</span></div>
+          <div class="dock-item" data-tool="bakemaps" title="Bake Maps — normal / AO / curvature high→low"><span class="ic">☰</span><span class="lb">Bake+</span></div>
+          <div class="dock-item" data-tool="shaderlab" title="Shader Lab — node-graph shader editor; publish looks to Showcase's shelf"><span class="ic">◈</span><span class="lb">Shaders</span></div>
+        </div>
+      </div>
+      <div class="dock-group" data-cat="rig">
+        <button class="dock-cat" type="button" aria-expanded="true"><span class="chev">▾</span>rig</button>
+        <div class="dock-group-items">
+          <div class="dock-item" data-tool="rig"><span class="ic">⦿</span><span class="lb">Rig</span></div>
+          <div class="dock-item" data-tool="weightpaint" title="Weight Paint — hand-paint skin influence per bone"><span class="ic">✋</span><span class="lb">Weight</span></div>
+          <div class="dock-item" data-tool="pose" title="Pose rig — IK / FK joint handles"><span class="ic">⟁</span><span class="lb">Pose</span></div>
+          <div class="dock-item" data-tool="morph" title="Morph — blendshape / expression editor"><span class="ic">◕</span><span class="lb">Morph</span></div>
+        </div>
+      </div>
+      <div class="dock-group" data-cat="animate">
+        <button class="dock-cat" type="button" aria-expanded="true"><span class="chev">▾</span>animate</button>
+        <div class="dock-group-items">
+          <div class="dock-item" data-tool="motion" title="Motion editor — layer, merge, pose"><span class="ic">⌗</span><span class="lb">Motion</span></div>
+          <div class="dock-item" data-tool="timeline" title="Timeline — lay clips out, trim, crossfade, bake one performance (NLA)"><span class="ic">≡</span><span class="lb">Timeline</span></div>
+          <div class="dock-item" data-tool="curves" title="Curves — F-curve editor + onion skinning"><span class="ic">∿</span><span class="lb">Curves</span></div>
+          <div class="dock-item" data-tool="physics" title="Physics — soft-body & cloth (WASM)"><span class="ic">≈</span><span class="lb">Physics</span></div>
+        </div>
+      </div>
+      <div class="dock-group" data-cat="perform">
+        <button class="dock-cat" type="button" aria-expanded="true"><span class="chev">▾</span>perform</button>
+        <div class="dock-group-items">
+          <div class="dock-item" data-tool="mocap"><span class="ic">⛷</span><span class="lb">MoCap</span></div>
+          <div class="dock-item" data-tool="lipsync" title="Lipsync — record or load audio, drive the mouth from it, bake the take into the GLB"><span class="ic">👄</span><span class="lb">Lipsync</span></div>
+          <div class="dock-item" data-tool="director" title="Director — cut camera shots over your character's animation, render to .webm video"><span class="ic">🎬</span><span class="lb">Director</span></div>
+        </div>
+      </div>
       <div class="dock-spacer"></div>
       <div class="dock-sep"></div>
       <div class="dock-item disabled" title="Scene assembly — coming soon"><span class="ic">⊞</span><span class="lb">Scene</span></div>
@@ -899,6 +939,7 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
   function setTool(tool) {
     activeTool = tool;
     $$('.dock-item').forEach(d => { const on = d.dataset.tool === tool; d.classList.toggle('active', on); d.setAttribute('aria-selected', on ? 'true' : 'false'); });
+    if (window.revealDockTool) window.revealDockTool(tool);
     $('#lib').classList.toggle('show', tool === 'library');
     ['showcase', 'rig', 'mocap', 'edit', 'motion', 'sculpt', 'hair', 'pose', 'physics', 'decimate', 'doctor', 'shaderlab', 'director', 'lipsync', 'timeline', 'retopo', 'recipe', 'bake', 'csg', 'uv', 'paint', 'weightpaint', 'morph', 'bakemaps', 'curves', 'humangen', 'hairstudio'].forEach(t => {
       const pane = $('#pane-' + t);
@@ -1474,6 +1515,29 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
   });
 
   // ---------- dock + library button ----------
+  // collapsible dock groups — click a header to fold its tools; state persists
+  $$('.dock-cat').forEach(h => {
+    const grp = h.parentElement, key = 'pp.dockcat.' + grp.dataset.cat;
+    const apply = (closed) => {
+      grp.classList.toggle('closed', closed);
+      h.setAttribute('aria-expanded', closed ? 'false' : 'true');
+      h.querySelector('.chev').textContent = closed ? '\u25b8' : '\u25be';
+    };
+    apply(ppCookie(key) === '1');
+    h.addEventListener('click', () => { const c = !grp.classList.contains('closed'); apply(c); ppCookie(key, c ? '1' : '0'); });
+  });
+  function revealDockTool(tool) {
+    const d = $$('.dock-item').find(x => x.dataset.tool === tool);
+    const grp = d && d.closest('.dock-group');
+    if (grp && grp.classList.contains('closed')) {
+      grp.classList.remove('closed');
+      const h = grp.querySelector('.dock-cat');
+      if (h) { h.setAttribute('aria-expanded', 'true'); h.querySelector('.chev').textContent = '\u25be'; }
+      ppCookie('pp.dockcat.' + grp.dataset.cat, '0');
+    }
+  }
+  window.revealDockTool = revealDockTool;
+
   $$('.dock-item').forEach(d => {
     const tool = d.dataset.tool;
     // accessibility: expose each dock item as a real button to AT + keyboard
@@ -1488,7 +1552,7 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
       if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setTool(tool); }
       else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
         e.preventDefault();
-        const items = $$('.dock-item').filter(x => !x.classList.contains('disabled'));
+        const items = $$('.dock-item').filter(x => !x.classList.contains('disabled') && x.offsetParent !== null);
         const i = items.indexOf(d); const n = items[(i + (e.key === 'ArrowDown' ? 1 : items.length - 1)) % items.length];
         if (n) n.focus();
       }
@@ -1659,6 +1723,15 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
   // ---------- message bridge from tools ----------
   window.addEventListener('message', async (e) => {
     const d = e.data; if (!d || !d.__studio) return;
+    if (d.type === 'studio:gotoLibrary') {
+      setTool('library');
+      toast('Pick a character — hover a card and choose the tool to send it to', 'info');
+      return;
+    }
+    if (d.type === 'studio:gotoTool') {
+      if (TOOLS[d.tool] && !(TOOLS[d.tool].disabled)) setTool(d.tool);
+      return;
+    }
     if (d.type === 'studio:ready') {
       const t = d.tool; if (TOOLS[t]) { TOOLS[t].ready = true; const ld = $('#load-' + t); if (ld) ld.style.display = 'none';
         if (TOOLS[t]._pending) { TOOLS[t]._pending(); TOOLS[t]._pending = null; }

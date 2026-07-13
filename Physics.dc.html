@@ -291,6 +291,16 @@
 </x-dc>
 <script type="text/x-dc" data-dc-script>
 class Component extends DCLogic {
+  // "Load sample" — chooser: procedural basic shapes, or route to Library / HumanGen
+  async pickSampleFlow() {
+    let SS; try { SS = await import('./studio3D_scripts/sample-shapes.js'); } catch (e) { SS = await import('./sample-shapes.js'); }
+    const pick = await SS.pickSample({ embedded: window.parent !== window, needsRig: false });
+    if (!pick) return;
+    if (pick.kind === 'library') { if (this._post) this._post('studio:gotoLibrary', {}); return; }
+    if (pick.kind === 'humangen') { if (this._post) this._post('studio:gotoTool', { tool: 'humangen' }); return; }
+    this.loadVia(() => this._eng.loadBuffer(pick.buffer, pick.name, 'glb'), pick.name);
+  }
+
   state = {
     hasModel: false, meshName: 'no model', loading: false, loadingMsg: '',
     sim: false, fps: 0, mode: 'soft',
@@ -613,7 +623,7 @@ class Component extends DCLogic {
     };
   }
 
-  loadSampleRef() { this.loadVia(() => this._eng.loadUrl('data/characters/Humanoid.fbx', 'fbx'), 'Humanoid'); }
+  loadSampleRef() { this.pickSampleFlow(); }
 
   handleCmd(cmd) {
     const eng = this._eng; if (!eng) return;

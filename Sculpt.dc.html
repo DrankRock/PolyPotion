@@ -104,7 +104,7 @@
           </div>
           <div style="display:flex;gap:10px;">
             <button style="padding:10px 18px;border-radius:7px;font-size:12.5px;font-weight:600;background:var(--new);border:1px solid var(--new);color:#04201f;cursor:pointer;box-shadow:0 2px 12px rgba(67,182,196,.35);" onClick="{{ pickFile }}">⬇ Import file…</button>
-            <button style="padding:10px 18px;border-radius:7px;font-size:12.5px;font-weight:600;background:var(--panel3);border:1px solid var(--edge);color:var(--text);cursor:pointer;" onClick="{{ loadSample }}">Load sample figure</button>
+            <button style="padding:10px 18px;border-radius:7px;font-size:12.5px;font-weight:600;background:var(--panel3);border:1px solid var(--edge);color:var(--text);cursor:pointer;" onClick="{{ loadSample }}">Load a sample…</button>
           </div>
         </div>
       </sc-if>
@@ -157,6 +157,16 @@
         </div>
       </div>
 
+      <div style="border-bottom:1px solid var(--seam);">
+        <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--header);border-bottom:1px solid var(--seam);"><span style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);">Hand off</span></div>
+        <div style="padding:11px 12px;display:flex;flex-direction:column;gap:7px;">
+          <sc-if value="{{ embedded }}" hint-placeholder-val="{{ false }}">
+            <button style="display:flex;align-items:center;justify-content:center;gap:7px;padding:10px;border-radius:6px;font-size:12.5px;font-weight:700;background:var(--new);border:1px solid var(--new);color:#04201f;width:100%;cursor:pointer;box-shadow:0 1px 0 rgba(255,255,255,.18) inset,0 2px 12px rgba(67,182,196,.35);" onClick="{{ doSave }}">▤ Save sculpt to Library</button>
+          </sc-if>
+          <button style="display:flex;align-items:center;justify-content:center;gap:7px;padding:9px;border-radius:6px;font-size:12px;font-weight:600;background:var(--panel3);border:1px solid var(--edge);color:var(--text);width:100%;cursor:pointer;" onClick="{{ doDownload }}">⬇ Download .glb</button>
+        </div>
+      </div>
+
       <div style="padding:12px;">
         <div style="display:flex;gap:9px;padding:9px 11px;border-radius:7px;font-size:11px;line-height:1.5;background:var(--newDim);border:1px solid rgba(67,182,196,.3);color:#aee3ea;"><span style="flex:none;">✦</span><span>Sculpt is non-destructive to the rest of the pipeline — reshape a character here, then hand it back to <b>Edit</b> or <b>MoCap</b> from the Library. Drag to orbit, scroll to zoom; the brush ring previews radius on the surface.</span></div>
       </div>
@@ -169,6 +179,16 @@
 </x-dc>
 <script type="text/x-dc" data-dc-script>
 class Component extends DCLogic {
+  // "Load sample" — chooser: procedural basic shapes, or route to Library / HumanGen
+  async pickSampleFlow() {
+    let SS; try { SS = await import('./studio3D_scripts/sample-shapes.js'); } catch (e) { SS = await import('./sample-shapes.js'); }
+    const pick = await SS.pickSample({ embedded: window.parent !== window, needsRig: false });
+    if (!pick) return;
+    if (pick.kind === 'library') { if (this._post) this._post('studio:gotoLibrary', {}); return; }
+    if (pick.kind === 'humangen') { if (this._post) this._post('studio:gotoTool', { tool: 'humangen' }); return; }
+    this.loadVia(() => this._eng.loadBuffer(pick.buffer, pick.name, 'glb'), pick.name);
+  }
+
   state = {
     brush: 'draw', meshName: 'no model', loading: false, loadingMsg: '',
     hasModel: false, radius: 13, strength: 50, symmetry: true, invert: false,
@@ -241,6 +261,29 @@ class Component extends DCLogic {
 
   setBrush(b) { this.setState({ brush: b }); if (this._eng) this._eng.setBrush(b); }
 
+  async exportFlow(save) {
+    const eng = this._eng;
+    if (!eng || !this.state.hasModel) { this.toast('Load a model first'); return; }
+    this.setState({ loading: true, loadingMsg: 'Packing GLB…' });
+    try {
+      const glb = await eng.exportGLB();
+      const name = ((this.state.meshName !== 'no model' && this.state.meshName) || 'model').replace(/\.\w+$/, '') + ' (sculpt).glb';
+      if (save) {
+        this._post('studio:saveChar', { buffer: glb, name }, [glb]);
+        this.toast('Saved to Library as ' + name);
+      } else {
+        const blob = new Blob([glb], { type: 'model/gltf-binary' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = name.replace(/\s+/g, '_');
+        document.body.appendChild(a); a.click();
+        setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+        this.toast('Exported ' + a.download);
+      }
+      this.setState({ loading: false });
+    } catch (err) { this.setState({ loading: false }); this.toast('Export failed: ' + (err && err.message || err)); }
+  }
+
   renderVals() {
     const st = this.state, eng = this._eng;
     const BR = [
@@ -266,7 +309,7 @@ class Component extends DCLogic {
       modeBadge: st.hasModel ? (cur.name.toUpperCase() + ' — drag to sculpt' + (st.symmetry ? ' · symmetric' : '')) : 'IMPORT A MESH',
       vpHint: st.brush === 'grab' ? 'click-drag pulls the region · scroll zoom' : (st.brush === 'mask' ? 'drag paints mask · alt erases' : 'drag sculpts · shift smooths · alt inverts'),
       pickFile: () => document.getElementById('sc-file').click(),
-      loadSample: () => this.loadVia(() => this._eng.loadUrl('data/characters/Humanoid.fbx', 'fbx'), 'Humanoid'),
+      loadSample: () => this.pickSampleFlow(),
       undo: () => { const ok = eng && eng.undo(); this.toast(ok ? 'Reverted last stroke' : 'Nothing to undo'); },
       // sliders
       radiusSlide: st.radius, radiusLabel: st.radius + '%',
@@ -288,6 +331,10 @@ class Component extends DCLogic {
       maskLabel: st.masked > 0 ? (fmt(st.masked) + ' verts') : 'none',
       invertMask: () => { if (eng) { eng.invertMask(); this.refresh(); this.toast('Mask inverted'); } },
       clearMask: () => { if (eng) { eng.clearMask(); this.refresh(); this.toast('Mask cleared'); } },
+      // hand off
+      embedded: !!this._embedded,
+      doSave: () => this.exportFlow(true),
+      doDownload: () => this.exportFlow(false),
       // stats
       stats: [
         { k: 'Model', v: st.meshName },

@@ -9,7 +9,7 @@
 
 Free forever, Open source, All-in-one 3D Mesh, rig, mocap etc suite of tools.
 
-Website (in development): **[www.polypotion.com](https://www.polypotion.com)**
+🌐 Website (in development): **[www.polypotion.com](https://www.polypotion.com)**
 
 ## What this is
  - A suite of tools, made for meshes, to rig them, test them, mocap them, edit them, uv unwrap them etc. All I could think of, I put in.
@@ -22,8 +22,10 @@ Website (in development): **[www.polypotion.com](https://www.polypotion.com)**
  - A SaaS, priced.
  - An occasion for you to convert it to a SaaS, priced, the license is done so to avoid this at all cost.
 
-## Support
-If PolyPotion was useful to you and you'd like to give something back, please don't send it my way, consider donating to **[freeppl.org](https://www.freeppl.org/)**, who do work that matters far more than a 3D tool ever could. That would be awesome. 💙💛
+## A note from the author
+My name is fully Russian — I am not. I am **fully French**, born and raised, and I stand **with Ukraine** and its people. A name is an inheritance, not an allegiance; I want no ambiguity about where I stand.
+
+If PolyPotion was useful to you and you'd like to give something back, please don't send it my way — instead, consider donating to **[freeppl.org](https://www.freeppl.org/)**, who do work that matters far more than a 3D tool ever could. That would be awesome. 💙💛
 
 ---
 
