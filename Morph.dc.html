@@ -63,7 +63,9 @@
       <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--header);border-top:1px solid var(--seam);border-bottom:1px solid var(--seam);"><span style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);">Seed shape</span></div>
       <div style="padding:10px;display:flex;flex-direction:column;gap:6px;">
         <sc-for list="{{ seeds }}" as="s" hint-placeholder-count="4"><button style="{{ opBtn }}" onClick="{{ s.onClick }}">{{ s.label }}</button></sc-for>
-        <div style="font-size:10px;color:var(--muted);line-height:1.5;margin-top:2px;">Rough starting shapes from face regions — refine by sculpting.</div>
+        <button style="{{ arkitBtn }}" onClick="{{ doARKit }}">⚗ ARKit 52 set</button>
+        <button style="{{ arkitBtn }}" onClick="{{ doGuided }}">◎ Guided ARKit…</button>
+        <div style="font-size:10px;color:var(--muted);line-height:1.5;margin-top:2px;">Rough starting shapes from face regions — refine by sculpting. <b>ARKit 52</b> creates the standard face set that VRM export, iPhone capture and Live Link all read. <b>Guided</b> asks for 5 clicks on the face and anchors all 52 shapes to them — much better fit.</div>
       </div>
     </aside>
 
@@ -89,6 +91,14 @@
         </div>
       </sc-if>
 
+      <sc-if value="{{ lmActive }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute;left:50%;bottom:14px;transform:translateX(-50%);display:flex;align-items:center;gap:12px;background:rgba(15,15,15,.92);border:1px solid rgba(124,131,255,.5);border-radius:9px;padding:10px 14px;box-shadow:0 8px 28px rgba(0,0,0,.5);">
+          <span style="font-family:var(--font-mono);font-size:10px;color:var(--accent);letter-spacing:.08em;">{{ lmStep }}</span>
+          <span style="font-size:12.5px;color:var(--text);font-weight:600;">{{ lmPrompt }}</span>
+          <button style="font-size:11px;font-weight:600;padding:5px 10px;border-radius:5px;cursor:pointer;background:var(--panel-3);border:1px solid var(--edge);color:var(--text);" onClick="{{ lmCancel }}">Cancel</button>
+        </div>
+      </sc-if>
+
       <div style="position:absolute;left:50%;top:10px;transform:translateX(-50%);display:flex;align-items:center;gap:4px;background:rgba(15,15,15,.86);border:1px solid var(--edge);border-radius:8px;padding:5px 7px;">
         <sc-for list="{{ views }}" as="v" hint-placeholder-count="4"><button style="font-size:11px;font-weight:600;padding:5px 9px;border-radius:5px;cursor:pointer;background:transparent;border:none;color:var(--text2);" onClick="{{ v.onClick }}">{{ v.label }}</button></sc-for>
       </div>
@@ -98,6 +108,28 @@
 
     <!-- RIGHT : morph targets -->
     <aside style="width:280px;flex:none;background:var(--panel);border-left:1px solid var(--seam);display:flex;flex-direction:column;min-height:0;">
+      <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--header);border-bottom:1px solid var(--seam);">
+        <span style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);">Expressions</span>
+        <button style="margin-left:auto;font-size:11px;font-weight:600;padding:4px 10px;border-radius:6px;background:var(--panel-3);border:1px solid var(--edge);color:var(--text);cursor:pointer;" onClick="{{ doSaveExpr }}" title="Save the current slider mix as a named expression">⊕ Save</button>
+      </div>
+      <div style="flex:none;max-height:132px;overflow-y:auto;padding:8px 10px;display:flex;flex-wrap:wrap;gap:6px;border-bottom:1px solid var(--seam);">
+        <sc-for list="{{ expressions }}" as="x" hint-placeholder-count="6">
+          <button style="font-size:11px;font-weight:600;padding:5px 10px;border-radius:14px;cursor:pointer;background:var(--panel-3);border:1px solid var(--edge);color:var(--text);" onClick="{{ x.apply }}" onContextMenu="{{ x.remove }}" title="Click to apply · right-click to delete (saved ones)">{{ x.name }}</button>
+        </sc-for>
+      </div>
+      <div style="flex:none;padding:9px 10px;border-bottom:1px solid var(--seam);display:flex;flex-direction:column;gap:7px;">
+        <div style="display:flex;align-items:center;gap:7px;">
+          <button style="{{ camBtn }}" onClick="{{ camToggle }}">{{ camLabel }}</button>
+          <span title="The camera feed is processed entirely on this device and never uploaded. The face-tracking model downloads once (~3 MB) and is cached for offline use." style="flex:none;font-size:8.5px;font-weight:700;letter-spacing:.06em;padding:2px 6px;border-radius:20px;background:rgba(90,168,107,.14);border:1px solid rgba(90,168,107,.45);color:#5aa86b;cursor:help;">◉ ON-DEVICE</span>
+        </div>
+        <sc-if value="{{ camOn }}" hint-placeholder-val="{{ false }}">
+          <video id="mo-cam" autoplay playsinline muted style="width:100%;border-radius:7px;border:1px solid var(--edge);transform:scaleX(-1);background:#000;min-height:60px;"></video>
+          <div style="font-size:10px;color:var(--muted);line-height:1.5;">Your face drives the ARKit sliders live. Stop to freeze, then ⊕ Save the expression.</div>
+        </sc-if>
+        <sc-if value="{{ camStatusShow }}" hint-placeholder-val="{{ false }}">
+          <div style="font-size:10px;color:var(--text2);line-height:1.5;">{{ camStatus }}</div>
+        </sc-if>
+      </div>
       <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--header);border-bottom:1px solid var(--seam);">
         <span style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);">Morph targets</span>
         <button style="margin-left:auto;font-size:11px;font-weight:600;padding:4px 10px;border-radius:6px;background:var(--accent);border:1px solid var(--accent);color:#0d0f1f;cursor:pointer;" onClick="{{ doAdd }}">+ New</button>
@@ -132,6 +164,7 @@
 <script type="text/x-dc" data-dc-script>
 class Component extends DCLogic {
   state = {
+    camOn: false, camStatus: '',
     meshName: 'no model', hasModel: false, loading: false, loadingMsg: '',
     mode: 'grab', radius: 14, strength: 60, symmetry: true,
     morphs: [], active: -1, tick: 0,
@@ -201,6 +234,47 @@ class Component extends DCLogic {
 
   brushBtn(on) { return 'font-size:11.5px;font-weight:600;padding:8px;border-radius:6px;cursor:pointer;border:1px solid ' + (on ? 'var(--accent)' : 'var(--edge)') + ';background:' + (on ? 'var(--accentDim)' : 'var(--panel-3)') + ';color:' + (on ? 'var(--accent)' : 'var(--text)') + ';'; }
 
+  // ---- webcam face capture (audit: "webcam face capture \u2192 ARKit shapes") ----
+  // MediaPipe blendshape names === the ARKit 52 set, so scores stream straight
+  // into applyExpression(). On-device; panel re-renders throttled while live.
+  async camToggleFlow() {
+    const eng = this._eng;
+    if (this.state.camOn) {
+      if (this._faceCap) { this._faceCap.stop(); this._faceCap = null; }
+      if (this._camOrigOnChange && eng) { eng.onChange = this._camOrigOnChange; this._camOrigOnChange = null; }
+      this.setState({ camOn: false, camStatus: '' });
+      this.refresh();
+      this.toast('Capture stopped \u2014 sliders frozen; \u2295 Save keeps this expression');
+      return;
+    }
+    if (!eng || !eng.hasModel()) { this.toast('Import a model first'); return; }
+    const have = new Set((eng.morphList() || []).map(m => m.name));
+    if (!have.has('jawOpen') || !have.has('eyeBlinkLeft')) { this.toast('Create the \u2697 ARKit 52 set first \u2014 capture drives those shapes'); return; }
+    this.setState({ camOn: true, camStatus: 'Loading the face model\u2026' });
+    try {
+      const mod = this._faceCapMod || (this._faceCapMod = await import('./face-capture.js'));
+      const cap = new mod.FaceCapture();
+      this._faceCap = cap;
+      cap.onStatus = (m) => { if (this.state.camOn) this.setState({ camStatus: m || '' }); };
+      this._camOrigOnChange = eng.onChange;
+      const orig = this._camOrigOnChange;
+      let lastUI = 0;
+      eng.onChange = () => { const n = performance.now(); if (n - lastUI > 350) { lastUI = n; if (orig) orig(); } };
+      cap.onWeights = (w) => { if (this._eng && this.state.camOn) this._eng.applyExpression(w); };
+      await new Promise(r => setTimeout(r, 60));   // let the <video> mount
+      const video = document.getElementById('mo-cam');
+      if (!video) throw new Error('Video element missing');
+      await cap.start(video);
+      this.setState({ camStatus: '' });
+      this.toast('Face capture live \u2014 the camera never leaves this device');
+    } catch (e) {
+      if (this._faceCap) { this._faceCap.stop(); this._faceCap = null; }
+      if (this._camOrigOnChange && eng) { eng.onChange = this._camOrigOnChange; this._camOrigOnChange = null; }
+      this.setState({ camOn: false, camStatus: '' });
+      this.toast('Capture failed: ' + (e && e.message || e));
+    }
+  }
+
   renderVals() {
     const st = this.state, eng = this._eng;
     const setMode = (m) => { this.setState({ mode: m }); if (eng) eng.setBrush({ mode: m }); };
@@ -232,6 +306,42 @@ class Component extends DCLogic {
       editBadge: activeName ? ('Sculpting: ' + activeName) : (st.hasModel ? 'Select or create a morph to sculpt' : 'Import a model'),
       morphs, noMorphs: !(st.morphs || []).length,
       doAdd: () => { if (eng) { eng.addMorph(); this.toast('New morph — sculpt it'); } },
+      expressions: (eng && eng.loadExpressions) ? Object.entries(eng.loadExpressions()).map(([name, weights]) => ({
+        name,
+        apply: () => { if (!eng.hasModel()) { this.toast('Import a model first'); return; } const hit = eng.applyExpression(weights); this.toast(hit ? (name + ' — ' + hit + ' shapes set') : (name + ': none of its shapes exist yet — run ARKit 52 first')); },
+        remove: (e) => { e.preventDefault(); if (eng.deleteExpression(name)) { this.setState({ tick: (this.state.tick || 0) + 1 }); this.toast('Deleted “' + name + '”'); } else this.toast('Starter expressions can’t be deleted'); },
+      })) : [],
+      // webcam face capture
+      camOn: st.camOn, camStatus: st.camStatus, camStatusShow: !!st.camStatus,
+      camToggle: () => this.camToggleFlow(),
+      camLabel: st.camOn ? '\u25a0 Stop capture' : '\u25c9 Capture from webcam',
+      camBtn: 'flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:7px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;background:' + (st.camOn ? 'rgba(224,113,79,.15)' : 'var(--panel-3)') + ';border:1px solid ' + (st.camOn ? 'rgba(224,113,79,.5)' : 'var(--edge)') + ';color:' + (st.camOn ? '#e0714f' : 'var(--text)') + ';',
+      doSaveExpr: () => {
+        if (!eng || !eng.hasModel()) { this.toast('Import a model first'); return; }
+        if (!eng.captureExpression) { this.toast('Engine update pending — reload the app'); return; }
+        const weights = eng.captureExpression();
+        if (!Object.keys(weights).length) { this.toast('All sliders are at zero — nothing to save'); return; }
+        const name = prompt('Name this expression:', 'My expression');
+        if (!name) return;
+        eng.saveExpression(name, weights);
+        this.setState({ tick: (this.state.tick || 0) + 1 });
+        this.toast('Saved “' + name + '” (' + Object.keys(weights).length + ' shapes) — shared with Lipsync');
+      },
+      arkitBtn: 'display:flex;align-items:center;justify-content:center;gap:6px;padding:7px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;background:var(--accentDim);border:1px solid rgba(124,131,255,.45);color:#c9cdf6;',
+      doARKit: () => { if (!eng || !eng.hasModel()) { this.toast('Import a model first'); return; } const r = eng.addARKitSet(); this.toast(r.added ? ('ARKit set: ' + r.added + ' targets created, ' + r.seeded + ' seeded — sliders rest at 0') : 'ARKit set already present'); },
+      doGuided: () => {
+        if (!eng || !eng.hasModel()) { this.toast('Import a model first'); return; }
+        if (!eng.startLandmarks) { this.toast('Engine update pending — reload the app (old version cached)'); return; }
+        try {
+          eng.onLandmarksDone = (r) => { this.setState({ tick: (this.state.tick || 0) + 1 }); this.toast('Guided ARKit: ' + r.filled + ' shapes anchored to your landmarks' + (r.kept ? ' (' + r.kept + ' sculpted shapes kept)' : '')); };
+          eng.startLandmarks();
+          this.setState({ tick: (this.state.tick || 0) + 1 });
+        } catch (e) { this.toast(String(e && e.message || e)); }
+      },
+      lmActive: !!(eng && eng.landmarkState && eng.landmarkState()),
+      lmStep: (eng && eng.landmarkState && eng.landmarkState()) ? ((eng.landmarkState().placed + 1) + ' / 5') : '',
+      lmPrompt: (eng && eng.landmarkState && eng.landmarkState()) ? ('Click: ' + (eng.landmarkState().next || '')) : '',
+      lmCancel: () => { if (eng && eng.cancelLandmarks) { eng.cancelLandmarks(); this.setState({ tick: (this.state.tick || 0) + 1 }); } },
       sendToShowcase: () => this.sendToShowcase(), doExport: () => this.doExport(),
     };
   }

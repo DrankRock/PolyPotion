@@ -155,6 +155,35 @@ export class BMEngine {
   hasLow() { return !!this.lowMesh; }
   hasHigh() { return !!this.highMesh; }
 
+  // ---- normal-map green-channel convention: 'opengl' (Y+) or 'directx' (Y−).
+  // The wrong one makes every surface look subtly inside-out with no error —
+  // set once here, honoured by every subsequent bake.
+  setNormalConvention(c) { this.normalConvention = (c === 'directx') ? 'directx' : 'opengl'; }
+
+  // ---- ORM channel pack: R=occlusion · G=roughness · B=metallic (glTF / Unreal
+  // convention — one texture instead of three). AO comes from the bake; roughness
+  // and metallic are uniform values, optionally modulated by baked curvature.
+  packORM(opts) {
+    opts = opts || {};
+    const ao = this.maps.ao && this.maps.ao.canvas;
+    if (!ao) throw new Error('Bake an AO map first — ORM packs occlusion into the R channel');
+    const res = ao.width;
+    const src = ao.getContext('2d').getImageData(0, 0, res, res).data;
+    const rough = Math.round((opts.roughness == null ? 0.8 : opts.roughness) * 255);
+    const metal = Math.round((opts.metallic == null ? 0 : opts.metallic) * 255);
+    const curv = (opts.roughnessFromCurvature && this.maps.curvature) ? this.maps.curvature.canvas.getContext('2d').getImageData(0, 0, res, res).data : null;
+    const out = new Uint8ClampedArray(res * res * 4);
+    for (let i = 0; i < res * res; i++) {
+      out[i * 4] = src[i * 4];                                            // occlusion
+      out[i * 4 + 1] = curv ? Math.min(255, Math.max(0, rough + (curv[i * 4] - 128))) : rough;  // roughness
+      out[i * 4 + 2] = metal;                                             // metallic
+      out[i * 4 + 3] = 255;
+    }
+    this.maps.orm = this._toCanvas(out, res, 'orm');
+    this._changed();
+    return { res };
+  }
+
   // ---------------------------------------------------------- LOADING
   async _parse(buf, ext, name) {
     let obj;
@@ -255,6 +284,7 @@ export class BMEngine {
     const cage = (opts.cage || 0.04) * this.modelRadius;
     const rays = opts.aoRays || 24;
     const which = opts.maps || { normal: true, ao: true, curvature: true, height: false };
+    const gFlip = ((opts.normalConvention || this.normalConvention) === 'directx') ? -1 : 1;
     const useHigh = !!this.highGrid;
     this._cancel = false;
 
@@ -317,7 +347,7 @@ export class BMEngine {
           }
           if (!tn) tn = nrm; // self / miss → flat
           const tx = tn.dot(tang), ty = tn.dot(bitan), tz = tn.dot(nrm);
-          outNormal[idx * 4] = (tx * 0.5 + 0.5) * 255; outNormal[idx * 4 + 1] = (ty * 0.5 + 0.5) * 255;
+          outNormal[idx * 4] = (tx * 0.5 + 0.5) * 255; outNormal[idx * 4 + 1] = (ty * gFlip * 0.5 + 0.5) * 255;
           outNormal[idx * 4 + 2] = (tz * 0.5 + 0.5) * 255; outNormal[idx * 4 + 3] = 255;
         }
         // ---- HEIGHT: signed distance low↔high along normal

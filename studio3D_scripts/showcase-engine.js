@@ -15,7 +15,7 @@ import { GLTFLoader } from 'https://esm.sh/three@0.160.0/examples/jsm/loaders/GL
 import { OBJLoader } from 'https://esm.sh/three@0.160.0/examples/jsm/loaders/OBJLoader.js';
 import { RoomEnvironment } from 'https://esm.sh/three@0.160.0/examples/jsm/environments/RoomEnvironment.js';
 import { fetchAssetBuffer } from './chunk-loader.js';
-import { SHADER_PRESETS, buildShaderMaterial, presetDescriptors } from './shader-lib.js';
+import { getShaderPresets, buildShaderMaterial, presetDescriptors } from './shader-lib.js';
 
 // simple wine/water-bottle silhouette for the demo-shape playground
 function latheBottle() {
@@ -273,6 +273,85 @@ export class SCEngine {
     this.renderer.render(this.scene, this.camera);
     return new Promise(res => this.canvas.toBlob(b => res(b), 'image/png'));
   }
+  // ---------- WebXR ----------
+  // View-in-your-room (AR, phone: tap to place at 1:1) and a VR look-around.
+  // Built into the browser, no server — falls back gracefully where absent.
+  async xrSupport() {
+    if (!navigator.xr) return { ar: false, vr: false };
+    const probe = m => navigator.xr.isSessionSupported(m).catch(() => false);
+    const [ar, vr] = await Promise.all([probe('immersive-ar'), probe('immersive-vr')]);
+    return { ar: !!ar, vr: !!vr };
+  }
+
+  async startXR(mode) {
+    if (!this.wrap) throw new Error('Load a character first');
+    if (!navigator.xr) throw new Error('WebXR is not available in this browser');
+    const ar = mode !== 'vr';
+    const session = await navigator.xr.requestSession(
+      ar ? 'immersive-ar' : 'immersive-vr',
+      ar ? { requiredFeatures: ['hit-test', 'local-floor'] } : { optionalFeatures: ['local-floor'] }
+    );
+    this.renderer.xr.enabled = true;
+    this.renderer.xr.setReferenceSpaceType('local-floor');
+    await this.renderer.xr.setSession(session);
+
+    // stash + strip the stage so only the character composites over the room
+    const savedBg = this.scene.background, savedPos = this.wrap.position.clone();
+    const savedClear = new THREE.Color(); this.renderer.getClearColor(savedClear);
+    const savedAlpha = this.renderer.getClearAlpha();
+    const hidden = [];
+    if (ar) {
+      this.scene.background = null;
+      this.renderer.setClearColor(0x000000, 0);
+      this.scene.traverse(o => { const isGrid = o.type === 'GridHelper' || o.type === 'PolarGridHelper'; if ((isGrid || o.isMesh) && !this.wrap.getObjectById(o.id) && o.visible && (isGrid || (o.name || '').match(/floor|ground|stage|backdrop/i))) { hidden.push(o); o.visible = false; } });
+    }
+
+    // AR: reticle + tap-to-place via hit-test
+    let hitSource = null, reticle = null;
+    if (ar) {
+      reticle = new THREE.Mesh(
+        new THREE.RingGeometry(0.08, 0.1, 32).rotateX(-Math.PI / 2),
+        new THREE.MeshBasicMaterial({ color: 0x7c83ff, transparent: true, opacity: 0.9 })
+      );
+      reticle.matrixAutoUpdate = false; reticle.visible = false;
+      this.scene.add(reticle);
+      const viewerSpace = await session.requestReferenceSpace('viewer');
+      hitSource = await session.requestHitTestSource({ space: viewerSpace });
+      session.addEventListener('select', () => {
+        if (reticle.visible) {
+          this.wrap.position.setFromMatrixPosition(reticle.matrix);
+        }
+      });
+    }
+
+    const refSpace = this.renderer.xr.getReferenceSpace();
+    const onFrame = (t, frame) => {
+      if (!session.ended) session.requestAnimationFrame(onFrame);
+      if (ar && hitSource && frame) {
+        const hits = frame.getHitTestResults(hitSource);
+        if (hits.length) {
+          const pose = hits[0].getPose(refSpace);
+          if (pose) { reticle.visible = true; reticle.matrix.fromArray(pose.transform.matrix); }
+        } else reticle.visible = false;
+      }
+      this.renderer.render(this.scene, this.camera);
+    };
+    session.requestAnimationFrame(onFrame);
+
+    return new Promise(res => {
+      session.addEventListener('end', () => {
+        this.renderer.xr.enabled = false;
+        this.scene.background = savedBg;
+        this.renderer.setClearColor(savedClear, savedAlpha);
+        this.wrap.position.copy(savedPos);
+        hidden.forEach(o => { o.visible = true; });
+        if (reticle) { this.scene.remove(reticle); reticle.geometry.dispose(); reticle.material.dispose(); }
+        if (hitSource) hitSource.cancel();
+        res();
+      });
+    });
+  }
+
   async recordTurntable(opts) {
     opts = opts || {};
     if (!this.wrap) throw new Error('Load a character first');
@@ -849,7 +928,7 @@ export class SCEngine {
   }
 
   applyShader(id, values, targetUuid) {
-    const preset = SHADER_PRESETS.find(p => p.id === id);
+    const preset = getShaderPresets().find(p => p.id === id);
     if (!preset) return;
     const targets = this._targetMeshes(targetUuid);
     for (const mesh of targets) {
@@ -889,7 +968,7 @@ export class SCEngine {
 
   setShaderParam(key, value) {
     for (const e of this._shaderEntries) {
-      const preset = SHADER_PRESETS.find(p => p.id === e.presetId);
+      const preset = getShaderPresets().find(p => p.id === e.presetId);
       const param = preset && (preset.params || []).find(p => p.key === key);
       if (!param) continue;
       if (e.kind === 'physical') { param.apply(e.material, value); e.material.needsUpdate = true; }

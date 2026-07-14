@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./studio3D_scripts/support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Spline+Sans+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="theme.js"></script>
+<style>
+  html,body{margin:0;padding:0;height:100%;background:var(--gutter);}
+  *{box-sizing:border-box;}
+  @keyframes rt-spin{to{transform:rotate(360deg);}}
+  @keyframes rt-tin{from{transform:translateX(120%);opacity:0;}to{transform:translateX(0);opacity:1;}}
+  #rt-root ::-webkit-scrollbar{width:10px;height:10px;}
+  #rt-root ::-webkit-scrollbar-track{background:var(--gutter);}
+  #rt-root ::-webkit-scrollbar-thumb{background:var(--panel-3);border:2px solid var(--gutter);border-radius:6px;}
+</style>
+</helmet>
+
+<div id="rt-root" style="display:flex;flex-direction:column;height:100vh;width:100%;overflow:hidden;background:var(--gutter);color:var(--text);font-family:var(--font-ui);font-size:13px;-webkit-font-smoothing:antialiased;user-select:none;">
+
+  <!-- TOP BAR -->
+  <header style="height:46px;flex:none;display:flex;align-items:center;gap:14px;padding:0 14px;background:var(--header);border-bottom:1px solid var(--seam);">
+    <div style="display:flex;align-items:center;gap:9px;">
+      <div style="width:26px;height:26px;border-radius:5px;display:flex;align-items:center;justify-content:center;background:var(--accent);color:#0d0f1f;font-weight:700;font-size:15px;box-shadow:0 1px 2px rgba(0,0,0,.4),0 0 0 1px rgba(255,255,255,.08) inset;">⇄</div>
+      <div>
+        <div style="font-weight:700;letter-spacing:.04em;font-size:14px;">RETARGET</div>
+        <div style="font-family:var(--font-mono);font-size:10px;color:var(--muted);letter-spacing:.1em;margin-top:1px;">ANY CLIP → ANY HUMANOID · LOCAL</div>
+      </div>
+    </div>
+    <div style="flex:1;"></div>
+    <button style="display:inline-flex;align-items:center;gap:7px;height:30px;padding:0 13px;border-radius:6px;font-size:11.5px;font-weight:600;background:var(--panel3);border:1px solid var(--edge);color:var(--text);cursor:pointer;" onClick="{{ pickSource }}">⛷ Import clip…</button>
+    <button style="display:inline-flex;align-items:center;gap:7px;height:30px;padding:0 13px;border-radius:6px;font-size:11.5px;font-weight:600;background:var(--panel3);border:1px solid var(--edge);color:var(--text);cursor:pointer;" onClick="{{ pickTarget }}">☺ Import character…</button>
+  </header>
+
+  <div style="flex:1;display:flex;min-height:0;">
+
+    <!-- VIEWPORT -->
+    <div style="flex:1;position:relative;min-width:0;min-height:0;background:var(--viewport);">
+      <canvas id="rt-gl" style="position:absolute;inset:0;width:100%;height:100%;display:block;"></canvas>
+
+      <sc-if value="{{ empty }}" hint-placeholder-val="{{ true }}">
+        <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;background:rgba(18,20,24,.86);">
+          <div style="width:70px;height:70px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:30px;background:var(--accentDim);border:1px solid rgba(124,131,255,.3);color:var(--accent);">⇄</div>
+          <div style="text-align:center;">
+            <div style="font-size:16px;font-weight:700;margin-bottom:6px;">Put any clip on any character</div>
+            <div style="font-size:12.5px;color:var(--text2);max-width:470px;line-height:1.6;">Load a <b>source clip</b> (a .glb / .fbx with animation — a Mixamo download works great) and a <b>target character</b> (any rigged humanoid, or the active character from the Library). Bones are auto-mapped by humanoid slot; the motion transfers with root-scale correction.</div>
+          </div>
+          <div style="display:flex;gap:10px;">
+            <button style="padding:10px 18px;border-radius:7px;font-size:12.5px;font-weight:600;background:var(--accent);border:1px solid var(--accent);color:#0d0f1f;cursor:pointer;box-shadow:0 2px 12px rgba(124,131,255,.35);" onClick="{{ pickSource }}">⛷ Import source clip…</button>
+            <button style="padding:10px 18px;border-radius:7px;font-size:12.5px;font-weight:600;background:var(--panel3);border:1px solid var(--edge);color:var(--text);cursor:pointer;" onClick="{{ pickTarget }}">☺ Import target character…</button>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ loading }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:rgba(18,20,24,.8);color:var(--muted);">
+          <div style="width:38px;height:38px;border:3px solid var(--panel-3);border-top-color:var(--accent);border-radius:50%;animation:rt-spin .9s linear infinite;"></div>
+          <div style="font-size:12px;">{{ loadingMsg }}</div>
+        </div>
+      </sc-if>
+
+      <!-- side labels -->
+      <sc-if value="{{ hasAny }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute;left:0;right:0;top:10px;display:flex;justify-content:center;gap:200px;pointer-events:none;">
+          <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:.1em;color:var(--text2);background:rgba(15,15,15,.7);padding:3px 9px;border-radius:3px;">SOURCE · {{ srcBadge }}</div>
+          <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:.1em;color:var(--accent);background:rgba(15,15,15,.7);padding:3px 9px;border-radius:3px;">TARGET · {{ tgtBadge }}</div>
+        </div>
+      </sc-if>
+
+      <div style="position:absolute;right:10px;bottom:12px;font-size:10.5px;color:var(--text2);background:rgba(15,15,15,.78);border:1px solid var(--edge);padding:6px 11px;border-radius:6px;pointer-events:none;max-width:250px;">drag orbits · scroll zoom · both play in sync after retarget</div>
+    </div>
+
+    <!-- RIGHT : CONTROLS -->
+    <aside style="width:316px;flex:none;background:var(--panel);border-left:1px solid var(--seam);display:flex;flex-direction:column;min-height:0;overflow-y:auto;">
+
+      <!-- source -->
+      <div style="border-bottom:1px solid var(--seam);">
+        <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--header);border-bottom:1px solid var(--seam);">
+          <span style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);">Source clip</span>
+          <span style="margin-left:auto;font-family:var(--font-mono);font-size:10px;color:{{ srcColor }};">{{ srcConv }}</span>
+        </div>
+        <div style="padding:11px 12px;display:flex;flex-direction:column;gap:7px;">
+          <div style="display:flex;justify-content:space-between;font-size:11.5px;"><span style="color:var(--muted);">File</span><span style="font-family:var(--font-mono);color:var(--text);max-width:170px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ srcName }}</span></div>
+          <sc-if value="{{ hasClips }}" hint-placeholder-val="{{ false }}">
+            <select style="width:100%;padding:7px 8px;border-radius:6px;font-size:12px;background:var(--panel-3);border:1px solid var(--edge);color:var(--text);" onChange="{{ onClipPick }}">
+              <sc-for list="{{ clipOptions }}" as="c" hint-placeholder-count="2"><option value="{{ c.i }}">{{ c.label }}</option></sc-for>
+            </select>
+          </sc-if>
+        </div>
+      </div>
+
+      <!-- target -->
+      <div style="border-bottom:1px solid var(--seam);">
+        <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--header);border-bottom:1px solid var(--seam);">
+          <span style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);">Target character</span>
+          <span style="margin-left:auto;font-family:var(--font-mono);font-size:10px;color:{{ tgtColor }};">{{ tgtConv }}</span>
+        </div>
+        <div style="padding:11px 12px;display:flex;flex-direction:column;gap:5px;">
+          <div style="display:flex;justify-content:space-between;font-size:11.5px;"><span style="color:var(--muted);">File</span><span style="font-family:var(--font-mono);color:var(--text);max-width:170px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ tgtName }}</span></div>
+          <div style="display:flex;justify-content:space-between;font-size:11.5px;"><span style="color:var(--muted);">Bones</span><span style="font-family:var(--font-mono);color:var(--text);">{{ tgtBones }}</span></div>
+        </div>
+      </div>
+
+      <!-- bone map -->
+      <div style="border-bottom:1px solid var(--seam);">
+        <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--header);border-bottom:1px solid var(--seam);">
+          <span style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);">Bone map</span>
+          <span style="margin-left:auto;font-family:var(--font-mono);font-size:10px;color:var(--accent);background:var(--panel);padding:1px 7px;border-radius:9px;border:1px solid var(--seam);">{{ pairBadge }}</span>
+        </div>
+        <div style="padding:8px 12px;max-height:190px;overflow-y:auto;display:flex;flex-direction:column;gap:3px;">
+          <sc-for list="{{ pairs }}" as="p" hint-placeholder-count="4">
+            <div style="display:grid;grid-template-columns:1fr 14px 1fr;gap:4px;font-family:var(--font-mono);font-size:9.5px;align-items:center;">
+              <span style="color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ p.source }}</span>
+              <span style="color:var(--muted);text-align:center;">→</span>
+              <span style="color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ p.target }}</span>
+            </div>
+          </sc-for>
+          <sc-if value="{{ noPairs }}" hint-placeholder-val="{{ true }}">
+            <div style="font-size:11px;color:var(--muted);padding:4px 0;">Load both sides — matching humanoid slots appear here.</div>
+          </sc-if>
+        </div>
+      </div>
+
+      <!-- run -->
+      <div style="border-bottom:1px solid var(--seam);">
+        <div style="padding:11px 12px;">
+          <label style="display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--text2);margin-bottom:10px;cursor:pointer;">
+            <input type="checkbox" checked="{{ preserveHips }}" onChange="{{ onPreserveHips }}"> Keep hips in place (in-place clip)
+          </label>
+          <button style="display:flex;align-items:center;justify-content:center;gap:7px;padding:9px;border-radius:6px;font-size:12px;font-weight:600;background:var(--accent);border:1px solid var(--accent);color:#0d0f1f;width:100%;cursor:pointer;box-shadow:0 1px 0 rgba(255,255,255,.18) inset,0 2px 12px rgba(124,131,255,.35);" onClick="{{ doRetarget }}">⇄ Retarget</button>
+          <sc-if value="{{ hasResult }}" hint-placeholder-val="{{ false }}">
+            <div style="margin-top:9px;padding:8px 10px;border-radius:6px;font-size:11px;background:rgba(60,160,90,.12);border:1px solid rgba(60,160,90,.35);color:var(--good);font-family:var(--font-mono);">{{ resultLabel }}</div>
+            <button style="display:flex;align-items:center;justify-content:center;gap:7px;padding:8px;border-radius:6px;font-size:11.5px;font-weight:600;background:var(--panel3);border:1px solid var(--edge);color:var(--text);width:100%;cursor:pointer;margin-top:8px;" onClick="{{ togglePlay }}">{{ playLabel }}</button>
+          </sc-if>
+        </div>
+      </div>
+
+      <!-- export -->
+      <div style="border-bottom:1px solid var(--seam);">
+        <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--header);border-bottom:1px solid var(--seam);"><span style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);">Export</span></div>
+        <div style="padding:11px 12px;">
+          <button style="display:flex;align-items:center;justify-content:center;gap:7px;padding:9px;border-radius:6px;font-size:12px;font-weight:600;background:var(--panel3);border:1px solid var(--edge);color:var(--text);width:100%;cursor:pointer;" onClick="{{ doExport }}">⬇ Download character + clip (.glb)</button>
+        </div>
+      </div>
+
+      <div style="padding:12px;">
+        <div style="display:flex;gap:9px;padding:9px 11px;border-radius:7px;font-size:11px;line-height:1.5;background:var(--accentDim);border:1px solid rgba(124,131,255,.3);color:#c9cdf6;"><span style="flex:none;">✦</span><span>Bones are matched by <b>humanoid slot</b>, not by name — Mixamo, UE5, Rigify and VRM skeletons are recognised automatically, with a fuzzy fallback for everything else. Root motion is rescaled by hip height so stride length matches the new legs.</span></div>
+      </div>
+    </aside>
+  </div>
+
+  <input type="file" id="rt-src-file" accept=".glb,.gltf,.fbx" style="display:none;">
+  <input type="file" id="rt-tgt-file" accept=".glb,.gltf,.fbx" style="display:none;">
+  <div id="rt-toasts" style="position:fixed;bottom:16px;right:16px;z-index:300;display:flex;flex-direction:column;gap:8px;"></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { loading: false, loadingMsg: '', preserveHips: false, playing: true, tick: 0 };
+
+  componentDidMount() { this.setupEmbed(); this.boot(); this.setupDrop(); }
+
+  async boot() {
+    try {
+      const canvas = document.getElementById('rt-gl');
+      const mod = await import('./studio3D_scripts/retarget-engine.js');
+      this._eng = new mod.RetargetEngine(canvas);
+      this._eng.onChange = () => this.setState({ tick: this.state.tick + 1 });
+      this._eng.onStatus = (m) => this.setState({ loading: !!m, loadingMsg: m || '' });
+      if (this._pending) { const p = this._pending; this._pending = null; p(); }
+    } catch (e) {
+      this.toast('Engine failed: ' + (e && e.message || e));
+      if (this._post) this._post('studio:error', { tool: 'retarget', message: String(e && e.message || e) });
+    }
+  }
+
+  async loadVia(which, fn, label) {
+    if (!this._eng) { this._pending = () => this.loadVia(which, fn, label); return; }
+    this.setState({ loading: true, loadingMsg: 'Loading ' + (label || 'model') + '…' });
+    try {
+      const r = await fn();
+      this.setState({ loading: false, tick: this.state.tick + 1 });
+      this.toast((which === 'source' ? 'Source' : 'Target') + ': ' + r.name + ' — ' + r.bones + ' bones, ' + r.mapped + ' slots mapped (' + r.convention + ')');
+    } catch (e) {
+      this.setState({ loading: false });
+      this.toast('Load failed: ' + (e && e.message || e));
+    }
+  }
+
+  runRetarget() {
+    if (!this._eng) return;
+    try {
+      const r = this._eng.retarget({ preserveHips: this.state.preserveHips });
+      this.toast('Retargeted — ' + r.tracks + ' tracks over ' + r.bones + ' bones, ' + r.duration.toFixed(2) + 's');
+    } catch (e) { this.toast(String(e && e.message || e)); }
+  }
+
+  async doExport() {
+    if (!this._eng) return;
+    try {
+      const buf = await this._eng.exportGLB();
+      const st = this._eng.stats();
+      const blob = new Blob([buf], { type: 'model/gltf-binary' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = (st.result ? st.result.name.replace(/[^\w\- ]+/g, '') : 'retargeted') + '.glb';
+      document.body.appendChild(a); a.click();
+      setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+      this.toast('Exported ' + a.download);
+    } catch (e) { this.toast(String(e && e.message || e)); }
+  }
+
+  setupDrop() {
+    const root = document.getElementById('rt-root'); if (!root) return;
+    root.addEventListener('dragover', e => e.preventDefault());
+    root.addEventListener('drop', e => {
+      e.preventDefault();
+      const f = e.dataTransfer.files && e.dataTransfer.files[0]; if (!f) return;
+      // heuristic: no target yet → target; else source
+      const which = (this._eng && this._eng.target) ? 'source' : 'target';
+      this.loadVia(which, () => this._eng.loadFile(which, f), f.name);
+    });
+    const wire = (id, which) => {
+      const inp = document.getElementById(id);
+      if (inp) inp.addEventListener('change', e => { const f = e.target.files[0]; if (f) { this.loadVia(which, () => this._eng.loadFile(which, f), f.name); e.target.value = ''; } });
+    };
+    wire('rt-src-file', 'source'); wire('rt-tgt-file', 'target');
+  }
+
+  setupEmbed() {
+    const params = new URLSearchParams(location.search);
+    this._embedded = params.get('embed') === '1' || window.parent !== window;
+    this._post = (type, payload, transfer) => { try { window.parent && window.parent.postMessage(Object.assign({ __studio: true, type }, payload || {}), '*', transfer || []); } catch (e) {} };
+    if (this._embedded) { const hide = () => { const h = document.querySelector('#rt-root > header'); if (h && h.firstElementChild) h.firstElementChild.style.display = 'none'; }; hide(); setTimeout(hide, 60); setTimeout(hide, 300); }
+    window.addEventListener('message', (e) => {
+      const d = e.data; if (!d || !d.__studio) return;
+      if (d.type === 'studio:loadCharUrl') this.loadVia('target', () => this._eng.loadUrl('target', d.url, d.ext, { chunked: d.chunked, chunks: d.chunks }), d.label || 'character');
+      else if (d.type === 'studio:loadCharBuffer') this.loadVia('target', () => this._eng.loadBuffer('target', d.buffer, d.name), d.name || 'character');
+    });
+    setTimeout(() => this._post('studio:ready', { tool: 'retarget' }), 0);
+  }
+
+  toast(msg) {
+    const wrap = document.getElementById('rt-toasts'); if (!wrap) return;
+    const el = document.createElement('div');
+    el.style.cssText = 'padding:11px 15px;border-radius:7px;font-size:12px;background:var(--panel-3);border:1px solid var(--edge);border-left:3px solid #7c83ff;box-shadow:0 8px 24px rgba(0,0,0,.45);max-width:340px;color:var(--text);animation:rt-tin .25s cubic-bezier(.2,1,.3,1);';
+    el.textContent = msg; wrap.appendChild(el);
+    setTimeout(() => { el.style.transition = 'opacity .3s'; el.style.opacity = '0'; setTimeout(() => el.remove(), 300); }, 3200);
+  }
+
+  renderVals() {
+    const st = this.state;
+    const eng = this._eng;
+    const s = eng ? eng.stats() : { source: null, target: null, pairs: [], result: null };
+    const convLabel = c => c === 'unknown' ? 'custom rig' : c;
+    return {
+      empty: !s.source && !s.target && !st.loading,
+      hasAny: !!(s.source || s.target),
+      loading: st.loading, loadingMsg: st.loadingMsg,
+      pickSource: () => document.getElementById('rt-src-file').click(),
+      pickTarget: () => document.getElementById('rt-tgt-file').click(),
+      srcBadge: s.source ? convLabel(s.source.convention).toUpperCase() : 'EMPTY',
+      tgtBadge: s.target ? convLabel(s.target.convention).toUpperCase() : 'EMPTY',
+      srcName: s.source ? s.source.name : '—',
+      tgtName: s.target ? s.target.name : '—',
+      srcConv: s.source ? convLabel(s.source.convention) : '—',
+      tgtConv: s.target ? convLabel(s.target.convention) : '—',
+      srcColor: s.source ? 'var(--good)' : 'var(--muted)',
+      tgtColor: s.target ? 'var(--good)' : 'var(--muted)',
+      tgtBones: s.target ? String(s.target.bones) : '—',
+      hasClips: !!(s.source && s.source.clips.length > 1),
+      clipOptions: s.source ? s.source.clips.map((c, i) => ({ i, label: c || ('clip ' + (i + 1)) })) : [],
+      onClipPick: (e) => eng && eng.setSourceClip(+e.target.value),
+      pairs: s.pairs, noPairs: !s.pairs.length,
+      pairBadge: s.pairs.length + ' slots',
+      preserveHips: st.preserveHips,
+      onPreserveHips: (e) => this.setState({ preserveHips: e.target.checked }),
+      doRetarget: () => this.runRetarget(),
+      hasResult: !!s.result,
+      resultLabel: s.result ? ('✓ ' + s.result.tracks + ' tracks · ' + s.result.duration.toFixed(2) + 's') : '',
+      togglePlay: () => { const p = !st.playing; this.setState({ playing: p }); if (eng) eng.setPlaying(p); },
+      playLabel: st.playing ? '❚❚ Pause preview' : '▶ Play preview',
+      doExport: () => this.doExport(),
+    };
+  }
+}
+</script>
+</body>
+</html>

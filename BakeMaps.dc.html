@@ -133,6 +133,24 @@
         </div>
       </div>
 
+      <!-- game-ready -->
+      <div style="border-bottom:1px solid var(--seam);">
+        <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--header);border-bottom:1px solid var(--seam);"><span style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);">Game-ready</span></div>
+        <div style="padding:11px 12px;">
+          <label style="display:flex;justify-content:space-between;font-size:10.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;"><span>Normal convention</span></label>
+          <div style="display:flex;gap:6px;margin-bottom:4px;">
+            <sc-for list="{{ convOpts }}" as="c" hint-placeholder-count="2"><button style="{{ c.style }}" onClick="{{ c.onClick }}">{{ c.label }}</button></sc-for>
+          </div>
+          <div style="font-size:10px;color:var(--muted);line-height:1.5;margin-bottom:12px;">OpenGL (Y+): Blender · Godot · Unity. DirectX (Y−): Unreal. Applies to the next bake.</div>
+          <label style="display:flex;justify-content:space-between;font-size:10.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;"><span>Roughness</span><span style="font-family:var(--font-mono);color:var(--text);">{{ roughLabel }}</span></label>
+          <input type="range" min="0" max="100" value="{{ roughSlide }}" onInput="{{ onRough }}" style="width:100%;margin-bottom:10px;">
+          <label style="display:flex;justify-content:space-between;font-size:10.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;"><span>Metallic</span><span style="font-family:var(--font-mono);color:var(--text);">{{ metalLabel }}</span></label>
+          <input type="range" min="0" max="100" value="{{ metalSlide }}" onInput="{{ onMetal }}" style="width:100%;margin-bottom:12px;">
+          <button style="display:flex;align-items:center;justify-content:center;gap:7px;padding:9px;border-radius:6px;font-size:12px;font-weight:600;background:var(--panel-3);border:1px solid var(--edge);color:var(--text);width:100%;cursor:pointer;" onClick="{{ doPackORM }}">▣ Pack ORM texture</button>
+          <div style="font-size:10px;color:var(--muted);line-height:1.5;margin-top:6px;">One engine-ready RGB texture: occlusion · roughness · metallic. Needs a baked AO map; curvature (if baked) modulates roughness.</div>
+        </div>
+      </div>
+
       <!-- bake + export -->
       <div style="padding:12px;display:flex;flex-direction:column;gap:8px;">
         <button style="display:flex;align-items:center;justify-content:center;gap:7px;padding:11px;border-radius:7px;font-size:13px;font-weight:700;background:var(--accent);border:1px solid var(--accent);color:#0d0f1f;width:100%;cursor:pointer;" onClick="{{ doBake }}">☰ Bake maps</button>
@@ -154,7 +172,7 @@ class Component extends DCLogic {
   state = {
     lowName: '', highName: '', hasLow: false, hasHigh: false, haveUV: false,
     loading: false, loadingMsg: '', baking: false, progress: 0,
-    res: 512, cage: 4, rays: 24,
+    res: 512, cage: 4, rays: 24, normalConv: 'opengl', rough: 80, metal: 0,
     maps: { normal: true, ao: true, curvature: true, height: false },
     preview: 'shaded', bakedMaps: [],
   };
@@ -200,7 +218,7 @@ class Component extends DCLogic {
     if (!anyMap) { this.toast('Pick at least one map to bake'); return; }
     this.setState({ baking: true, loading: true, loadingMsg: 'Baking…', progress: 0 });
     try {
-      const r = await this._eng.bake({ res: this.state.res, cage: this.state.cage / 100, aoRays: this.state.rays, maps: this.state.maps });
+      const r = await this._eng.bake({ res: this.state.res, cage: this.state.cage / 100, aoRays: this.state.rays, maps: this.state.maps, normalConvention: this.state.normalConv });
       this.setState({ baking: false, loading: false }); this.refresh();
       this.toast('Baked ' + r.maps.length + ' map' + (r.maps.length > 1 ? 's' : '') + ' at ' + r.res + '²');
     } catch (e) {
@@ -255,7 +273,7 @@ class Component extends DCLogic {
 
     const resOpts = [256, 512, 1024, 2048].map(r => ({ label: r + '', style: this.segBtn(st.res === r), onClick: () => this.setState({ res: r }) }));
 
-    const pvList = [{ k: 'shaded', label: 'Shaded' }, { k: 'normal', label: 'Normal' }, { k: 'ao', label: 'AO' }, { k: 'curvature', label: 'Curv' }, { k: 'height', label: 'Height' }];
+    const pvList = [{ k: 'shaded', label: 'Shaded' }, { k: 'normal', label: 'Normal' }, { k: 'ao', label: 'AO' }, { k: 'curvature', label: 'Curv' }, { k: 'height', label: 'Height' }, { k: 'orm', label: 'ORM' }];
     const previews = pvList.map(p => { const has = p.k === 'shaded' || (st.bakedMaps || []).includes(p.k); return { label: p.label, style: this.pvBtn(st.preview === p.k, !has), onClick: () => { if (!has) return; this.setState({ preview: p.k }); if (eng) eng.setPreview(p.k); } }; });
 
     const statusName = st.baking ? 'baking ' + Math.round(st.progress * 100) + '%' : (st.hasLow ? (st.hasHigh ? 'low + high loaded' : 'target loaded') : 'no target');
@@ -280,6 +298,10 @@ class Component extends DCLogic {
       onCage: (e) => this.setState({ cage: +e.target.value }),
       raysSlide: st.rays, raysLabel: st.rays + '',
       onRays: (e) => this.setState({ rays: +e.target.value }),
+      convOpts: [{ k: 'opengl', label: 'OpenGL Y+' }, { k: 'directx', label: 'DirectX Y−' }].map(c => ({ label: c.label, style: this.segBtn(st.normalConv === c.k), onClick: () => { this.setState({ normalConv: c.k }); if (eng) eng.setNormalConvention(c.k); } })),
+      roughSlide: st.rough, roughLabel: (st.rough / 100).toFixed(2), onRough: (e) => this.setState({ rough: +e.target.value }),
+      metalSlide: st.metal, metalLabel: (st.metal / 100).toFixed(2), onMetal: (e) => this.setState({ metal: +e.target.value }),
+      doPackORM: () => { if (!eng) return; try { const r = eng.packORM({ roughness: st.rough / 100, metallic: st.metal / 100, roughnessFromCurvature: true }); this.refresh(); this.toast('ORM packed at ' + r.res + '² — R=occlusion G=roughness B=metallic'); } catch (e) { this.toast(String(e && e.message || e)); } },
       previews,
       doBake: () => this.doBake(),
       hasMaps: (st.bakedMaps || []).length > 0,

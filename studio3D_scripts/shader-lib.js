@@ -249,7 +249,13 @@ function customPresets() {
       .map(p => Object.assign({ category: 'Shader Lab', kind: 'shader' }, p));
   } catch (e) { return []; }
 }
-export const SHADER_PRESETS = [...CORE_PRESETS, ...normalizeWild(WILD_PRESETS), ...customPresets()];
+// Built-ins are static; Shader Lab customs are re-read from localStorage on
+// every call, so a look published while Showcase is open appears as soon as
+// the shelf re-renders — no reload needed.
+const BUILTIN_PRESETS = [...CORE_PRESETS, ...normalizeWild(WILD_PRESETS)];
+export function getShaderPresets() { return [...BUILTIN_PRESETS, ...customPresets()]; }
+// Legacy alias — frozen at import time; prefer getShaderPresets().
+export const SHADER_PRESETS = getShaderPresets();
 
 // Build a live ShaderMaterial from a shader preset + a values map (param key -> value).
 // baseMap (optional): the mesh's own albedo texture, so the shader paints OVER it.
@@ -288,7 +294,7 @@ export function buildShaderMaterial(preset, values, baseMap, texMix) {
 
 // Lightweight, serialisable descriptors for the UI (no GLSL / functions).
 export function presetDescriptors() {
-  return SHADER_PRESETS.map(p => ({
+  return getShaderPresets().map(p => ({
     id: p.id, name: p.name, category: p.category, swatch: p.swatch,
     params: (p.params || []).map(x => ({
       key: x.key, label: x.label, type: x.type,

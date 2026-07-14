@@ -149,6 +149,42 @@ export class DEEngine {
     this._status(''); this._changed();
     return this.stats();
   }
+  // ---------------------------------------------------------- LOD CHAIN
+  // "Make LODs" (Frontier Audit): decimate the ORIGINAL at set ratios and
+  // export one GLB whose meshes are named <name>_LOD0..N — the naming Unity
+  // (LOD Group) and Unreal auto-recognise. Ratios default to 100/60/30/12%.
+  async makeLODs(ratios) {
+    if (!this.origPos) throw new Error('Load a model first');
+    ratios = (ratios && ratios.length ? ratios : [1, 0.6, 0.3, 0.12]);
+    const { GLTFExporter } = await import('https://esm.sh/three@0.160.0/examples/jsm/exporters/GLTFExporter.js');
+    const group = new THREE.Group();
+    group.name = (this.modelName || 'character') + '_LODs';
+    const rungs = [];
+    for (let i = 0; i < ratios.length; i++) {
+      this._status('LOD' + i + ' — ' + Math.round(ratios[i] * 100) + '%…');
+      await new Promise(r => setTimeout(r, 20));
+      let position, normal, tris;
+      if (ratios[i] >= 0.999) { position = this.origPos; normal = null; tris = this.origTris; }
+      else {
+        const out = decimateMesh(this.origPos, ratios[i], { onStatus: m => this._status(m) });
+        if (!out) continue;
+        position = out.position; normal = out.normal; tris = out.stats.outTris;
+      }
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.BufferAttribute(position.slice(0), 3));
+      if (normal) geo.setAttribute('normal', new THREE.BufferAttribute(normal.slice(0), 3)); else geo.computeVertexNormals();
+      const mesh = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ name: 'lod_mat' }));
+      mesh.name = (this.modelName || 'character') + '_LOD' + i;
+      group.add(mesh);
+      rungs.push({ lod: i, ratio: ratios[i], tris });
+    }
+    this._status('Packing GLB…');
+    const buf = await new Promise((res, rej) => new GLTFExporter().parse(group, res, rej, { binary: true }));
+    group.traverse(o => { if (o.isMesh) { o.geometry.dispose(); o.material.dispose(); } });
+    this._status('');
+    return { buffer: buf, rungs };
+  }
+
   resetMesh() {
     if (!this.origPos) return null;
     this._setGeometry(this.origPos, null);

@@ -42,7 +42,9 @@ manifest.webmanifest ── installable PWA metadata
 | `*.dc.html` | One file per tool. Its markup + a small logic class; imports its engine dynamically. |
 | `studio3D_scripts/*.js` | The engines — the actual 3D work (three.js). One `*-engine.js` per tool, plus shared helpers. |
 | `studio3D_scripts/chunk-loader.js` | Fetches library assets, transparently reassembling chunked (Cloudflare-split) files. |
-| `studio3D_scripts/exporter.js` | Universal export: GLB/glTF/OBJ/STL/USDZ/FBX + up-axis & unit-scale. |
+| `studio3D_scripts/exporter.js` | Universal export: GLB/glTF/OBJ/STL/USDZ/FBX/VRM + up-axis & unit-scale. |
+| `studio3D_scripts/bone-map.js` | Humanoid bone dictionaries (Mixamo / UE5 / Rigify / VRM) + auto-detect. Shared by Retarget and VRM export. |
+| `studio3D_scripts/vrm-export.js` | VRM 1.0 packager: humanoid map + ARKit-driven expressions into VRMC_vrm. |
 | `studio3D_scripts/thumbnailer.js` | Renders a character GLB to a small PNG for Library cards. |
 | `rig_scripts/` | The AutoRig solver used by `Rig`. |
 | `sw.js`, `manifest.webmanifest`, `icons/` | PWA / offline. |

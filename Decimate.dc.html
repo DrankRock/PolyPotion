@@ -116,8 +116,10 @@
       <!-- export -->
       <div style="border-bottom:1px solid var(--seam);">
         <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--header);border-bottom:1px solid var(--seam);"><span style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);">Export</span></div>
-        <div style="padding:11px 12px;">
+        <div style="padding:11px 12px;display:flex;flex-direction:column;gap:8px;">
           <button style="display:flex;align-items:center;justify-content:center;gap:7px;padding:9px;border-radius:6px;font-size:12px;font-weight:600;background:var(--panel3);border:1px solid var(--edge);color:var(--text);width:100%;cursor:pointer;" onClick="{{ doExport }}">⬇ Download .obj</button>
+          <button style="display:flex;align-items:center;justify-content:center;gap:7px;padding:9px;border-radius:6px;font-size:12px;font-weight:600;background:var(--accentDim);border:1px solid rgba(124,131,255,.45);color:#c9cdf6;width:100%;cursor:pointer;" onClick="{{ doLODs }}">▣ Make LODs (.glb)</button>
+          <div style="font-size:10px;color:var(--muted);line-height:1.5;">LODs: decimates the <b>original</b> at 100 / 60 / 30 / 12% and packs one GLB with meshes named <span style="font-family:var(--font-mono);">_LOD0–3</span> — the convention Unity's LOD Group and Unreal auto-detect.</div>
         </div>
       </div>
 
@@ -186,6 +188,22 @@ class Component extends DCLogic {
       this.refresh(); this.setState({ loading: false });
       if (!r) this.toast('Nothing to reduce'); else this.toast('Reduced to ' + r.tris.toLocaleString() + ' tris (' + Math.round(r.tris / Math.max(1, r.origTris) * 100) + '% of original)');
     } catch (e) { this.setState({ loading: false }); this.toast('Decimate failed: ' + (e && e.message || e)); }
+  }
+
+  async doLODs() {
+    const eng = this._eng;
+    if (!eng || !eng.hasModel()) { this.toast('Load a mesh first'); return; }
+    if (!eng.makeLODs) { this.toast('Engine update pending — reload the app (old version cached)'); return; }
+    try {
+      const r = await eng.makeLODs();
+      const blob = new Blob([r.buffer], { type: 'model/gltf-binary' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = (eng.stats().name || 'mesh') + '_LODs.glb';
+      document.body.appendChild(a); a.click();
+      setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+      this.toast('LOD chain: ' + r.rungs.map(x => 'LOD' + x.lod + ' ' + x.tris.toLocaleString()).join(' · '));
+    } catch (e) { this.toast(String(e && e.message || e)); }
   }
 
   doExport() {
@@ -258,6 +276,7 @@ class Component extends DCLogic {
       doDecimate: () => this.runDecimate(),
       doReset: () => { if (eng) eng.resetMesh(); this.refresh(); this.toast('Restored to ' + (eng ? eng.stats().origTris.toLocaleString() : '0') + ' tris'); },
       doExport: () => this.doExport(),
+      doLODs: () => this.doLODs(),
     };
   }
 }

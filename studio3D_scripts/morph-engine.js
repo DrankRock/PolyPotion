@@ -178,7 +178,128 @@ export class MorphEngine {
   renameMorph(i, name) { if (this.morphs[i]) { this.morphs[i].name = name; this._changed(); } }
   setActive(i) { this.active = i; this._changed(); }
   setInfluence(i, v) { if (this.morphs[i]) { this.morphs[i].influence = clamp(v, -1, 1.5); this.recompute(); this._changed(); } }
+
+  // ---------------------------------------------------------- EXPRESSIONS
+  // Named combinations of shape weights (blink, visemes, emotions) stored in
+  // localStorage under 'pp-expressions' so Lipsync / Pose can read the same
+  // library. applyExpression() sets influences; captureExpression() saves the
+  // current non-zero weights under a name.
+  static STARTER_EXPRESSIONS = {
+    'Blink':      { eyeBlinkLeft: 1, eyeBlinkRight: 1 },
+    'Happy':      { mouthSmileLeft: 1, mouthSmileRight: 1, cheekSquintLeft: 0.4, cheekSquintRight: 0.4, eyeSquintLeft: 0.3, eyeSquintRight: 0.3 },
+    'Sad':        { mouthFrownLeft: 0.9, mouthFrownRight: 0.9, browInnerUp: 0.7, eyeLookDownLeft: 0.2, eyeLookDownRight: 0.2 },
+    'Angry':      { browDownLeft: 1, browDownRight: 1, noseSneerLeft: 0.5, noseSneerRight: 0.5, mouthPressLeft: 0.5, mouthPressRight: 0.5 },
+    'Surprised':  { eyeWideLeft: 1, eyeWideRight: 1, browInnerUp: 0.8, browOuterUpLeft: 0.7, browOuterUpRight: 0.7, jawOpen: 0.4 },
+    'Viseme AA':  { jawOpen: 0.7 },
+    'Viseme OH':  { mouthPucker: 0.8, jawOpen: 0.3 },
+    'Viseme EE':  { mouthSmileLeft: 0.5, mouthSmileRight: 0.5, jawOpen: 0.2 },
+    'Viseme FF':  { mouthRollLower: 0.7, mouthShrugUpper: 0.3 },
+    'Neutral':    {},
+  };
+
+  loadExpressions() {
+    let saved = {};
+    try { saved = JSON.parse(localStorage.getItem('pp-expressions') || '{}'); } catch (e) {}
+    return Object.assign({}, MorphEngine.STARTER_EXPRESSIONS, saved);
+  }
+  saveExpression(name, weights) {
+    let saved = {};
+    try { saved = JSON.parse(localStorage.getItem('pp-expressions') || '{}'); } catch (e) {}
+    saved[name] = weights;
+    try { localStorage.setItem('pp-expressions', JSON.stringify(saved)); } catch (e) {}
+  }
+  deleteExpression(name) {
+    let saved = {};
+    try { saved = JSON.parse(localStorage.getItem('pp-expressions') || '{}'); } catch (e) {}
+    delete saved[name];
+    try { localStorage.setItem('pp-expressions', JSON.stringify(saved)); } catch (e) {}
+    return !(name in MorphEngine.STARTER_EXPRESSIONS);   // starters can't be removed
+  }
+  applyExpression(weights) {
+    if (!this.morphs.length) return 0;
+    let hit = 0;
+    for (const m of this.morphs) {
+      const w = weights[m.name];
+      m.influence = (w == null) ? 0 : clamp(w, -1, 1.5);
+      if (w != null) hit++;
+    }
+    this.recompute(); this._changed();
+    return hit;
+  }
+  captureExpression() {
+    const weights = {};
+    for (const m of this.morphs) if (Math.abs(m.influence) > 0.01) weights[m.name] = +m.influence.toFixed(2);
+    return weights;
+  }
   resetMorph(i) { if (this.morphs[i]) { this.morphs[i].delta.fill(0); this.recompute(); this._changed(); } }
+
+  // ---------------------------------------------------------- ARKit / FACS 52
+  // The de-facto face standard (VRM expressions, iPhone capture, Live Link,
+  // MetaHuman all speak it). Creates the full 52-target set — named, resting
+  // at 0 — and seeds the big obvious shapes from face-region heuristics so
+  // there's something to refine rather than a wall of empty sliders.
+  static ARKIT_NAMES = [
+    'eyeBlinkLeft','eyeLookDownLeft','eyeLookInLeft','eyeLookOutLeft','eyeLookUpLeft','eyeSquintLeft','eyeWideLeft',
+    'eyeBlinkRight','eyeLookDownRight','eyeLookInRight','eyeLookOutRight','eyeLookUpRight','eyeSquintRight','eyeWideRight',
+    'jawForward','jawLeft','jawRight','jawOpen',
+    'mouthClose','mouthFunnel','mouthPucker','mouthLeft','mouthRight',
+    'mouthSmileLeft','mouthSmileRight','mouthFrownLeft','mouthFrownRight',
+    'mouthDimpleLeft','mouthDimpleRight','mouthStretchLeft','mouthStretchRight',
+    'mouthRollLower','mouthRollUpper','mouthShrugLower','mouthShrugUpper',
+    'mouthPressLeft','mouthPressRight','mouthLowerDownLeft','mouthLowerDownRight',
+    'mouthUpperUpLeft','mouthUpperUpRight',
+    'browDownLeft','browDownRight','browInnerUp','browOuterUpLeft','browOuterUpRight',
+    'cheekPuff','cheekSquintLeft','cheekSquintRight',
+    'noseSneerLeft','noseSneerRight','tongueOut',
+  ];
+
+  addARKitSet() {
+    if (!this.mesh) return { added: 0, seeded: 0 };
+    const have = new Set(this.morphs.map(m => m.name));
+    const n = this.base.length;
+    let added = 0;
+    for (const name of MorphEngine.ARKIT_NAMES) {
+      if (have.has(name)) continue;
+      this.morphs.push({ name, delta: new Float32Array(n), influence: 0 });
+      added++;
+    }
+    // seed the big shapes from region heuristics (editable after)
+    const seeds = [
+      { name: 'jawOpen', kind: 'jaw', side: 0 },
+      { name: 'mouthSmileLeft', kind: 'smile', side: 1 },
+      { name: 'mouthSmileRight', kind: 'smile', side: -1 },
+      { name: 'browInnerUp', kind: 'brows', side: 0 },
+      { name: 'browOuterUpLeft', kind: 'brows', side: 1 },
+      { name: 'browOuterUpRight', kind: 'brows', side: -1 },
+    ];
+    let seeded = 0;
+    const savedActive = this.active;
+    for (const s of seeds) {
+      const i = this.morphs.findIndex(m => m.name === s.name);
+      if (i < 0 || this.morphs[i].delta.some(v => v !== 0)) continue;
+      this.active = i;
+      const savedInf = this.morphs[i].influence;
+      this.seedRegion(s.kind);
+      this.morphs[i].influence = savedInf;   // seedRegion may bump influence — ARKit shapes rest at 0
+      if (s.side) this._maskSide(this.morphs[i].delta, s.side);
+      seeded++;
+    }
+    this.active = savedActive >= 0 ? savedActive : this.morphs.findIndex(m => m.name === 'jawOpen');
+    this.recompute(); this._changed();
+    return { added, seeded };
+  }
+
+  _maskSide(delta, side) {
+    // side +1 keeps the character's left (+X), -1 keeps the right (−X); fades across the midline
+    const b = this.base; const n = b.length / 3;
+    let w = 0; for (let i = 0; i < n; i++) w = Math.max(w, Math.abs(b[i * 3]));
+    const fade = Math.max(1e-6, w * 0.08);
+    for (let i = 0; i < n; i++) {
+      const x = b[i * 3] * side;
+      const f = x <= -fade ? 0 : x >= fade ? 1 : (x + fade) / (2 * fade);
+      if (f < 1) { delta[i * 3] *= f; delta[i * 3 + 1] *= f; delta[i * 3 + 2] *= f; }
+    }
+  }
 
   // seed a morph from a coarse facial region (approximate, fully editable after)
   seedRegion(kind) {
@@ -199,13 +320,171 @@ export class MorphEngine {
     this.recompute(); this._changed();
   }
 
+  // ---------------------------------------------------------- LANDMARK-GUIDED ARKit
+  // You click 5 points on the face — chin tip, a mouth corner, nose tip, an eye
+  // centre, a brow peak — and all 52 shapes are synthesized anchored to them:
+  // gaussian regions sized by eye-to-eye distance, jaw as a real rotation about
+  // an inferred hinge. Far better starting shapes than the blind heuristics.
+  static LANDMARK_STEPS = [
+    { key: 'chin',  label: 'Chin tip — the lowest point of the jaw' },
+    { key: 'mouth', label: 'Mouth corner — either side' },
+    { key: 'nose',  label: 'Nose tip' },
+    { key: 'eye',   label: 'Eye centre — same side' },
+    { key: 'brow',  label: 'Brow peak — same side' },
+  ];
+
+  startLandmarks() {
+    if (!this.mesh) throw new Error('Import a model first');
+    this.cancelLandmarks();
+    this._lm = { pts: [], markers: [] };
+    this._changed();
+  }
+  cancelLandmarks() {
+    if (this._lm) { this._lm.markers.forEach(m => { this.scene.remove(m); m.geometry.dispose(); m.material.dispose(); }); this._lm = null; this._changed(); }
+  }
+  landmarkState() {
+    if (!this._lm) return null;
+    const i = this._lm.pts.length;
+    return { placed: i, total: 5, next: i < 5 ? MorphEngine.LANDMARK_STEPS[i].label : null };
+  }
+  _placeLandmark(p) {
+    const lm = this._lm; if (!lm) return;
+    lm.pts.push(p.clone());
+    const mk = new THREE.Mesh(new THREE.SphereGeometry(this.modelRadius * 0.008, 12, 12), new THREE.MeshBasicMaterial({ color: 0x8fd0ff, depthTest: false }));
+    mk.renderOrder = 998; mk.position.copy(p); this.scene.add(mk); lm.markers.push(mk);
+    if (lm.pts.length >= 5) {
+      const pts = lm.pts;
+      const result = this._generateARKitFromLandmarks(pts[0], pts[1], pts[2], pts[3], pts[4]);
+      this.cancelLandmarks();
+      if (this.onLandmarksDone) this.onLandmarksDone(result);
+    }
+    this._changed();
+  }
+
+  _generateARKitFromLandmarks(chin, mouthC, nose, eye, brow) {
+    // ensure all 52 targets exist (blank, resting at 0)
+    const have = new Set(this.morphs.map(m => m.name));
+    for (const name of MorphEngine.ARKIT_NAMES) if (!have.has(name)) this.morphs.push({ name, delta: new Float32Array(this.base.length), influence: 0 });
+
+    const b = this.base, n = b.length / 3;
+    const ax = Math.abs, V3 = (x, y, z) => new THREE.Vector3(x, y, z);
+    const S = Math.max(ax(eye.x) * 2, ax(mouthC.x) * 2, 1e-4);   // face scale ≈ eye-to-eye
+    const A = S * 0.14;                                          // base amplitude
+    const σe = S * 0.16, σc = S * 0.14, σl = S * 0.20, σb = S * 0.18, σch = S * 0.25;
+
+    // derived anchors (mirrored across X; character's left = +X)
+    const eyeP = s => V3(s * ax(eye.x), eye.y, eye.z);
+    const mcP = s => V3(s * ax(mouthC.x), mouthC.y, mouthC.z);
+    const mo = V3(0, mouthC.y, mouthC.z + (nose.z - mouthC.z) * 0.3);
+    const lipU = V3(0, mo.y + S * 0.12, mo.z), lipD = V3(0, mo.y - S * 0.12, mo.z);
+    const browP = s => V3(s * ax(brow.x), brow.y, brow.z);
+    const browIn = V3(0, brow.y, brow.z);
+    const browOut = s => V3(s * (ax(brow.x) + S * 0.18), brow.y - S * 0.02, brow.z - S * 0.05);
+    const noseSide = s => V3(s * S * 0.12, nose.y, nose.z - S * 0.05);
+    const cheek = s => V3(s * (ax(eye.x) + S * 0.10), (eye.y + mouthC.y) / 2, mo.z - S * 0.15);
+    const pivot = V3(0, (eye.y + mouthC.y) / 2, chin.z - S * 1.1);  // jaw hinge (≈ ear)
+
+    const blob = (d, c, σ, dx, dy, dz) => {
+      const s2 = 2 * σ * σ;
+      for (let i = 0; i < n; i++) {
+        const ex = b[i * 3] - c.x, ey = b[i * 3 + 1] - c.y, ez = b[i * 3 + 2] - c.z;
+        const w = Math.exp(-(ex * ex + ey * ey + ez * ez) / s2); if (w < 0.02) continue;
+        d[i * 3] += dx * w; d[i * 3 + 1] += dy * w; d[i * 3 + 2] += dz * w;
+      }
+    };
+    const toward = (d, c, σ, k, fz) => {   // pull xy toward c, push z forward
+      const s2 = 2 * σ * σ;
+      for (let i = 0; i < n; i++) {
+        const dx = c.x - b[i * 3], dy = c.y - b[i * 3 + 1], dz = c.z - b[i * 3 + 2];
+        const w = Math.exp(-(dx * dx + dy * dy + dz * dz) / s2); if (w < 0.02) continue;
+        const len = Math.hypot(dx, dy) || 1;
+        d[i * 3] += (dx / len) * k * w; d[i * 3 + 1] += (dy / len) * k * w; d[i * 3 + 2] += fz * w;
+      }
+    };
+    // jaw region weight: below the mouth line, in front of the hinge
+    const jawW = i => {
+      const y = b[i * 3 + 1], z = b[i * 3 + 2];
+      const top = mo.y + S * 0.06, bot = chin.y, below = chin.y - S * 0.5;
+      let wy; if (y > top) wy = 0; else if (y > bot) wy = (top - y) / Math.max(1e-6, top - bot); else if (y > below) wy = 1 - (bot - y) / Math.max(1e-6, bot - below); else wy = 0;
+      const wz = clamp((z - pivot.z) / Math.max(1e-6, chin.z - pivot.z), 0, 1);
+      return clamp(wy, 0, 1) * wz * wz;
+    };
+    const jawRot = (d, ang) => {
+      const sn = Math.sin(ang), cs = Math.cos(ang);
+      for (let i = 0; i < n; i++) {
+        const w = jawW(i); if (w < 0.02) continue;
+        const y = b[i * 3 + 1] - pivot.y, z = b[i * 3 + 2] - pivot.z;
+        const ry = y * cs - z * sn, rz = y * sn + z * cs;
+        d[i * 3 + 1] += (ry - y) * w; d[i * 3 + 2] += (rz - z) * w;
+      }
+    };
+    const jawMove = (d, dx, dy, dz) => { for (let i = 0; i < n; i++) { const w = jawW(i); if (w < 0.02) continue; d[i * 3] += dx * w; d[i * 3 + 1] += dy * w; d[i * 3 + 2] += dz * w; } };
+
+    let filled = 0, kept = 0;
+    const shape = (name, fn) => {
+      const m = this.morphs.find(x => x.name === name); if (!m) return;
+      if (m.delta.some(v => v !== 0)) { kept++; return; }   // never clobber user sculpts
+      fn(m.delta);
+      const side = /Left$/.test(name) ? 1 : /Right$/.test(name) ? -1 : 0;
+      if (side) this._maskSide(m.delta, side);
+      filled++;
+    };
+    const both = (stem, fn) => { shape(stem + 'Left', d => fn(d, 1)); shape(stem + 'Right', d => fn(d, -1)); };
+
+    // —— eyes
+    both('eyeBlink', (d, s) => blob(d, eyeP(s).add(V3(0, σe * 0.6, 0)), σe, 0, -A * 0.9, 0));
+    both('eyeWide', (d, s) => blob(d, eyeP(s).add(V3(0, σe * 0.6, 0)), σe, 0, A * 0.6, 0));
+    both('eyeSquint', (d, s) => blob(d, eyeP(s).add(V3(0, -σe * 0.6, 0)), σe, 0, A * 0.5, 0));
+    both('eyeLookUp', (d, s) => blob(d, eyeP(s), σe * 1.2, 0, A * 0.35, 0));
+    both('eyeLookDown', (d, s) => blob(d, eyeP(s), σe * 1.2, 0, -A * 0.35, 0));
+    both('eyeLookIn', (d, s) => blob(d, eyeP(s), σe * 1.2, -s * A * 0.3, 0, 0));
+    both('eyeLookOut', (d, s) => blob(d, eyeP(s), σe * 1.2, s * A * 0.3, 0, 0));
+    // —— brows
+    shape('browInnerUp', d => blob(d, browIn, σb, 0, A * 0.7, 0));
+    both('browDown', (d, s) => blob(d, browP(s), σb, 0, -A * 0.6, 0));
+    both('browOuterUp', (d, s) => blob(d, browOut(s), σb, 0, A * 0.7, 0));
+    // —— nose / cheeks
+    both('noseSneer', (d, s) => blob(d, noseSide(s), σc, 0, A * 0.4, 0));
+    shape('cheekPuff', d => { blob(d, cheek(1), σch, A * 0.8, 0, A * 0.2); blob(d, cheek(-1), σch, -A * 0.8, 0, A * 0.2); });
+    both('cheekSquint', (d, s) => blob(d, cheek(s), σch, 0, A * 0.5, 0));
+    // —— jaw
+    shape('jawOpen', d => jawRot(d, 0.35));
+    shape('jawForward', d => jawMove(d, 0, 0, A * 0.8));
+    shape('jawLeft', d => jawMove(d, A * 0.8, 0, 0));
+    shape('jawRight', d => jawMove(d, -A * 0.8, 0, 0));
+    // —— mouth
+    both('mouthSmile', (d, s) => blob(d, mcP(s), σc, s * A * 0.5, A * 0.8, 0));
+    both('mouthFrown', (d, s) => blob(d, mcP(s), σc, s * A * 0.3, -A * 0.8, 0));
+    both('mouthDimple', (d, s) => blob(d, mcP(s), σc, s * A * 0.5, 0, -A * 0.4));
+    both('mouthStretch', (d, s) => blob(d, mcP(s), σc, s * A * 0.8, -A * 0.2, 0));
+    both('mouthPress', (d, s) => blob(d, mcP(s), σc, s * A * 0.2, 0, -A * 0.35));
+    shape('mouthLeft', d => blob(d, mo, σl * 1.4, A * 0.7, 0, 0));
+    shape('mouthRight', d => blob(d, mo, σl * 1.4, -A * 0.7, 0, 0));
+    shape('mouthFunnel', d => toward(d, mo, σl, A * 0.4, A * 0.5));
+    shape('mouthPucker', d => toward(d, mo, σl, A * 0.7, A * 0.35));
+    shape('mouthClose', d => blob(d, lipD, σl, 0, A * 0.5, 0));
+    shape('mouthRollUpper', d => blob(d, lipU, σc, 0, -A * 0.25, -A * 0.5));
+    shape('mouthRollLower', d => blob(d, lipD, σc, 0, A * 0.25, -A * 0.5));
+    shape('mouthShrugUpper', d => blob(d, lipU, σc, 0, A * 0.5, A * 0.3));
+    shape('mouthShrugLower', d => blob(d, lipD, σc, 0, A * 0.5, A * 0.3));
+    both('mouthUpperUp', (d, s) => blob(d, V3(s * S * 0.1, lipU.y, lipU.z), σc, 0, A * 0.5, 0));
+    both('mouthLowerDown', (d, s) => blob(d, V3(s * S * 0.1, lipD.y, lipD.z), σc, 0, -A * 0.5, 0));
+    // tongueOut stays blank — no tongue geometry to move
+
+    this.active = this.morphs.findIndex(m => m.name === 'jawOpen');
+    this.recompute(); this._changed();
+    return { filled, kept };
+  }
+
   // ---------------------------------------------------------- SCULPT
   _bindPointer() {
     const c = this.canvas;
     const toNdc = e => { const r = c.getBoundingClientRect(); this._ndc.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1); };
     c.addEventListener('pointermove', e => { toNdc(e); const hit = this._raycast(); this._updateRing(hit); if (this.painting && this._drag) this._stroke(e, hit); });
     c.addEventListener('pointerdown', e => {
-      if (e.button !== 0 || this.active < 0) return; toNdc(e); const hit = this._raycast(); if (!hit) return; e.preventDefault();
+      if (e.button !== 0) return;
+      if (this._lm) { toNdc(e); const hit = this._raycast(); if (hit) { e.preventDefault(); this._placeLandmark(hit.point); } return; }
+      if (this.active < 0) return; toNdc(e); const hit = this._raycast(); if (!hit) return; e.preventDefault();
       this.painting = true; this.controls.enableRotate = false; c.style.cursor = 'grabbing'; this._pushUndo();
       const n = this.camera.getWorldDirection(new THREE.Vector3());
       this._drag = { plane: new THREE.Plane().setFromNormalAndCoplanarPoint(n, hit.point), last: hit.point.clone(), center: hit.point.clone(), normal: hit.face ? hit.face.normal.clone().transformDirection(this.mesh.matrixWorld) : n.clone().negate() };

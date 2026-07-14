@@ -65,6 +65,20 @@
       </div>
       <div style="border-top:1px solid var(--seam);">
         <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--header);border-bottom:1px solid var(--seam);">
+          <span style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);">Saved poses</span>
+          <button title="Save the current pose to the shelf" style="margin-left:auto;height:22px;padding:0 9px;border-radius:5px;border:1px solid var(--edge);background:var(--panel3);color:var(--text);cursor:pointer;font-size:10px;font-weight:700;" onClick="{{ savePose }}">⊕ Save</button>
+        </div>
+        <div style="padding:10px 12px;display:flex;flex-wrap:wrap;gap:7px;">
+          <sc-if value="{{ noSavedPoses }}" hint-placeholder-val="{{ true }}">
+            <span style="font-size:10.5px;color:var(--muted);line-height:1.5;">Pose the character, then ⊕ Save. Click a chip to apply it — right-click removes it. Text to pose matches saved names too.</span>
+          </sc-if>
+          <sc-for list="{{ savedPoses }}" as="sp" hint-placeholder-count="2">
+            <button style="{{ sp.style }}" title="Click to apply · right-click to delete" onClick="{{ sp.apply }}" onContextMenu="{{ sp.del }}">{{ sp.label }}</button>
+          </sc-for>
+        </div>
+      </div>
+      <div style="border-top:1px solid var(--seam);">
+        <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--header);border-bottom:1px solid var(--seam);">
           <span style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);">✦ Text to pose</span>
           <sc-if value="{{ netMode }}" hint-placeholder-val="{{ true }}"><span title="Sends your text prompt to a third-party AI over the internet. Everything else in PolyPotion stays on your device." style="font-size:8.5px;font-weight:700;letter-spacing:.06em;padding:2px 6px;border-radius:20px;background:rgba(224,113,79,.16);border:1px solid rgba(224,113,79,.5);color:#e0714f;cursor:help;">&#9673; NETWORKED</span></sc-if>
           <button title="AI provider settings" style="margin-left:auto;width:22px;height:22px;border-radius:5px;border:1px solid var(--edge);background:var(--panel3);color:var(--text2);cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;" onClick="{{ aiToggleSettings }}">⚙</button>
@@ -200,7 +214,36 @@ class Component extends DCLogic {
     aiBusy: false, aiSettingsOpen: false, aiNote: '',
     aiProvider: (function () { try { return localStorage.getItem('pp.ai.provider') || 'local'; } catch (e) { return 'local'; } })(),
     aiKeys: (function () { try { return JSON.parse(localStorage.getItem('pp.ai.keys') || '{}') || {}; } catch (e) { return {}; } })(),
+    poses: (function () { try { const j = JSON.parse(localStorage.getItem('pp-poses') || '[]'); return Array.isArray(j) ? j : []; } catch (e) { return []; } })(),
   };
+
+  // ---- saved-pose shelf (audit: "pose mirror + pose library") ----
+  // Shared contract: localStorage 'pp-poses' = [{name, data:{canonKey:[x,y,z,w]}}]
+  storePoses(list) { try { localStorage.setItem('pp-poses', JSON.stringify(list)); } catch (e) {} }
+  savePoseFlow() {
+    const eng = this._eng;
+    if (!eng || !this.state.hasModel) { this.toast('Load a rig first'); return; }
+    const data = eng.capturePose();
+    if (!data || !Object.keys(data).length) { this.toast('Pose the character first \u2014 this is still the bind pose'); return; }
+    const name = (prompt('Name this pose', 'My pose') || '').trim();
+    if (!name) return;
+    const list = this.state.poses.filter(p => p.name.toLowerCase() !== name.toLowerCase());
+    list.push({ name, data });
+    this.storePoses(list); this.setState({ poses: list });
+    this.toast('Saved \u201c' + name + '\u201d \u2014 ' + Object.keys(data).length + ' joints');
+  }
+  applySavedPose(p) {
+    const eng = this._eng;
+    if (!eng || !this.state.hasModel) { this.toast('Load a rig first'); return; }
+    const r = eng.applyPoseData(p.data);
+    this.refresh();
+    this.toast(r.applied ? ('\u201c' + p.name + '\u201d applied \u2014 ' + r.applied + ' joints') : 'No saved joints matched this rig');
+  }
+  deleteSavedPose(p) {
+    const list = this.state.poses.filter(x => x !== p);
+    this.storePoses(list); this.setState({ poses: list });
+    this.toast('Removed \u201c' + p.name + '\u201d');
+  }
 
   aiProviderDefs() {
     return [
@@ -295,6 +338,20 @@ class Component extends DCLogic {
     if (prov.id === 'local') {
       (async () => {
         try {
+          // saved poses first \u2014 the shelf is part of the local matcher's library
+          const savedHit = (this.state.poses || []).find(p => {
+            const n = p.name.toLowerCase(), t = txt.toLowerCase();
+            return n && (t.includes(n) || n.includes(t));
+          });
+          if (savedHit) {
+            const rs = eng.applyPoseData(savedHit.data);
+            if (rs.applied) {
+              this.refresh();
+              this.setState({ aiBusy: false, aiNote: '\u2697 saved pose \u201c' + savedHit.name + '\u201d \u2014 ' + rs.applied + ' joints \u00b7 on device' });
+              this.toast('Applied your saved pose \u201c' + savedHit.name + '\u201d');
+              return;
+            }
+          }
           if (!window.PPPoseLib) await import('./pose-library.js');
           const hit = window.PPPoseLib.match(txt);
           if (!hit) { this.setState({ aiBusy: false, aiNote: 'No on-device match \u2014 try simpler words (kneel, wave, sit, run\u2026) or choose a provider' }); this.toast('No local pose matched \u2014 try simpler wording'); return; }
@@ -402,6 +459,15 @@ class Component extends DCLogic {
 
     return {
       presets, views,
+      // saved-pose shelf
+      savePose: () => this.savePoseFlow(),
+      noSavedPoses: !(st.poses && st.poses.length),
+      savedPoses: (st.poses || []).map(p => ({
+        label: p.name,
+        style: 'font-family:IBM Plex Mono,monospace;font-size:10px;padding:5px 10px;border-radius:5px;cursor:pointer;background:var(--panel2);border:1px solid var(--edge);color:var(--text);',
+        apply: () => this.applySavedPose(p),
+        del: (e) => { e.preventDefault(); this.deleteSavedPose(p); },
+      })),
       // text-to-pose
       aiProviders: this.aiProviderDefs().map(p => ({ id: p.id, label: p.label })),
       aiProvider: st.aiProvider,

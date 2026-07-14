@@ -336,6 +336,36 @@ export class PEngine {
     this._changed();
   }
 
+  // ---- saved poses (audit: "pose mirror + pose library") ----
+  // capturePose(): canonical-key → local-quaternion snapshot. Portable across
+  // rigs that share the canon map (mixamo/autorig), best within one rig family
+  // since bind orientations differ. Joints still at rest are omitted.
+  capturePose() {
+    if (!this.model) return null;
+    const out = {};
+    Object.entries(this.canon).forEach(([key, bone]) => {
+      if (!bone) return;
+      const rest = this.restQ.get(bone), q = bone.quaternion;
+      if (rest && Math.abs(q.x - rest.x) + Math.abs(q.y - rest.y) + Math.abs(q.z - rest.z) + Math.abs(q.w - rest.w) < 1e-4) return;
+      out[key] = [+q.x.toFixed(5), +q.y.toFixed(5), +q.z.toFixed(5), +q.w.toFixed(5)];
+    });
+    return out;
+  }
+  // applyPoseData(data): bind pose + the saved local quaternions, undoable.
+  applyPoseData(data) {
+    if (!this.model || !data) return { applied: 0 };
+    this.pushUndo();
+    this.restQ.forEach((q, bone) => bone.quaternion.copy(q));
+    let applied = 0;
+    Object.entries(data).forEach(([key, q]) => {
+      const bone = this.canon[key];
+      if (bone && Array.isArray(q) && q.length === 4) { bone.quaternion.set(q[0], q[1], q[2], q[3]).normalize(); applied++; }
+    });
+    this.model.updateMatrixWorld(true);
+    this.selected = null; this._paintHandles(); this._changed();
+    return { applied };
+  }
+
   // aim a bone so the vector to its child points along a world-space direction
   _aim(parentKey, childKey, dir) {
     const C = this.canon;

@@ -325,6 +325,7 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
         <div class="dock-group-items">
           <div class="dock-item" data-tool="motion" title="Motion editor — layer, merge, pose"><span class="ic">⌗</span><span class="lb">Motion</span></div>
           <div class="dock-item" data-tool="timeline" title="Timeline — lay clips out, trim, crossfade, bake one performance (NLA)"><span class="ic">≡</span><span class="lb">Timeline</span></div>
+          <div class="dock-item" data-tool="retarget" title="Retarget — put any clip on any humanoid: auto bone-map + root-scale correction"><span class="ic">⇄</span><span class="lb">Retarget</span></div>
           <div class="dock-item" data-tool="curves" title="Curves — F-curve editor + onion skinning"><span class="ic">∿</span><span class="lb">Curves</span></div>
           <div class="dock-item" data-tool="physics" title="Physics — soft-body & cloth (WASM)"><span class="ic">≈</span><span class="lb">Physics</span></div>
         </div>
@@ -411,6 +412,11 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
       <!-- Timeline tool -->
       <div class="tool-pane" id="pane-timeline">
         <div class="tool-loading" id="load-timeline"><div class="ring"></div><div>Loading Timeline…</div></div>
+      </div>
+
+      <!-- Retarget tool -->
+      <div class="tool-pane" id="pane-retarget">
+        <div class="tool-loading" id="load-retarget"><div class="ring"></div><div>Loading Retarget…</div></div>
       </div>
 
       <!-- Retopo tool -->
@@ -586,6 +592,18 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
       <div style="font-family:var(--font-mono);font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-soft);margin-bottom:9px;">Target app preset</div>
       <div id="exPresets" style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:20px;"></div>
 
+      <div id="exSkelBlock">
+        <div style="font-family:var(--font-mono);font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-soft);margin-bottom:9px;">Bone naming</div>
+        <div id="exSkel" style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:6px;"></div>
+        <div style="font-size:11px;color:var(--ink-soft);margin-bottom:20px;line-height:1.5;">Renames the skeleton so the target app recognises it as a humanoid (e.g. Unity Humanoid auto-map, Mixamo-compatible). Animation tracks follow the renames.</div>
+      </div>
+
+      <div id="exPassBlock" style="display:none;">
+        <div style="font-family:var(--font-mono);font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-soft);margin-bottom:9px;">Passport credits</div>
+        <input id="exAuthor" placeholder="Made by… (optional, shown on the card)" style="width:100%;box-sizing:border-box;padding:9px 12px;border-radius:9px;border:2px solid var(--wood);background:var(--cream);color:var(--ink);font-family:inherit;font-size:13px;margin-bottom:9px;">
+        <div id="exLic" style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:20px;"></div>
+      </div>
+
       <div style="display:flex;gap:22px;flex-wrap:wrap;">
         <div>
           <div style="font-family:var(--font-mono);font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-soft);margin-bottom:9px;">Up axis</div>
@@ -596,6 +614,8 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
           <input id="exScale" type="range" min="1" max="400" value="100" style="width:100%;">
         </div>
       </div>
+
+      <div id="exCheck" style="margin-top:12px;display:none;gap:9px;padding:11px 13px;border-radius:11px;background:var(--cream);border:2px solid var(--wood);font-size:12px;line-height:1.55;color:var(--ink-soft);"></div>
 
       <div id="exNote" style="margin-top:18px;display:flex;gap:9px;padding:11px 13px;border-radius:11px;background:var(--cream);border:2px solid var(--wood);font-size:12px;line-height:1.55;color:var(--ink-soft);"></div>
     </div>
@@ -662,6 +682,7 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
       { k:'director', label:'Director — camera sequencer + video render-out', icon:'🎬', key:'' },
       { k:'lipsync', label:'Lipsync — audio → talking character', icon:'👄', key:'' },
       { k:'timeline', label:'Timeline — blend clips into one performance (NLA)', icon:'≡', key:'' },
+      { k:'retarget', label:'Retarget — put any clip on any humanoid', icon:'⇄', key:'' },
       { k:'retopo', label:'Retopo — draw clean quads over any mesh', icon:'▱', key:'' },
       { k:'recipe', label:'Recipe — non-destructive pipeline graph', icon:'⧉', key:'' },
       { k:'uv', label:'UV Unwrap', icon:'⬚', key:'' },
@@ -792,6 +813,7 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
     director:{ src: 'Director.dc.html?embed=1', frame: null, ready: false, label: 'Director' },
     lipsync:{ src: 'Lipsync.dc.html?embed=1', frame: null, ready: false, label: 'Lipsync' },
     timeline:{ src: 'Timeline.dc.html?embed=1', frame: null, ready: false, label: 'Timeline' },
+    retarget:{ src: 'Retarget.dc.html?embed=1', frame: null, ready: false, label: 'Retarget' },
     retopo:{ src: 'Retopo.dc.html?embed=1', frame: null, ready: false, label: 'Retopo' },
     recipe:{ src: 'Recipe.dc.html?embed=1', frame: null, ready: false, label: 'Recipe' },
     bake:  { src: 'Bake.dc.html?embed=1', frame: null, ready: false, label: 'Bake' },
@@ -816,7 +838,7 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
   function saveLibPrefs(){ ppCookie('pp.libFilters', [...libFilters].join(',')); ppCookie('pp.libSort', libSort); ppCookie('pp.libNsfw', libNsfw ? '1' : '0'); }
   let libSearchQ = '';          // library name search
   let activeChar = null;        // shared character state — { it, deliveredTo:Set } follows you across tools
-  const CHAR_TOOLS = ['showcase', 'mocap', 'pose', 'edit', 'sculpt', 'physics', 'decimate', 'doctor', 'shaderlab', 'director', 'lipsync', 'timeline', 'retopo', 'recipe', 'bake', 'hair', 'csg', 'uv', 'paint', 'weightpaint', 'morph', 'bakemaps', 'curves'];
+  const CHAR_TOOLS = ['showcase', 'mocap', 'pose', 'edit', 'sculpt', 'physics', 'decimate', 'doctor', 'shaderlab', 'director', 'lipsync', 'timeline', 'retarget', 'retopo', 'recipe', 'bake', 'hair', 'csg', 'uv', 'paint', 'weightpaint', 'morph', 'bakemaps', 'curves'];
   let lastLoadedName = '';
 
   // ---------- toasts ----------
@@ -921,7 +943,7 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
     const f = document.createElement('iframe');
     f.className = 'tool-frame';
     f.src = T.src;
-    f.allow = 'camera; microphone';
+    f.allow = 'camera; microphone; xr-spatial-tracking';
     f.addEventListener('load', () => attachCtxWatch(tool, f));
     pane.appendChild(f);
     T.frame = f; T.mountedAt = Date.now();
@@ -938,10 +960,11 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
   // ---------- tool switching ----------
   function setTool(tool) {
     activeTool = tool;
+    if (TOOLS[tool] && TOOLS[tool].ready) post(tool, 'studio:activate', {});
     $$('.dock-item').forEach(d => { const on = d.dataset.tool === tool; d.classList.toggle('active', on); d.setAttribute('aria-selected', on ? 'true' : 'false'); });
     if (window.revealDockTool) window.revealDockTool(tool);
     $('#lib').classList.toggle('show', tool === 'library');
-    ['showcase', 'rig', 'mocap', 'edit', 'motion', 'sculpt', 'hair', 'pose', 'physics', 'decimate', 'doctor', 'shaderlab', 'director', 'lipsync', 'timeline', 'retopo', 'recipe', 'bake', 'csg', 'uv', 'paint', 'weightpaint', 'morph', 'bakemaps', 'curves', 'humangen', 'hairstudio'].forEach(t => {
+    ['showcase', 'rig', 'mocap', 'edit', 'motion', 'sculpt', 'hair', 'pose', 'physics', 'decimate', 'doctor', 'shaderlab', 'director', 'lipsync', 'timeline', 'retarget', 'retopo', 'recipe', 'bake', 'csg', 'uv', 'paint', 'weightpaint', 'morph', 'bakemaps', 'curves', 'humangen', 'hairstudio'].forEach(t => {
       const pane = $('#pane-' + t);
       const on = t === tool;
       pane.classList.toggle('show', on);
@@ -1622,7 +1645,7 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
   // in-memory GLB buffer when present, else fetches its library file. Edits made
   // in tools that route their result back (rig, weight-paint, morph, bake maps,
   // decimate, boolean, uv) are reflected; a caveat covers tools that don't yet.
-  const exState = { format: 'glb', up: 'y', scale: 100 };
+  const exState = { format: 'glb', up: 'y', scale: 100, author: '', licence: 'CC BY 4.0' };
   async function activeCharBuffer() {
     const it = activeChar && activeChar.it; if (!it) return null;
     if (it._buffer) return it._buffer.slice(0);
@@ -1652,6 +1675,24 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
       b.addEventListener('click', () => { exState.up = pr.up; exState.scale = Math.round(pr.scale * 100); renderExport(); });
       preWrap.appendChild(b);
     });
+    // bone-naming target (hidden for formats that don't carry a rig, and for VRM which renames itself)
+    const skelBlock = $('#exSkelBlock');
+    const fmtDef = P.FORMATS.find(x => x.id === exState.format) || {};
+    if (skelBlock) {
+      const show = !!fmtDef.rig && exState.format !== 'vrm' && Array.isArray(P.SKELETON_TARGETS);
+      skelBlock.style.display = show ? '' : 'none';
+      if (show) {
+        const w = $('#exSkel'); w.innerHTML = '';
+        P.SKELETON_TARGETS.forEach(t => {
+          const on = (exState.skeleton || 'keep') === t.id;
+          const b = document.createElement('button'); b.className = 'fchip' + (on ? ' on' : '');
+          b.textContent = t.label; b.setAttribute('aria-pressed', on ? 'true' : 'false');
+          b.addEventListener('click', () => { exState.skeleton = t.id; renderExport(); });
+          w.appendChild(b);
+        });
+      }
+    }
+    runExportCheck();
     const axWrap = $('#exAxis'); axWrap.innerHTML = '';
     [['y', 'Y-up'], ['z', 'Z-up']].forEach(([k, lb]) => {
       const on = exState.up === k; const b = document.createElement('button'); b.className = 'fchip' + (on ? ' on' : '');
@@ -1659,15 +1700,60 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
       b.addEventListener('click', () => { exState.up = k; renderExport(); });
       axWrap.appendChild(b);
     });
+    // passport credits (author + licence) — only for the passport format
+    const passBlock = $('#exPassBlock');
+    if (passBlock) {
+      passBlock.style.display = exState.format === 'passport' ? '' : 'none';
+      if (exState.format === 'passport') {
+        const lw = $('#exLic'); lw.innerHTML = '';
+        ['CC0', 'CC BY 4.0', 'CC BY-NC 4.0', 'All rights reserved'].forEach(l => {
+          const on = (exState.licence || 'CC BY 4.0') === l;
+          const b = document.createElement('button'); b.className = 'fchip' + (on ? ' on' : '');
+          b.textContent = l; b.setAttribute('aria-pressed', on ? 'true' : 'false');
+          b.addEventListener('click', () => { exState.licence = l; renderExport(); });
+          lw.appendChild(b);
+        });
+      }
+    }
     $('#exScale').value = exState.scale; $('#exScaleVal').textContent = (exState.scale / 100).toFixed(2) + '×';
     const f = P.FORMATS.find(x => x.id === exState.format) || {};
     let note = '';
-    if (exState.format === 'fbx') note = 'FBX carries the skeleton + skin — cleanest for characters rigged in PolyPotion. Imported (e.g. Mixamo) rigs with rotated bones may need a re-pose on import.';
+    if (exState.format === 'passport') note = 'One self-contained .html card: an embedded 3D viewer plus the GLB itself — the ⤓ button inside the passport re-downloads the model. Opens offline in any browser, no app, no account. Share it like an image. (Always Y-up; the scale slider and validator fix still apply.)';
+    else if (exState.format === 'fbx') note = 'FBX carries the skeleton + skin — cleanest for characters rigged in PolyPotion. Imported (e.g. Mixamo) rigs with rotated bones may need a re-pose on import.';
     else if (!f.rig) note = f.label + ' is geometry only — no skeleton or animation. Use glTF or FBX to keep the rig.';
     else if (!f.anim && f.rig) note = 'Keeps the skeleton + skin. (glTF also carries animation clips.)';
     else note = 'Keeps skeleton, skin weights and any animation clips. The recommended all-round format.';
     $('#exNote').innerHTML = '<span style="flex:none;">✦</span><span>' + note + '</span>';
   }
+  // pre-flight scale/unit validator — parses the active GLB once, caches by item
+  let exCheckCache = { key: null, result: null };
+  async function runExportCheck() {
+    const box = $('#exCheck'); if (!box) return;
+    const it = activeChar && activeChar.it;
+    const P = window.PPExport;
+    if (!it || !P || !P.validateScale) { box.style.display = 'none'; return; }
+    const key = it.path || it.label;
+    if (exCheckCache.key !== key) {
+      try {
+        const buf = await activeCharBuffer(); if (!buf) { box.style.display = 'none'; return; }
+        exCheckCache = { key, result: await P.checkGLB(buf) };
+      } catch (e) { box.style.display = 'none'; return; }
+    }
+    const r = exCheckCache.result; if (!r) { box.style.display = 'none'; return; }
+    if (r.ok) {
+      box.style.display = 'flex';
+      box.innerHTML = '<span style="flex:none;">✓</span><span>Sanity check passed — character is <b>' + r.height.toFixed(2) + ' m</b> tall (a human silhouette is ~1.75 m). Units look right.</span>';
+      box.style.borderColor = 'var(--wood)';
+    } else {
+      box.style.display = 'flex';
+      const fix = r.issues.find(i => i.fix);
+      box.innerHTML = '<span style="flex:none;">⚠</span><span><b>Check before you export:</b> ' + r.issues.map(i => i.message).join(' ') +
+        (fix ? ' <button id="exFix" style="margin-left:6px;padding:3px 10px;border-radius:7px;border:2px solid var(--wood-dark);background:var(--cream-2);color:var(--ink);font-size:11px;font-weight:700;cursor:pointer;">Fix: scale ×' + (fix.fix >= 0.01 ? fix.fix.toFixed(2) : fix.fix) + '</button>' : '') + '</span>';
+      const fb = $('#exFix');
+      if (fb && fix) fb.addEventListener('click', () => { exState.scale = Math.max(1, Math.round(fix.fix * 100)); renderExport(); });
+    }
+  }
+
   function openExport() {
     if (!window.PPExport) { import('./studio3D_scripts/exporter.js').then(() => { renderExport(); $('#exportModal').style.display = 'flex'; }).catch(() => toast('Export module failed to load', 'error')); return; }
     renderExport(); $('#exportModal').style.display = 'flex';
@@ -1678,6 +1764,7 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
   { const b = $('#exCancel'); if (b) b.addEventListener('click', closeExport); }
   { const m = $('#exportModal'); if (m) m.addEventListener('click', e => { if (e.target === m) closeExport(); }); }
   { const s = $('#exScale'); if (s) s.addEventListener('input', e => { exState.scale = +e.target.value; $('#exScaleVal').textContent = (exState.scale / 100).toFixed(2) + '×'; }); }
+  { const a = $('#exAuthor'); if (a) a.addEventListener('input', e => { exState.author = e.target.value; }); }
   { const g = $('#exGo'); if (g) g.addEventListener('click', async () => {
       const it = activeChar && activeChar.it;
       if (!it) { toast('Open a character first — nothing to export', 'warn'); return; }
@@ -1685,8 +1772,12 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
       try {
         const buf = await activeCharBuffer();
         if (!buf) { toast('Could not read the character data', 'error'); return; }
-        const r = await window.PPExport.exportCharacter(buf, { format: exState.format, upAxis: exState.up, scale: exState.scale / 100, name: it.label });
-        toast('Exported ' + r.file, 'success'); closeExport();
+        const r = await window.PPExport.exportCharacter(buf, { format: exState.format, upAxis: exState.up, scale: exState.scale / 100, name: it.label, skeleton: exState.skeleton || 'keep', author: exState.author || '', licence: exState.licence || 'CC BY 4.0' });
+        let msg = 'Exported ' + r.file;
+        if (r.passport) msg += ' — ' + r.passport.trisLabel + ' tris, ' + r.passport.sizeLabel + ' all-in, opens anywhere';
+        if (r.skeleton && r.skeleton.renamed) msg += ' — ' + r.skeleton.renamed + ' bones renamed (' + r.skeleton.detected + ' → ' + (exState.skeleton) + ')';
+        if (r.vrm) msg += ' — ' + r.vrm.bones + ' humanoid bones, ' + r.vrm.expressions + ' expressions';
+        toast(msg, 'success'); closeExport();
       } catch (e) { toast('Export failed: ' + (e && e.message || e), 'error'); }
       finally { g.disabled = false; g.textContent = label; }
     }); }

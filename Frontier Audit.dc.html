@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<script src="theme.js"></script>
+<style>
+  html{scroll-behavior:smooth;}
+  html,body{margin:0;padding:0;background:var(--bg);}
+  *{box-sizing:border-box;}
+  #fr ::-webkit-scrollbar{width:10px;height:10px;}
+  #fr ::-webkit-scrollbar-track{background:var(--gutter);}
+  #fr ::-webkit-scrollbar-thumb{background:var(--edge);border:2px solid var(--gutter);border-radius:6px;}
+  #fr section[id]{scroll-margin-top:22px;}
+  #fr a{color:inherit;}
+  @keyframes fr-slosh{0%,100%{transform:translateX(-2%) rotate(-1deg);}50%{transform:translateX(2%) rotate(1deg);}}
+  @keyframes fr-rise{0%{transform:translateY(0);opacity:0;}20%{opacity:.9;}100%{transform:translateY(-26px);opacity:0;}}
+</style>
+</helmet>
+
+<div id="fr" style="display:flex;align-items:flex-start;min-height:100vh;width:100%;background:var(--bg);color:var(--text);font-family:var(--font-ui);font-size:14px;line-height:1.65;-webkit-font-smoothing:antialiased;">
+
+  <!-- SIDEBAR -->
+  <aside style="position:sticky;top:0;height:100vh;width:268px;flex:none;background:var(--panel);border-right:1px solid var(--seam);overflow-y:auto;padding:20px 14px 40px;">
+    <div style="display:flex;align-items:center;gap:9px;padding:0 6px 14px;">
+      <div style="width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--accent),var(--wood-dark));color:var(--on-accent);font-weight:700;font-size:15px;">⚗</div>
+      <div>
+        <div style="font-weight:700;letter-spacing:.05em;font-size:13px;">POLYPOTION</div>
+        <div style="font-family:var(--font-mono);font-size:9px;color:var(--muted);letter-spacing:.12em;">AUDIT · CHAPTER II</div>
+      </div>
+    </div>
+
+    <sc-for list="{{ nav }}" as="n" hint-placeholder-count="8">
+      <a href="{{ n.href }}" style="{{ n.style }}">
+        <span style="{{ n.dot }}"></span>
+        <span style="flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ n.label }}</span>
+        <span style="font-family:var(--font-mono);font-size:9.5px;color:var(--muted);">{{ n.count }}</span>
+      </a>
+    </sc-for>
+
+    <div style="margin-top:20px;padding:12px 10px;border-top:1px solid var(--seam);">
+      <div style="font-family:var(--font-mono);font-size:9.5px;letter-spacing:.12em;color:var(--muted);margin-bottom:9px;">WHAT EACH TAG MEANS</div>
+      <sc-for list="{{ legend }}" as="l" hint-placeholder-count="4">
+        <div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:9px;">
+          <span style="flex:none;width:52px;text-align:center;font-family:var(--font-mono);font-size:9px;font-weight:700;padding:3px 0;border-radius:5px;color:{{ l.color }};background:{{ l.bg }};border:1px solid {{ l.border }};">{{ l.tag }}</span>
+          <span style="font-size:11px;color:var(--text-2);line-height:1.45;">{{ l.label }}</span>
+        </div>
+      </sc-for>
+    </div>
+    <div style="margin-top:12px;padding:10px 8px;font-size:11px;line-height:1.6;color:var(--muted);border-top:1px solid var(--seam);">Chapter I closed the rings around the craft. This chapter is the craft frontier — the capabilities that turn a great local tool into the one people bring their friends to.</div>
+  </aside>
+
+  <!-- MAIN -->
+  <main id="doc-main" style="flex:1;min-width:0;max-width:920px;padding:40px 56px 140px;">
+
+    <a href="index.html" style="display:inline-flex;align-items:center;gap:8px;font-size:12.5px;font-weight:700;color:var(--accent);text-decoration:none;margin-bottom:22px;padding:8px 14px;border:1px solid var(--seam);border-radius:8px;background:var(--panel);">← Back to Studio</a>
+
+    <!-- HERO -->
+    <header style="position:relative;margin-bottom:16px;overflow:hidden;border:1px solid var(--seam);border-radius:16px;background:linear-gradient(160deg,var(--panel-2),var(--panel));padding:34px 190px 30px 34px;">
+      <div style="position:absolute;right:36px;top:50%;transform:translateY(-50%);width:120px;height:150px;opacity:.4;pointer-events:none;">
+        <div style="position:absolute;left:34px;top:0;width:34px;height:22px;border:3px solid var(--wood-dark);border-bottom:none;border-radius:5px 5px 0 0;background:var(--panel-3);"></div>
+        <div style="position:absolute;left:0;bottom:0;width:100%;height:120px;border:3px solid var(--wood-dark);border-radius:26px 26px 44px 44px;background:var(--panel-3);overflow:hidden;">
+          <div style="position:absolute;left:-20%;bottom:-8%;width:140%;height:58%;background:linear-gradient(180deg,var(--clay),var(--wood));border-radius:44% 44% 0 0;animation:fr-slosh 3.4s ease-in-out infinite;"></div>
+          <div style="position:absolute;left:30%;bottom:14%;width:9px;height:9px;border-radius:50%;background:var(--honey);animation:fr-rise 2.1s ease-in .2s infinite;"></div>
+          <div style="position:absolute;left:56%;bottom:10%;width:7px;height:7px;border-radius:50%;background:var(--on-accent);animation:fr-rise 2.6s ease-in .9s infinite;"></div>
+          <div style="position:absolute;left:44%;bottom:18%;width:5px;height:5px;border-radius:50%;background:var(--honey);animation:fr-rise 1.7s ease-in 1.4s infinite;"></div>
+        </div>
+      </div>
+      <div style="max-width:560px;">
+        <div style="font-family:var(--font-mono);font-size:11px;letter-spacing:.14em;color:var(--accent);margin-bottom:12px;">SECOND-PASS AUDIT · 18 IDEAS · 12 SHIPPED · REVISED JULY 2026</div>
+        <h1 style="font-size:37px;font-weight:700;letter-spacing:-.015em;line-height:1.08;margin:0 0 14px;">You closed the rings. Here's the frontier.</h1>
+        <p style="font-size:16px;color:var(--text-2);margin:0;">The first audit was about everything <i>around</i> the craft — getting in, getting out, not losing work. That's largely done. So this one goes straight at the craft itself: the industry standards you don't yet speak, the game-ready output real engines demand, the whole disciplines (the face, colour, staging) that aren't in the suite yet — and a short list of things that, if you ship them, make people screenshot your app. None of it needs a server.</p>
+      </div>
+    </header>
+
+    <!-- VERDICT -->
+    <section style="margin:20px 0 8px;padding:20px 22px;border:1px solid var(--seam);border-radius:12px;background:var(--panel);">
+      <div style="font-family:var(--font-mono);font-size:11px;letter-spacing:.14em;color:var(--accent);margin-bottom:12px;">⚗ THE ONE-LINE VERDICT</div>
+      <p style="margin:0 0 14px;font-size:15.5px;color:var(--text);line-height:1.7;">PolyPotion is now a <b>complete workshop that speaks mostly its own language</b>. The next leap isn't more tools — it's <b>fluency in the formats and disciplines the rest of the 3D world already uses</b>, so a character made here drops cleanly into VRChat, Unity, Unreal, an iPhone's face camera, or a headset without a detour through Blender. Teach the suite those dialects and the 25 tools you built stop being a clever demo and become someone's actual pipeline.</p>
+      <div style="display:flex;gap:10px;margin:0 0 14px;padding:11px 13px;border-radius:8px;background:color-mix(in srgb, var(--good) 8%, transparent);border:1px solid color-mix(in srgb, var(--good) 32%, transparent);">
+        <span style="flex:none;color:var(--good);font-size:14px;">✔</span>
+        <span style="font-size:13px;line-height:1.6;color:var(--text-2);"><b style="color:var(--text);">Revision note — both brews are shipped.</b> Retarget is a new tool in the animate dock (auto bone-map for Mixamo / UE5 / Rigify / VRM + fuzzy fallback, hip-scale root correction, GLB export). Morph grew a one-click ARKit 52 set. The Export dialog speaks VRM 1.0 (humanoid map + expressions from the ARKit names). Bake Maps packs ORM and takes an OpenGL/DirectX normal toggle. Showcase has a WebXR view-in-your-room button. The second brew followed: bone naming on export, LOD chains, an expression board, a unit pre-flight, and the character passport. Findings below wear a <b style="color:var(--good);">✓ SHIPPED</b> badge.</span>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;">
+        <sc-for list="{{ verdictChips }}" as="c" hint-placeholder-count="5">
+          <span style="font-family:var(--font-mono);font-size:11px;padding:5px 11px;border-radius:20px;background:var(--panel-2);border:1px solid var(--edge);color:var(--text-2);">{{ c }}</span>
+        </sc-for>
+      </div>
+    </section>
+
+    <!-- FRONTIER MAP -->
+    <section style="margin:16px 0 8px;">
+      <div style="font-family:var(--font-mono);font-size:10.5px;letter-spacing:.12em;color:var(--muted);margin:6px 2px 11px;">THE SIX FRONTIERS — JUMP IN</div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:11px;">
+        <sc-for list="{{ map }}" as="m" hint-placeholder-count="6">
+          <a href="{{ m.href }}" style="{{ m.chipStyle }}">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:9px;">
+              <span style="{{ m.glyphStyle }}">{{ m.glyph }}</span>
+              <span style="font-family:var(--font-mono);font-size:9.5px;letter-spacing:.1em;color:{{ m.hue }};">{{ m.tag }}</span>
+            </div>
+            <div style="font-weight:700;font-size:13.5px;color:var(--text);line-height:1.3;">{{ m.label }}</div>
+            <div style="font-family:var(--font-mono);font-size:9.5px;color:var(--muted);margin-top:4px;">{{ m.count }} findings</div>
+          </a>
+        </sc-for>
+      </div>
+    </section>
+
+    <!-- FOUNDATION RECAP -->
+    <section id="foundation" data-doc style="padding:34px 0 8px;border-top:1px solid var(--seam);margin-top:28px;">
+      <h2 style="font-size:22px;font-weight:700;margin:0 0 8px;">The foundation this builds on</h2>
+      <p style="color:var(--text-2);margin:0 0 18px;max-width:660px;">A quick recap so the asks below land in context — the first audit covered these in depth; every one is genuinely strong and every frontier item leans on it rather than replacing it.</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <sc-for list="{{ wins }}" as="w" hint-placeholder-count="4">
+          <div style="padding:14px 16px;border:1px solid var(--seam);border-radius:10px;background:var(--panel);">
+            <div style="display:flex;align-items:center;gap:9px;margin-bottom:6px;">
+              <span style="color:var(--good);font-size:15px;">✔</span>
+              <span style="font-weight:700;color:var(--text);font-size:14px;">{{ w.t }}</span>
+            </div>
+            <div style="font-size:12.5px;color:var(--text-2);line-height:1.6;">{{ w.d }}</div>
+          </div>
+        </sc-for>
+      </div>
+    </section>
+
+    <!-- SECTIONS -->
+    <sc-for list="{{ sections }}" as="s" hint-placeholder-count="6">
+      <section id="{{ s.id }}" data-doc style="{{ s.sectionStyle }}">
+        <div style="display:flex;align-items:center;gap:13px;margin-bottom:8px;">
+          <div style="{{ s.glyphBox }}">{{ s.glyph }}</div>
+          <div>
+            <div style="font-family:var(--font-mono);font-size:10.5px;letter-spacing:.12em;color:{{ s.hue }};margin-bottom:2px;">{{ s.kicker }}</div>
+            <h2 style="font-size:23px;font-weight:700;margin:0;">{{ s.title }}</h2>
+          </div>
+        </div>
+        <p style="font-size:15px;color:var(--text-2);margin:0 0 20px;max-width:690px;">{{ s.intro }}</p>
+
+        <div style="display:flex;flex-direction:column;gap:13px;">
+          <sc-for list="{{ s.findings }}" as="f" hint-placeholder-count="3">
+            <div style="border:1px solid var(--seam);border-radius:11px;background:var(--panel);overflow:hidden;">
+              <div style="display:flex;align-items:flex-start;gap:13px;padding:15px 17px 6px;">
+                <span style="flex:none;margin-top:1px;width:56px;text-align:center;font-family:var(--font-mono);font-size:9px;font-weight:700;padding:4px 0;border-radius:6px;color:{{ f.color }};background:{{ f.bg }};border:1px solid {{ f.border }};">{{ f.tag }}</span>
+                <div style="flex:1;">
+                  <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;flex-wrap:wrap;"><span style="font-weight:700;font-size:15px;color:var(--text);">{{ f.title }}</span><sc-if value="{{ f.done }}" hint-placeholder-val="{{ false }}"><span style="font-family:var(--font-mono);font-size:9px;font-weight:700;letter-spacing:.08em;padding:3px 8px;border-radius:5px;color:var(--good);background:color-mix(in srgb, var(--good) 14%, transparent);border:1px solid color-mix(in srgb, var(--good) 42%, transparent);">✓ SHIPPED</span></sc-if></div>
+                  <div style="font-size:13.5px;color:var(--text-2);line-height:1.62;">{{ f.why }}</div>
+                </div>
+              </div>
+              <div style="display:flex;gap:10px;padding:9px 17px 14px 86px;">
+                <span style="flex:none;font-family:var(--font-mono);font-size:9.5px;letter-spacing:.1em;color:{{ s.hue }};padding-top:2px;">DO →</span>
+                <div style="font-size:13px;color:var(--text);line-height:1.6;">{{ f.todo }}</div>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </section>
+    </sc-for>
+
+    <!-- FIRST FIVE -->
+    <section id="first-five" data-doc style="padding:38px 0 8px;border-top:1px solid var(--seam);margin-top:30px;">
+      <div style="display:flex;align-items:center;gap:13px;margin-bottom:8px;">
+        <div style="width:40px;height:40px;border-radius:9px;flex:none;display:flex;align-items:center;justify-content:center;font-size:20px;background:var(--accent);color:var(--on-accent);">★</div>
+        <div>
+          <div style="font-family:var(--font-mono);font-size:10.5px;letter-spacing:.12em;color:var(--muted);margin-bottom:2px;">THE THIRD BREW · PICKED JULY 2026</div>
+          <h2 style="font-size:23px;font-weight:700;margin:0;">The next five to brew</h2>
+        </div>
+      </div>
+      <p style="font-size:15px;color:var(--text-2);margin:0 0 20px;max-width:690px;">Two brews of five are <b style="color:var(--good);">fully shipped</b> — first: retargeting, ARKit 52, VRM, ORM + normal toggle, WebXR; second: bone naming on export, LOD chains, the expression board (<span style="font-family:var(--font-mono);font-size:13px;">pp-expressions</span>), the unit pre-flight, and the character passport. Every one wears its ✓ badge above. So here is the third brew, picked from the eight findings still open — ordered so each unlocks the next. Status detail: <span style="font-family:var(--font-mono);font-size:13px;">PROGRESS.md</span>.</p>
+      <div style="display:flex;flex-direction:column;">
+        <sc-for list="{{ firstFive }}" as="p" hint-placeholder-count="5">
+          <div style="display:flex;gap:16px;padding:15px 0;border-bottom:1px solid var(--seam);">
+            <div style="flex:none;width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-weight:700;font-size:16px;background:var(--accent-dim);color:var(--accent);border:1px solid var(--edge);">{{ p.n }}</div>
+            <div style="flex:1;">
+              <div style="font-weight:700;font-size:15.5px;color:var(--text);margin-bottom:3px;">{{ p.t }}</div>
+              <div style="font-size:13px;color:var(--text-2);line-height:1.6;">{{ p.d }}</div>
+            </div>
+            <span style="flex:none;align-self:flex-start;font-family:var(--font-mono);font-size:10px;color:var(--muted);padding:3px 9px;border:1px solid var(--edge);border-radius:20px;">{{ p.effort }}</span>
+          </div>
+        </sc-for>
+      </div>
+    </section>
+
+    <!-- CLOSING -->
+    <section style="padding:34px 0 0;border-top:1px solid var(--seam);margin-top:30px;">
+      <p style="color:var(--text-2);font-size:14px;line-height:1.7;max-width:690px;margin:0 0 10px;">A closing pattern worth naming: nearly everything here is a <b style="color:var(--text);">translation layer, not a new engine</b>. You already generate humanoids, paint weights, sculpt morphs, sim cloth, bake maps and record turntables. VRM, ARKit shapes, retargeting, LODs, colour management — these mostly re-label and re-package work the suite already does into dialects the wider world reads. That's the cheapest kind of leverage there is: new audiences, almost no new math.</p>
+      <p style="color:var(--muted);font-size:12.5px;margin:14px 0 0;">Second-pass audit, written against the shipped shell, the 25-tool dock, the Recipe contract, the theme engine and the Handbook. Revised July 2026: 10 of 18 findings shipped across two brews (see badges). The third brew is picked; implementation status, wiring notes for future contributors, and the full backlog live in <span style="font-family:var(--font-mono);">PROGRESS.md</span> next to this file.</p>
+    </section>
+
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { activeId: 'foundation' };
+
+  componentDidMount() {
+    this._io = new IntersectionObserver((entries) => {
+      entries.forEach(e => { if (e.isIntersecting) this.setState({ activeId: e.target.id }); });
+    }, { rootMargin: '-6% 0px -84% 0px', threshold: 0 });
+    setTimeout(() => {
+      document.querySelectorAll('#doc-main section[id]').forEach(s => this._io.observe(s));
+    }, 80);
+  }
+  componentWillUnmount() { if (this._io) this._io.disconnect(); }
+
+  hueFor(tag) {
+    if (tag === 'UNLOCK') return 'var(--accent)';
+    if (tag === 'PRO') return 'var(--new)';
+    if (tag === 'SPARK') return 'var(--honey)';
+    return 'var(--danger)'; // FIX
+  }
+  tagStyle(tag) {
+    const h = this.hueFor(tag);
+    return {
+      color: h,
+      bg: 'color-mix(in srgb, ' + h + ' 14%, transparent)',
+      border: 'color-mix(in srgb, ' + h + ' 42%, transparent)',
+    };
+  }
+
+  sectionsData() {
+    return [
+      {
+        id: 'interop', glyph: '⇄', hue: 'var(--accent)', mapTag: 'STANDARDS',
+        kicker: 'OPEN THE DOORS', title: 'Interop that unlocks a whole audience',
+        intro: 'Import is broad and the new universal Export dialog is a big step — but it exports geometry, not identity. The formats below don\u2019t just move a mesh; each one hands you an existing community that already lives in that format.',
+        findings: [
+          { tag: 'UNLOCK', done: true, title: 'VRM 1.0 avatar export', why: 'VRM is the avatar standard for VTubing and social VR — it\u2019s glTF plus a humanoid bone map, spring-bones for hair/cloth, a first-person setup, and a FACS expression set. You already produce humanoid rigs, morph targets and hair that wants to jiggle. Ship VRM and you inherit VRChat, VSeeFace, Warudo and every VTuber pipeline overnight — an audience that is exactly your hobbyist base.', todo: 'Add a VRM target to the exporter: map your skeleton to the VRM humanoid bones, tag spring-bone chains (hair/skirt), and emit the expression clips from Morph. This is packaging, not new geometry.' },
+          { tag: 'UNLOCK', done: true, title: 'Animation retargeting across skeletons', why: 'MoCap, Motion and Timeline all author clips on YOUR skeleton. The character a user imports has a different one — so today none of your motion tools can actually drive a user\u2019s own mesh. A humanoid bone-map + retarget solver is the single highest-leverage missing piece in the suite: it\u2019s what connects the animation half to the modelling half.', todo: 'A retarget step that maps source→target humanoid bones, transfers rotations, and rescales root translation. Expose it in the handoff so any library clip can be dropped onto any rigged character.' },
+          { tag: 'PRO', done: true, title: 'Skeleton presets & bone-name maps', why: 'Every engine names bones differently — Mixamo (mixamorig:*), Unity Humanoid, Rigify, VRM, UE5 Mannequin. Without a rename map, a perfectly good rig imports as a tangle and exports to something Unity won\u2019t treat as Humanoid.', todo: 'Ship a small library of bone-name maps with auto-detect on import and a target picker on export, so a rig lands as a first-class humanoid in whatever the user opens next.' },
+          { tag: 'PRO', title: 'glTF material extensions + Draco / meshopt on the way out', why: 'Real materials need KHR_materials_transmission / clearcoat / sheen / emissive-strength — glass, car paint, skin, fabric. And a web-first tool that ships uncompressed 40 MB GLBs undercuts its own "runs in the browser" pitch.', todo: 'Write the KHR material extensions the ShaderLab graph can already describe, and add Draco (geometry) + meshopt (buffers) as export toggles. Big download savings, near-zero visual cost.' },
+        ],
+      },
+      {
+        id: 'gamedev', glyph: '▣', hue: 'var(--new)', mapTag: 'ENGINE-READY',
+        kicker: 'WILL A REAL ENGINE TAKE IT?', title: 'Game-ready output',
+        intro: 'A character that imports is not the same as one that runs at 60 fps. These are the unglamorous transforms between "opens in Blender" and "ships in a game" — and you already own the algorithms for most of them.',
+        findings: [
+          { tag: 'PRO', done: true, title: 'LOD chain generation & export', why: 'You have Decimate and the non-destructive Recipe graph — which means you\u2019re one preset away from auto-building LOD0→LOD3 at set ratios and exporting them as a real LOD group. Right now the user has to decimate four times by hand and name the outputs themselves.', todo: 'A "Make LODs" action (Recipe node + export writer) that emits discrete meshes or MSFT_lod with screen-coverage thresholds. One click, four rungs.' },
+          { tag: 'PRO', title: 'Texture atlas + material merge', why: 'A character split across six materials is six draw calls. Merging sub-meshes onto one atlased material is often the difference between "imports" and "playable" — and it\u2019s pure UV + image compositing, both of which you already do in UV Unwrap and Bake Maps.', todo: 'Repack the UV islands of selected meshes into one atlas, composite their textures to match, and merge to a single material. Report the draw-call / texture-count before-and-after.' },
+          { tag: 'FIX', done: true, title: 'Channel-packed PBR (ORM) + normal-map convention toggle', why: 'Engines expect Occlusion-Roughness-Metallic packed into one RGB texture, and they disagree on the normal-map green channel — OpenGL vs DirectX. Ship the wrong convention and every surface looks subtly inside-out, with no error, in a way beginners can never diagnose.', todo: 'Add an ORM pack option to Bake Maps and a global OpenGL/DirectX normal toggle (with a live "does this look right?" preview) honoured by every baker and exporter.' },
+          { tag: 'SPARK', title: 'Vertex Animation Textures (VAT)', why: 'Bake an animation into a texture and a shader can replay it with zero skeleton cost — the trick behind huge crowds and destructible props. It\u2019s niche, it\u2019s dazzling, and it\u2019s a perfect fit for a client-side tool: pure texture baking, no runtime.', todo: 'Bake per-vertex position/normal offsets per frame into an EXR/PNG pair, emit the matching material, and document the two-line shader. An instant "how did a browser tool do that" moment.' },
+        ],
+      },
+      {
+        id: 'face', glyph: '◔', hue: 'var(--honey)', mapTag: 'THE FACE',
+        kicker: 'A WHOLE MISSING DISCIPLINE', title: 'The face',
+        intro: 'Morph and Lipsync exist, but there\u2019s no shared face standard tying them together — and the face is where characters come alive. The good news: the industry already agreed on a vocabulary, so this is mostly adopting a naming convention you can then reuse everywhere.',
+        findings: [
+          { tag: 'UNLOCK', done: true, title: 'ARKit / FACS 52-blendshape preset in Morph', why: 'Apple\u2019s 52 ARKit shapes (jawOpen, mouthSmileLeft, eyeBlinkRight…) are the de-facto face standard — they\u2019re what VRM expressions, iPhone face capture, Unreal Live Link and MetaHuman all speak. A character sculpted to that set is instantly compatible with all of them.', todo: 'Ship a one-click preset in Morph that creates and names the 52 ARKit targets (stubbed symmetric where possible). Now Lipsync, VRM export and any face capture share one shape set.' },
+          { tag: 'PRO', done: true, title: 'Expression & emotion library', why: 'Once the 52 shapes exist, expressions are just saved combinations — blink, visemes, happy/sad/angry. A face-board of sliders plus named presets makes posing a face a 10-second job instead of a per-shape grind, and lets Lipsync and Pose reuse the same emotions.', todo: 'A shared expression store (name → shape weights) with a face-board UI, drag-to-timeline, and a starter pack of visemes + core emotions.' },
+          { tag: 'SPARK', done: true, title: 'Webcam face capture — opt-in, on-device', why: 'MediaPipe FaceMesh runs entirely in the browser. Point the webcam at your face and drive the ARKit shapes live — no upload, fully inside your privacy promise, and it is the single most jaw-dropping demo a face pipeline can have.', todo: 'An opt-in "capture from webcam" mode that maps FaceMesh blendshape outputs onto your ARKit targets and records the take. Local-only, clearly labelled, same honesty as the on-device pose work.' },
+        ],
+      },
+      {
+        id: 'color', glyph: '◐', hue: 'var(--good)', mapTag: 'CORRECTNESS',
+        kicker: 'THE INVISIBLE BUGS', title: 'Colour, scale & correctness',
+        intro: 'These never show up as a crash. They show up as "my textures look washed out in Unity" or "my character imports 300× too big" — the quiet wrongness that makes a beginner blame themselves and quietly leave. Cheap to fix, disproportionate in trust.',
+        findings: [
+          { tag: 'FIX', title: 'A single colour-management contract', why: 'Textures are either colour (sRGB) or data (linear: normal, roughness, masks). If tools disagree about which is which, bakes and paints drift in brightness as a character moves between Sculpt, Texture Paint, Bake Maps and Showcase — the classic "why is it darker now?" bug.', todo: 'Declare a working space (linear), tag every texture sRGB-vs-data at import, and pick a view transform (sRGB / AgX) in Showcase. One policy, honoured everywhere, surfaced once in a settings line.' },
+          { tag: 'FIX', done: true, title: 'Unit & scale validator before export', why: 'The export presets set up-axis and unit scale, but nothing catches a mesh that\u2019s modelled at 300× or a scan that\u2019s in millimetres pretending to be metres. The user finds out inside their engine, far from the fix.', todo: 'A pre-export check that flags suspicious bounding-box size / up-axis / non-uniform scale, shows the character next to a 1.8 m human silhouette, and offers a one-click normalize.' },
+          { tag: 'PRO', title: 'Symmetry as a shared contract', why: 'Sculpt, Weight Paint, Morph and Texture Paint each implement their own mirroring. That means symmetry behaves slightly differently in each, and topological (non-mirror-perfect) symmetry isn\u2019t handled at all.', todo: 'Compute a symmetry map once (world-plane + topological fallback) and expose it to every brush tool, so "mirror X" and "symmetrize" mean the same thing across the whole suite.' },
+        ],
+      },
+      {
+        id: 'staging', glyph: '⊹', hue: 'var(--accent)', mapTag: 'STAGING',
+        kicker: 'MORE THAN ONE ACTOR', title: 'Posing & staging',
+        intro: 'Pose is FK-only and the whole suite quietly assumes one character at a time. Two additions here change what the tool is <i>for</i> — from "prep a character" to "make a shot."',
+        findings: [
+          { tag: 'PRO', title: 'In-viewport IK handles', why: 'FK posing means rotating every joint down a chain to place one hand. IK — grab the hand, add a pole target for the elbow, pin a foot to the floor — is what makes hand-posing fast and is the first thing anyone coming from Blender or a game engine reaches for.', todo: 'Add IK goals + pole targets to Pose with pin-to-world, blending back to the FK rotations you already store. Reuse the AutoRig chain data you have.' },
+          { tag: 'PRO', done: true, title: 'Pose mirror + pose library', why: 'Small, expected, cheap: mirror a pose across X, and save named poses you can drag back onto any rigged character or the timeline. The on-device text-to-pose library is already halfway to a pose store.', todo: 'Mirror-across-X on the current pose, plus a saved-pose shelf (name → joint rotations) that the text-to-pose matcher can also read from.' },
+          { tag: 'SPARK', title: 'Multi-character scene assembly', why: 'Director sequences cameras beautifully — over a single actor. A light "stage" that places several library characters and props, each with its own pose/clip, and exports the whole arrangement as one glTF, turns a character tool into a diorama and cutscene maker. That\u2019s a different, bigger reason to open the app.', todo: 'A stage view: drop multiple library items, transform each, assign a pose/clip, and export the composed scene. Director then flies its camera through the finished set.' },
+        ],
+      },
+      {
+        id: 'frontier', glyph: '✧', hue: 'var(--honey)', mapTag: 'MIND-BLOWERS',
+        kicker: 'SHIP THESE AND PEOPLE TALK', title: 'The mind-blowers',
+        intro: 'The three above earn respect. These three earn evangelism — the features a user shows a friend unprompted. Every one is fully client-side, which is exactly why nobody else offers them for free in a browser tab.',
+        findings: [
+          { tag: 'SPARK', done: true, title: 'WebXR — view-in-your-room (AR) and pose in VR', why: 'One button: see your character at 1:1 scale standing in your actual room on a phone, or put on a headset and grab-and-pose it with your hands. It\u2019s built into the browser (WebXR), it needs no server, and essentially no free in-browser 3D tool does it. This is the headline.', todo: 'Add a WebXR session to Showcase: AR hit-test placement on mobile, and a VR mode where controllers map to the IK handles above. Falls back gracefully where XR is absent.' },
+          { tag: 'SPARK', done: true, title: 'The character "passport"', why: 'A single self-contained .html card — turntable, poly/texture stats, credits, licence — that a user can DM to anyone. It opens offline in any browser with no app and no account. Your watermark-free turntable capture already gets you 80% of the way there.', todo: 'Export a one-file HTML "passport": embedded GLB + a tiny viewer + a stats/credits/licence footer. The shareable artifact that makes people ask what you made it in.' },
+          { tag: 'SPARK', title: 'Local-network live co-op', why: 'Two people on the same wi-fi reviewing or editing one character over WebRTC data channels — no server, no account, no cloud. It keeps the offline promise completely intact while adding the one thing local-only tools never have: someone next to you.', todo: 'A peer-to-peer session over WebRTC (manual offer/answer or local discovery) that syncs camera, selection and the active GLB. Start with live review (shared camera + pointer), grow toward shared editing.' },
+        ],
+      },
+    ];
+  }
+
+  navStyle(active) {
+    return 'display:flex;align-items:center;gap:10px;padding:7px 8px;border-radius:6px;font-size:12.5px;font-weight:' + (active ? '700' : '500')
+      + ';text-decoration:none;margin-bottom:1px;color:' + (active ? 'var(--text)' : 'var(--muted)')
+      + ';background:' + (active ? 'var(--accent-dim)' : 'transparent') + ';';
+  }
+  navDot(active) {
+    return 'width:7px;height:7px;border-radius:2px;flex:none;background:' + (active ? 'var(--accent)' : 'var(--edge)') + ';';
+  }
+
+  renderVals() {
+    const active = this.state.activeId;
+    const raw = this.sectionsData();
+
+    const sections = raw.map((s, i) => Object.assign({}, s, {
+      sectionStyle: 'padding:38px 0 8px;border-top:1px solid var(--seam);margin-top:30px;',
+      glyphBox: 'width:40px;height:40px;border-radius:9px;flex:none;display:flex;align-items:center;justify-content:center;font-size:20px;'
+        + 'background:color-mix(in srgb, ' + s.hue + ' 15%, transparent);color:' + s.hue
+        + ';border:1px solid color-mix(in srgb, ' + s.hue + ' 38%, transparent);',
+      findings: s.findings.map(f => Object.assign({}, f, this.tagStyle(f.tag))),
+    }));
+
+    const labels = {
+      foundation: 'The foundation', interop: 'Interop & standards', gamedev: 'Game-ready output',
+      face: 'The face', color: 'Colour & correctness', staging: 'Posing & staging',
+      frontier: 'Mind-blowers', 'first-five': 'The third brew',
+    };
+    const navIds = ['foundation', ...raw.map(s => s.id), 'first-five'];
+    const countFor = (id) => { const s = raw.find(x => x.id === id); return s ? s.findings.length : ''; };
+    const nav = navIds.map(id => ({
+      href: '#' + id, label: labels[id] || id, count: countFor(id),
+      style: this.navStyle(active === id), dot: this.navDot(active === id),
+    }));
+
+    const map = raw.map(s => ({
+      href: '#' + s.id, glyph: s.glyph, label: labels[s.id], tag: s.mapTag, hue: s.hue,
+      count: s.findings.length,
+      chipStyle: 'display:block;text-decoration:none;padding:13px 15px;border-radius:11px;background:var(--panel);'
+        + 'border:1px solid var(--seam);border-top:2px solid ' + s.hue + ';',
+      glyphStyle: 'width:26px;height:26px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:15px;'
+        + 'background:color-mix(in srgb, ' + s.hue + ' 15%, transparent);color:' + s.hue + ';',
+    }));
+
+    const legend = [
+      { tag: 'UNLOCK', label: 'Opens a whole new audience or use-case with tools you already have', color: 'var(--accent)', bg: 'color-mix(in srgb, var(--accent) 14%, transparent)', border: 'color-mix(in srgb, var(--accent) 42%, transparent)' },
+      { tag: 'PRO', label: 'An expected professional capability a serious user is surprised to miss', color: 'var(--new)', bg: 'color-mix(in srgb, var(--new) 14%, transparent)', border: 'color-mix(in srgb, var(--new) 42%, transparent)' },
+      { tag: 'SPARK', label: 'A delight nobody expects — ship it and people evangelise the app', color: 'var(--honey)', bg: 'color-mix(in srgb, var(--honey) 16%, transparent)', border: 'color-mix(in srgb, var(--honey) 42%, transparent)' },
+      { tag: 'FIX', label: 'A silent correctness bug — no crash, just quiet wrongness that erodes trust', color: 'var(--danger)', bg: 'color-mix(in srgb, var(--danger) 14%, transparent)', border: 'color-mix(in srgb, var(--danger) 42%, transparent)' },
+    ];
+
+    const verdictChips = ['Speak VRM', 'Retarget motion', 'Game-ready exports', 'Own the face', 'Get colour right', 'Go to XR'];
+
+    const wins = [
+      { t: '25 real, all-local tools', d: 'Rig, sculpt, UV, bake, Manifold boolean, WASM physics, HumanGen, ShaderLab, Director — a genuine end-to-end workshop in a browser tab, nothing uploaded.' },
+      { t: 'The active character follows you', d: 'The GLB-over-postMessage bridge that carries the current mesh between tools once, with a toast, is the connective tissue most desktop suites never manage.' },
+      { t: 'Non-destructive Recipe graph', d: 'A DAG of pure GLB-in / GLB-out steps you can re-run — the exact substrate the LOD and atlas asks below plug straight into.' },
+      { t: 'Offline-first PWA + honest privacy', d: 'Installable, service-worker cached, durable storage, and networked features clearly labelled — the platform every frontier item here can safely build on.' },
+    ];
+
+    const firstFive = [
+      { n: '1', t: 'glTF material extensions + Draco / meshopt on export', d: 'Write KHR transmission / clearcoat / sheen / emissive-strength from what ShaderLab already describes, and add Draco (geometry) + meshopt (buffers) toggles to Export. Real glass and car paint — and a 40 MB GLB becomes a 6 MB one, which makes the passport lighter too.', effort: 'M' },
+      { n: '2', t: 'Texture atlas + material merge', d: 'Repack the UV islands of selected meshes into one atlas, composite their textures to match, merge to a single material — and report draw calls before/after. Pure UV + compositing you already do in UV Unwrap and Bake Maps; often the difference between "imports" and "playable".', effort: 'M' },
+      { n: '3', t: 'Webcam face capture → ARKit shapes', d: 'MediaPipe FaceMesh runs fully in the browser: point the webcam at your face, drive the 52 shapes live, record the take. Opt-in, on-device, clearly labelled — and the most jaw-dropping demo the face pipeline can have now the shapes and the expression board both exist.', effort: '✓ DONE' },
+      { n: '4', t: 'Pose mirror + pose library', d: 'Mirror the current pose across X, and a saved-pose shelf (name → joint rotations) that the text-to-pose matcher reads too. Small, expected, cheap — pose-library.js is already halfway there.', effort: '✓ DONE' },
+      { n: '5', t: 'In-viewport IK handles in Pose', d: 'Grab the hand, pole target for the elbow, pin a foot to the floor — blending back to the FK rotations you already store, reusing AutoRig’s chain data. The first thing anyone from Blender or an engine reaches for, and the groundwork for VR grab-posing.', effort: 'L' },
+    ];
+
+    return { nav, sections, map, legend, verdictChips, wins, firstFive };
+  }
+}
+</script>
+</body>
+</html>

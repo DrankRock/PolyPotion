@@ -321,6 +321,7 @@
             <input type="range" min="3" max="12" value="{{ capSec }}" onInput="{{ onCapSec }}" style="width:100%;">
           </div>
           <button style="{{ capBtnStyle }}" onClick="{{ doRecord }}">{{ capBtnLabel }}</button>
+          <button style="{{ xrBtnStyle }}" onClick="{{ doXR }}">{{ xrLabel }}</button>
           <sc-if value="{{ capBusy }}" hint-placeholder-val="{{ false }}">
             <div style="height:6px;border-radius:3px;background:var(--panel-3);overflow:hidden;"><div style="height:100%;width:{{ capPct }};background:var(--accent);transition:width .1s;"></div></div>
           </sc-if>
@@ -409,6 +410,12 @@ class Component extends DCLogic {
       eng.onChange = () => this.refresh();
       eng.onTime = (info) => this.setState({ time: info.time, duration: info.duration });
       try { this.setState({ presets: eng.shaderPresets() }); } catch (e) {}
+      // re-read the shelf when the tab becomes visible again — picks up looks
+      // published in Shader Lab without a reload
+      const refreshShelf = () => { try { this.setState({ presets: eng.shaderPresets() }); } catch (e) {} };
+      document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshShelf(); });
+      window.addEventListener('focus', refreshShelf);
+      window.addEventListener('message', (e) => { const d = e.data; if (d && d.__studio && d.type === 'studio:activate') refreshShelf(); });
       if (this._pending) { const p = this._pending; this._pending = null; p(); }
     } catch (e) {
       this.toast('Engine failed: ' + (e && e.message || e));
@@ -548,6 +555,21 @@ class Component extends DCLogic {
     this.toast('Saved baked texture PNG' + (maps.length > 1 ? ' ×' + maps.length : ''));
   }
   revertBaked() { const eng = this._eng; if (eng) eng.revertBaked(); this.setState({ baked: false }); this.refresh(); this.toast('Reverted to original material'); }
+
+  async doXR() {
+    const eng = this._eng; if (!eng || !eng.hasModel()) { this.toast('Load a character first'); return; }
+    if (this.state.xrBusy) return;
+    try {
+      const sup = await eng.xrSupport();
+      if (!sup.ar && !sup.vr) { this.toast('WebXR not available here — try a phone (AR) or headset (VR) over HTTPS'); return; }
+      const mode = sup.ar ? 'ar' : 'vr';
+      this.setState({ xrBusy: true });
+      this.toast(mode === 'ar' ? 'AR — scan the floor, tap to place at 1:1' : 'Entering VR…');
+      await eng.startXR(mode);
+      this.setState({ xrBusy: false });
+      this.toast('XR session ended');
+    } catch (e) { this.setState({ xrBusy: false }); this.toast('XR failed: ' + (e && e.message || e)); }
+  }
 
   renderVals() {
     const st = this.state, eng = this._eng;
@@ -722,6 +744,9 @@ class Component extends DCLogic {
       capBtnStyle: 'display:flex;align-items:center;justify-content:center;gap:7px;padding:9px;border-radius:6px;font-size:12px;font-weight:600;width:100%;cursor:' + (st.capBusy ? 'wait' : 'pointer') + ';background:' + (st.capBusy ? 'var(--panel-3)' : 'var(--accent)') + ';border:1px solid ' + (st.capBusy ? 'var(--edge)' : 'var(--accent)') + ';color:' + (st.capBusy ? 'var(--text2)' : '#0d0f1f') + ';',
       doSnapshot: () => this.doSnapshot(),
       doRecord: () => this.doRecord(),
+      doXR: () => this.doXR(),
+      xrLabel: st.xrBusy ? '◉ In XR session…' : '⬡ View in your room (AR / VR)',
+      xrBtnStyle: 'display:flex;align-items:center;justify-content:center;gap:7px;padding:9px;border-radius:6px;font-size:12px;font-weight:600;width:100%;cursor:' + (st.xrBusy ? 'wait' : 'pointer') + ';background:var(--accentDim);border:1px solid rgba(124,131,255,.45);color:#c9cdf6;',
       envIntSlide: st.envInt, envIntLabel: (st.envInt / 100).toFixed(2) + '×',
       onEnvInt: (e) => { const v = +e.target.value; this.setState({ envInt: v }); if (eng) eng.setEnvIntensity(v / 100); },
       shadowSlide: st.shadow, shadowLabel: (st.shadow / 100).toFixed(2),
