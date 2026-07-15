@@ -139,17 +139,19 @@
         </div>
       </sc-if>
 
-      <div style="position:absolute;left:50%;top:10px;transform:translateX(-50%);display:flex;align-items:center;gap:4px;background:rgba(15,15,15,.86);border:1px solid var(--edge);border-radius:8px;padding:5px 7px;">
-        <sc-for list="{{ views }}" as="v" hint-placeholder-count="5">
-          <button style="font-size:11px;font-weight:600;padding:5px 9px;border-radius:5px;cursor:pointer;background:transparent;border:none;color:var(--text2);" onClick="{{ v.onClick }}">{{ v.label }}</button>
-        </sc-for>
+      <div style="position:absolute;left:10px;right:10px;top:10px;display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:6px;pointer-events:none;">
+        <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:.1em;color:var(--text2);background:rgba(15,15,15,.6);padding:3px 7px;border-radius:3px;align-self:center;">{{ modeBadge }}</div>
+        <div style="display:flex;align-items:center;gap:4px;background:rgba(15,15,15,.86);border:1px solid var(--edge);border-radius:8px;padding:5px 7px;pointer-events:auto;">
+          <sc-for list="{{ views }}" as="v" hint-placeholder-count="5">
+            <button style="font-size:11px;font-weight:600;padding:5px 9px;border-radius:5px;cursor:pointer;background:transparent;border:none;color:var(--text2);" onClick="{{ v.onClick }}">{{ v.label }}</button>
+          </sc-for>
+        </div>
+        <div style="display:flex;gap:6px;pointer-events:auto;">
+          <button style="{{ meshChip }}" onClick="{{ toggleMesh }}">◍ Mesh</button>
+          <button style="{{ skelChip }}" onClick="{{ toggleSkel }}">⦿ Skeleton</button>
+          <button style="{{ xrayChip }}" onClick="{{ toggleXray }}">▤ X-ray</button>
+        </div>
       </div>
-      <div style="position:absolute;right:10px;top:10px;display:flex;gap:6px;">
-        <button style="{{ meshChip }}" onClick="{{ toggleMesh }}">◍ Mesh</button>
-        <button style="{{ skelChip }}" onClick="{{ toggleSkel }}">⦿ Skeleton</button>
-        <button style="{{ xrayChip }}" onClick="{{ toggleXray }}">▤ X-ray</button>
-      </div>
-      <div style="position:absolute;left:10px;top:10px;font-family:var(--font-mono);font-size:10px;letter-spacing:.1em;color:var(--text2);background:rgba(15,15,15,.6);padding:3px 7px;border-radius:3px;pointer-events:none;">{{ modeBadge }}</div>
       <div style="position:absolute;right:10px;bottom:12px;font-size:10.5px;color:var(--text2);background:rgba(15,15,15,.78);border:1px solid var(--edge);padding:6px 11px;border-radius:6px;pointer-events:none;max-width:250px;">{{ vpHint }}</div>
     </div>
 
@@ -167,10 +169,17 @@
               <span style="font-size:14px;font-weight:600;">{{ selLabel }}</span>
             </div>
             <div style="font-size:11px;line-height:1.5;color:var(--text2);margin-top:9px;">{{ selDesc }}</div>
+            <sc-if value="{{ selIsIk }}" hint-placeholder-val="{{ false }}">
+              <button style="{{ pinBtn }}" title="Lock this foot/hand to its spot in the world — it stays put while you move the hips or torso" onClick="{{ togglePin }}">{{ pinLabel }}</button>
+            </sc-if>
           </sc-if>
           <sc-if value="{{ noSel }}" hint-placeholder-val="{{ true }}">
-            <div style="font-size:11px;line-height:1.6;color:var(--text2);">Click and drag a handle in the viewport. <b style="color:var(--active);">Orange</b> = IK reach targets, <b style="color:var(--accent);">blue</b> = FK rotate joints, <b style="color:var(--good);">green</b> = hips.</div>
+            <div style="font-size:11px;line-height:1.6;color:var(--text2);">Click and drag a handle in the viewport. <b style="color:var(--active);">Orange</b> = IK reach targets, <b style="color:var(--accent);">blue</b> = FK rotate joints, <b style="color:var(--good);">green</b> = hips, <b style="color:#a58cff;">violet</b> = elbow/knee bend poles.</div>
           </sc-if>
+          <label style="display:flex;align-items:flex-start;gap:9px;margin-top:12px;padding-top:11px;border-top:1px solid var(--seam);cursor:pointer;">
+            <input type="checkbox" checked="{{ polesOn }}" onChange="{{ togglePoles }}" style="width:14px;height:14px;flex:none;margin-top:2px;accent-color:#8a6bd8;">
+            <span style="font-size:11px;color:var(--text2);line-height:1.45;">Show <b style="color:#a58cff;">bend poles</b> — drag a violet marker to steer which way an elbow or knee bends.</span>
+          </label>
         </div>
       </div>
 
@@ -209,7 +218,7 @@ class Component extends DCLogic {
 
   state = {
     meshName: 'no model', loading: false, loadingMsg: '', hasModel: false,
-    symmetry: true, showMesh: true, showSkel: true, xray: false,
+    symmetry: true, showMesh: true, showSkel: true, xray: false, showPoles: true,
     sel: null, bones: 0, handles: 0, rig: '—',
     aiBusy: false, aiSettingsOpen: false, aiNote: '',
     aiProvider: (function () { try { return localStorage.getItem('pp.ai.provider') || 'local'; } catch (e) { return 'local'; } })(),
@@ -502,6 +511,12 @@ class Component extends DCLogic {
       hasSel: !!sel, noSel: !sel,
       selLabel: sel ? sel.label : '', selType: sel ? (sel.type === 'ik' ? 'IK' : 'FK') : '—',
       selTypeColor: sel ? selColor : 'var(--muted)', selDot: selColor, selDesc,
+      selIsIk: !!(sel && sel.type === 'ik'),
+      pinLabel: sel && sel.pinned ? '◉ Pinned — click to release' : '⊕ Pin to world',
+      pinBtn: 'width:100%;margin-top:11px;height:30px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;background:' + (sel && sel.pinned ? 'rgba(224,210,79,.16)' : 'var(--panel3)') + ';border:1px solid ' + (sel && sel.pinned ? 'rgba(224,210,79,.55)' : 'var(--edge)') + ';color:' + (sel && sel.pinned ? '#e0d24f' : 'var(--text)') + ';',
+      togglePin: () => { if (!eng) return; const r = eng.togglePin(); if (r && r.ok) { this.refresh(); this.toast(r.pinned ? (r.label + ' pinned to world') : (r.label + ' released')); } },
+      polesOn: st.showPoles,
+      togglePoles: () => { const v = !st.showPoles; this.setState({ showPoles: v }); if (eng) eng.setPolesVisible(v); },
       // stats
       stats: [
         { k: 'Character', v: st.meshName },

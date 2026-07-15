@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<script src="theme.js"></script>
+<style>
+  html{scroll-behavior:smooth;}
+  html,body{margin:0;padding:0;background:var(--bg);}
+  *{box-sizing:border-box;}
+  #ca ::-webkit-scrollbar{width:10px;height:10px;}
+  #ca ::-webkit-scrollbar-track{background:var(--gutter);}
+  #ca ::-webkit-scrollbar-thumb{background:var(--edge);border:2px solid var(--gutter);border-radius:6px;}
+  #ca section[id]{scroll-margin-top:22px;}
+  #ca a{color:inherit;}
+  #ca a:hover{color:var(--accent);}
+</style>
+</helmet>
+
+<div id="ca" style="display:flex;align-items:flex-start;min-height:100vh;width:100%;background:var(--bg);color:var(--text);font-family:var(--font-ui);font-size:14px;line-height:1.65;-webkit-font-smoothing:antialiased;">
+
+  <!-- SIDEBAR -->
+  <aside style="position:sticky;top:0;height:100vh;width:264px;flex:none;background:var(--panel);border-right:1px solid var(--seam);overflow-y:auto;padding:20px 14px 40px;">
+    <div style="display:flex;align-items:center;gap:9px;padding:0 6px 14px;">
+      <div style="width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--accent),var(--wood-dark));color:var(--on-accent);font-weight:700;font-size:15px;">⚗</div>
+      <div>
+        <div style="font-weight:700;letter-spacing:.05em;font-size:13px;">POLYPOTION</div>
+        <div style="font-family:var(--font-mono);font-size:9px;color:var(--muted);letter-spacing:.12em;">THE CURATED AUDIT</div>
+      </div>
+    </div>
+
+    <sc-for list="{{ nav }}" as="n" hint-placeholder-count="8">
+      <a href="{{ n.href }}" style="{{ n.style }}">
+        <span style="{{ n.dot }}"></span>
+        <span style="flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ n.label }}</span>
+        <span style="font-family:var(--font-mono);font-size:9.5px;color:var(--muted);">{{ n.count }}</span>
+      </a>
+    </sc-for>
+
+    <div style="margin-top:20px;padding:12px 10px;border-top:1px solid var(--seam);">
+      <div style="font-family:var(--font-mono);font-size:9.5px;letter-spacing:.12em;color:var(--muted);margin-bottom:9px;">WHAT EACH TAG MEANS</div>
+      <sc-for list="{{ legend }}" as="l" hint-placeholder-count="4">
+        <div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:9px;">
+          <span style="flex:none;width:52px;text-align:center;font-family:var(--font-mono);font-size:9px;font-weight:700;padding:3px 0;border-radius:5px;color:{{ l.color }};background:{{ l.bg }};border:1px solid {{ l.border }};">{{ l.tag }}</span>
+          <span style="font-size:11px;color:var(--text-2);line-height:1.45;">{{ l.label }}</span>
+        </div>
+      </sc-for>
+    </div>
+    <div style="margin-top:12px;padding:10px 8px;font-size:11px;line-height:1.6;color:var(--muted);border-top:1px solid var(--seam);">One document, replacing the two earlier chapters. Everything marked shipped was cross-checked against the code and <span style="font-family:var(--font-mono);">PROGRESS.md</span>; everything open is stated once, with effort.</div>
+  </aside>
+
+  <!-- MAIN -->
+  <main id="doc-main" style="flex:1;min-width:0;max-width:920px;padding:40px 56px 140px;">
+
+    <a href="index.html" style="display:inline-flex;align-items:center;gap:8px;font-size:12.5px;font-weight:700;color:var(--accent);text-decoration:none;margin-bottom:22px;padding:8px 14px;border:1px solid var(--seam);border-radius:8px;background:var(--panel);">← Back to Studio</a>
+
+    <header style="margin-bottom:16px;">
+      <div style="font-family:var(--font-mono);font-size:11px;letter-spacing:.14em;color:var(--accent);margin-bottom:10px;">CONSOLIDATED AUDIT · CHAPTERS I + II · CROSS-CHECKED JULY 15, 2026</div>
+      <h1 style="font-size:36px;font-weight:700;letter-spacing:-.015em;line-height:1.1;margin:0 0 14px;">What's shipped, what's left, in one place</h1>
+      <p style="font-size:16px;color:var(--text-2);margin:0;max-width:680px;">Chapter I audited the product rings around the craft — getting in, getting out, not losing work, staying offline, letting others extend. Chapter II audited the craft frontier — the formats and disciplines the wider 3D world speaks. Between them, <b style="color:var(--text);">three brews of work shipped</b>. This document retires both chapters: the scoreboard below is what exists in the code today, and the open list is everything that remains, curated and ordered.</p>
+    </header>
+
+    <!-- SCOREBOARD -->
+    <section style="margin:20px 0 8px;padding:18px 22px;border:1px solid var(--seam);border-radius:12px;background:var(--panel);display:flex;gap:0;">
+      <sc-for list="{{ score }}" as="sc" hint-placeholder-count="4">
+        <div style="{{ sc.style }}">
+          <div style="font-family:var(--font-mono);font-size:26px;font-weight:700;color:{{ sc.hue }};">{{ sc.n }}</div>
+          <div style="font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-top:2px;">{{ sc.label }}</div>
+        </div>
+      </sc-for>
+    </section>
+
+    <!-- SHIPPED -->
+    <section id="shipped" data-doc style="padding:34px 0 8px;border-top:1px solid var(--seam);margin-top:28px;">
+      <h2 style="font-size:23px;font-weight:700;margin:0 0 8px;">✔ Shipped — verified in the code</h2>
+      <p style="color:var(--text-2);margin:0 0 18px;max-width:680px;">Both closed chapters, condensed. Each entry names where it lives, so a contributor can go read it.</p>
+
+      <sc-for list="{{ shippedGroups }}" as="g" hint-placeholder-count="2">
+        <div style="font-family:var(--font-mono);font-size:10.5px;letter-spacing:.12em;color:var(--muted);margin:18px 2px 10px;">{{ g.kicker }}</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <sc-for list="{{ g.items }}" as="s" hint-placeholder-count="6">
+            <div style="display:flex;gap:10px;padding:11px 13px;border:1px solid var(--seam);border-radius:9px;background:var(--panel);">
+              <span style="color:var(--good);font-size:14px;flex:none;margin-top:1px;">✔</span>
+              <div style="min-width:0;">
+                <div style="font-weight:700;font-size:13px;color:var(--text);margin-bottom:2px;">{{ s.t }}</div>
+                <div style="font-size:11.5px;color:var(--text-2);line-height:1.5;">{{ s.d }}</div>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </sc-for>
+    </section>
+
+    <!-- OPEN SECTIONS -->
+    <sc-for list="{{ sections }}" as="s" hint-placeholder-count="5">
+      <section id="{{ s.id }}" data-doc style="padding:38px 0 8px;border-top:1px solid var(--seam);margin-top:30px;">
+        <div style="display:flex;align-items:center;gap:13px;margin-bottom:8px;">
+          <div style="{{ s.glyphBox }}">{{ s.glyph }}</div>
+          <div>
+            <div style="font-family:var(--font-mono);font-size:10.5px;letter-spacing:.12em;color:{{ s.hue }};margin-bottom:2px;">{{ s.kicker }}</div>
+            <h2 style="font-size:23px;font-weight:700;margin:0;">{{ s.title }}</h2>
+          </div>
+        </div>
+        <p style="font-size:15px;color:var(--text-2);margin:0 0 20px;max-width:690px;">{{ s.intro }}</p>
+
+        <div style="display:flex;flex-direction:column;gap:13px;">
+          <sc-for list="{{ s.findings }}" as="f" hint-placeholder-count="3">
+            <div style="border:1px solid var(--seam);border-radius:11px;background:var(--panel);overflow:hidden;">
+              <div style="display:flex;align-items:flex-start;gap:13px;padding:15px 17px 6px;">
+                <span style="flex:none;margin-top:1px;width:56px;text-align:center;font-family:var(--font-mono);font-size:9px;font-weight:700;padding:4px 0;border-radius:6px;color:{{ f.color }};background:{{ f.bg }};border:1px solid {{ f.border }};">{{ f.tag }}</span>
+                <div style="flex:1;">
+                  <div style="font-weight:700;font-size:15px;color:var(--text);margin-bottom:5px;">{{ f.title }}</div>
+                  <div style="font-size:13.5px;color:var(--text-2);line-height:1.62;">{{ f.why }}</div>
+                </div>
+                <span style="flex:none;font-family:var(--font-mono);font-size:10px;color:var(--muted);padding:3px 9px;border:1px solid var(--edge);border-radius:20px;">{{ f.effort }}</span>
+              </div>
+              <div style="display:flex;gap:10px;padding:9px 17px 14px 86px;">
+                <span style="flex:none;font-family:var(--font-mono);font-size:9.5px;letter-spacing:.1em;color:{{ s.hue }};padding-top:2px;">DO →</span>
+                <div style="font-size:13px;color:var(--text);line-height:1.6;">{{ f.todo }}</div>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </section>
+    </sc-for>
+
+    <!-- SMALL STUFF -->
+    <section id="small" data-doc style="padding:38px 0 8px;border-top:1px solid var(--seam);margin-top:30px;">
+      <h2 style="font-size:23px;font-weight:700;margin:0 0 8px;">The small stuff</h2>
+      <p style="color:var(--text-2);margin:0 0 16px;max-width:680px;">Follow-ups noted while shipping the bigger items — none blocks anything, each is a pleasant hour or two.</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;">
+        <sc-for list="{{ small }}" as="sm" hint-placeholder-count="8">
+          <div style="display:flex;gap:9px;align-items:flex-start;padding:9px 12px;border:1px solid var(--seam);border-radius:8px;background:var(--panel);">
+            <span style="flex:none;color:var(--muted);font-size:12px;margin-top:2px;">▢</span>
+            <span style="font-size:12.5px;color:var(--text-2);line-height:1.55;">{{ sm }}</span>
+          </div>
+        </sc-for>
+      </div>
+    </section>
+
+    <!-- CLOSING -->
+    <section style="padding:34px 0 0;border-top:1px solid var(--seam);margin-top:30px;">
+      <p style="color:var(--text-2);font-size:14px;line-height:1.7;max-width:690px;margin:0 0 10px;">The pattern from both chapters held all the way through: nearly everything that shipped was a <b style="color:var(--text);">translation layer, not a new engine</b> — VRM, ARKit, retargeting, LODs, the passport all re-package work the suite already does into dialects the wider world reads. The open list above continues it: material extensions, atlasing and colour management are translations too. Only the big bets at the bottom are genuinely new machinery.</p>
+      <p style="color:var(--muted);font-size:12.5px;margin:14px 0 0;">Consolidated July 15, 2026 from the Chapter I product audit and the Chapter II frontier audit, cross-checked against the code and <span style="font-family:var(--font-mono);">PROGRESS.md</span> (the implementation tracker and log — still the source of truth for wiring notes). The two chapter documents are retired.</p>
+    </section>
+
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { activeId: 'shipped' };
+
+  componentDidMount() {
+    this._io = new IntersectionObserver((entries) => {
+      entries.forEach(e => { if (e.isIntersecting) this.setState({ activeId: e.target.id }); });
+    }, { rootMargin: '-6% 0px -84% 0px', threshold: 0 });
+    setTimeout(() => {
+      document.querySelectorAll('#doc-main section[id]').forEach(s => this._io.observe(s));
+    }, 80);
+  }
+  componentWillUnmount() { if (this._io) this._io.disconnect(); }
+
+  hueFor(tag) {
+    if (tag === 'NOW') return 'var(--accent)';
+    if (tag === 'PRO') return 'var(--new)';
+    if (tag === 'SPARK') return 'var(--honey)';
+    if (tag === 'FIX') return 'var(--danger)';
+    return 'var(--good)';
+  }
+  tagStyle(tag) {
+    const h = this.hueFor(tag);
+    return {
+      color: h,
+      bg: 'color-mix(in srgb, ' + h + ' 14%, transparent)',
+      border: 'color-mix(in srgb, ' + h + ' 42%, transparent)',
+    };
+  }
+
+  sectionsData() {
+    return [
+      {
+        id: 'now', glyph: '★', hue: 'var(--accent)', kicker: 'THE FOURTH BREW — PICKED JULY 15',
+        title: 'Now: the fourth brew',
+        intro: 'The third brew is fully shipped (webcam face capture, pose mirror + library, GLB compression, texture atlas, and the in-viewport IK handles \u2014 pole targets + pin-to-world). Here is the next five, pulled from the open findings and ordered so the two correctness fixes land before the platform work that assumes them.',
+        findings: [
+          { tag: 'FIX', effort: 'M', title: 'A single colour-management contract', why: 'Textures are either colour (sRGB) or data (linear: normals, roughness, masks). If tools disagree, bakes and paints drift in brightness as a character moves between Sculpt, Texture Paint, Bake Maps and Showcase.', todo: 'Declare a linear working space, tag every texture sRGB-vs-data at import, pick a view transform (sRGB / AgX) in Showcase. One policy, honoured everywhere.' },
+          { tag: 'FIX', effort: 'M', title: 'Symmetry as a shared contract', why: 'Sculpt, Weight Paint, Morph and Texture Paint each implement their own mirroring, so symmetry behaves slightly differently in each, and topological (non-mirror-perfect) symmetry isn\u2019t handled at all.', todo: 'Compute a symmetry map once (world-plane + topological fallback) and expose it to every brush tool, so "mirror X" means the same thing suite-wide.' },
+          { tag: 'PRO', effort: 'M', title: 'Vendor three.js + loaders + WASM as local files', why: 'The service worker makes every visit after the first fully offline, but a brand-new user still pays a CDN round-trip for three@0.160 before anything caches \u2014 and a future esm.sh change could brick old characters. The Draco encoder loading through esm.sh (see PROGRESS.md) is the same fragility.', todo: 'Vendor three.js, every loader and all WASM into the repo with relative imports and a pinned version. Finishes the "runs on your machine" promise.' },
+          { tag: 'PRO', effort: 'S', title: 'COOP / COEP headers on the host', why: 'Physics, Decimate, Bake, UV and Manifold all benefit from SIMD + threads, which need SharedArrayBuffer, which needs cross-origin-isolation headers. The in-app "1-thread / threads" badge is already wired \u2014 the headers are the other half, and they\u2019re host-side.', todo: 'Ship COOP/COEP with the static host; document the one-liner for GitHub Pages / Netlify in CONTRIBUTING.md.' },
+          { tag: 'PRO', effort: 'S', title: 'Bundle 2\u20133 CC sample characters + clips', why: 'The generator covers the empty shelf, but a ready-made rigged, textured, animated sample lets someone explore the finished pipeline \u2014 IK posing, atlasing, the passport \u2014 in one click, no generating, no importing.', todo: 'Ship CC-licensed samples with a "Load a sample" button in the Library empty state, next to Generate.' },
+        ],
+      },
+      {
+        id: 'platform', glyph: '⛓', hue: 'var(--new)', kicker: 'CHAPTER I\u2019S LAST OPEN RING',
+        title: 'Platform hardening',
+        intro: 'The PWA, durable storage and backup all shipped; vendoring and cross-origin isolation are in the fourth brew above. This is the remaining storage upgrade.',
+        findings: [
+          { tag: 'PRO', effort: 'M', title: 'Move mesh blobs to OPFS', why: 'Big ArrayBuffers in IndexedDB pay structured-clone cost and compete with quota. The Origin Private File System is faster and roomier for exactly this.', todo: 'Mesh payloads as OPFS files, light manifest stays in IndexedDB. Faster restores, fewer quota walls.' },
+        ],
+      },
+      {
+        id: 'audience', glyph: '⊞', hue: 'var(--good)', kicker: 'FIRST-TIMERS & CONTRIBUTORS',
+        title: 'Audience',
+        intro: 'Onboarding (HumanGen on-ramp, tour) and contributor docs shipped; a sample-character on-ramp is in the fourth brew above. What remains is reach and inclusion.',
+        findings: [
+          { tag: 'PRO', effort: 'M', title: 'Community asset index', why: 'The manifest system is local-only. A static, opt-in catalogue of CC characters/animations on the project\u2019s own GitHub Pages could be browsed and pulled in-app without breaking the offline/local default.', todo: 'An optional "Community" tab reading a static JSON index. Clearly separate from local, clearly opt-in, so the privacy stance holds.' },
+          { tag: 'PRO', effort: 'S', title: 'Accessibility pass on the older chrome', why: 'The dock is now a real ARIA tablist and new controls carry labels, but older icon buttons across the shell are still bare glyphs with title tooltips only.', todo: 'aria-label every remaining icon control, visible focus rings, full keyboard nav for dialogs. Cheap credibility, real inclusion.' },
+        ],
+      },
+      {
+        id: 'bets', glyph: '✧', hue: 'var(--honey)', kicker: 'NEW MACHINERY, NOT TRANSLATION',
+        title: 'The big bets',
+        intro: 'Everything above re-packages what exists. These four are genuinely new machinery \u2014 pick at most one per brew, and plan the last one rather than rushing it.',
+        findings: [
+          { tag: 'SPARK', effort: 'M', title: 'Vertex Animation Textures (VAT) bake', why: 'Bake an animation into a texture and a shader replays it with zero skeleton cost \u2014 the trick behind huge crowds and destructible props. Niche, dazzling, and a perfect fit for a client-side tool: pure texture baking, no runtime.', todo: 'Bake per-vertex position/normal offsets per frame into an EXR/PNG pair, emit the matching material, document the two-line shader.' },
+          { tag: 'SPARK', effort: 'L', title: 'Multi-character scene assembly', why: 'Director sequences cameras beautifully \u2014 over a single actor. A light "stage" placing several library characters and props, each with its own pose/clip, turns a character tool into a diorama and cutscene maker. A different, bigger reason to open the app.', todo: 'A stage view: drop multiple library items, transform each, assign a pose/clip, export the composed scene as one glTF. Director then flies its camera through the finished set.' },
+          { tag: 'SPARK', effort: 'L', title: 'Local-network live co-op', why: 'Two people on the same wi-fi reviewing one character over WebRTC data channels \u2014 no server, no account. Keeps the offline promise intact while adding the one thing local-only tools never have: someone next to you.', todo: 'Peer-to-peer session (manual offer/answer or local discovery) syncing camera, selection and the active GLB. Start with live review, grow toward shared editing.' },
+          { tag: 'PRO', effort: 'XL', title: 'A shared mesh core (plan, don\u2019t rush)', why: 'Tool handoffs copy whole GLB buffers between iframes; there\u2019s no shared selection, camera or undo across tools. It works, but it\u2019s memory-heavy and caps cross-tool consistency.', todo: 'Longer-term: a shared worker that owns the active mesh/scene, with tools as views onto it \u2014 one undo stack, synced camera, no per-handoff copies. Write the design doc first.' },
+        ],
+      },
+    ];
+  }
+
+  renderVals() {
+    const active = this.state.activeId;
+    const raw = this.sectionsData();
+
+    const sections = raw.map(s => Object.assign({}, s, {
+      glyphBox: 'width:40px;height:40px;border-radius:9px;flex:none;display:flex;align-items:center;justify-content:center;font-size:20px;'
+        + 'background:color-mix(in srgb, ' + s.hue + ' 15%, transparent);color:' + s.hue
+        + ';border:1px solid color-mix(in srgb, ' + s.hue + ' 38%, transparent);',
+      findings: s.findings.map(f => Object.assign({}, f, this.tagStyle(f.tag))),
+    }));
+
+    const labels = {
+      shipped: 'Shipped ✔', now: 'The fourth brew',
+      platform: 'Platform hardening', audience: 'Audience', bets: 'The big bets', small: 'The small stuff',
+    };
+    const shippedGroups = this.shippedData();
+    const openCount = raw.reduce((a, s) => a + s.findings.length, 0);
+    const shippedCount = shippedGroups.reduce((a, g) => a + g.items.length, 0);
+    const countFor = (id) => {
+      if (id === 'shipped') return shippedCount;
+      if (id === 'small') return this.smallData().length;
+      const s = raw.find(x => x.id === id); return s ? s.findings.length : '';
+    };
+    const navIds = ['shipped', ...raw.map(s => s.id), 'small'];
+    const nav = navIds.map(id => ({
+      href: '#' + id, label: labels[id] || id, count: countFor(id),
+      style: 'display:flex;align-items:center;gap:10px;padding:7px 8px;border-radius:6px;font-size:12.5px;font-weight:' + (active === id ? '700' : '500')
+        + ';text-decoration:none;margin-bottom:1px;color:' + (active === id ? 'var(--text)' : 'var(--muted)')
+        + ';background:' + (active === id ? 'var(--accent-dim)' : 'transparent') + ';',
+      dot: 'width:7px;height:7px;border-radius:2px;flex:none;background:' + (active === id ? 'var(--accent)' : 'var(--edge)') + ';',
+    }));
+
+    const legend = [
+      { tag: 'NOW', label: 'Committed \u2014 the remainder of the current brew', color: 'var(--accent)', bg: 'color-mix(in srgb, var(--accent) 14%, transparent)', border: 'color-mix(in srgb, var(--accent) 42%, transparent)' },
+      { tag: 'FIX', label: 'A silent correctness bug \u2014 quiet wrongness that erodes trust', color: 'var(--danger)', bg: 'color-mix(in srgb, var(--danger) 14%, transparent)', border: 'color-mix(in srgb, var(--danger) 42%, transparent)' },
+      { tag: 'PRO', label: 'An expected capability a serious user is surprised to miss', color: 'var(--new)', bg: 'color-mix(in srgb, var(--new) 14%, transparent)', border: 'color-mix(in srgb, var(--new) 42%, transparent)' },
+      { tag: 'SPARK', label: 'A delight nobody expects \u2014 ship it and people evangelise', color: 'var(--honey)', bg: 'color-mix(in srgb, var(--honey) 16%, transparent)', border: 'color-mix(in srgb, var(--honey) 42%, transparent)' },
+    ];
+
+    const cell = (i, n) => 'flex:1;text-align:center;' + (i ? 'border-left:1px solid var(--seam);' : '');
+    const score = [
+      { n: '3', label: 'brews shipped', hue: 'var(--good)' },
+      { n: String(shippedCount), label: 'findings closed', hue: 'var(--good)' },
+      { n: String(openCount), label: 'findings open', hue: 'var(--accent)' },
+      { n: String(this.smallData().length), label: 'small follow-ups', hue: 'var(--muted)' },
+    ].map((s, i) => Object.assign(s, { style: cell(i) }));
+
+    return { nav, legend, score, shippedGroups, sections, small: this.smallData() };
+  }
+
+  shippedData() {
+    return [
+      {
+        kicker: 'CHAPTER I — THE PRODUCT RINGS (CLOSED)',
+        items: [
+          { t: 'Universal Export dialog', d: 'glTF/GLB, FBX, OBJ, STL, USDZ from the top bar, with up-axis + unit-scale presets for Blender / Unity / Unreal / Godot. exporter.js.' },
+          { t: 'Installable offline PWA', d: 'Service-worker precache + runtime cache, manifest, install button. Repeat visits work with no network. sw.js.' },
+          { t: 'Durable storage + backup', d: 'storage.persist(), quota meter, one-click backup/restore, portable .polypotion bundle.' },
+          { t: 'Uniform undo everywhere', d: 'Shell-forwarded studio:undo/redo; Ctrl-Z works in every editing tool, incl. Pose and Curves (40 steps).' },
+          { t: 'Onboarding on-ramp', d: 'HumanGen in the dock as "start here" + a dismissible 4-step first-brew tour.' },
+          { t: 'Honest, on-device AI', d: 'On-device Text-to-Pose (24-pose library, no key); NETWORKED badge + banner when a cloud provider is chosen.' },
+          { t: 'Contributor surface', d: 'Tool Contract + Hello Tool template, ARCHITECTURE.md, CONTRIBUTING.md.' },
+          { t: 'Shell QoL', d: 'Library search, mesh thumbnails, rename/duplicate, version badge + what\u2019s-new, turntable/snapshot capture, stylus pressure, ARIA dock, WebGL-context lifecycle.' },
+        ],
+      },
+      {
+        kicker: 'CHAPTER II — THE CRAFT FRONTIER (13 SHIPPED ACROSS THREE BREWS)',
+        items: [
+          { t: 'Animation retargeting', d: 'Retarget tool: auto bone-map (Mixamo/UE5/Rigify/VRM + fuzzy), hip-scale root fix, side-by-side preview, GLB export.' },
+          { t: 'VRM 1.0 avatar export', d: 'Humanoid map + expressions from ARKit names + meta/lookAt, as a format in Export. vrm-export.js.' },
+          { t: 'Bone-name maps on export', d: 'Keep / VRM\u2013Unity / Mixamo / UE5 / Rigify chip row; animation tracks follow the renames. exporter.js + bone-map.js.' },
+          { t: 'LOD chain generation', d: 'Decimates the original at 100/60/30/12%, packs one GLB as <name>_LOD0\u20133. Decimate.' },
+          { t: 'ORM pack + normal toggle', d: 'Occlusion-Roughness-Metallic packing and an OpenGL/DirectX green-channel toggle in Bake Maps.' },
+          { t: 'ARKit 52 blendshapes', d: 'One-click set + landmark-guided generation (click 5 face points, all 52 auto-placed). Morph.' },
+          { t: 'Expression board', d: 'Named expression store (pp-expressions), 10 starters, click-to-apply face board in Morph.' },
+          { t: 'Webcam face capture', d: 'MediaPipe FaceLandmarker drives the ARKit sliders live, fully on-device; stop \u2192 freeze \u2192 save. face-capture.js.' },
+          { t: 'Unit & scale pre-flight', d: 'Bbox-vs-human check, mm/cm/\u00d7100 detection, one-click fix in the Export dialog.' },
+          { t: 'Pose mirror + saved poses', d: 'Mirror across X + a saved-pose shelf (pp-poses) that Text-to-pose reads first. Pose.' },
+          { t: 'WebXR view-in-your-room', d: 'AR hit-test placement at 1:1 + VR fallback in Showcase.' },
+          { t: 'The character passport', d: 'One self-contained .html: embedded GLB + zero-dependency WebGL viewer + stats/credits/licence. passport-export.js.' },
+          { t: 'GLB compression + material extensions', d: 'meshopt / Draco chips in Export via glTF-Transform; KHR transmission / clearcoat / sheen / iridescence pass through. glb-optimize.js. (Draco wired, pending a live test \u2014 see PROGRESS.md.)' },
+          { t: 'Texture atlas + material merge', d: 'Export toggle: packs baseColor / normal / roughness-metalness / emissive into shared atlases, rewrites UVs, merges to one draw call. Verified 5\u21921 draw. atlas-merge.js.' },
+          { t: 'In-viewport IK handles', d: 'Pose: drag wrist/ankle IK targets (CCD), violet pole markers steer elbow/knee bend, \u2295 Pin locks a foot/hand to the world so it holds while you move the hips. pose-engine.js.' },
+        ],
+      },
+    ];
+  }
+
+  smallData() {
+    return [
+      'Progress bar AND a cancel button on every long operation (parse/solve in workers where possible)',
+      'Rolling 2\u20133 snapshots per character instead of one overwritable record',
+      'GIF + transparent-background options for turntable capture',
+      'A visible per-tool history panel on top of the uniform undo',
+      'Pen tilt (pressure already works) across the brush tools',
+      'Record webcam face-capture takes to an animation clip',
+      'Passport: play embedded animation clips in the viewer (renders bind pose today)',
+      'Licence naming: call it source-available or move to AGPL-3.0 \u2014 precision brings more module authors',
+    ];
+  }
+}
+</script>
+</body>
+</html>

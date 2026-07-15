@@ -12,7 +12,7 @@
        plane. (True vendoring is still better; this is the client-side half.)
    Bump CACHE_VERSION whenever shell files change so clients pick them up.
    ============================================================ */
-const CACHE_VERSION = 'pp-v29';
+const CACHE_VERSION = 'pp-v34';
 const CORE_CACHE = CACHE_VERSION + '-core';
 const RUNTIME_CACHE = CACHE_VERSION + '-runtime';
 const CDN_CACHE = CACHE_VERSION + '-cdn';
@@ -46,6 +46,8 @@ const CORE = [
   'studio3D_scripts/vrm-export.js',
   'studio3D_scripts/passport-export.js',
   'studio3D_scripts/face-capture.js',
+  'studio3D_scripts/glb-optimize.js',
+  'studio3D_scripts/atlas-merge.js',
   'studio3D_scripts/sample-shapes.js',
   'Retopo.dc.html',
   'Recipe.dc.html',
@@ -64,6 +66,14 @@ const CORE = [
 ];
 
 const CDN_HOSTS = ['esm.sh', 'fonts.googleapis.com', 'fonts.gstatic.com'];
+
+// fetch that gives up after `ms` instead of hanging a tool forever on a
+// stalled connection — callers fall back to cache (or error) on abort.
+function fetchWithTimeout(req, ms) {
+  const ctl = new AbortController();
+  const t = setTimeout(() => ctl.abort(), ms || 15000);
+  return fetch(req, { signal: ctl.signal }).finally(() => clearTimeout(t));
+}
 
 self.addEventListener('install', (e) => {
   e.waitUntil((async () => {
@@ -105,7 +115,7 @@ self.addEventListener('fetch', (e) => {
   if (url.pathname.endsWith('/studio3D_scripts/human-body.js')) {
     e.respondWith((async () => {
       try {
-        const res = await fetch(new Request(req.url, { cache: 'reload' }));
+        const res = await fetchWithTimeout(new Request(req.url, { cache: 'reload' }), 10000);
         if (res && res.ok) { const c = await caches.open(RUNTIME_CACHE); c.put(req, res.clone()); }
         return res;
       } catch (err) { return (await caches.match(req)) || Response.error(); }
@@ -132,8 +142,8 @@ self.addEventListener('fetch', (e) => {
       // browser HTTP cache — otherwise a stale disk-cached copy of an engine/
       // script survives a CACHE_VERSION bump and clients never see the update.
       let res;
-      try { res = await fetch(new Request(req.url, { cache: 'reload' })); }
-      catch (_) { res = await fetch(req); }
+      try { res = await fetchWithTimeout(new Request(req.url, { cache: 'reload' }), 12000); }
+      catch (_) { res = await fetchWithTimeout(req, 12000); }
       if (res && res.ok && res.type === 'basic') { const c = await caches.open(RUNTIME_CACHE); c.put(req, res.clone()); }
       return res;
     } catch (err) {
@@ -145,6 +155,8 @@ self.addEventListener('fetch', (e) => {
 async function staleWhileRevalidate(req, cacheName) {
   const cache = await caches.open(cacheName);
   const cached = await cache.match(req);
-  const network = fetch(req).then(res => { if (res && (res.ok || res.type === 'opaque')) cache.put(req, res.clone()); return res; }).catch(() => null);
+  const network = fetchWithTimeout(req, cached ? 8000 : 25000)
+    .then(res => { if (res && (res.ok || res.type === 'opaque')) cache.put(req, res.clone()); return res; })
+    .catch(() => null);
   return cached || (await network) || Response.error();
 }

@@ -22,7 +22,7 @@ import { STLExporter } from 'https://esm.sh/three@0.160.0/examples/jsm/exporters
 import { USDZExporter } from 'https://esm.sh/three@0.160.0/examples/jsm/exporters/USDZExporter.js';
 
 export const FORMATS = [
-  { id: 'glb', label: 'glTF Binary', ext: 'glb', note: 'Godot · Blender · three.js', rig: true, anim: true },
+  { id: 'glb', label: 'glTF Binary', ext: 'glb', note: 'Godot · Blender · three.js', rig: true, anim: true, compress: true },
   { id: 'gltf', label: 'glTF (text + .bin)', ext: 'gltf', note: 'editable JSON', rig: true, anim: true },
   { id: 'fbx', label: 'FBX', ext: 'fbx', note: 'Unity · Maya (skeleton)', rig: true, anim: false },
   { id: 'obj', label: 'OBJ', ext: 'obj', note: 'universal static mesh', rig: false, anim: false },
@@ -30,6 +30,13 @@ export const FORMATS = [
   { id: 'usdz', label: 'USDZ', ext: 'usdz', note: 'Apple AR / Quick Look', rig: false, anim: false },
   { id: 'vrm', label: 'VRM 1.0 avatar', ext: 'vrm', note: 'VRChat · VSeeFace · Warudo', rig: true, anim: false },
   { id: 'passport', label: 'Passport (.html)', ext: 'html', note: 'shareable one-file viewer', rig: false, anim: false },
+];
+
+// ---- compression choices (audit: "Draco / meshopt on the way out") ----
+export const COMPRESSION = [
+  { id: 'none', label: 'None' },
+  { id: 'meshopt', label: 'meshopt', note: 'EXT_meshopt_compression — fast, wide support' },
+  { id: 'draco', label: 'Draco', note: 'KHR_draco_mesh_compression — smallest files' },
 ];
 
 export const PRESETS = {
@@ -205,15 +212,32 @@ export async function exportCharacter(buffer, opts) {
     return { format: fmt, file: r.file, passport: r.stats };
   }
 
+  let atlasReport = null;
+  if (opts.atlas && (fmt === 'glb' || fmt === 'gltf' || fmt === 'fbx' || fmt === 'usdz')) {
+    // Texture atlas + material merge (draw-call reducer). Runs before the
+    // up-axis/scale wrap so world-baking stays correct.
+    const { mergeToAtlas } = await import('./atlas-merge.js');
+    const a = await mergeToAtlas(scene, { size: opts.atlasSize || 2048, onStatus: opts.onStatus });
+    atlasReport = a.report;
+  }
+
   const container = transformed(scene, upAxis, scale);
 
   if (fmt === 'glb' || fmt === 'gltf') {
     const binary = fmt === 'glb';
     const exporter = new GLTFExporter();
     const out = await new Promise((res, rej) => exporter.parse(container, res, rej, { binary, animations: anims, onlyVisible: false, embedImages: true }));
+    if (binary && opts.compress && opts.compress !== 'none') {
+      // Draco (geometry) or meshopt (buffers) via glTF-Transform; KHR material
+      // extensions (transmission/clearcoat/sheen/iridescence) pass through.
+      const { optimizeGLB } = await import('./glb-optimize.js');
+      const r = await optimizeGLB(out, { method: opts.compress });
+      download(new Blob([r.buffer], { type: 'model/gltf-binary' }), base + '.glb');
+      return { format: fmt, file: base + '.glb', skeleton: skeletonReport, compression: r, atlas: atlasReport };
+    }
     if (binary) { download(new Blob([out], { type: 'model/gltf-binary' }), base + '.glb'); }
     else { download(new Blob([JSON.stringify(out, null, 2)], { type: 'model/gltf+json' }), base + '.gltf'); }
-    return { format: fmt, file: base + '.' + fmt, skeleton: skeletonReport };
+    return { format: fmt, file: base + '.' + fmt, skeleton: skeletonReport, atlas: atlasReport };
   }
 
   if (fmt === 'obj') {
@@ -258,5 +282,5 @@ export async function exportCharacter(buffer, opts) {
 }
 
 // convenience global (the shell isn't a module)
-window.PPExport = { exportCharacter, checkGLB, validateScale, FORMATS, PRESETS, SKELETON_TARGETS };
-export default { exportCharacter, checkGLB, validateScale, FORMATS, PRESETS, SKELETON_TARGETS };
+window.PPExport = { exportCharacter, checkGLB, validateScale, FORMATS, PRESETS, SKELETON_TARGETS, COMPRESSION };
+export default { exportCharacter, checkGLB, validateScale, FORMATS, PRESETS, SKELETON_TARGETS, COMPRESSION };

@@ -1,10 +1,12 @@
-# PROGRESS.md — Frontier Audit implementation tracker
+# PROGRESS.md — audit implementation tracker
 
-Companion to `Frontier Audit.dc.html` (Chapter II). **This file is the source
+Companion to `PolyPotion Audit.dc.html` (the consolidated audit — the two
+earlier chapter documents are retired). **This file is the source
 of truth for what's shipped vs. pending.** If you (a future Claude or human)
 implement a finding: update the checkbox here, add a line to the log, flip the
 `done: true` flag on the finding in the audit's logic class, and pick the next
-five in "UP NEXT". Chapter I (`Audit.dc.html`) is fully done — don't reopen it.
+five in "UP NEXT". Chapter I is fully done except the items the consolidated
+audit lists under Platform hardening / Audience — don't reopen the rest.
 
 ## How things are wired (read before implementing)
 
@@ -87,8 +89,30 @@ five in "UP NEXT". Chapter I (`Audit.dc.html`) is fully done — don't reopen it
 
 ## UP NEXT (the third brew — five recommendations)
 
-- [ ] **1. glTF material extensions + Draco/meshopt export toggles** (M)
-- [ ] **2. Texture atlas + material merge** (M) — draw-call reducer
+- [x] **1. GLB compression + material extensions on export** —
+      `glb-optimize.js`: Draco or meshopt via glTF-Transform (esm.sh), with
+      dedup + prune passes; "Compression" chip row (None / meshopt / Draco) in
+      the Export dialog for GLB; toast reports before → after MB. KHR material
+      extensions were already written by three's GLTFExporter from ShaderLab's
+      MeshPhysicalMaterials (transmission/volume/clearcoat/sheen/iridescence —
+      verified round-tripping through compression). **meshopt is verified**
+      (29% on the test mesh). **Draco is wired but UNVERIFIED**: the encoder
+      is three's plain-JS build via `esm.sh/...draco_encoder.js?raw` (the
+      draco3dgltf npm build is node-only — fs.readFileSync; jsdelivr is
+      unreachable from the sandbox). Load + init are timeout-guarded (20s/15s,
+      clear error suggesting meshopt) after an emscripten-thenable hang froze
+      the preview during testing. TEST DRACO FIRST on a live session before
+      trusting it.
+- [x] **2. Texture atlas + material merge** — `atlas-merge.js`: an Export
+      toggle ("Atlas & merge materials", GLB/glTF/FBX/USDZ) that packs every
+      material's baseColor / normalMap / roughness-metalness / emissive into
+      shared grid atlases, rewrites each mesh's UVs into its atlas cell
+      (per-group, world-baked for static; bind-space for skinned), and merges
+      geometries sharing a skeleton (or none) into ONE mesh + ONE material via
+      three's mergeGeometries. Toast reports draw/material counts before→after.
+      Groups by skeleton identity so mixed-skeleton scenes stay safe.
+      **Verified**: 5 meshes/5 materials/5 textures → 1/1/1, round-trips
+      through GLB, each mesh keeps its correct cell + PBR values.
 - [x] **3. Webcam face capture → ARKit shapes** — `face-capture.js` wraps
       MediaPipe Tasks-Vision FaceLandmarker (CDN, cached by the sw runtime
       cache; camera processed fully on-device). Its blendshape names are the
@@ -102,7 +126,28 @@ five in "UP NEXT". Chapter I (`Audit.dc.html`) is fully done — don't reopen it
       **`pp-poses`** (shared contract), shelf UI in `Pose.dc.html` (click
       apply / right-click delete / ⊕ Save), and the local Text-to-pose matcher
       checks saved names first.
-- [ ] **5. In-viewport IK handles in Pose** (L)
+- [x] **5. In-viewport IK handles in Pose** — `pose-engine.js` + `Pose.dc.html`.
+      First fixed a syntax break (`_buildPoles` had been nested inside
+      `_buildHandles` — Pose wouldn't load). Then built the real feature on top
+      of the existing CCD IK: **pole targets** (violet octahedron per limb;
+      drag to steer elbow/knee bend — rotates the chain root about the
+      root→effector axis, so the effector never moves) and **pin-to-world**
+      (⊕ Pin on a selected IK effector locks that foot/hand; `_holdPins`
+      re-solves pinned chains after any pose change so a planted foot stays put
+      while you move the hips). Yellow ring marks a pin; "Show bend poles"
+      toggle; pins clear on reset / preset / saved-pose / new model. **Verified**
+      in a harness: engine loads, 14 handles + 4 poles, IK reaches, pole swings
+      the knee 0.056 with the foot fixed, pin holds a reachable move (drift
+      0.137 → 0.026). Residual on over-extension is physically correct (a
+      straight leg can't reach a foot planted beyond its length).
+
+## THIRD BREW COMPLETE — fourth brew picked (see PolyPotion Audit · "Now")
+
+- [ ] **1. Colour-management contract** (M) — FIX
+- [ ] **2. Symmetry as a shared contract** (M) — FIX
+- [ ] **3. Vendor three.js + loaders + WASM locally** (M) — also fixes the Draco/esm.sh fragility
+- [ ] **4. COOP/COEP headers on the host** (S)
+- [ ] **5. Bundle 2–3 CC sample characters** (S)
 
 ## REMAINING (backlog, from the audit — pick into UP NEXT as slots free up)
 
@@ -130,3 +175,22 @@ five in "UP NEXT". Chapter I (`Audit.dc.html`) is fully done — don't reopen it
   (`face-capture.js`), saved-pose shelf in Pose (`pp-poses`). sw.js → pp-v29.
   Note: Pose files use mixed \r\n / \n line endings — match per-region when
   string-editing.
+- 2026-07-15 — Audits consolidated: `Audit.dc.html` + `Frontier Audit.dc.html`
+  replaced by `PolyPotion Audit.dc.html` (verified scoreboard: 20 findings
+  closed, 15 open + 8 small follow-ups). Toolbar overlap in Pose fixed
+  (wrapping flex row). sw.js → pp-v30.
+- 2026-07-15 — Third brew item 2 shipped: texture atlas + material merge
+  (`atlas-merge.js`, "Atlas & merge materials" toggle in Export). Verified
+  5→1 draw call in a harness. sw.js → pp-v33. Only IK handles (item 5) left
+  in the brew.
+- 2026-07-15 — sw.js hardened with fetch timeouts (a stalled CDN was hanging
+  loads); → pp-v32. Then atlas → pp-v33.
+- 2026-07-15 — **Third brew COMPLETE**: in-viewport IK handles shipped (pole
+  targets + pin-to-world in `pose-engine.js` / `Pose.dc.html`; fixed a
+  pre-existing syntax break in `_buildHandles` along the way). Verified in a
+  harness. sw.js → pp-v34. Audit updated: IK → shipped, fourth brew picked
+  (colour mgmt, shared symmetry, vendor three.js, COOP/COEP, sample chars);
+  correctness section folded into the fourth brew.
+  chips in Export via `glb-optimize.js`; meshopt verified, Draco wired but
+  untested (preview sandbox froze mid-test — emscripten thenable loop, then a
+  wedged webview). sw.js → pp-v31.

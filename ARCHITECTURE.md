@@ -49,7 +49,7 @@ manifest.webmanifest ── installable PWA metadata
 | `rig_scripts/` | The AutoRig solver used by `Rig`. |
 | `sw.js`, `manifest.webmanifest`, `icons/` | PWA / offline. |
 | `data/` | Bundled + user library (characters, animations, manifests). |
-| `Handbook.dc.html`, `ToolContract.dc.html`, `Audit.dc.html` | In-app docs. |
+| `Handbook.dc.html`, `ToolContract.dc.html`, `PolyPotion Audit.dc.html` | In-app docs. |
 
 ## The three layers of a tool
 

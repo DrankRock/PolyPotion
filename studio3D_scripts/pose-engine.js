@@ -22,7 +22,7 @@ import { GLTFLoader } from 'https://esm.sh/three@0.160.0/examples/jsm/loaders/GL
 const V = (x, y, z) => new THREE.Vector3(x, y, z);
 const norm = (n) => (n || '').toLowerCase().replace(/mixamorig\d*/g, '').replace(/[\s_:.\-]/g, '');
 const DEG = Math.PI / 180;
-const COL = { ik: 0xe08534, fk: 0x4d82d6, sel: 0xffffff, hov: 0x43b6c4, root: 0x5aa86b };
+const COL = { ik: 0xe08534, fk: 0x4d82d6, sel: 0xffffff, hov: 0x43b6c4, root: 0x5aa86b, pole: 0x8a6bd8, pin: 0xe0d24f };
 
 export class PEngine {
   constructor(canvas) {
@@ -61,8 +61,12 @@ export class PEngine {
     this.model = null; this.meshes = []; this.skelHelper = null;
     this.boneByKey = {}; this.canon = {}; this.restQ = new Map();
     this.handles = [];           // {key,bone,type,chain,effector,mesh,label,side}
+    this.pins = new Map();       // effector bone → pinned world Vector3 (foot-plant / hand-lock)
+    this.poles = new Map();      // ik handle key → { pole:Vector3, mesh } (elbow/knee bend dir)
     this.selected = null; this.hovered = null;
     this.symmetry = true; this.showMesh = true; this.showSkel = true; this.xray = false;
+    this.showPoles = true;       // pole markers visible + active
+    this._pinRings = new Map();  // handle key → ring mesh marking a world-pinned effector
     this.modelName = ''; this.modelRadius = 1;
 
     this.onStatus = null; this.onChange = null; this.onLoaded = null;
@@ -168,6 +172,7 @@ export class PEngine {
     add('rwrist', C.righthand, 'ik', { chain: [C.rightarm, C.rightforearm].filter(Boolean), effector: C.righthand, label: 'Right wrist', side: 'right', big: true });
     add('lankle', C.leftfoot, 'ik', { chain: [C.leftupleg, C.leftleg].filter(Boolean), effector: C.leftfoot, label: 'Left ankle', side: 'left', big: true });
     add('rankle', C.rightfoot, 'ik', { chain: [C.rightupleg, C.rightleg].filter(Boolean), effector: C.rightfoot, label: 'Right ankle', side: 'right', big: true });
+
     // FK joints
     add('hips', C.hips, 'fk', { root: true, big: true, label: 'Hips' });
     add('spine', C.spine, 'fk', { label: 'Spine' });
@@ -179,6 +184,62 @@ export class PEngine {
     add('rshoulder', C.rightarm, 'fk', { label: 'Right shoulder', side: 'right' });
     add('lknee', C.leftleg, 'fk', { label: 'Left knee', side: 'left' });
     add('rknee', C.rightleg, 'fk', { label: 'Right knee', side: 'right' });
+
+    // pole targets for the two-bone limbs — a draggable marker that steers
+    // which way the elbow / knee bends.
+    this._buildPoles();
+  }
+
+  // one draggable pole per IK chain, seeded in front of / behind the mid joint
+  // so the default bend is natural (elbows back, knees forward). Kept in world
+  // space once built (like a Blender pole empty); the user drags it to adjust.
+  _buildPoles() {
+    (this.poles ? [...this.poles.values()] : []).forEach(p => { this.gizmos.remove(p.mesh); p.mesh.geometry.dispose(); p.mesh.material.dispose(); });
+    this.poles = new Map();
+    const r = this.modelRadius * 0.02;
+    const C = this.canon;
+    const defs = [
+      { key: 'lwrist', mid: C.leftforearm, root: C.leftarm, eff: C.lefthand, fwd: -1 },
+      { key: 'rwrist', mid: C.rightforearm, root: C.rightarm, eff: C.righthand, fwd: -1 },
+      { key: 'lankle', mid: C.leftleg, root: C.leftupleg, eff: C.leftfoot, fwd: 1 },
+      { key: 'rankle', mid: C.rightleg, root: C.rightupleg, eff: C.rightfoot, fwd: 1 },
+    ];
+    defs.forEach(d => {
+      if (!d.mid || !d.root || !d.eff) return;
+      const midP = d.mid.getWorldPosition(new THREE.Vector3());
+      const rootP = d.root.getWorldPosition(new THREE.Vector3());
+      const effP = d.eff.getWorldPosition(new THREE.Vector3());
+      // offset the pole away from the limb line, toward front (+Z) or back (−Z)
+      const axis = effP.clone().sub(rootP).normalize();
+      const zoff = new THREE.Vector3(0, 0, d.fwd).projectOnPlane(axis).normalize();
+      if (!isFinite(zoff.x)) zoff.set(0, d.fwd, 0);
+      const pole = midP.clone().addScaledVector(zoff, this.modelRadius * 0.22);
+      const geo = new THREE.OctahedronGeometry(r * 1.5);
+      const mat = new THREE.MeshBasicMaterial({ color: COL.pole, depthTest: false, transparent: true, opacity: 0.9 });
+      const mesh = new THREE.Mesh(geo, mat); mesh.renderOrder = 997; mesh.position.copy(pole); mesh.visible = this.showPoles;
+      this.gizmos.add(mesh);
+      this.poles.set(d.key, { key: d.key, pos: pole, mesh, chain: [d.root, d.mid], effector: d.eff, side: d.key[0] === 'l' ? 'left' : 'right', label: (d.key.includes('wrist') ? 'Elbow' : 'Knee') + ' pole' });
+    });
+  }
+
+  // ---- pole constraint: rotate the chain root about the (root→effector) axis
+  // so the mid joint swings toward the pole. The effector sits ON that axis, so
+  // this never disturbs the reach it already has. ----
+  _applyPole(chain, effector, poleP) {
+    if (!chain || chain.length < 2 || !effector || !poleP) return;
+    const root = chain[0], mid = chain[1];
+    const rootP = root.getWorldPosition(new THREE.Vector3());
+    const effP = effector.getWorldPosition(new THREE.Vector3());
+    const midP = mid.getWorldPosition(new THREE.Vector3());
+    const axis = effP.clone().sub(rootP);
+    if (axis.lengthSq() < 1e-9) return; axis.normalize();
+    const cur = midP.clone().sub(rootP); cur.addScaledVector(axis, -cur.dot(axis));
+    const want = poleP.clone().sub(rootP); want.addScaledVector(axis, -want.dot(axis));
+    if (cur.lengthSq() < 1e-8 || want.lengthSq() < 1e-8) return;
+    cur.normalize(); want.normalize();
+    const angle = Math.atan2(cur.clone().cross(want).dot(axis), cur.dot(want));
+    if (Math.abs(angle) < 1e-4) return;
+    this._applyWorldDelta(root, new THREE.Quaternion().setFromAxisAngle(axis, angle));
   }
 
   _frame() {
@@ -198,12 +259,25 @@ export class PEngine {
       toNdc(e);
       if (this._drag) { this._dragMove(e); return; }
       const h = this._pickHandle();
-      const id = h ? h.key : null;
+      const pole = h ? null : this._pickPole();
+      const id = h ? h.key : (pole ? 'pole:' + pole.key : null);
       if (id !== this.hovered) { this.hovered = id; this._paintHandles(); c.style.cursor = id ? 'grab' : 'default'; }
     });
     c.addEventListener('pointerdown', e => {
       if (e.button !== 0 || !this.model) return;
-      toNdc(e); const h = this._pickHandle(); if (!h) return;
+      toNdc(e);
+      const h = this._pickHandle();
+      if (!h) {
+        const pole = this._pickPole();
+        if (pole) {
+          e.preventDefault();
+          this.controls.enableRotate = false; c.style.cursor = 'grabbing';
+          this.pushUndo();
+          this._beginPole(pole);
+          return;
+        }
+        return;
+      }
       e.preventDefault();
       this.selected = h.key; this.controls.enableRotate = false; c.style.cursor = 'grabbing';
       this._paintHandles(); this._changed();
@@ -217,6 +291,14 @@ export class PEngine {
     const hits = this._ray.intersectObjects(this.handles.map(h => h.mesh), false);
     if (!hits.length) return null;
     return this.handles.find(h => h.mesh === hits[0].object) || null;
+  }
+  _pickPole() {
+    if (!this.showPoles || !this.poles || !this.poles.size) return null;
+    this._ray.setFromCamera(this._ndc, this.camera);
+    const arr = [...this.poles.values()];
+    const hits = this._ray.intersectObjects(arr.map(p => p.mesh), false);
+    if (!hits.length) return null;
+    return arr.find(p => p.mesh === hits[0].object) || null;
   }
   _paintHandles() {
     this.handles.forEach(h => {
@@ -239,11 +321,23 @@ export class PEngine {
     if (d.type === 'ik') {
       const p = new THREE.Vector3();
       if (!this._ray.ray.intersectPlane(d.plane, p)) return;
-      this._solveIK(d.h.chain, d.h.effector, p);
+      this._solveIK(d.h.chain, d.h.effector, p, 10, d.h.key);
+      if (this.pins && this.pins.has(d.h.key)) this.pins.get(d.h.key).pos.copy(p);
       if (this.symmetry && d.h.side) {
         const mh = this._mirrorHandle(d.h);
-        if (mh) this._solveIK(mh.chain, mh.effector, V(-p.x, p.y, p.z));
+        if (mh) {
+          const mp = V(-p.x, p.y, p.z);
+          this._solveIK(mh.chain, mh.effector, mp, 10, mh.key);
+          if (this.pins && this.pins.has(mh.key)) this.pins.get(mh.key).pos.copy(mp);
+        }
       }
+      this._holdPins(d.h.key);
+    } else if (d.type === 'pole') {
+      const p = new THREE.Vector3();
+      if (!this._ray.ray.intersectPlane(d.plane, p)) return;
+      d.pl.pos.copy(p); d.pl.mesh.position.copy(p);
+      this._applyPole(d.pl.chain, d.pl.effector, p);
+      this._holdPins(null);
     } else if (d.type === 'fk') {
       const dx = (this._ndc.x - d.lastNdc.x), dy = (this._ndc.y - d.lastNdc.y);
       d.lastNdc.copy(this._ndc);
@@ -257,10 +351,15 @@ export class PEngine {
         const mh = this._mirrorHandle(d.h);
         if (mh) { const qm = new THREE.Quaternion().setFromAxisAngle(up, -dx * 3.0).multiply(new THREE.Quaternion().setFromAxisAngle(right, -dy * 3.0)); this._applyWorldDelta(mh.bone, qm); }
       }
+      this._holdPins(null);
     }
     this._changed();
   }
   _beginFK(h, e) { this._drag = { type: 'fk', h, lastNdc: this._ndc.clone() }; }
+  _beginPole(pl) {
+    const n = this.camera.getWorldDirection(new THREE.Vector3());
+    this._drag = { type: 'pole', pl, plane: new THREE.Plane().setFromNormalAndCoplanarPoint(n, pl.pos.clone()) };
+  }
   _mirrorHandle(h) {
     if (!h.side) return null;
     const swap = h.key.replace(/^l/, '\u0000').replace(/^r/, 'l').replace(/^\u0000/, 'r');
@@ -276,8 +375,10 @@ export class PEngine {
     bone.updateMatrixWorld(true);
   }
 
-  // CCD inverse kinematics: rotate each bone in chain so `effector` reaches `target`
-  _solveIK(chain, effector, target, iterations) {
+  // CCD inverse kinematics: rotate each bone in chain so `effector` reaches
+  // `target`, then apply the pole constraint so the mid joint bends toward its
+  // pole marker. `poleKey` (optional) names the pole to use.
+  _solveIK(chain, effector, target, iterations, poleKey) {
     if (!chain || !chain.length || !effector) return;
     iterations = iterations || 10;
     const bonePos = new THREE.Vector3(), effPos = new THREE.Vector3();
@@ -305,6 +406,51 @@ export class PEngine {
       effector.getWorldPosition(effPos);
       if (effPos.distanceToSquared(target) < 1e-6) break;
     }
+    // pole pass — swing the bend toward the pole without moving the effector
+    if (this.showPoles && poleKey && this.poles && this.poles.has(poleKey)) {
+      const pl = this.poles.get(poleKey);
+      this._applyPole(chain, effector, pl.pos);
+    }
+  }
+
+  // hold every world-pinned effector at its pinned position. Called after any
+  // pose change so a planted foot / locked hand stays put while you move the
+  // hips or torso. Skips the handle currently being dragged.
+  _holdPins(exceptKey) {
+    if (!this.pins || !this.pins.size) return;
+    this.pins.forEach((pin, key) => {
+      if (key === exceptKey) return;
+      this._solveIK(pin.chain, pin.effector, pin.pos, 8, key);
+    });
+  }
+  // toggle a world pin on the selected IK effector
+  togglePin(key) {
+    key = key || this.selected;
+    const h = this.handles.find(x => x.key === key);
+    if (!h || h.type !== 'ik') return { pinned: false, ok: false };
+    this.pins = this.pins || new Map();
+    if (this.pins.has(key)) {
+      this.pins.delete(key);
+      const ring = this._pinRings.get(key);
+      if (ring) { this.gizmos.remove(ring); ring.geometry.dispose(); ring.material.dispose(); this._pinRings.delete(key); }
+      return { pinned: false, ok: true, label: h.label };
+    }
+    const pos = h.effector.getWorldPosition(new THREE.Vector3());
+    this.pins.set(key, { pos, chain: h.chain, effector: h.effector });
+    const r = this.modelRadius * 0.045;
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(r, r * 0.16, 8, 24), new THREE.MeshBasicMaterial({ color: COL.pin, depthTest: false, transparent: true, opacity: 0.95 }));
+    ring.renderOrder = 999; this.gizmos.add(ring); this._pinRings.set(key, ring);
+    return { pinned: true, ok: true, label: h.label };
+  }
+  isPinned(key) { return !!(this.pins && this.pins.has(key || this.selected)); }
+  clearPins() {
+    if (this.pins) this.pins.clear();
+    this._pinRings.forEach(ring => { this.gizmos.remove(ring); ring.geometry.dispose(); ring.material.dispose(); });
+    this._pinRings.clear();
+  }
+  setPolesVisible(on) {
+    this.showPoles = !!on;
+    if (this.poles) this.poles.forEach(p => { p.mesh.visible = this.showPoles; });
   }
 
   // ---------------------------------------------------------- POSE OPS
@@ -318,6 +464,7 @@ export class PEngine {
   resetPose() {
     this.restQ.forEach((q, bone) => bone.quaternion.copy(q));
     if (this.model) this.model.updateMatrixWorld(true);
+    this.clearPins();
     this.selected = null; this._paintHandles(); this._changed();
   }
   // reflect right-side local rotations onto the left and vice-versa (approximate)
@@ -355,6 +502,7 @@ export class PEngine {
   applyPoseData(data) {
     if (!this.model || !data) return { applied: 0 };
     this.pushUndo();
+    this.clearPins();
     this.restQ.forEach((q, bone) => bone.quaternion.copy(q));
     let applied = 0;
     Object.entries(data).forEach(([key, q]) => {
@@ -382,6 +530,7 @@ export class PEngine {
   applyPreset(name) {
     const P = POSES[name]; if (!P) return;
     this.pushUndo();
+    this.clearPins();
     // start from bind, then aim each limb segment in order (parent before child)
     this.restQ.forEach((q, bone) => bone.quaternion.copy(q));
     if (this.model) this.model.updateMatrixWorld(true);
@@ -397,6 +546,7 @@ export class PEngine {
   applyAimList(aim) {
     if (!this.model) return { applied: 0 };
     this.pushUndo();
+    this.clearPins();
     this.restQ.forEach((q, bone) => bone.quaternion.copy(q));
     this.model.updateMatrixWorld(true);
     let applied = 0;
@@ -446,7 +596,7 @@ export class PEngine {
   selInfo() {
     if (!this.selected) return null;
     const h = this.handles.find(x => x.key === this.selected); if (!h) return null;
-    return { key: h.key, label: h.label, type: h.type };
+    return { key: h.key, label: h.label, type: h.type, pinned: this.isPinned(h.key) };
   }
   stats() {
     return { name: this.modelName, bones: Object.keys(this.boneByKey).length, handles: this.handles.length, rig: this._rigKind || 'mixamo' };
@@ -456,6 +606,9 @@ export class PEngine {
     if (this.model) { this.root.remove(this.model); this.model = null; }
     if (this.skelHelper) { this.scene.remove(this.skelHelper); this.skelHelper = null; }
     this.handles.forEach(h => { this.gizmos.remove(h.mesh); h.mesh.geometry.dispose(); });
+    if (this.poles) this.poles.forEach(p => { this.gizmos.remove(p.mesh); p.mesh.geometry.dispose(); p.mesh.material.dispose(); });
+    this.poles = new Map();
+    if (this.clearPins) this.clearPins();
     this.handles = []; this.meshes = []; this.selected = null; this.hovered = null;
     this.root.rotation.set(0, 0, 0);
   }
@@ -468,6 +621,14 @@ export class PEngine {
     if (!this._run) return; requestAnimationFrame(this._loop);
     // keep handles glued to their joints
     if (this.handles.length) { const p = new THREE.Vector3(); for (const h of this.handles) { h.bone.getWorldPosition(p); h.mesh.position.copy(p); } }
+    // keep pin rings on their effectors, facing the camera
+    if (this._pinRings && this._pinRings.size) {
+      const p = new THREE.Vector3();
+      this._pinRings.forEach((ring, key) => {
+        const pin = this.pins && this.pins.get(key);
+        if (pin && pin.effector) { pin.effector.getWorldPosition(p); ring.position.copy(p); ring.quaternion.copy(this.camera.quaternion); }
+      });
+    }
     this.controls.update();
     this.renderer.render(this.scene, this.camera);
   }

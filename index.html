@@ -598,6 +598,22 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
         <div style="font-size:11px;color:var(--ink-soft);margin-bottom:20px;line-height:1.5;">Renames the skeleton so the target app recognises it as a humanoid (e.g. Unity Humanoid auto-map, Mixamo-compatible). Animation tracks follow the renames.</div>
       </div>
 
+      <div id="exCompBlock" style="display:none;">
+        <div style="font-family:var(--font-mono);font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-soft);margin-bottom:9px;">Compression</div>
+        <div id="exComp" style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:6px;"></div>
+        <div id="exCompNote" style="font-size:11px;color:var(--ink-soft);margin-bottom:20px;line-height:1.5;"></div>
+      </div>
+
+      <div id="exAtlasBlock" style="display:none;margin-bottom:20px;">
+        <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;">
+          <input id="exAtlas" type="checkbox" style="margin-top:3px;width:15px;height:15px;flex:none;accent-color:var(--wood);">
+          <span>
+            <span style="font-family:var(--font-mono);font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink);">Atlas &amp; merge materials</span>
+            <span style="display:block;font-size:11px;color:var(--ink-soft);margin-top:3px;line-height:1.5;">Packs every material into one texture atlas and merges the meshes into a single draw call — the difference between "imports" and "playable". baseColor, normal, roughness/metalness and emissive are all repacked.</span>
+          </span>
+        </label>
+      </div>
+
       <div id="exPassBlock" style="display:none;">
         <div style="font-family:var(--font-mono);font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-soft);margin-bottom:9px;">Passport credits</div>
         <input id="exAuthor" placeholder="Made by… (optional, shown on the card)" style="width:100%;box-sizing:border-box;padding:9px 12px;border-radius:9px;border:2px solid var(--wood);background:var(--cream);color:var(--ink);font-family:inherit;font-size:13px;margin-bottom:9px;">
@@ -1645,7 +1661,7 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
   // in-memory GLB buffer when present, else fetches its library file. Edits made
   // in tools that route their result back (rig, weight-paint, morph, bake maps,
   // decimate, boolean, uv) are reflected; a caveat covers tools that don't yet.
-  const exState = { format: 'glb', up: 'y', scale: 100, author: '', licence: 'CC BY 4.0' };
+  const exState = { format: 'glb', up: 'y', scale: 100, author: '', licence: 'CC BY 4.0', compress: 'none', atlas: false };
   async function activeCharBuffer() {
     const it = activeChar && activeChar.it; if (!it) return null;
     if (it._buffer) return it._buffer.slice(0);
@@ -1700,6 +1716,32 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
       b.addEventListener('click', () => { exState.up = k; renderExport(); });
       axWrap.appendChild(b);
     });
+    // compression (GLB only) — Draco / meshopt via glTF-Transform, on-device
+    const compBlock = $('#exCompBlock');
+    if (compBlock && P.COMPRESSION) {
+      const showComp = !!fmtDef.compress;
+      compBlock.style.display = showComp ? '' : 'none';
+      if (showComp) {
+        const w = $('#exComp'); w.innerHTML = '';
+        P.COMPRESSION.forEach(c => {
+          const on = (exState.compress || 'none') === c.id;
+          const b = document.createElement('button'); b.className = 'fchip' + (on ? ' on' : '');
+          b.textContent = c.label; b.setAttribute('aria-pressed', on ? 'true' : 'false');
+          b.addEventListener('click', () => { exState.compress = c.id; renderExport(); });
+          w.appendChild(b);
+        });
+        const cn = $('#exCompNote');
+        const cur = P.COMPRESSION.find(c => c.id === (exState.compress || 'none'));
+        cn.textContent = cur && cur.note ? cur.note + ' — encoded on-device; material extensions (glass, clearcoat, sheen) pass through untouched.' : 'Uncompressed — largest file, zero decode requirements.';
+      }
+    }
+    // atlas + material merge (draw-call reducer) — mesh-based formats only
+    const atlasBlock = $('#exAtlasBlock');
+    if (atlasBlock) {
+      const showAtlas = ['glb', 'gltf', 'fbx', 'usdz'].includes(exState.format);
+      atlasBlock.style.display = showAtlas ? '' : 'none';
+      const cb = $('#exAtlas'); if (cb) cb.checked = !!exState.atlas;
+    }
     // passport credits (author + licence) — only for the passport format
     const passBlock = $('#exPassBlock');
     if (passBlock) {
@@ -1765,6 +1807,7 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
   { const m = $('#exportModal'); if (m) m.addEventListener('click', e => { if (e.target === m) closeExport(); }); }
   { const s = $('#exScale'); if (s) s.addEventListener('input', e => { exState.scale = +e.target.value; $('#exScaleVal').textContent = (exState.scale / 100).toFixed(2) + '×'; }); }
   { const a = $('#exAuthor'); if (a) a.addEventListener('input', e => { exState.author = e.target.value; }); }
+  { const a = $('#exAtlas'); if (a) a.addEventListener('change', e => { exState.atlas = e.target.checked; }); }
   { const g = $('#exGo'); if (g) g.addEventListener('click', async () => {
       const it = activeChar && activeChar.it;
       if (!it) { toast('Open a character first — nothing to export', 'warn'); return; }
@@ -1772,8 +1815,10 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
       try {
         const buf = await activeCharBuffer();
         if (!buf) { toast('Could not read the character data', 'error'); return; }
-        const r = await window.PPExport.exportCharacter(buf, { format: exState.format, upAxis: exState.up, scale: exState.scale / 100, name: it.label, skeleton: exState.skeleton || 'keep', author: exState.author || '', licence: exState.licence || 'CC BY 4.0' });
+        const r = await window.PPExport.exportCharacter(buf, { format: exState.format, upAxis: exState.up, scale: exState.scale / 100, name: it.label, skeleton: exState.skeleton || 'keep', author: exState.author || '', licence: exState.licence || 'CC BY 4.0', compress: exState.compress || 'none', atlas: !!exState.atlas });
         let msg = 'Exported ' + r.file;
+        if (r.atlas && r.atlas.before && r.atlas.after) msg += ' — atlas: ' + r.atlas.before.draws + '→' + r.atlas.after.draws + ' draw' + (r.atlas.after.draws === 1 ? '' : 's') + ', ' + r.atlas.before.materials + '→' + r.atlas.after.materials + ' material' + (r.atlas.after.materials === 1 ? '' : 's');
+        if (r.compression && r.compression.method !== 'none') msg += ' — ' + r.compression.method + ': ' + (r.compression.before / 1048576).toFixed(1) + ' → ' + (r.compression.after / 1048576).toFixed(1) + ' MB (' + r.compression.savedPct + '% smaller)';
         if (r.passport) msg += ' — ' + r.passport.trisLabel + ' tris, ' + r.passport.sizeLabel + ' all-in, opens anywhere';
         if (r.skeleton && r.skeleton.renamed) msg += ' — ' + r.skeleton.renamed + ' bones renamed (' + r.skeleton.detected + ' → ' + (exState.skeleton) + ')';
         if (r.vrm) msg += ' — ' + r.vrm.bones + ' humanoid bones, ' + r.vrm.expressions + ' expressions';
