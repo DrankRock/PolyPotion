@@ -18,6 +18,7 @@
 // Loaded by dynamic import from Retopo.dc.html, like the other engines.
 // ============================================================
 import * as THREE from 'https://esm.sh/three@0.160.0';
+import { applyOrbitScheme } from './nav-scheme.js';
 import { OrbitControls } from 'https://esm.sh/three@0.160.0/examples/jsm/controls/OrbitControls.js';
 import { FBXLoader } from 'https://esm.sh/three@0.160.0/examples/jsm/loaders/FBXLoader.js';
 import { GLTFLoader } from 'https://esm.sh/three@0.160.0/examples/jsm/loaders/GLTFLoader.js';
@@ -172,8 +173,9 @@ export class RetopoEngine {
   // ---------------------------------------------------------- MODES / SETTINGS
   setMode(m) { this.mode = m; if (m !== 'draw') this._setHoverEdge(null); this._hoverQuad = -1; this._applyMouseButtons(); this._rebuild(); this._changed(); }
   _applyMouseButtons() {
-    // right-drag always orbits; left is the tool. (Middle = zoom, like the other tools.)
-    this.controls.mouseButtons = { LEFT: -1, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.ROTATE };
+    // Shared nav contract: right-drag orbits, middle pans, wheel zooms.
+    // Left is the pen in draw mode (disabled here); orbit in other modes.
+    applyOrbitScheme(this.controls, THREE, { leftDisabled: this.mode === 'draw' });
   }
   setSymmetry(on) { this.symmetry = !!on; this._changed(); }
   setXray(on) {

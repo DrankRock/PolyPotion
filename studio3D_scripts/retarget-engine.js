@@ -7,6 +7,7 @@
 // Retarget.dc.html, like the other engines.
 // ============================================================
 import * as THREE from 'https://esm.sh/three@0.160.0';
+import { applyOrbitScheme } from './nav-scheme.js';
 import { OrbitControls } from 'https://esm.sh/three@0.160.0/examples/jsm/controls/OrbitControls.js';
 import { GLTFLoader } from 'https://esm.sh/three@0.160.0/examples/jsm/loaders/GLTFLoader.js';
 import { FBXLoader } from 'https://esm.sh/three@0.160.0/examples/jsm/loaders/FBXLoader.js';
@@ -26,6 +27,7 @@ export class RetargetEngine {
     this.camera = new THREE.PerspectiveCamera(45, 1, 0.01, 200);
     this.camera.position.set(2.6, 1.6, 3.4);
     this.controls = new OrbitControls(this.camera, canvas);
+    applyOrbitScheme(this.controls, THREE);
     this.controls.target.set(0, 0.95, 0);
     this.controls.enableDamping = true;
 

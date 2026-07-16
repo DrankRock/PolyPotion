@@ -9,6 +9,8 @@
 // Loaded by dynamic import from Showcase.dc.html, like the other engines.
 // ============================================================
 import * as THREE from 'https://esm.sh/three@0.160.0';
+import { applyOrbitScheme } from './nav-scheme.js';
+import { tagObject, applyViewTransform, VIEW_TRANSFORMS } from './color-space.js';
 import { OrbitControls } from 'https://esm.sh/three@0.160.0/examples/jsm/controls/OrbitControls.js';
 import { FBXLoader } from 'https://esm.sh/three@0.160.0/examples/jsm/loaders/FBXLoader.js';
 import { GLTFLoader } from 'https://esm.sh/three@0.160.0/examples/jsm/loaders/GLTFLoader.js';
@@ -130,6 +132,7 @@ export class SCEngine {
     this.orthoCamera.position.copy(this.camera.position);
     this.isOrtho = false;
     this.controls = new OrbitControls(this.camera, canvas);
+    applyOrbitScheme(this.controls, THREE);
     this.controls.enableDamping = true;
     this.controls.dampingFactor = 0.08;
     this.controls.target.set(0, 0.95, 0);
@@ -443,6 +446,9 @@ export class SCEngine {
       if (o.isBone) bones++;
       if (o.isSkinnedMesh && o.skeleton && !skeleton) skeleton = o.skeleton;
     });
+
+    // colour-management contract: fix any mis-tagged maps (FBX/OBJ especially)
+    tagObject(root, THREE);
 
     this.wrap.add(root);
     this.model = root;
@@ -865,6 +871,19 @@ export class SCEngine {
   setEnvIntensity(v) { this.envIntensity = v; this._applyEnvIntensity(); }
   _applyEnvIntensity() { if (!this.wrap) return; this.wrap.traverse(o => { if (o.isMesh && o.material) { (Array.isArray(o.material) ? o.material : [o.material]).forEach(m => { if ('envMapIntensity' in m) { m.envMapIntensity = this.envIntensity; m.needsUpdate = true; } }); } }); }
   setEnvBackground(on) { this._envAsBg = !!on; if (on && this._envRT) this.scene.background = this._envRT.texture; else this.setBackground(this.bgName); }
+  // view transform (shared colour contract): named tone-mapping curve applied
+  // at display time. Default 'srgb' is the identity, so the look is unchanged
+  // until the user picks one.
+  setViewTransform(id) {
+    this.viewTransform = id || 'srgb';
+    applyViewTransform(this.renderer, THREE, this.viewTransform, this.exposure || 1);
+    this._changed && this._changed();
+  }
+  setExposure(v) {
+    this.exposure = v;
+    applyViewTransform(this.renderer, THREE, this.viewTransform || 'srgb', v);
+    this._changed && this._changed();
+  }
   setShadowStrength(v) { this._shadowStrength = v; if (this.floor && this.floor.material) this.floor.material.opacity = v; }
 
   // ---------- demo shapes ----------

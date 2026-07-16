@@ -8,6 +8,7 @@
 // sequence works on any character. Loaded by Director.dc.html.
 // ============================================================
 import * as THREE from 'https://esm.sh/three@0.160.0';
+import { applyOrbitScheme } from './nav-scheme.js';
 import { OrbitControls } from 'https://esm.sh/three@0.160.0/examples/jsm/controls/OrbitControls.js';
 import { FBXLoader } from 'https://esm.sh/three@0.160.0/examples/jsm/loaders/FBXLoader.js';
 import { GLTFLoader } from 'https://esm.sh/three@0.160.0/examples/jsm/loaders/GLTFLoader.js';
@@ -78,6 +79,7 @@ export class DirectorEngine {
     this.camera = new THREE.PerspectiveCamera(35, 1, 0.02, 200);
     this.camera.position.set(1.2, 1.3, 3);
     this.controls = new OrbitControls(this.camera, canvas);
+    applyOrbitScheme(this.controls, THREE);
     this.controls.enableDamping = true; this.controls.dampingFactor = 0.09;
     this.controls.target.set(0, 0.9, 0);
 

@@ -5,6 +5,7 @@
 // Loaded by dynamic import from Boolean.dc.html, like the other engines.
 // ============================================================
 import * as THREE from 'https://esm.sh/three@0.160.0';
+import { applyOrbitScheme } from './nav-scheme.js';
 import { OrbitControls } from 'https://esm.sh/three@0.160.0/examples/jsm/controls/OrbitControls.js';
 import { FBXLoader } from 'https://esm.sh/three@0.160.0/examples/jsm/loaders/FBXLoader.js';
 import { GLTFLoader } from 'https://esm.sh/three@0.160.0/examples/jsm/loaders/GLTFLoader.js';
@@ -21,6 +22,7 @@ export class CSGEngine {
     this.camera = new THREE.PerspectiveCamera(45, 1, 0.01, 500);
     this.camera.position.set(2.4, 1.6, 3);
     this.controls = new OrbitControls(this.camera, canvas);
+    applyOrbitScheme(this.controls, THREE);
     this.controls.enableDamping = true;
 
     this.scene.add(new THREE.HemisphereLight(0xdfe6f0, 0x3a3630, 1.05));

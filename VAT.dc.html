@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./studio3D_scripts/support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Spline+Sans+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="theme.js"></script>
+<style>
+  html,body{margin:0;padding:0;height:100%;background:var(--gutter);}
+  *{box-sizing:border-box;}
+  @keyframes va-spin{to{transform:rotate(360deg);}}
+  @keyframes va-tin{from{transform:translateX(120%);opacity:0;}to{transform:translateX(0);opacity:1;}}
+  #va-root ::-webkit-scrollbar{width:10px;height:10px;}
+  #va-root ::-webkit-scrollbar-track{background:var(--gutter);}
+  #va-root ::-webkit-scrollbar-thumb{background:var(--panel-3);border:2px solid var(--gutter);border-radius:6px;}
+  #va-root input[type=range]{-webkit-appearance:none;height:4px;border-radius:2px;background:var(--panel);outline:none;}
+  #va-root input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--accent);cursor:pointer;border:2px solid var(--panel);}
+  #va-root canvas.va-map{image-rendering:pixelated;image-rendering:crisp-edges;}
+</style>
+</helmet>
+
+<div id="va-root" style="display:flex;flex-direction:column;height:100vh;width:100%;overflow:hidden;background:var(--gutter);color:var(--text);font-family:var(--font-ui);font-size:13px;-webkit-font-smoothing:antialiased;user-select:none;">
+
+  <!-- TOP BAR -->
+  <header style="height:46px;flex:none;display:flex;align-items:center;gap:14px;padding:0 14px;background:var(--header);border-bottom:1px solid var(--seam);">
+    <div style="display:flex;align-items:center;gap:9px;">
+      <div style="width:26px;height:26px;border-radius:5px;display:flex;align-items:center;justify-content:center;background:var(--accent);color:#0d0f1f;font-weight:700;font-size:14px;box-shadow:0 1px 2px rgba(0,0,0,.4),0 0 0 1px rgba(255,255,255,.08) inset;">⧈</div>
+      <div>
+        <div style="font-weight:700;letter-spacing:.04em;font-size:14px;">VAT BAKE</div>
+        <div style="font-family:var(--font-mono);font-size:10px;color:var(--muted);letter-spacing:.1em;margin-top:1px;">VERTEX ANIMATION TEXTURE · GPU REPLAY · LOCAL</div>
+      </div>
+    </div>
+    <div style="flex:1;"></div>
+    <button style="display:inline-flex;align-items:center;gap:7px;height:30px;padding:0 13px;border-radius:6px;font-size:11.5px;font-weight:600;background:var(--panel3);border:1px solid var(--edge);color:var(--text);cursor:pointer;" onClick="{{ pickFile }}">⬇ Import animated model…</button>
+    <div style="display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--text2);padding:4px 10px;background:var(--panel);border:1px solid var(--seam);border-radius:5px;">
+      <span style="width:7px;height:7px;border-radius:50%;flex:none;background:{{ dotColor }};"></span>
+      <span style="font-family:var(--font-mono);">{{ meshName }}</span>
+    </div>
+  </header>
+
+  <div style="flex:1;display:flex;min-height:0;">
+
+    <!-- VIEWPORT -->
+    <div style="flex:1;position:relative;min-width:0;min-height:0;background:var(--viewport);">
+      <canvas id="va-gl" style="position:absolute;inset:0;width:100%;height:100%;display:block;"></canvas>
+
+      <sc-if value="{{ noModel }}" hint-placeholder-val="{{ true }}">
+        <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;background:rgba(18,20,24,.86);">
+          <div style="width:70px;height:70px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:30px;background:var(--accentDim);border:1px solid rgba(124,131,255,.3);color:var(--accent);">⧈</div>
+          <div style="text-align:center;">
+            <div style="font-size:16px;font-weight:700;margin-bottom:6px;">Bake motion into a texture</div>
+            <div style="font-size:12.5px;color:var(--text2);max-width:460px;line-height:1.6;">Drop an <b>animated .glb / .fbx</b> here — a skinned character, a morph-driven face, or a rigid keyframed prop. VAT samples the clip into a position map, then a <b>two-line shader replays it with no skeleton</b> — the trick behind huge crowds and cheap facial playback. Everything on-device.</div>
+          </div>
+          <div style="display:flex;gap:10px;">
+            <button style="padding:10px 18px;border-radius:7px;font-size:12.5px;font-weight:600;background:var(--accent);border:1px solid var(--accent);color:#0d0f1f;cursor:pointer;box-shadow:0 2px 12px rgba(124,131,255,.35);" onClick="{{ pickFile }}">⬇ Import file…</button>
+            <button style="padding:10px 18px;border-radius:7px;font-size:12.5px;font-weight:600;background:var(--panel3);border:1px solid var(--edge);color:var(--text);cursor:pointer;" onClick="{{ loadSample }}">Load a sample…</button>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ loading }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:rgba(18,20,24,.8);color:var(--muted);">
+          <div style="width:38px;height:38px;border:3px solid var(--panel-3);border-top-color:var(--accent);border-radius:50%;animation:va-spin .9s linear infinite;"></div>
+          <div style="font-size:12px;">{{ loadingMsg }}</div>
+        </div>
+      </sc-if>
+
+      <!-- source / baked toggle -->
+      <sc-if value="{{ hasBake }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute;left:50%;top:10px;transform:translateX(-50%);display:flex;align-items:center;gap:3px;background:rgba(15,15,15,.86);border:1px solid var(--edge);border-radius:8px;padding:4px;">
+          <button style="{{ srcTabStyle }}" onClick="{{ showSource }}">Source · skeleton</button>
+          <button style="{{ bakeTabStyle }}" onClick="{{ showBaked }}">Baked · VAT shader</button>
+        </div>
+      </sc-if>
+
+      <div style="position:absolute;right:10px;top:10px;display:flex;gap:4px;background:rgba(15,15,15,.86);border:1px solid var(--edge);border-radius:8px;padding:5px 7px;">
+        <sc-for list="{{ views }}" as="v" hint-placeholder-count="5">
+          <button style="font-size:11px;font-weight:600;padding:5px 9px;border-radius:5px;cursor:pointer;background:transparent;border:none;color:var(--text2);" onClick="{{ v.onClick }}">{{ v.label }}</button>
+        </sc-for>
+      </div>
+
+      <div style="position:absolute;left:10px;top:10px;font-family:var(--font-mono);font-size:10px;letter-spacing:.1em;color:var(--text2);background:rgba(15,15,15,.6);padding:3px 7px;border-radius:3px;pointer-events:none;">{{ modeBadge }}</div>
+
+      <!-- transport -->
+      <sc-if value="{{ hasModel }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute;left:14px;right:14px;bottom:12px;display:flex;align-items:center;gap:11px;background:rgba(15,15,15,.82);border:1px solid var(--edge);border-radius:9px;padding:8px 13px;">
+          <button style="width:30px;height:30px;flex:none;border-radius:6px;border:1px solid var(--edge);background:var(--panel3);color:var(--text);cursor:pointer;font-size:13px;" onClick="{{ togglePlay }}">{{ playIcon }}</button>
+          <input type="range" min="0" max="1000" value="{{ scrubVal }}" onInput="{{ onScrub }}" style="flex:1;">
+          <span style="font-family:var(--font-mono);font-size:10.5px;color:var(--text2);min-width:96px;text-align:right;">{{ transportLabel }}</span>
+        </div>
+      </sc-if>
+    </div>
+
+    <!-- RIGHT : CONTROLS -->
+    <aside style="width:320px;flex:none;background:var(--panel);border-left:1px solid var(--seam);display:flex;flex-direction:column;min-height:0;overflow-y:auto;">
+
+      <!-- source -->
+      <div style="border-bottom:1px solid var(--seam);">
+        <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--header);border-bottom:1px solid var(--seam);">
+          <span style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);">Source</span>
+          <span style="margin-left:auto;font-family:var(--font-mono);font-size:10px;color:var(--accent);background:var(--panel);padding:1px 8px;border-radius:9px;border:1px solid var(--seam);">{{ meshTypeLabel }}</span>
+        </div>
+        <div style="padding:11px 12px;display:flex;flex-direction:column;gap:5px;">
+          <div style="display:flex;justify-content:space-between;font-size:11.5px;"><span style="color:var(--muted);">Vertices</span><span style="font-family:var(--font-mono);color:var(--text);">{{ vertsLabel }}</span></div>
+          <div style="display:flex;justify-content:space-between;font-size:11.5px;"><span style="color:var(--muted);">Triangles</span><span style="font-family:var(--font-mono);color:var(--text);">{{ trisLabel }}</span></div>
+          <div style="display:flex;justify-content:space-between;font-size:11.5px;"><span style="color:var(--muted);">Clips</span><span style="font-family:var(--font-mono);color:var(--text);">{{ clipCountLabel }}</span></div>
+        </div>
+      </div>
+
+      <!-- clip -->
+      <sc-if value="{{ hasClips }}" hint-placeholder-val="{{ false }}">
+        <div style="border-bottom:1px solid var(--seam);">
+          <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--header);border-bottom:1px solid var(--seam);"><span style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);">Clip to bake</span></div>
+          <div style="padding:9px 12px;display:flex;flex-direction:column;gap:5px;max-height:150px;overflow-y:auto;">
+            <sc-for list="{{ clips }}" as="c" hint-placeholder-count="2">
+              <button style="{{ c.style }}" onClick="{{ c.onClick }}">
+                <span style="flex:1;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ c.name }}</span>
+                <span style="font-family:var(--font-mono);font-size:10px;color:var(--muted);">{{ c.dur }}s</span>
+              </button>
+            </sc-for>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- bake settings -->
+      <div style="border-bottom:1px solid var(--seam);">
+        <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--header);border-bottom:1px solid var(--seam);"><span style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);">Bake</span></div>
+        <div style="padding:11px 12px;">
+          <label style="display:flex;justify-content:space-between;font-size:10.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:7px;"><span>Frames</span><span style="font-family:var(--font-mono);color:var(--text);">{{ framesLabel }}</span></label>
+          <div style="display:flex;gap:6px;margin-bottom:10px;">
+            <sc-for list="{{ framePresets }}" as="p" hint-placeholder-count="4"><button style="{{ p.style }}" onClick="{{ p.onClick }}">{{ p.label }}</button></sc-for>
+          </div>
+          <label style="display:flex;align-items:center;gap:9px;font-size:12px;color:var(--text);cursor:pointer;margin-bottom:11px;padding:7px 9px;border:1px solid var(--edge);border-radius:6px;background:var(--panel3);" onClick="{{ toggleNrm }}">
+            <span style="width:16px;height:16px;flex:none;border-radius:4px;border:1px solid {{ nrmBoxBorder }};background:{{ nrmBoxBg }};display:flex;align-items:center;justify-content:center;color:#0d0f1f;font-size:11px;">{{ nrmCheck }}</span>
+            Bake a normal map too
+            <span style="margin-left:auto;font-size:10px;color:var(--muted);">smoother shading</span>
+          </label>
+          <button style="display:flex;align-items:center;justify-content:center;gap:7px;padding:10px;border-radius:6px;font-size:12.5px;font-weight:700;background:var(--accent);border:1px solid var(--accent);color:#0d0f1f;width:100%;cursor:pointer;box-shadow:0 1px 0 rgba(255,255,255,.18) inset,0 2px 12px rgba(124,131,255,.35);" onClick="{{ doBake }}">⧈ Bake VAT</button>
+          <div style="font-size:10px;color:var(--muted);line-height:1.5;margin-top:8px;">Texture will be <span style="font-family:var(--font-mono);color:var(--text2);">{{ dimsEstimate }}</span> — one column per vertex, one row per frame.</div>
+        </div>
+      </div>
+
+      <!-- result -->
+      <sc-if value="{{ hasBake }}" hint-placeholder-val="{{ false }}">
+        <div style="border-bottom:1px solid var(--seam);">
+          <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--header);border-bottom:1px solid var(--seam);">
+            <span style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);">Baked maps</span>
+            <span style="margin-left:auto;font-family:var(--font-mono);font-size:10px;color:var(--good);">{{ bakeSizeLabel }}</span>
+          </div>
+          <div style="padding:11px 12px;">
+            <div style="display:flex;gap:10px;margin-bottom:11px;">
+              <div style="flex:1;">
+                <div style="font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:4px;">Position</div>
+                <canvas id="va-posmap" class="va-map" style="width:100%;height:64px;border-radius:5px;border:1px solid var(--edge);background:#000;display:block;"></canvas>
+              </div>
+              <sc-if value="{{ bakeHasNrm }}" hint-placeholder-val="{{ false }}">
+                <div style="flex:1;">
+                  <div style="font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:4px;">Normal</div>
+                  <canvas id="va-nrmmap" class="va-map" style="width:100%;height:64px;border-radius:5px;border:1px solid var(--edge);background:#000;display:block;"></canvas>
+                </div>
+              </sc-if>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:4px;font-size:11px;">
+              <div style="display:flex;justify-content:space-between;"><span style="color:var(--muted);">Clip</span><span style="font-family:var(--font-mono);color:var(--text);">{{ bakeClipLabel }}</span></div>
+              <div style="display:flex;justify-content:space-between;"><span style="color:var(--muted);">Size · fps</span><span style="font-family:var(--font-mono);color:var(--text);">{{ bakeDimsLabel }}</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- export -->
+        <div style="border-bottom:1px solid var(--seam);">
+          <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--header);border-bottom:1px solid var(--seam);"><span style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);">Export</span></div>
+          <div style="padding:11px 12px;display:flex;flex-direction:column;gap:8px;">
+            <button style="display:flex;align-items:center;justify-content:center;gap:7px;padding:10px;border-radius:6px;font-size:12px;font-weight:700;background:var(--accentDim);border:1px solid rgba(124,131,255,.45);color:#c9cdf6;width:100%;cursor:pointer;" onClick="{{ exportAll }}">⬇ Download VAT pack</button>
+            <div style="display:flex;gap:7px;">
+              <button style="flex:1;padding:8px;border-radius:6px;font-size:11px;font-weight:600;background:var(--panel3);border:1px solid var(--edge);color:var(--text);cursor:pointer;" onClick="{{ exportShader }}">⌨ Shader</button>
+              <button style="flex:1;padding:8px;border-radius:6px;font-size:11px;font-weight:600;background:var(--panel3);border:1px solid var(--edge);color:var(--text);cursor:pointer;" onClick="{{ exportReport }}">◇ Report</button>
+            </div>
+            <div style="font-size:10px;color:var(--muted);line-height:1.5;">Pack = position PNG{{ nrmPackNote }} + static mesh GLB + JSON report + a README with the ready-to-paste GLSL. Point/Nearest filter, no mips.</div>
+          </div>
+        </div>
+      </sc-if>
+
+      <div style="padding:12px;">
+        <div style="display:flex;gap:9px;padding:9px 11px;border-radius:7px;font-size:11px;line-height:1.5;background:var(--accentDim);border:1px solid rgba(124,131,255,.3);color:#c9cdf6;"><span style="flex:none;">✦</span><span>A VAT is <b>pure data</b>: no bones at runtime, so a shader replays thousands of copies for the cost of one texture read per vertex. The <b>Baked · VAT shader</b> tab above is running exactly that — swap to <b>Source</b> to compare against the real skeleton.</span></div>
+      </div>
+    </aside>
+  </div>
+
+  <input type="file" id="va-file" accept=".glb,.gltf,.fbx" style="display:none;">
+  <div id="va-toasts" style="position:fixed;bottom:16px;right:16px;z-index:300;display:flex;flex-direction:column;gap:8px;"></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = {
+    meshName: 'no model', loading: false, loadingMsg: '',
+    hasModel: false, verts: 0, tris: 0, meshType: '—', clips: [], activeClip: 0,
+    frames: 64, includeNrm: true,
+    hasBake: false, bake: null, showSource: true, playing: true, time: 0,
+  };
+
+  componentDidMount() { this.setupEmbed(); this.boot(); this.setupDrop(); }
+
+  async boot() {
+    try {
+      const canvas = document.getElementById('va-gl');
+      let mod; try { mod = await import('./studio3D_scripts/vat-engine.js?v=40'); } catch (e) { mod = await import('./vat-engine.js?v=40'); }
+      const eng = new mod.VATEngine(canvas); this._eng = eng;
+      eng.onChange = () => this.refresh();
+      eng.onStatus = (msg) => this.setState({ loading: !!msg, loadingMsg: msg || '' });
+      eng._onTick = (t) => { if (!this._eng.playing) return; this.setState({ time: t }); };
+      if (this._pending) { const p = this._pending; this._pending = null; p(); }
+    } catch (e) {
+      this.toast('Engine failed: ' + (e && e.message || e));
+      if (this._post) this._post('studio:error', { tool: 'vat', message: String(e && e.message || e) });
+    }
+  }
+
+  refresh() {
+    if (!this._eng) return;
+    const s = this._eng.stats();
+    this.setState({
+      hasModel: this._eng.hasModel(), verts: s.verts, tris: Math.round(s.tris), meshType: s.meshType,
+      clips: s.clips, activeClip: s.activeClip, meshName: this._eng.hasModel() ? s.name : 'no model',
+      hasBake: this._eng.hasBake(), bake: s.bake, showSource: this._eng.showSource, playing: this._eng.playing,
+    });
+    if (this._eng.hasBake()) setTimeout(() => this.paintMaps(), 30);
+  }
+
+  paintMaps() {
+    const b = this._eng && this._eng.baked; if (!b) return;
+    const draw = (id, u8) => {
+      const cv = document.getElementById(id); if (!cv || !u8) return;
+      cv.width = b.verts; cv.height = b.frames;
+      const ctx = cv.getContext('2d'); const img = ctx.createImageData(b.verts, b.frames);
+      img.data.set(u8); ctx.putImageData(img, 0, 0);
+    };
+    draw('va-posmap', b.posU8);
+    if (b.includeNrm) draw('va-nrmmap', b.nrmU8);
+  }
+
+  async loadVia(fn, label) {
+    if (!this._eng) { this._pending = () => this.loadVia(fn, label); return; }
+    this.setState({ loading: true, loadingMsg: 'Loading ' + (label || 'model') + '…' });
+    try { const r = await fn(); this.refresh(); this.setState({ loading: false });
+      if (!r.clips || !r.clips.length) this.toast('Loaded ' + r.name + ' — but it has NO animation clips to bake');
+      else this.toast('Loaded ' + r.name + ' — ' + r.clips.length + ' clip' + (r.clips.length > 1 ? 's' : '') + ', ' + r.verts.toLocaleString() + ' verts');
+    } catch (e) { this.setState({ loading: false }); this.toast('Load failed: ' + (e && e.message || e)); if (this._post) this._post('studio:error', { tool: 'vat', message: String(e && e.message || e) }); }
+  }
+
+  async runBake() {
+    const eng = this._eng;
+    if (!eng || !eng.hasModel()) { this.toast('Load an animated model first'); return; }
+    if (!this.state.clips.length) { this.toast('This file has no animation clips'); return; }
+    this.setState({ loading: true, loadingMsg: 'Baking…' });
+    try {
+      const r = await eng.bake({ frames: this.state.frames, includeNormals: this.state.includeNrm });
+      this.refresh(); this.setState({ loading: false });
+      this.toast('Baked ' + r.dims + ' · ' + r.kb + ' KB · ' + r.meshType + ' — now replaying with no skeleton');
+    } catch (e) { this.setState({ loading: false }); this.toast('Bake failed: ' + (e && e.message || e)); }
+  }
+
+  dl(blob, name) {
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name;
+    document.body.appendChild(a); a.click();
+    setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 600);
+  }
+
+  async exportAll() {
+    const eng = this._eng; if (!eng || !eng.hasBake()) { this.toast('Bake first'); return; }
+    this.setState({ loading: true, loadingMsg: 'Packing export…' });
+    try {
+      const p = await eng.exportPack();
+      this.dl(p.posPNG, p.base + '_pos.png');
+      if (p.nrmPNG) setTimeout(() => this.dl(p.nrmPNG, p.base + '_nrm.png'), 250);
+      setTimeout(() => this.dl(new Blob([p.glb], { type: 'model/gltf-binary' }), p.base + '_VATmesh.glb'), 500);
+      setTimeout(() => this.dl(new Blob([JSON.stringify(p.report, null, 2)], { type: 'application/json' }), p.base + '_vat.json'), 750);
+      setTimeout(() => this.dl(new Blob([p.readme], { type: 'text/plain' }), p.base + '_README.txt'), 1000);
+      this.setState({ loading: false });
+      this.toast('VAT pack downloaded — ' + (p.nrmPNG ? '5' : '4') + ' files');
+    } catch (e) { this.setState({ loading: false }); this.toast('Export failed: ' + (e && e.message || e)); }
+  }
+
+  async exportShader() {
+    const eng = this._eng; if (!eng || !eng.hasBake()) { this.toast('Bake first'); return; }
+    const p = await eng.exportPack();
+    this.dl(new Blob([p.shader], { type: 'text/plain' }), p.base + '_shader.glsl');
+    this.toast('Shader downloaded');
+  }
+  async exportReport() {
+    const eng = this._eng; if (!eng || !eng.hasBake()) { this.toast('Bake first'); return; }
+    const r = eng.report();
+    this.dl(new Blob([JSON.stringify(r, null, 2)], { type: 'application/json' }), (eng.modelName || 'mesh') + '_vat.json');
+    this.toast('Report downloaded');
+  }
+
+  async pickSampleFlow() {
+    let SS; try { SS = await import('./studio3D_scripts/sample-shapes.js'); } catch (e) { try { SS = await import('./sample-shapes.js'); } catch (e2) { SS = null; } }
+    if (!SS || !SS.pickSample) { if (this._post) this._post('studio:gotoLibrary', {}); return; }
+    const pick = await SS.pickSample({ embedded: window.parent !== window, needsRig: true, needsAnim: true });
+    if (!pick) return;
+    if (pick.kind === 'library') { if (this._post) this._post('studio:gotoLibrary', {}); return; }
+    if (pick.kind === 'humangen') { if (this._post) this._post('studio:gotoTool', { tool: 'humangen' }); return; }
+    if (pick.buffer) this.loadVia(() => this._eng.loadBuffer(pick.buffer, pick.name, 'glb'), pick.name);
+  }
+
+  setupDrop() {
+    const root = document.getElementById('va-root'); if (!root) return;
+    root.addEventListener('dragover', e => { e.preventDefault(); });
+    root.addEventListener('drop', e => { e.preventDefault(); const f = e.dataTransfer.files && e.dataTransfer.files[0]; if (f) this.loadVia(() => this._eng.loadFile(f), f.name); });
+    const inp = document.getElementById('va-file');
+    if (inp) inp.addEventListener('change', e => { const f = e.target.files[0]; if (f) { this.loadVia(() => this._eng.loadFile(f), f.name); e.target.value = ''; } });
+  }
+
+  setupEmbed() {
+    const params = new URLSearchParams(location.search);
+    this._embedded = params.get('embed') === '1' || window.parent !== window;
+    this._post = (type, payload, transfer) => { try { window.parent && window.parent.postMessage(Object.assign({ __studio: true, type }, payload || {}), '*', transfer || []); } catch (e) {} };
+    if (this._embedded) { const hide = () => { const h = document.querySelector('#va-root > header'); if (h && h.firstElementChild) h.firstElementChild.style.display = 'none'; }; hide(); setTimeout(hide, 60); setTimeout(hide, 300); }
+    window.addEventListener('message', (e) => {
+      const d = e.data; if (!d || !d.__studio) return;
+      if (d.type === 'studio:loadCharUrl') this.loadVia(() => this._eng.loadUrl(d.url, d.ext, { chunked: d.chunked, chunks: d.chunks }), d.label || 'character');
+      else if (d.type === 'studio:loadCharBuffer') this.loadVia(() => this._eng.loadBuffer(d.buffer, d.name, (d.name || '').split('.').pop()), d.name || 'mesh');
+    });
+    setTimeout(() => this._post('studio:ready', { tool: 'vat' }), 0);
+  }
+
+  toast(msg) {
+    const wrap = document.getElementById('va-toasts'); if (!wrap) return;
+    const el = document.createElement('div');
+    el.style.cssText = 'padding:11px 15px;border-radius:7px;font-size:12px;background:var(--panel-3);border:1px solid var(--edge);border-left:3px solid var(--accent);box-shadow:0 8px 24px rgba(0,0,0,.45);max-width:360px;color:var(--text);animation:va-tin .25s cubic-bezier(.2,1,.3,1);';
+    el.textContent = msg; wrap.appendChild(el);
+    setTimeout(() => { el.style.transition = 'opacity .3s'; el.style.opacity = '0'; setTimeout(() => el.remove(), 300); }, 3200);
+  }
+
+  preset(on) { return 'flex:1;font-size:11px;font-weight:600;padding:7px;border-radius:5px;cursor:pointer;border:1px solid ' + (on ? 'var(--accent)' : 'var(--edge)') + ';background:' + (on ? 'rgba(124,131,255,0.16)' : 'var(--panel-3)') + ';color:' + (on ? '#c2c6f7' : 'var(--text)') + ';'; }
+  tab(on) { return 'font-size:11px;font-weight:600;padding:6px 12px;border-radius:5px;cursor:pointer;border:none;background:' + (on ? 'var(--accent)' : 'transparent') + ';color:' + (on ? '#0d0f1f' : 'var(--text2)') + ';'; }
+  clipBtn(on) { return 'display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:6px;cursor:pointer;font-size:12px;border:1px solid ' + (on ? 'var(--accent)' : 'var(--edge)') + ';background:' + (on ? 'rgba(124,131,255,0.16)' : 'var(--panel-3)') + ';color:' + (on ? '#c2c6f7' : 'var(--text)') + ';'; }
+
+  fmtTime() {
+    const eng = this._eng; if (!eng) return '0.00 / 0.00s';
+    const dur = (eng.clips[eng.activeClip] && eng.clips[eng.activeClip].duration) || (this.state.bake && this.state.bake.frames ? 1 : 1);
+    return (this.state.time * dur).toFixed(2) + ' / ' + dur.toFixed(2) + 's';
+  }
+
+  renderVals() {
+    const st = this.state, eng = this._eng;
+    const views = ['Persp', 'Front', 'Side', 'Top', 'Back'].map(v => ({ label: v, onClick: () => eng && eng.setView(v.toLowerCase()) }));
+    const framePresets = [32, 64, 96, 128].map(n => ({ label: '' + n, style: this.preset(st.frames === n), onClick: () => this.setState({ frames: n }) }));
+    const clips = st.clips.map(c => ({ name: c.name, dur: c.duration, style: this.clipBtn(st.activeClip === c.i), onClick: () => { eng && eng.setClip(c.i); } }));
+
+    const b = st.bake;
+    const framePlay = st.playing;
+    return {
+      meshName: st.meshName, dotColor: st.hasModel ? 'var(--good)' : 'var(--muted)',
+      noModel: !st.hasModel && !st.loading, loading: st.loading, loadingMsg: st.loadingMsg,
+      modeBadge: !st.hasModel ? 'IMPORT AN ANIMATED MESH' : (st.hasBake ? (st.showSource ? 'SOURCE — real skeleton' : 'BAKED — VAT shader, no skeleton') : 'PICK A CLIP, SET FRAMES, THEN BAKE'),
+      pickFile: () => document.getElementById('va-file').click(),
+      loadSample: () => this.pickSampleFlow(),
+      views,
+      hasModel: st.hasModel, hasBake: st.hasBake, hasClips: st.clips.length > 0,
+      meshTypeLabel: st.meshType, vertsLabel: st.verts ? st.verts.toLocaleString() : '—',
+      trisLabel: st.tris ? st.tris.toLocaleString() : '—', clipCountLabel: st.clips.length || '—',
+      clips,
+      framesLabel: st.frames, framePresets,
+      includeNrm: st.includeNrm, toggleNrm: () => this.setState({ includeNrm: !st.includeNrm }),
+      nrmCheck: st.includeNrm ? '✓' : '', nrmBoxBg: st.includeNrm ? 'var(--accent)' : 'transparent', nrmBoxBorder: st.includeNrm ? 'var(--accent)' : 'var(--edge)',
+      doBake: () => this.runBake(),
+      dimsEstimate: st.verts ? (st.verts + '×' + st.frames + ' px') : ('verts×' + st.frames),
+      // baked
+      bakeHasNrm: !!(b && b.includeNrm),
+      bakeSizeLabel: b ? (b.kb + ' KB') : '',
+      bakeClipLabel: b ? b.clipName : '',
+      bakeDimsLabel: b ? (b.verts + '×' + b.frames + ' · ' + (eng ? (+((b.frames - 1) / ((eng.clips[eng.activeClip] && eng.clips[eng.activeClip].duration) || 1)).toFixed(1)) : '?') + 'fps') : '',
+      nrmPackNote: (b && b.includeNrm) ? ' + normal PNG' : '',
+      srcTabStyle: this.tab(st.showSource), bakeTabStyle: this.tab(!st.showSource),
+      showSource: () => { eng && eng.showBaked(false); }, showBaked: () => { eng && eng.showBaked(true); },
+      exportAll: () => this.exportAll(), exportShader: () => this.exportShader(), exportReport: () => this.exportReport(),
+      // transport
+      playIcon: framePlay ? '❙❙' : '►', togglePlay: () => { if (eng) eng.setPlaying(!eng.playing); },
+      scrubVal: Math.round(st.time * 1000),
+      onScrub: (e) => { if (eng) { eng.setPlaying(false); eng.seek(+e.target.value / 1000); this.setState({ time: +e.target.value / 1000, playing: false }); } },
+      transportLabel: this.fmtTime(),
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -12,11 +12,13 @@
 // the deltas become real glTF morph targets. Imported from Morph.dc.html.
 // ============================================================
 import * as THREE from 'https://esm.sh/three@0.160.0';
+import { applyOrbitScheme } from './nav-scheme.js';
 import { fetchAssetBuffer } from './chunk-loader.js';
 import { OrbitControls } from 'https://esm.sh/three@0.160.0/examples/jsm/controls/OrbitControls.js';
 import { FBXLoader } from 'https://esm.sh/three@0.160.0/examples/jsm/loaders/FBXLoader.js';
 import { GLTFLoader } from 'https://esm.sh/three@0.160.0/examples/jsm/loaders/GLTFLoader.js';
 import { GLTFExporter } from 'https://esm.sh/three@0.160.0/examples/jsm/exporters/GLTFExporter.js';
+import { buildMirrorMap } from './symmetry-map.js';
 
 const themeViewport = () => { const v = getComputedStyle(document.documentElement).getPropertyValue('--viewport').trim(); return v || '#16181c'; };
 const clamp = (x, a, b) => x < a ? a : x > b ? b : x;
@@ -35,6 +37,7 @@ export class MorphEngine {
     this.camera = new THREE.PerspectiveCamera(35, 1, 0.01, 100);
     this.camera.position.set(0, 1.5, 1.4);
     this.controls = new OrbitControls(this.camera, canvas);
+    applyOrbitScheme(this.controls, THREE);
     this.controls.enableDamping = true; this.controls.dampingFactor = 0.09;
     this.controls.target.set(0, 1.5, 0);
     this.controls.minDistance = 0.15; this.controls.maxDistance = 8;
@@ -154,10 +157,8 @@ export class MorphEngine {
     this._weld = weld; this._nb = nb; this._group = group;
   }
   _buildMirror() {
-    const n = this.base.length / 3; const q = 220; const byKey = new Map(); const mir = new Int32Array(n).fill(-1);
-    for (let i = 0; i < n; i++) { const k = Math.round(this.base[i * 3] * q) + '_' + Math.round(this.base[i * 3 + 1] * q) + '_' + Math.round(this.base[i * 3 + 2] * q); byKey.set(k, i); }
-    for (let i = 0; i < n; i++) { const k = Math.round(-this.base[i * 3] * q) + '_' + Math.round(this.base[i * 3 + 1] * q) + '_' + Math.round(this.base[i * 3 + 2] * q); const j = byKey.get(k); if (j !== undefined) mir[i] = j; }
-    this._mirror = mir;
+    // shared symmetry contract (scale-relative weld tolerance, same in every tool)
+    this._mirror = buildMirrorMap(this.base).mirror;
   }
 
   // ---------------------------------------------------------- COMPUTE

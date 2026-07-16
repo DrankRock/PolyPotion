@@ -187,20 +187,10 @@ class Component extends DCLogic {
       {
         id: 'now', glyph: '★', hue: 'var(--accent)', kicker: 'THE FOURTH BREW — PICKED JULY 15',
         title: 'Now: the fourth brew',
-        intro: 'The third brew is fully shipped (webcam face capture, pose mirror + library, GLB compression, texture atlas, and the in-viewport IK handles \u2014 pole targets + pin-to-world). Here is the next five, pulled from the open findings and ordered so the two correctness fixes land before the platform work that assumes them.',
+        intro: 'The third brew is fully shipped (webcam face capture, pose mirror + library, GLB compression, texture atlas, and the in-viewport IK handles \u2014 pole targets + pin-to-world). The fourth brew is underway: the colour-management and shared-symmetry contracts just shipped (see below). These are the rest \u2014 the platform hardening that makes the offline promise airtight, plus a sample-character on-ramp.',
         findings: [
-          { tag: 'FIX', effort: 'M', title: 'A single colour-management contract', why: 'Textures are either colour (sRGB) or data (linear: normals, roughness, masks). If tools disagree, bakes and paints drift in brightness as a character moves between Sculpt, Texture Paint, Bake Maps and Showcase.', todo: 'Declare a linear working space, tag every texture sRGB-vs-data at import, pick a view transform (sRGB / AgX) in Showcase. One policy, honoured everywhere.' },
-          { tag: 'FIX', effort: 'M', title: 'Symmetry as a shared contract', why: 'Sculpt, Weight Paint, Morph and Texture Paint each implement their own mirroring, so symmetry behaves slightly differently in each, and topological (non-mirror-perfect) symmetry isn\u2019t handled at all.', todo: 'Compute a symmetry map once (world-plane + topological fallback) and expose it to every brush tool, so "mirror X" means the same thing suite-wide.' },
           { tag: 'PRO', effort: 'M', title: 'Vendor three.js + loaders + WASM as local files', why: 'The service worker makes every visit after the first fully offline, but a brand-new user still pays a CDN round-trip for three@0.160 before anything caches \u2014 and a future esm.sh change could brick old characters. The Draco encoder loading through esm.sh (see PROGRESS.md) is the same fragility.', todo: 'Vendor three.js, every loader and all WASM into the repo with relative imports and a pinned version. Finishes the "runs on your machine" promise.' },
-          { tag: 'PRO', effort: 'S', title: 'COOP / COEP headers on the host', why: 'Physics, Decimate, Bake, UV and Manifold all benefit from SIMD + threads, which need SharedArrayBuffer, which needs cross-origin-isolation headers. The in-app "1-thread / threads" badge is already wired \u2014 the headers are the other half, and they\u2019re host-side.', todo: 'Ship COOP/COEP with the static host; document the one-liner for GitHub Pages / Netlify in CONTRIBUTING.md.' },
           { tag: 'PRO', effort: 'S', title: 'Bundle 2\u20133 CC sample characters + clips', why: 'The generator covers the empty shelf, but a ready-made rigged, textured, animated sample lets someone explore the finished pipeline \u2014 IK posing, atlasing, the passport \u2014 in one click, no generating, no importing.', todo: 'Ship CC-licensed samples with a "Load a sample" button in the Library empty state, next to Generate.' },
-        ],
-      },
-      {
-        id: 'platform', glyph: '⛓', hue: 'var(--new)', kicker: 'CHAPTER I\u2019S LAST OPEN RING',
-        title: 'Platform hardening',
-        intro: 'The PWA, durable storage and backup all shipped; vendoring and cross-origin isolation are in the fourth brew above. This is the remaining storage upgrade.',
-        findings: [
           { tag: 'PRO', effort: 'M', title: 'Move mesh blobs to OPFS', why: 'Big ArrayBuffers in IndexedDB pay structured-clone cost and compete with quota. The Origin Private File System is faster and roomier for exactly this.', todo: 'Mesh payloads as OPFS files, light manifest stays in IndexedDB. Faster restores, fewer quota walls.' },
         ],
       },
@@ -216,10 +206,8 @@ class Component extends DCLogic {
       {
         id: 'bets', glyph: '✧', hue: 'var(--honey)', kicker: 'NEW MACHINERY, NOT TRANSLATION',
         title: 'The big bets',
-        intro: 'Everything above re-packages what exists. These four are genuinely new machinery \u2014 pick at most one per brew, and plan the last one rather than rushing it.',
+        intro: 'Everything above re-packages what exists. These two are genuinely new machinery \u2014 pick at most one per brew, and plan the last one rather than rushing it. Two of the original four \u2014 VAT bake and the multi-character stage \u2014 have now shipped (see the scoreboard).',
         findings: [
-          { tag: 'SPARK', effort: 'M', title: 'Vertex Animation Textures (VAT) bake', why: 'Bake an animation into a texture and a shader replays it with zero skeleton cost \u2014 the trick behind huge crowds and destructible props. Niche, dazzling, and a perfect fit for a client-side tool: pure texture baking, no runtime.', todo: 'Bake per-vertex position/normal offsets per frame into an EXR/PNG pair, emit the matching material, document the two-line shader.' },
-          { tag: 'SPARK', effort: 'L', title: 'Multi-character scene assembly', why: 'Director sequences cameras beautifully \u2014 over a single actor. A light "stage" placing several library characters and props, each with its own pose/clip, turns a character tool into a diorama and cutscene maker. A different, bigger reason to open the app.', todo: 'A stage view: drop multiple library items, transform each, assign a pose/clip, export the composed scene as one glTF. Director then flies its camera through the finished set.' },
           { tag: 'SPARK', effort: 'L', title: 'Local-network live co-op', why: 'Two people on the same wi-fi reviewing one character over WebRTC data channels \u2014 no server, no account. Keeps the offline promise intact while adding the one thing local-only tools never have: someone next to you.', todo: 'Peer-to-peer session (manual offer/answer or local discovery) syncing camera, selection and the active GLB. Start with live review, grow toward shared editing.' },
           { tag: 'PRO', effort: 'XL', title: 'A shared mesh core (plan, don\u2019t rush)', why: 'Tool handoffs copy whole GLB buffers between iframes; there\u2019s no shared selection, camera or undo across tools. It works, but it\u2019s memory-heavy and caps cross-tool consistency.', todo: 'Longer-term: a shared worker that owns the active mesh/scene, with tools as views onto it \u2014 one undo stack, synced camera, no per-handoff copies. Write the design doc first.' },
         ],
@@ -286,6 +274,10 @@ class Component extends DCLogic {
           { t: 'Installable offline PWA', d: 'Service-worker precache + runtime cache, manifest, install button. Repeat visits work with no network. sw.js.' },
           { t: 'Durable storage + backup', d: 'storage.persist(), quota meter, one-click backup/restore, portable .polypotion bundle.' },
           { t: 'Uniform undo everywhere', d: 'Shell-forwarded studio:undo/redo; Ctrl-Z works in every editing tool, incl. Pose and Curves (40 steps).' },
+          { t: 'One navigation contract', d: 'nav-scheme.js: RIGHT-drag orbits, MIDDLE pans, wheel zooms — identical in all 24 viewport tools (was drifting between orbit and pan per tool).' },
+          { t: 'One colour-management contract', d: 'color-space.js: import-tags every map sRGB-vs-linear (fixes FBX/OBJ normal washout), plus a Showcase view transform — sRGB / Neutral / AgX / ACES + exposure. Default sRGB keeps the classic look.' },
+          { t: 'One symmetry contract', d: 'symmetry-map.js: buildMirrorMap gives every brush tool the same scale-relative X-mirror (was three different weld tolerances across Morph / Sculpt / Weight Paint); mirrorBonePartners resolves L/R twins.' },
+          { t: 'Cross-origin isolation shipped', d: 'Deployable _headers (Netlify / CF Pages): COOP same-origin + COEP credentialless lights up SharedArrayBuffer so the WASM solvers thread — without require-corp breaking CDN loads. Docs reconciled.' },
           { t: 'Onboarding on-ramp', d: 'HumanGen in the dock as "start here" + a dismissible 4-step first-brew tour.' },
           { t: 'Honest, on-device AI', d: 'On-device Text-to-Pose (24-pose library, no key); NETWORKED badge + banner when a cloud provider is chosen.' },
           { t: 'Contributor surface', d: 'Tool Contract + Hello Tool template, ARCHITECTURE.md, CONTRIBUTING.md.' },
@@ -310,6 +302,8 @@ class Component extends DCLogic {
           { t: 'GLB compression + material extensions', d: 'meshopt / Draco chips in Export via glTF-Transform; KHR transmission / clearcoat / sheen / iridescence pass through. glb-optimize.js. (Draco wired, pending a live test \u2014 see PROGRESS.md.)' },
           { t: 'Texture atlas + material merge', d: 'Export toggle: packs baseColor / normal / roughness-metalness / emissive into shared atlases, rewrites UVs, merges to one draw call. Verified 5\u21921 draw. atlas-merge.js.' },
           { t: 'In-viewport IK handles', d: 'Pose: drag wrist/ankle IK targets (CCD), violet pole markers steer elbow/knee bend, \u2295 Pin locks a foot/hand to the world so it holds while you move the hips. pose-engine.js.' },
+          { t: 'Vertex Animation Textures (VAT)', d: 'New VAT tool: bakes a clip into a position(+normal) texture — col = gl_VertexID, row = frame, bounds-normalized — then a two-line GLSL3 shader replays it with zero skeleton cost. Skinned / morph / rigid meshes; live Source↔Baked compare in the viewport; export pack (PNGs + static GLB + JSON report + README/shader). vat-engine.js. First of the big bets.' },
+          { t: 'Multi-character stage', d: 'New Stage tool: drop several library characters/props onto one ground, place each (click-select + drag, turn/scale), give each its OWN clip, then export the whole set as ONE glTF \u2014 every actor animation preserved, node names prefixed per actor so nothing collides. Send-to-Showcase too. stage-engine.js. Second big bet.' },
         ],
       },
     ];

@@ -10,6 +10,7 @@
 // Loaded by dynamic import from Bake.dc.html, like the other engines.
 // ============================================================
 import * as THREE from 'https://esm.sh/three@0.160.0';
+import { applyOrbitScheme } from './nav-scheme.js';
 import { OrbitControls } from 'https://esm.sh/three@0.160.0/examples/jsm/controls/OrbitControls.js';
 import { FBXLoader } from 'https://esm.sh/three@0.160.0/examples/jsm/loaders/FBXLoader.js';
 import { GLTFLoader } from 'https://esm.sh/three@0.160.0/examples/jsm/loaders/GLTFLoader.js';
@@ -154,6 +155,7 @@ export class AOEngine {
     this.camera = new THREE.PerspectiveCamera(40, 1, 0.02, 100);
     this.camera.position.set(1.4, 1.2, 3.0);
     this.controls = new OrbitControls(this.camera, canvas);
+    applyOrbitScheme(this.controls, THREE);
     this.controls.enableDamping = true; this.controls.dampingFactor = 0.09;
     this.controls.target.set(0, 0.95, 0);
     this.controls.minDistance = 0.3; this.controls.maxDistance = 14;

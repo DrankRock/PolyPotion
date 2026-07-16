@@ -29,8 +29,11 @@ npx serve .
 Then open `http://localhost:8080/`. For the WASM-threaded solvers (physics,
 decimate, bake, UV) to use multiple threads, the host must send
 `Cross-Origin-Opener-Policy: same-origin` and
-`Cross-Origin-Embedder-Policy: require-corp` — see `SECURITY_HEADERS.md`. The
-status bar shows `⚡ threads` when isolation is active and `◷ 1-thread` when not.
+`Cross-Origin-Embedder-Policy: credentialless` (NOT require-corp — that breaks
+the CDN loads). The ready-made `_headers` file at the repo root does this for
+Netlify / Cloudflare Pages; `SECURITY_HEADERS.md` has the Cloudflare-in-front
+recipe for GitHub Pages. The status bar shows `⚡ threads` when isolation is
+active and `◷ 1-thread` when not.
 
 ## Adding a tool
 

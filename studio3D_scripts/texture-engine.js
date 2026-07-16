@@ -10,6 +10,7 @@
 // Loaded by dynamic import from TexturePaint.dc.html, like the other engines.
 // ============================================================
 import * as THREE from 'https://esm.sh/three@0.160.0';
+import { applyOrbitScheme } from './nav-scheme.js';
 import { OrbitControls } from 'https://esm.sh/three@0.160.0/examples/jsm/controls/OrbitControls.js';
 import { FBXLoader } from 'https://esm.sh/three@0.160.0/examples/jsm/loaders/FBXLoader.js';
 import { GLTFLoader } from 'https://esm.sh/three@0.160.0/examples/jsm/loaders/GLTFLoader.js';
@@ -31,6 +32,7 @@ export class TexEngine {
     this.camera = new THREE.PerspectiveCamera(42, 1, 0.01, 500);
     this.camera.position.set(1.6, 1.4, 3.2);
     this.controls = new OrbitControls(this.camera, canvas);
+    applyOrbitScheme(this.controls, THREE);
     this.controls.enableDamping = true; this.controls.dampingFactor = 0.08;
     this.controls.target.set(0, 0.9, 0);
     this.controls.zoomSpeed = 0.6; this.controls.zoomToCursor = true;
@@ -302,6 +304,7 @@ export class TexEngine {
     });
     el.addEventListener('pointerdown', (ev) => {
       if (this._paintDisabled()) return;
+      if (ev.button !== 0) return;   // right/middle fall through to orbit/pan (shared nav contract)
       const uv = uvAt(ev); if (!uv) return;
       // painting on the model should not orbit
       if (this.tool !== 'orbit') { this.controls.enabled = false; down = true; this._strokeStart(); this._applyAt(uv.u, uv.v, ev); }

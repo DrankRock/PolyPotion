@@ -39,9 +39,15 @@ Permissions-Policy:
 
 Cross-Origin-Opener-Policy:  same-origin
 Cross-Origin-Resource-Policy: same-origin
-Cross-Origin-Embedder-Policy: DO NOT SET (credentialless at most).
-  require-corp would break esm.sh/fonts/MediaPipe loads unless every CDN
-  response carries CORP headers. Skip it; you don't use SharedArrayBuffer.
+Cross-Origin-Embedder-Policy: credentialless
+  Use **credentialless**, NOT require-corp. Credentialless grants cross-origin
+  isolation (so SharedArrayBuffer + the ⚡ threads badge light up and the WASM
+  solvers go multi-threaded) WITHOUT demanding a CORP header on every
+  cross-origin response — so esm.sh / fonts / the MediaPipe models keep loading.
+  require-corp would break them. (Supported in Chromium; Firefox/Safari simply
+  don't isolate and the solvers fall back to 1-thread, which is fine.)
+  For Netlify / Cloudflare Pages, the ready-made `_headers` file at the repo
+  root sets this and everything above — no dashboard clicks.
 
 DNSSEC: Cloudflare dashboard → DNS → Settings → Enable DNSSEC, then add the
 DS record at Namecheap (Domain → Advanced DNS → DNSSEC). Purely dashboard-side.

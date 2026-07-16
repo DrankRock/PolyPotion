@@ -19,6 +19,8 @@
 // Loaded by dynamic import from Sculpt.dc.html — same pattern as mesh-engine.js.
 // ============================================================
 import * as THREE from 'https://esm.sh/three@0.160.0';
+import { applyOrbitScheme } from './nav-scheme.js';
+import { buildMirrorMap } from './symmetry-map.js';
 import { fetchAssetBuffer } from './chunk-loader.js';
 import { OrbitControls } from 'https://esm.sh/three@0.160.0/examples/jsm/controls/OrbitControls.js';
 import { FBXLoader } from 'https://esm.sh/three@0.160.0/examples/jsm/loaders/FBXLoader.js';
@@ -44,6 +46,7 @@ export class SCEngine {
     this.camera = new THREE.PerspectiveCamera(40, 1, 0.02, 100);
     this.camera.position.set(1.4, 1.2, 3.0);
     this.controls = new OrbitControls(this.camera, canvas);
+    applyOrbitScheme(this.controls, THREE);
     this.controls.enableDamping = true; this.controls.dampingFactor = 0.09;
     this.controls.target.set(0, 0.95, 0);
     this.controls.minDistance = 0.3; this.controls.maxDistance = 14;
@@ -513,11 +516,8 @@ export class SCEngine {
     const nbset = Array.from({ length: nUnique }, () => new Set());
     for (let f = 0; f < nCorner; f += 3) { const a = corner[f], b = corner[f + 1], c = corner[f + 2]; nbset[a].add(b); nbset[a].add(c); nbset[b].add(a); nbset[b].add(c); nbset[c].add(a); nbset[c].add(b); }
     this.adj = nbset.map(s => Int32Array.from(s));
-    // mirror by spatial key
-    const q = 4000, mk = (x, y, z) => Math.round(x * q) + ',' + Math.round(y * q) + ',' + Math.round(z * q);
-    const map = new Map(); for (let i = 0; i < nUnique; i++) map.set(mk(vpos[i * 3], vpos[i * 3 + 1], vpos[i * 3 + 2]), i);
-    this.mirrorIdx = new Int32Array(nUnique).fill(-1);
-    for (let i = 0; i < nUnique; i++) { const m = map.get(mk(-vpos[i * 3], vpos[i * 3 + 1], vpos[i * 3 + 2])); if (m != null && m !== i) this.mirrorIdx[i] = m; }
+    // mirror map — shared symmetry contract (scale-relative weld tolerance)
+    this.mirrorIdx = buildMirrorMap(vpos.subarray ? vpos.subarray(0, nUnique * 3) : vpos.slice(0, nUnique * 3)).mirror;
     // new render geometry
     this._geo.dispose();
     const geo = new THREE.BufferGeometry();

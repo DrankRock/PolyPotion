@@ -87,6 +87,30 @@ audit lists under Platform hardening / Audience — don't reopen the rest.
       chunk; height is measured live by the viewer. Deviation from the plan:
       lives in Export (the one exit door), not Showcase.
 
+## SHARED CONTRACTS (cross-tool consistency)
+
+- **`nav-scheme.js`** — the ONE camera-navigation map for every tool. Each
+  engine built its own OrbitControls, so the mouse map had drifted: most tools
+  inherited the three.js default (LEFT=orbit, RIGHT=**pan**) while retopo had
+  remapped RIGHT=orbit — so right-drag meant "pan" in one tool and "orbit" in
+  the next. `applyOrbitScheme(controls, THREE, {leftDisabled})` now sets
+  **RIGHT=orbit, MIDDLE=pan, wheel=zoom** everywhere; LEFT=orbit in viewer
+  tools and the tool action (pen/brush) in edit tools. Wired into all 24
+  `*-engine.js` OrbitControls; retopo calls it per-mode; texture paint gated to
+  the left button so right-drag orbits even in a brush mode. sw.js → pp-v35.
+  When adding a tool: call `applyOrbitScheme` right after `new OrbitControls`.
+
+- **`symmetry-map.js`** — the ONE symmetry contract. Morph, Sculpt and Weight
+  Paint each built their own X-mirror vertex map at a different hard-coded
+  quantisation (220 / 4000 / 250), so "mirror X" welded at a different real
+  tolerance in each. `buildMirrorMap(positions)` returns a vert→mirror
+  Int32Array + onAxis flags at a **scale-relative** tolerance (1/2000 of the
+  bbox diagonal), identical everywhere; `mirrorBonePartners(names)` resolves
+  L/R bone twins. Wired into morph `_buildMirror`, sculpt `mirrorIdx`,
+  weightpaint `mirror()` / `_mirrorBoneMap`.
+
+- **`color-space.js`** — the ONE colour-management contract (see 2026-07-16 log).
+
 ## UP NEXT (the third brew — five recommendations)
 
 - [x] **1. GLB compression + material extensions on export** —
@@ -143,21 +167,72 @@ audit lists under Platform hardening / Audience — don't reopen the rest.
 
 ## THIRD BREW COMPLETE — fourth brew picked (see PolyPotion Audit · "Now")
 
-- [ ] **1. Colour-management contract** (M) — FIX
-- [ ] **2. Symmetry as a shared contract** (M) — FIX
+- [ ] **1. Colour-management contract** (M) — FIX — **SHIPPED** (see log)
+- [ ] **2. Symmetry as a shared contract** (M) — FIX — **SHIPPED** (`symmetry-map.js`)
 - [ ] **3. Vendor three.js + loaders + WASM locally** (M) — also fixes the Draco/esm.sh fragility
-- [ ] **4. COOP/COEP headers on the host** (S)
+- [ ] **4. COOP/COEP headers on the host** (S) — **SHIPPED** (`_headers` + docs)
 - [ ] **5. Bundle 2–3 CC sample characters** (S)
+
+## BIG BETS (new machinery — pick at most one per brew)
+
+- [x] **Vertex Animation Textures (VAT) bake** — new **VAT** tool (`VAT.dc.html`
+      + `vat-engine.js`). Samples the active clip at N frames and writes each
+      vertex's WORLD position (+ optional normal) into one texel — column =
+      `gl_VertexID`, row = frame — bounds-normalized so 8-bit RGB carries it.
+      Handles **skinned** (`applyBoneTransform`), **morph** (weighted target
+      blend) and **rigid** (matrixWorld) meshes; per-frame normals recomputed
+      from the skinned positions. The viewport plays the bake through a GLSL3
+      `ShaderMaterial` (`gl_VertexID` lookup, no `AnimationMixer`, no skeleton
+      in the graph) with a Source↔Baked toggle to compare against the real
+      rig. Export pack = position PNG (+ normal PNG) + static mesh GLB + JSON
+      report (decode bounds/fps) + README carrying the ready-to-paste shader.
+      Registered in dock (animate group) / palette / frames / CHAR_TOOLS /
+      sw. **Verified in a harness**: 115×32 bake of a 2-bone bend, decode vs
+      independent skinning within 0.004 (< 1 quantization step), smooth arc
+      captured (tip travels 1.01 across the clip), shader compiles glError-free,
+      pack emits all files. sw.js → pp-v38.
+- [x] Multi-character scene assembly (stage) — **SHIPPED** (`Stage.dc.html` + `stage-engine.js`)
+- [ ] Local-network live co-op (WebRTC) — last of the four big bets
 
 ## REMAINING (backlog, from the audit — pick into UP NEXT as slots free up)
 
-- [ ] Vertex Animation Textures (VAT) bake
+- [x] Vertex Animation Textures (VAT) bake — **SHIPPED** (see BIG BETS)
 - [ ] Colour-management contract (linear working space, sRGB/data tagging, view transform)
 - [ ] Symmetry as a shared contract (one symmetry map for all brush tools)
 - [ ] Multi-character scene assembly (stage)
 - [ ] Local-network live co-op (WebRTC)
 
 ## Log
+
+- 2026-07-16 — **Big bet #2 shipped: multi-character stage** (`Stage.dc.html`
+  + `stage-engine.js`; took over the disabled "Scene" dock slot). Drop several
+  library characters/props onto one ground; each actor is wrapped
+  holder(user transform) → norm(auto height/ground) → imported root. Click-select
+  + left-drag on the ground moves an actor (OrbitControls disabled mid-drag so
+  right-drag still orbits); per-actor turn/scale; each actor keeps its OWN
+  AnimationMixer + clip pick and plays at its own speed. Export composes ONE
+  glTF: every actor is SkeletonUtils-cloned, its nodes prefixed `a{i}_`, its
+  clip tracks retargeted to the prefixed names (so GLTFExporter resolves them
+  and nothing collides on reimport), placed at the actor's world transform;
+  all clips packed as separate animations. Send-to-Showcase routes the same
+  buffer. Shell wiring: on `stage` ready the shell posts `studio:library`
+  (the character index); the stage requests a pick via `studio:stageFetch`
+  and the shell fetches + returns the GLB via `studio:stageAdd`. Registered in
+  dock/palette/frames/CHAR_TOOLS/toggle-list/sw. **Harness-verified**: 2 actors
+  placed + transformed, duplicate/remove work, export → 2 skinned meshes + 2
+  animations (`a0_waveA`/`a1_waveB`, no name collision), all tracks rebind on
+  reimport. sw.js → pp-v40 (v39 re-bumped: the version-query import fix landed after v39 precached the stale HTML).
+
+- 2026-07-16 — **Big-bets tier opened: Vertex Animation Textures (VAT) bake
+  shipped** (`VAT.dc.html` + `vat-engine.js`). First genuinely-new-machinery
+  item, not a translation layer. Bakes a clip → position/normal texture pair
+  (col=gl_VertexID, row=frame, bounds-normalized 8-bit); a two-line GLSL3
+  vertex shader replays it with zero skeleton cost. Skinned / morph / rigid
+  paths; live Source↔Baked compare in the viewport; export pack (PNGs + static
+  GLB + JSON report + README+shader). Wired into dock (animate) / palette /
+  frames / CHAR_TOOLS. Harness-verified: decode matches independent skinning
+  to 0.004, motion arc captured, shader compiles clean, pack complete.
+  sw.js → pp-v38.
 
 - 2026-07-14 — Chapter II audit written (`Frontier Audit.dc.html`, 18 findings).
 - 2026-07-14 — First brew shipped: retarget, ARKit 52, VRM, ORM/normal, WebXR.
@@ -185,7 +260,33 @@ audit lists under Platform hardening / Audience — don't reopen the rest.
   in the brew.
 - 2026-07-15 — sw.js hardened with fetch timeouts (a stalled CDN was hanging
   loads); → pp-v32. Then atlas → pp-v33.
-- 2026-07-15 — **Third brew COMPLETE**: in-viewport IK handles shipped (pole
+- 2026-07-16 — Fourth brew item 4 shipped: **cross-origin isolation**. Added a
+  deployable `_headers` (Netlify / Cloudflare Pages) with COOP same-origin +
+  COEP **credentialless** (grants SharedArrayBuffer / the ⚡ threads badge
+  without require-corp breaking esm.sh/fonts/MediaPipe). Reconciled the
+  contradiction between CONTRIBUTING.md (said require-corp) and
+  SECURITY_HEADERS.md (said don't set COEP) — both now say credentialless.
+  Docs/config only, no app-file change. Remaining fourth-brew: vendor three.js,
+  sample chars, OPFS.
+- 2026-07-16 — Fourth brew item 2 shipped: **shared symmetry contract**
+  (`symmetry-map.js`). Replaced three per-tool mirror maps (morph/sculpt/
+  weightpaint) with one scale-relative `buildMirrorMap` + `mirrorBonePartners`.
+  Verified in a harness (41/41 verts paired, bone twins resolve). sw.js →
+  pp-v37. Remaining fourth-brew: vendor three.js, COOP/COEP, sample chars, OPFS.
+- 2026-07-16 — Fourth brew item 1 shipped: **colour-management contract**
+  (`color-space.js`). `tagObject()` fixes mis-tagged maps on import (sRGB for
+  colour slots, NoColorSpace for normal/roughness/metalness/ao/etc — matters
+  for FBX/OBJ, wired into Showcase's load path). `applyViewTransform()` + a
+  Showcase "View transform" panel: sRGB / Neutral / AgX / ACES + exposure
+  slider; default sRGB is the identity so the look is unchanged until chosen.
+  Also fixed Showcase's stale "right-drag pans" viewport hint. sw.js → pp-v36.
+  Audit updated. Remaining fourth-brew: shared symmetry, vendor three.js,
+  COOP/COEP, sample chars, OPFS. right-drag
+  orbited in some tools and panned in others. Added `nav-scheme.js` (shared
+  OrbitControls contract: RIGHT=orbit, MIDDLE=pan, wheel=zoom) and wired it
+  into all 24 engines; retopo aligned (MIDDLE was dolly), texture paint gated
+  to left button. All 24 engines verified parsing + mapping in a harness.
+  sw.js → pp-v35. in-viewport IK handles shipped (pole
   targets + pin-to-world in `pose-engine.js` / `Pose.dc.html`; fixed a
   pre-existing syntax break in `_buildHandles` along the way). Verified in a
   harness. sw.js → pp-v34. Audit updated: IK → shipped, fourth brew picked

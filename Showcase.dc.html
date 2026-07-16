@@ -106,7 +106,7 @@
       </div>
 
       <div style="position:absolute;left:10px;top:10px;font-family:var(--font-mono);font-size:10px;letter-spacing:.1em;color:var(--text2);background:rgba(15,15,15,.6);padding:3px 7px;border-radius:3px;pointer-events:none;">{{ modeBadge }}</div>
-      <div style="position:absolute;right:10px;bottom:12px;font-size:10.5px;color:var(--text2);background:rgba(15,15,15,.78);border:1px solid var(--edge);padding:6px 11px;border-radius:6px;pointer-events:none;max-width:250px;">drag orbits · right-drag pans · scroll zooms</div>
+      <div style="position:absolute;right:10px;bottom:12px;font-size:10.5px;color:var(--text2);background:rgba(15,15,15,.78);border:1px solid var(--edge);padding:6px 11px;border-radius:6px;pointer-events:none;max-width:250px;">drag or right-drag orbits · middle-drag pans · scroll zooms</div>
 
       <!-- Blender-style keyboard shortcuts -->
       <div style="position:absolute;left:10px;bottom:12px;font-family:var(--font-mono);font-size:9.5px;line-height:1.7;color:var(--text2);background:rgba(15,15,15,.78);border:1px solid var(--edge);padding:7px 10px;border-radius:6px;pointer-events:none;">
@@ -347,6 +347,17 @@
             <label style="display:flex;justify-content:space-between;font-size:10.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:7px;"><span>Contact shadow</span><span style="font-family:var(--font-mono);color:var(--text);">{{ shadowLabel }}</span></label>
             <input type="range" min="0" max="80" value="{{ shadowSlide }}" onInput="{{ onShadow }}" style="width:100%;">
           </div>
+          <div>
+            <div style="font-size:10.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:7px;">View transform</div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;">
+              <sc-for list="{{ viewOpts }}" as="v" hint-placeholder-count="4"><button style="{{ v.style }}" title="{{ v.note }}" onClick="{{ v.onClick }}">{{ v.label }}</button></sc-for>
+            </div>
+            <div style="font-size:10px;color:var(--muted);line-height:1.5;margin-top:6px;">{{ viewNote }}</div>
+          </div>
+          <div>
+            <label style="display:flex;justify-content:space-between;font-size:10.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:7px;"><span>Exposure</span><span style="font-family:var(--font-mono);color:var(--text);">{{ exposureLabel }}</span></label>
+            <input type="range" min="20" max="300" value="{{ exposureSlide }}" onInput="{{ onExposure }}" style="width:100%;">
+          </div>
           <label style="display:flex;align-items:center;gap:9px;font-size:12px;cursor:pointer;">
             <input type="checkbox" checked="{{ envBgOn }}" onChange="{{ toggleEnvBg }}" style="width:15px;height:15px;accent-color:#c98a5a;">
             <span>Show environment as backdrop</span>
@@ -393,7 +404,7 @@ class Component extends DCLogic {
     time: 0, duration: 0, clipName: '',
     libAnims: [], activeLib: '',
     spin: false, wire: false, bg: 'studio', ground: true, speed: 100, ortho: false,
-    env: 'studio', envInt: 75, envBg: false, shadow: 34,
+    env: 'studio', envInt: 75, envBg: false, shadow: 34, view: 'srgb', exposure: 100,
     hasUVs: false, hasTexture: false, suggestDismiss: false,
     presets: [], meshes: [], shaderTarget: 'all', activeShader: null, shaderParams: {}, texMix: 1,
     bakeRes: 1024, baked: false, baking: false,
@@ -752,6 +763,10 @@ class Component extends DCLogic {
       shadowSlide: st.shadow, shadowLabel: (st.shadow / 100).toFixed(2),
       onShadow: (e) => { const v = +e.target.value; this.setState({ shadow: v }); if (eng) eng.setShadowStrength(v / 100); },
       envBgOn: st.envBg, toggleEnvBg: (e) => { const on = e.target.checked; this.setState({ envBg: on }); if (eng) eng.setEnvBackground(on); },
+      viewOpts: (window.PPColor ? window.PPColor.VIEW_TRANSFORMS : [{id:'srgb',label:'sRGB',note:''},{id:'neutral',label:'Neutral',note:''},{id:'agx',label:'AgX',note:''},{id:'aces',label:'ACES',note:''}]).map(v => ({ label: v.label, note: v.note, style: envBtn(st.view === v.id), onClick: () => { this.setState({ view: v.id }); if (eng) eng.setViewTransform(v.id); } })),
+      viewNote: (window.PPColor ? (window.PPColor.VIEW_TRANSFORMS.find(v => v.id === st.view) || {}).note : '') || '',
+      exposureSlide: st.exposure, exposureLabel: (st.exposure / 100).toFixed(2) + '×',
+      onExposure: (e) => { const v = +e.target.value; this.setState({ exposure: v }); if (eng) eng.setExposure(v / 100); },
       groundOn: st.ground, toggleGround: (e) => { const on = e.target.checked; this.setState({ ground: on }); if (eng) eng.setGround(on); },
       spinChipStyle: this.chip(st.spin), toggleSpin: () => { const v = !st.spin; this.setState({ spin: v }); if (eng) eng.setAutoSpin(v); },
       wireChipStyle: this.chip(st.wire), toggleWire: () => { const v = !st.wire; this.setState({ wire: v }); if (eng) eng.setWire(v); },

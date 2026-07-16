@@ -12,7 +12,7 @@
        plane. (True vendoring is still better; this is the client-side half.)
    Bump CACHE_VERSION whenever shell files change so clients pick them up.
    ============================================================ */
-const CACHE_VERSION = 'pp-v34';
+const CACHE_VERSION = 'pp-v40';
 const CORE_CACHE = CACHE_VERSION + '-core';
 const RUNTIME_CACHE = CACHE_VERSION + '-runtime';
 const CDN_CACHE = CACHE_VERSION + '-cdn';
@@ -35,6 +35,10 @@ const CORE = [
   'Physics.dc.html',
   'Bake.dc.html',
   'Decimate.dc.html',
+  'VAT.dc.html',
+  'studio3D_scripts/vat-engine.js',
+  'Stage.dc.html',
+  'studio3D_scripts/stage-engine.js',
   'MeshDoctor.dc.html',
   'ShaderLab.dc.html',
   'Director.dc.html',
@@ -48,6 +52,9 @@ const CORE = [
   'studio3D_scripts/face-capture.js',
   'studio3D_scripts/glb-optimize.js',
   'studio3D_scripts/atlas-merge.js',
+  'studio3D_scripts/nav-scheme.js',
+  'studio3D_scripts/color-space.js',
+  'studio3D_scripts/symmetry-map.js',
   'studio3D_scripts/sample-shapes.js',
   'Retopo.dc.html',
   'Recipe.dc.html',

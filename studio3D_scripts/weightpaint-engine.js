@@ -12,6 +12,8 @@
 // straight back to the studio. Loaded by dynamic import from WeightPaint.dc.html.
 // ============================================================
 import * as THREE from 'https://esm.sh/three@0.160.0';
+import { applyOrbitScheme } from './nav-scheme.js';
+import { buildMirrorMap, mirrorBonePartners } from './symmetry-map.js';
 import { fetchAssetBuffer } from './chunk-loader.js';
 import { OrbitControls } from 'https://esm.sh/three@0.160.0/examples/jsm/controls/OrbitControls.js';
 import { FBXLoader } from 'https://esm.sh/three@0.160.0/examples/jsm/loaders/FBXLoader.js';
@@ -47,6 +49,7 @@ export class WPEngine {
     this.camera = new THREE.PerspectiveCamera(38, 1, 0.03, 100);
     this.camera.position.set(0.4, 1.1, 3.2);
     this.controls = new OrbitControls(this.camera, canvas);
+    applyOrbitScheme(this.controls, THREE);
     this.controls.enableDamping = true; this.controls.dampingFactor = 0.09;
     this.controls.target.set(0, 0.95, 0);
     this.controls.minDistance = 0.4; this.controls.maxDistance = 12;
@@ -354,34 +357,20 @@ export class WPEngine {
     if (!this.mesh) return 0;
     const g = this.mesh.geometry; const pos = g.attributes.position; const si = g.attributes.skinIndex, sw = g.attributes.skinWeight; const n = pos.count;
     const remap = this._mirrorBoneMap();
-    // spatial hash of source-side verts by mirrored key
-    const q = 250; const src = new Map();
+    // shared symmetry contract: one scale-relative mirror map, same as sculpt/morph
+    const mir = buildMirrorMap(pos.array).mirror;
     const wantPos = !!fromPositive;
-    for (let i = 0; i < n; i++) { const x = pos.getX(i); if ((wantPos && x >= 0) || (!wantPos && x <= 0)) { const k = Math.round(-x * q) + '_' + Math.round(pos.getY(i) * q) + '_' + Math.round(pos.getZ(i) * q); src.set(k, i); } }
     let done = 0;
     for (let i = 0; i < n; i++) {
       const x = pos.getX(i); if ((wantPos && x > 0) || (!wantPos && x < 0)) continue; // only write dest side (and midline)
-      const k = Math.round(x * q) + '_' + Math.round(pos.getY(i) * q) + '_' + Math.round(pos.getZ(i) * q);
-      const sIdx = src.get(k); if (sIdx === undefined) continue;
-      for (let kk = 0; kk < 4; kk++) { let bi = si.getComponent(sIdx, kk); const w = sw.getComponent(sIdx, kk); if (remap[bi] !== undefined) bi = remap[bi]; si.setComponent(i, kk, bi); sw.setComponent(i, kk, w); }
+      const sIdx = mir[i]; if (sIdx < 0 || sIdx === i) continue;
+      for (let kk = 0; kk < 4; kk++) { let bi = si.getComponent(sIdx, kk); const w = sw.getComponent(sIdx, kk); bi = remap[bi]; si.setComponent(i, kk, bi); sw.setComponent(i, kk, w); }
       done++;
     }
     si.needsUpdate = true; sw.needsUpdate = true; this._refreshColors(); this._dirty = true; this._changed();
     return done;
   }
-  _mirrorBoneMap() {
-    const map = {}; const names = this.boneName.map(s => s.toLowerCase());
-    const partner = (name) => {
-      let p = null;
-      if (/left/.test(name)) p = name.replace(/left/g, 'right');
-      else if (/right/.test(name)) p = name.replace(/right/g, 'left');
-      else if (/(^|[^a-z])l([^a-z]|\d|$)/.test(name)) p = name.replace(/(^|[^a-z])l([^a-z]|\d|$)/, '$1r$2');
-      else if (/(^|[^a-z])r([^a-z]|\d|$)/.test(name)) p = name.replace(/(^|[^a-z])r([^a-z]|\d|$)/, '$1l$2');
-      return p;
-    };
-    names.forEach((nm, i) => { const p = partner(nm); if (p) { const j = names.indexOf(p); if (j >= 0) map[i] = j; } });
-    return map;
-  }
+  _mirrorBoneMap() { return mirrorBonePartners(this.boneName); }
 
   // ---------------------------------------------------------- UNDO
   _pushUndo() {

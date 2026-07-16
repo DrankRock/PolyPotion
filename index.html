@@ -327,6 +327,7 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
           <div class="dock-item" data-tool="timeline" title="Timeline — lay clips out, trim, crossfade, bake one performance (NLA)"><span class="ic">≡</span><span class="lb">Timeline</span></div>
           <div class="dock-item" data-tool="retarget" title="Retarget — put any clip on any humanoid: auto bone-map + root-scale correction"><span class="ic">⇄</span><span class="lb">Retarget</span></div>
           <div class="dock-item" data-tool="curves" title="Curves — F-curve editor + onion skinning"><span class="ic">∿</span><span class="lb">Curves</span></div>
+          <div class="dock-item" data-tool="vat" title="VAT Bake — bake an animation clip into a texture for zero-skeleton GPU replay"><span class="ic">⧈</span><span class="lb">VAT</span></div>
           <div class="dock-item" data-tool="physics" title="Physics — soft-body & cloth (WASM)"><span class="ic">≈</span><span class="lb">Physics</span></div>
         </div>
       </div>
@@ -340,7 +341,7 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
       </div>
       <div class="dock-spacer"></div>
       <div class="dock-sep"></div>
-      <div class="dock-item disabled" title="Scene assembly — coming soon"><span class="ic">⊞</span><span class="lb">Scene</span></div>
+      <div class="dock-item" data-tool="stage" title="Stage — assemble several characters & props into one scene, each with its own pose/clip, and export it as one glTF"><span class="ic">⊞</span><span class="lb">Scene</span></div>
     </nav>
 
     <!-- STAGE -->
@@ -389,7 +390,15 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
         <div class="tool-loading" id="load-decimate"><div class="ring"></div><div>Loading Decimate workspace…</div></div>
       </div>
 
-      <!-- Mesh Doctor tool -->
+      <!-- VAT Bake tool -->
+      <div class="tool-pane" id="pane-vat">
+        <div class="tool-loading" id="load-vat"><div class="ring"></div><div>Loading VAT Bake workspace…</div></div>
+      </div>
+
+      <!-- Stage tool -->
+      <div class="tool-pane" id="pane-stage">
+        <div class="tool-loading" id="load-stage"><div class="ring"></div><div>Loading Stage workspace…</div></div>
+      </div>      <!-- Mesh Doctor tool -->
       <div class="tool-pane" id="pane-doctor">
         <div class="tool-loading" id="load-doctor"><div class="ring"></div><div>Loading Mesh Doctor…</div></div>
       </div>
@@ -707,6 +716,8 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
       { k:'morph', label:'Morph', icon:'◕', key:'' },
       { k:'bakemaps', label:'Bake Maps', icon:'☰', key:'' },
       { k:'curves', label:'Curves', icon:'∿', key:'' },
+      { k:'vat', label:'VAT Bake — bake a clip into a texture for zero-cost GPU replay', icon:'⧈', key:'' },
+      { k:'stage', label:'Stage — assemble a multi-character scene, export as one glTF', icon:'⊞', key:'' },
       { k:'humangen', label:'HumanGen — generate a base human', icon:'☺', key:'' },
       { k:'hairstudio', label:'Hair Studio', icon:'〰', key:'' },
     ];
@@ -824,6 +835,8 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
     pose:  { src: 'Pose.dc.html?embed=1', frame: null, ready: false, label: 'Pose' },
     physics:{ src: 'Physics.dc.html?embed=1', frame: null, ready: false, label: 'Physics' },
     decimate:{ src: 'Decimate.dc.html?embed=1', frame: null, ready: false, label: 'Decimate' },
+    vat:  { src: 'VAT.dc.html?embed=1', frame: null, ready: false, label: 'VAT Bake' },
+    stage:{ src: 'Stage.dc.html?embed=1', frame: null, ready: false, label: 'Stage' },
     doctor:{ src: 'MeshDoctor.dc.html?embed=1', frame: null, ready: false, label: 'Mesh Doctor' },
     shaderlab:{ src: 'ShaderLab.dc.html?embed=1', frame: null, ready: false, label: 'Shader Lab' },
     director:{ src: 'Director.dc.html?embed=1', frame: null, ready: false, label: 'Director' },
@@ -854,7 +867,7 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
   function saveLibPrefs(){ ppCookie('pp.libFilters', [...libFilters].join(',')); ppCookie('pp.libSort', libSort); ppCookie('pp.libNsfw', libNsfw ? '1' : '0'); }
   let libSearchQ = '';          // library name search
   let activeChar = null;        // shared character state — { it, deliveredTo:Set } follows you across tools
-  const CHAR_TOOLS = ['showcase', 'mocap', 'pose', 'edit', 'sculpt', 'physics', 'decimate', 'doctor', 'shaderlab', 'director', 'lipsync', 'timeline', 'retarget', 'retopo', 'recipe', 'bake', 'hair', 'csg', 'uv', 'paint', 'weightpaint', 'morph', 'bakemaps', 'curves'];
+  const CHAR_TOOLS = ['showcase', 'mocap', 'pose', 'edit', 'sculpt', 'physics', 'decimate', 'doctor', 'shaderlab', 'director', 'lipsync', 'timeline', 'retarget', 'retopo', 'recipe', 'bake', 'hair', 'csg', 'uv', 'paint', 'weightpaint', 'morph', 'bakemaps', 'curves', 'vat', 'stage'];
   let lastLoadedName = '';
 
   // ---------- toasts ----------
@@ -980,7 +993,7 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
     $$('.dock-item').forEach(d => { const on = d.dataset.tool === tool; d.classList.toggle('active', on); d.setAttribute('aria-selected', on ? 'true' : 'false'); });
     if (window.revealDockTool) window.revealDockTool(tool);
     $('#lib').classList.toggle('show', tool === 'library');
-    ['showcase', 'rig', 'mocap', 'edit', 'motion', 'sculpt', 'hair', 'pose', 'physics', 'decimate', 'doctor', 'shaderlab', 'director', 'lipsync', 'timeline', 'retarget', 'retopo', 'recipe', 'bake', 'csg', 'uv', 'paint', 'weightpaint', 'morph', 'bakemaps', 'curves', 'humangen', 'hairstudio'].forEach(t => {
+    ['showcase', 'rig', 'mocap', 'edit', 'motion', 'sculpt', 'hair', 'pose', 'physics', 'decimate', 'doctor', 'shaderlab', 'director', 'lipsync', 'timeline', 'retarget', 'retopo', 'recipe', 'bake', 'csg', 'uv', 'paint', 'weightpaint', 'morph', 'bakemaps', 'curves', 'vat', 'stage', 'humangen', 'hairstudio'].forEach(t => {
       const pane = $('#pane-' + t);
       const on = t === tool;
       pane.classList.toggle('show', on);
@@ -1015,6 +1028,8 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
     else if (tool === 'morph') $('#stHint').textContent = 'Sculpt blendshapes — blink, smile, jaw — and drive them with sliders; export as glTF morph targets, on-device';
     else if (tool === 'bakemaps') $('#stHint').textContent = 'Bake normal / AO / curvature from a high-res sculpt onto the low-poly UVs — download the maps, on-device';
     else if (tool === 'curves') $('#stHint').textContent = 'Hand-edit the F-curves, trim the loop, and onion-skin the arc — motion editing, on-device';
+    else if (tool === 'vat') $('#stHint').textContent = 'Bake an animation clip into a texture — a two-line shader then replays it with no skeleton, for crowds & cheap facial playback, on-device';
+    else if (tool === 'stage') $('#stHint').textContent = 'Drop several characters & props onto one stage, place each and give it its own pose or clip, then export the whole scene as one glTF';
     else if (tool === 'doctor') $('#stHint').textContent = 'Audit the mesh — manifoldness, winding, degenerates, UVs, scale — then fix it in one click';
     else if (tool === 'shaderlab') $('#stHint').textContent = 'Wire nodes into shaders — preview live on your character, publish to Showcase\u2019s shelf';
     else if (tool === 'director') $('#stHint').textContent = 'Cut camera shots over your character\u2019s animation, then render the sequence to .webm';
@@ -1871,7 +1886,8 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
     if (d.type === 'studio:ready') {
       const t = d.tool; if (TOOLS[t]) { TOOLS[t].ready = true; const ld = $('#load-' + t); if (ld) ld.style.display = 'none';
         if (TOOLS[t]._pending) { TOOLS[t]._pending(); TOOLS[t]._pending = null; }
-        if (t === 'showcase') post('showcase', 'studio:animLibrary', { animations: [...session.animations, ...libData.animations] }); }
+        if (t === 'showcase') post('showcase', 'studio:animLibrary', { animations: [...session.animations, ...libData.animations] });
+        if (t === 'stage') post('stage', 'studio:library', { characters: [...session.characters, ...libData.characters].map((it, i) => ({ id: it.path || ('lib' + i), label: it.label || 'character', path: it.path, ext: it.ext || 'glb', chunked: it.chunked, chunks: it.chunks, session: !!it.session, thumb: it.thumb || null })) }); }
     }
     else if (d.type === 'studio:riggedGLB') {
       // received baked GLB from rig → add to session library, hand to mocap
@@ -1922,6 +1938,19 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
       const send = () => post(tool, 'studio:loadCharBuffer', { buffer: buf, name }, [buf]);
       if (TOOLS[tool].ready) send(); else TOOLS[tool]._pending = send;
       toast('Handed off to ' + TOOLS[tool].label, 'info');
+    }
+    else if (d.type === 'studio:stageFetch') {
+      // the Stage asks for a specific library character by descriptor; fetch its
+      // GLB buffer and hand it straight back so the stage can place a copy.
+      const all = [...session.characters, ...libData.characters];
+      const it = all.find(x => (x.path || '') === d.id) || all.find(x => (x.label || '') === d.label);
+      if (!it) { post('stage', 'studio:error', { tool: 'stage', message: 'Character not found: ' + (d.label || d.id) }); return; }
+      try {
+        let buf;
+        if (it.session && it._buffer) buf = it._buffer.slice(0);
+        else { const { fetchAssetBuffer } = await import('./studio3D_scripts/chunk-loader.js'); buf = await fetchAssetBuffer(it.path, { chunked: it.chunked, chunks: it.chunks }); }
+        post('stage', 'studio:stageAdd', { buffer: buf, name: (it.label || 'character') + '.' + (it.ext || 'glb'), id: d.id }, [buf]);
+      } catch (err) { post('stage', 'studio:error', { tool: 'stage', message: 'Load failed: ' + (err && err.message || err) }); }
     }
     else if (d.type === 'studio:goTool') {
       if (TOOLS[d.tool] || d.tool === 'library') setTool(d.tool);
