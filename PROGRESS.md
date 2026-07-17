@@ -204,6 +204,21 @@ audit lists under Platform hardening / Audience — don't reopen the rest.
 
 ## Log
 
+- 2026-07-17 — **Two load-time breakages fixed** (`_headers`,
+  `SECURITY_HEADERS.md`, `sw.js`). (1) The enforced CSP `script-src` was missing
+  `'unsafe-eval'`, so the DC runtime's `Function()`-compiled logic class was
+  blocked for EVERY `*.dc.html` tool — they rendered template-only with all
+  `{{ }}` holes blank (HumanGen etc.). Added `'unsafe-eval'` to `_headers` +
+  the SECURITY_HEADERS.md reference, with a note on why the DC runtime needs it.
+  **Requires a redeploy of `_headers` to take effect** (it's a response header,
+  not in the HTML). (2) The service worker routed the user's `/data/` asset
+  library (pfp thumbnails + chunked 60 MB+ meshes) through the versioned runtime
+  cache; the reload+timeout path turned any slow/absent asset into a hard
+  "ServiceWorker encountered an unexpected error" (sw.js:148/139), spamming the
+  console with dozens of failed pfp PNGs. Now `/data/` is bypassed entirely and
+  fetched natively (the chunk-loader owns those). sw.js → pp-v47.
+
+
 - 2026-07-17 — **Job contract rollout complete: animation retarget**
   (`retarget-engine.js`, `Retarget.dc.html`). The last long op. `exportGLB(job)`
   now `guard()`s its GLTFExporter.parse so a cancel abandons the pack before the

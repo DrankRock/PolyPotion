@@ -17,7 +17,7 @@ X-Frame-Options:
 
 Content-Security-Policy — start with Report-Only for a week, watch the console, then enforce:
   default-src 'self';
-  script-src 'self' 'unsafe-inline' https://esm.sh https://cdn.jsdelivr.net https://unpkg.com blob:;
+  script-src 'self' 'unsafe-inline' 'unsafe-eval' https://esm.sh https://cdn.jsdelivr.net https://unpkg.com blob:;
   style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
   font-src https://fonts.gstatic.com;
   img-src 'self' data: blob:;
@@ -27,9 +27,11 @@ Content-Security-Policy — start with Report-Only for a week, watch the console
   frame-src 'self';
   object-src 'none'; base-uri 'self'; frame-ancestors 'self';
   (one line, semicolon-separated. 'unsafe-inline' is required — the shell uses inline
-  scripts; esm.sh serves three.js; storage.googleapis.com serves the MediaPipe models;
-  the three AI endpoints are for text-to-pose. If a tool breaks, the console names
-  the blocked origin — add it to connect-src.)
+  scripts; 'unsafe-eval' is required — the DC runtime (support.js) compiles each tool's
+  logic class with Function(), which CSP counts as eval; without it every *.dc.html tool
+  renders template-only (all {{ }} holes blank). esm.sh serves three.js;
+  storage.googleapis.com serves the MediaPipe models; the three AI endpoints are for
+  text-to-pose. If a tool breaks, the console names the blocked origin — add it to connect-src.)
 
 ## The warnings
 

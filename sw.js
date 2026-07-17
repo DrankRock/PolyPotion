@@ -54,9 +54,6 @@ const CORE = [
   'studio3D_scripts/atlas-merge.js',
   'studio3D_scripts/nav-scheme.js',
   'studio3D_scripts/job.js',
-  'vendor/three/build/three.module.js',
-  'vendor/manifold-3d/manifold.js',
-  'vendor/manifold-3d/manifold.wasm',
   'studio3D_scripts/color-space.js',
   'studio3D_scripts/symmetry-map.js',
   'studio3D_scripts/sample-shapes.js',
@@ -120,6 +117,13 @@ self.addEventListener('fetch', (e) => {
   }
   // only handle our own origin otherwise
   if (url.origin !== self.location.origin) return;
+
+  // the user's asset library (characters/animations/pfp thumbnails, often chunked
+  // and 60 MB+) lives under /data/ — never route it through the versioned runtime
+  // cache: it bloats the cache and the reload+timeout dance turns a slow/absent
+  // asset into a hard "ServiceWorker encountered an unexpected error". Let the
+  // browser fetch these natively (the chunk-loader owns their ret/assembly).
+  if (url.pathname.startsWith('/data/') || url.pathname.includes('/data/')) return;
 
   // the basic-human module is under active iteration → network-first so edits
   // show up on plain reload (cache only as offline fallback)
