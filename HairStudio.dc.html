@@ -3,6 +3,15 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<script type="importmap">
+{
+  "imports": {
+    "three": "./vendor/three/build/three.module.js",
+    "three/addons/": "./vendor/three/examples/jsm/",
+    "manifold-3d": "./vendor/manifold-3d/manifold.js"
+  }
+}
+</script>
 <script src="./support.js"></script>
 </head>
 <body>
@@ -181,9 +190,9 @@ class Component extends DCLogic {
   viewportRef = (el) => { this.viewportEl = el; };
 
   async componentDidMount() {
-    const T = await import('https://esm.sh/three@0.160.0');
-    const { OrbitControls } = await import('https://esm.sh/three@0.160.0/examples/jsm/controls/OrbitControls.js');
-    const { RoomEnvironment } = await import('https://esm.sh/three@0.160.0/examples/jsm/environments/RoomEnvironment.js');
+    const T = await import('three');
+    const { OrbitControls } = await import('three/addons/controls/OrbitControls.js');
+    const { RoomEnvironment } = await import('three/addons/environments/RoomEnvironment.js');
     this.T = T; this.OrbitControls = OrbitControls; this.RoomEnvironment = RoomEnvironment;
     if (!this.viewportEl) return;
     this.initScene();
@@ -211,7 +220,7 @@ class Component extends DCLogic {
     if (this.state.sending || !this.hair) return;
     this.setState({ sending: true });
     try {
-      const { GLTFExporter } = await import('https://esm.sh/three@0.160.0/examples/jsm/exporters/GLTFExporter.js');
+      const { GLTFExporter } = await import('three/addons/exporters/GLTFExporter.js');
       const grp = new this.T.Group(); grp.add(this.hair.clone());
       new GLTFExporter().parse(grp, (buf) => {
         const ab = buf instanceof ArrayBuffer ? buf : new Uint8Array(buf).buffer;
@@ -510,7 +519,7 @@ class Component extends DCLogic {
     if (this.state.exporting || !this.hair) return;
     this.setState({ exporting: true });
     try {
-      const { GLTFExporter } = await import('https://esm.sh/three@0.160.0/examples/jsm/exporters/GLTFExporter.js');
+      const { GLTFExporter } = await import('three/addons/exporters/GLTFExporter.js');
       const grp = new this.T.Group(); grp.add(this.hair.clone());
       new GLTFExporter().parse(grp, (buf) => {
         const blob = new Blob([buf], { type: 'model/gltf-binary' });

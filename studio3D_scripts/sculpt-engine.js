@@ -18,14 +18,14 @@
 // UNDO, wireframe overlay, turntable, clay matcap-ish shading.
 // Loaded by dynamic import from Sculpt.dc.html — same pattern as mesh-engine.js.
 // ============================================================
-import * as THREE from 'https://esm.sh/three@0.160.0';
+import * as THREE from 'three';
 import { applyOrbitScheme } from './nav-scheme.js';
 import { buildMirrorMap } from './symmetry-map.js';
 import { fetchAssetBuffer } from './chunk-loader.js';
-import { OrbitControls } from 'https://esm.sh/three@0.160.0/examples/jsm/controls/OrbitControls.js';
-import { FBXLoader } from 'https://esm.sh/three@0.160.0/examples/jsm/loaders/FBXLoader.js';
-import { GLTFLoader } from 'https://esm.sh/three@0.160.0/examples/jsm/loaders/GLTFLoader.js';
-import { OBJLoader } from 'https://esm.sh/three@0.160.0/examples/jsm/loaders/OBJLoader.js';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { OBJLoader } from 'three/addons/loaders/OBJLoader.js';
 
 const V = (x, y, z) => new THREE.Vector3(x, y, z);
 const CLAY = 0xb9a690;       // warm sculpt clay
@@ -687,7 +687,7 @@ export class SCEngine {
   // corner indices (the welded topology), fresh smooth normals.
   async exportGLB() {
     if (!this.mesh) throw new Error('Nothing to export — load a model first');
-    const { GLTFExporter } = await import('https://esm.sh/three@0.160.0/examples/jsm/exporters/GLTFExporter.js');
+    const { GLTFExporter } = await import('three/addons/exporters/GLTFExporter.js');
     const g = new THREE.BufferGeometry();
     g.setAttribute('position', new THREE.Float32BufferAttribute(this.vpos.slice(0, this.nUnique * 3), 3));
     g.setIndex(new THREE.BufferAttribute(Uint32Array.from(this.corner.subarray(0, this.nCorner)), 1));

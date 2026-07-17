@@ -4,12 +4,12 @@
 // union / subtract / intersect through manifold-3d — fully on-device.
 // Loaded by dynamic import from Boolean.dc.html, like the other engines.
 // ============================================================
-import * as THREE from 'https://esm.sh/three@0.160.0';
+import * as THREE from 'three';
 import { applyOrbitScheme } from './nav-scheme.js';
-import { OrbitControls } from 'https://esm.sh/three@0.160.0/examples/jsm/controls/OrbitControls.js';
-import { FBXLoader } from 'https://esm.sh/three@0.160.0/examples/jsm/loaders/FBXLoader.js';
-import { GLTFLoader } from 'https://esm.sh/three@0.160.0/examples/jsm/loaders/GLTFLoader.js';
-import { OBJLoader } from 'https://esm.sh/three@0.160.0/examples/jsm/loaders/OBJLoader.js';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { OBJLoader } from 'three/addons/loaders/OBJLoader.js';
 import { fetchAssetBuffer } from './chunk-loader.js';
 
 export class CSGEngine {
@@ -66,7 +66,7 @@ export class CSGEngine {
   _manifold() {
     if (!this._manifoldP) {
       this._status('Loading Manifold WASM…');
-      this._manifoldP = import('https://cdn.jsdelivr.net/npm/manifold-3d@3.2.1/manifold.js').then(async (m) => {
+      this._manifoldP = import('manifold-3d').then(async (m) => {
         const wasm = await m.default(); wasm.setup(); return wasm;
       });
     }
@@ -225,7 +225,7 @@ export class CSGEngine {
   // ---------- export ----------
   async exportGLB() {
     if (!this.mesh) return;
-    const { GLTFExporter } = await import('https://esm.sh/three@0.160.0/examples/jsm/exporters/GLTFExporter.js');
+    const { GLTFExporter } = await import('three/addons/exporters/GLTFExporter.js');
     const bin = await new Promise((res, rej) => new GLTFExporter().parse(this.mesh, res, rej, { binary: true }));
     const blob = new Blob([bin], { type: 'model/gltf-binary' });
     const a = document.createElement('a');

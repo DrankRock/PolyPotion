@@ -4,7 +4,7 @@
 // ../shader-lib.js (via normalizeWild). See ../shader-lib.js for the
 // shared GLSL scope available inside each fragBody.
 // ============================================================
-import * as THREE from 'https://esm.sh/three@0.160.0';
+import * as THREE from 'three';
 import { AXIS } from '../shader-glue.js';
 
 export const WILD_CANDY_CRYSTAL = [

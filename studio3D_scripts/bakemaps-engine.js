@@ -11,13 +11,13 @@
 // previewed live on the model, and exported as PNG. If only one mesh is
 // loaded it self-bakes AO + curvature. Loaded by import from BakeMaps.dc.html.
 // ============================================================
-import * as THREE from 'https://esm.sh/three@0.160.0';
+import * as THREE from 'three';
 import { applyOrbitScheme } from './nav-scheme.js';
 import { fetchAssetBuffer } from './chunk-loader.js';
-import { OrbitControls } from 'https://esm.sh/three@0.160.0/examples/jsm/controls/OrbitControls.js';
-import { FBXLoader } from 'https://esm.sh/three@0.160.0/examples/jsm/loaders/FBXLoader.js';
-import { GLTFLoader } from 'https://esm.sh/three@0.160.0/examples/jsm/loaders/GLTFLoader.js';
-import { OBJLoader } from 'https://esm.sh/three@0.160.0/examples/jsm/loaders/OBJLoader.js';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { OBJLoader } from 'three/addons/loaders/OBJLoader.js';
 
 const themeViewport = () => { const v = getComputedStyle(document.documentElement).getPropertyValue('--viewport').trim(); return v || '#16181c'; };
 

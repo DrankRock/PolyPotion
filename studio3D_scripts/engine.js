@@ -812,8 +812,12 @@ E.canBind = function () { return enabledJoints().length >= 2 && modelMeshes.leng
 
 E.bind = async function (opts) {
   opts = opts || {};
-  const onP = opts.onProgress || (() => {});
+  const job = opts.job || null;
+  // Progress goes through the job if one was supplied, else the legacy callback.
+  const onP = opts.onProgress || (job ? (ph, fr) => job.progress(ph, fr) : (() => {}));
+  const ckpt = () => { if (job && job.cancelled) throw new Error('cancelled'); };
   clearRig();
+  ckpt();
   onP('building skeleton', 0.02);
   const { boneRoot, bones, order } = buildSkeletonBones();
   const segs = boneSegments(bones, order);
@@ -838,6 +842,7 @@ E.bind = async function (opts) {
     weights = meshData.map(md => fastWeights(md.positions, segs, opts.falloff));
     onP('binding', 0.85);
   }
+  ckpt();   // a cancel during the solve abandons the result before we build the rig
 
   // build skeleton + skinned meshes
   const skel = new THREE.Skeleton(bones);
@@ -978,6 +983,14 @@ function bindHQ(meshData, segs, opts, onP) {
     tArrays.forEach(t => { tris.set(t, off); off += t.length; });
 
     const worker = new Worker('studio3D_scripts/skin-worker.js?v=' + Date.now());
+    const job = opts.job || null;
+    // Cancel = terminate the worker (its result only ever returns via postMessage,
+    // so a hard kill mid-flood corrupts nothing) and reject as cancelled.
+    if (job) {
+      if (job.cancelled) { worker.terminate(); reject(new Error('cancelled')); return; }
+      job.attachWorker(worker);
+      job.signal.addEventListener('abort', () => { reject(new Error('cancelled')); }, { once: true });
+    }
     const meshes = meshData.map(md => ({ positions: md.positions }));
     worker.onmessage = ev => {
       const m = ev.data;

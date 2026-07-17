@@ -6,13 +6,13 @@
 // motion, preview, export GLB. Loaded by dynamic import from
 // Retarget.dc.html, like the other engines.
 // ============================================================
-import * as THREE from 'https://esm.sh/three@0.160.0';
+import * as THREE from 'three';
 import { applyOrbitScheme } from './nav-scheme.js';
-import { OrbitControls } from 'https://esm.sh/three@0.160.0/examples/jsm/controls/OrbitControls.js';
-import { GLTFLoader } from 'https://esm.sh/three@0.160.0/examples/jsm/loaders/GLTFLoader.js';
-import { FBXLoader } from 'https://esm.sh/three@0.160.0/examples/jsm/loaders/FBXLoader.js';
-import { GLTFExporter } from 'https://esm.sh/three@0.160.0/examples/jsm/exporters/GLTFExporter.js';
-import * as SkeletonUtils from 'https://esm.sh/three@0.160.0/examples/jsm/utils/SkeletonUtils.js';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
+import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
+import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
 import { fetchAssetBuffer } from './chunk-loader.js';
 import { buildBoneMap, detectConvention } from './bone-map.js';
 
@@ -203,15 +203,16 @@ export class RetargetEngine {
   setPlaying(v) { this.playing = v; }
 
   // ------------------------------------------------ export
-  async exportGLB() {
+  async exportGLB(job) {
     if (!this.result || !this.target) throw new Error('Retarget first');
     this._status('Packing GLB…');
     const root = this.target.root;
     const savedPos = root.position.clone(), savedScale = root.scale.clone();
     root.position.set(0, 0, 0);               // export clean, un-staged transform
-    const buf = await new Promise((res, rej) => {
+    const parseP = new Promise((res, rej) => {
       new GLTFExporter().parse(root, res, rej, { binary: true, animations: [this.result] });
     });
+    const buf = await (job ? job.guard(parseP) : parseP);
     root.position.copy(savedPos); root.scale.copy(savedScale);
     this._status('');
     return buf;   // ArrayBuffer

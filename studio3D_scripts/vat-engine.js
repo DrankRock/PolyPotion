@@ -13,11 +13,11 @@
 //
 // Loaded by dynamic import from VAT.dc.html, like the other engines.
 // ============================================================
-import * as THREE from 'https://esm.sh/three@0.160.0';
+import * as THREE from 'three';
 import { applyOrbitScheme } from './nav-scheme.js';
-import { OrbitControls } from 'https://esm.sh/three@0.160.0/examples/jsm/controls/OrbitControls.js';
-import { FBXLoader } from 'https://esm.sh/three@0.160.0/examples/jsm/loaders/FBXLoader.js';
-import { GLTFLoader } from 'https://esm.sh/three@0.160.0/examples/jsm/loaders/GLTFLoader.js';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { fetchAssetBuffer } from './chunk-loader.js';
 
 const V = (x, y, z) => new THREE.Vector3(x, y, z);
@@ -444,7 +444,7 @@ export class VATEngine {
 
   // static mesh, skinning stripped — this is what the VAT shader displaces.
   async _exportStaticGLB() {
-    const { GLTFExporter } = await import('https://esm.sh/three@0.160.0/examples/jsm/exporters/GLTFExporter.js');
+    const { GLTFExporter } = await import('three/addons/exporters/GLTFExporter.js');
     const src = this.srcMesh.geometry;
     const geo = new THREE.BufferGeometry();
     geo.setAttribute('position', src.attributes.position.clone());

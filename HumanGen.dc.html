@@ -3,6 +3,15 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<script type="importmap">
+{
+  "imports": {
+    "three": "./vendor/three/build/three.module.js",
+    "three/addons/": "./vendor/three/examples/jsm/",
+    "manifold-3d": "./vendor/manifold-3d/manifold.js"
+  }
+}
+</script>
 <script src="./support.js"></script>
 </head>
 <body>
@@ -160,8 +169,8 @@ class Component extends DCLogic {
   // ---------- lifecycle ----------
   async componentDidMount() {
     const [T, oc, HB] = await Promise.all([
-      import('https://esm.sh/three@0.160.0'),
-      import('https://esm.sh/three@0.160.0/examples/jsm/controls/OrbitControls.js'),
+      import('three'),
+      import('three/addons/controls/OrbitControls.js'),
       import('./studio3D_scripts/human-body.js'),
     ]);
     this.T = T; this.OrbitControls = oc.OrbitControls; this.HB = HB;
@@ -194,7 +203,7 @@ class Component extends DCLogic {
   buildGLB() {
     return new Promise(async (res, rej) => {
       try {
-        const { GLTFExporter } = await import('https://esm.sh/three@0.160.0/examples/jsm/exporters/GLTFExporter.js');
+        const { GLTFExporter } = await import('three/addons/exporters/GLTFExporter.js');
         const grp = new this.T.Group(); grp.name = 'Human';
         const m = this.mesh.clone(); m.name = 'Body'; grp.add(m);
         new GLTFExporter().parse(grp, (buf) => res(buf instanceof ArrayBuffer ? buf : new Uint8Array(buf).buffer), (err) => rej(err), { binary: true });
@@ -339,7 +348,7 @@ class Component extends DCLogic {
     this.setState({ fusing: true });
     await new Promise(r => setTimeout(r, 30)); // let the overlay paint
     try {
-      const { MarchingCubes } = await import('https://esm.sh/three@0.160.0/examples/jsm/objects/MarchingCubes.js');
+      const { MarchingCubes } = await import('three/addons/objects/MarchingCubes.js');
       this._MC = MarchingCubes;
       const geo = this.HB.buildSmoothGeometry(this.T, MarchingCubes, this.state.params, { power: this.state.smoothPower, resolution: 144 });
       this.swapGeometry(geo);

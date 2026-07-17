@@ -388,6 +388,7 @@ E.buildJoints = function (list, groupState) {
     marker.position.copy(home2world(j.home));
     markerRoot.add(marker);
     const jj = { ...j, marker, enabled: groupsOn[j.group] === true };
+    jj._homeT = Array.isArray(j.home) ? j.home.slice() : [0, 0, 0];   // pristine T-pose home
     joints.push(jj); jointMap.set(j.id, jj);
   });
   applyGroupVisibility();
@@ -413,6 +414,28 @@ function serializeJoint(j) {
 
 E.autoFit = function () { joints.forEach(j => j.marker.position.copy(home2world(j.home))); updateBoneLines(); };
 E.resetPoses = E.autoFit;
+
+// A-pose fit: many generated meshes (meshy.ai etc.) rest with arms hanging ~45deg.
+// The joint template is a T-pose (arms horizontal), so "Fit to mesh" drops the
+// arm/finger joints out in empty space. This rotates those joints down about
+// each side's shoulder so auto-fit lands them ON the angled arms. mode 'a' =
+// A-pose, 't' = restore T-pose. Re-runs auto-fit so the change is immediate.
+E.setArmPose = function (mode) {
+  const angle = mode === 'a' ? 0.72 : 0;   // ~41deg drop; 0 restores the T-pose template
+  joints.forEach(j => {
+    if (!j._homeT || (j.group !== 'arms' && j.group !== 'fingers')) return;
+    const base = j._homeT;
+    const sh = jointMap.get('Shoulder_' + j.shortSide);
+    if (!angle || !sh || !sh._homeT) { j.home = base.slice(); return; }
+    const ox = sh._homeT[0], oy = sh._homeT[1];
+    const dx = base[0] - ox, dy = base[1] - oy;
+    const a = -angle * (j.shortSide === 'R' ? 1 : -1);   // rotate arm downward on each side
+    const ca = Math.cos(a), sa = Math.sin(a);
+    j.home = [ox + dx * ca - dy * sa, oy + dx * sa + dy * ca, base[2]];
+  });
+  E.autoFit();
+  return mode === 'a';
+};
 
 E.setGroupEnabled = function (groupId, on) {
   groupsOn[groupId] = on;

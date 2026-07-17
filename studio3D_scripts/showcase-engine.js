@@ -8,14 +8,14 @@
 // generic humanoid bone names all work, and hips travel is rescaled to fit.
 // Loaded by dynamic import from Showcase.dc.html, like the other engines.
 // ============================================================
-import * as THREE from 'https://esm.sh/three@0.160.0';
+import * as THREE from 'three';
 import { applyOrbitScheme } from './nav-scheme.js';
 import { tagObject, applyViewTransform, VIEW_TRANSFORMS } from './color-space.js';
-import { OrbitControls } from 'https://esm.sh/three@0.160.0/examples/jsm/controls/OrbitControls.js';
-import { FBXLoader } from 'https://esm.sh/three@0.160.0/examples/jsm/loaders/FBXLoader.js';
-import { GLTFLoader } from 'https://esm.sh/three@0.160.0/examples/jsm/loaders/GLTFLoader.js';
-import { OBJLoader } from 'https://esm.sh/three@0.160.0/examples/jsm/loaders/OBJLoader.js';
-import { RoomEnvironment } from 'https://esm.sh/three@0.160.0/examples/jsm/environments/RoomEnvironment.js';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { OBJLoader } from 'three/addons/loaders/OBJLoader.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { fetchAssetBuffer } from './chunk-loader.js';
 import { getShaderPresets, buildShaderMaterial, presetDescriptors } from './shader-lib.js';
 
@@ -1168,7 +1168,7 @@ export class SCEngine {
   // Export the model (with baked unlit textures) as a .glb — loads in any engine.
   async exportBakedGLB() {
     if (!this._hasBaked || !this.model) throw new Error('Bake a shader first.');
-    const { GLTFExporter } = await import('https://esm.sh/three@0.160.0/examples/jsm/exporters/GLTFExporter.js');
+    const { GLTFExporter } = await import('three/addons/exporters/GLTFExporter.js');
     const exporter = new GLTFExporter();
     const out = await new Promise((res, rej) => exporter.parse(this.model, res, rej, {
       binary: true, onlyVisible: false, embedImages: true, animations: this.clips || [],

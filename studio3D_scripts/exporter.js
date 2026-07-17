@@ -14,12 +14,12 @@
 // lands upright in Blender/Unreal. Unit scale multiplies the whole rig
 // (target-app presets set sensible defaults).
 // ============================================================
-import * as THREE from 'https://esm.sh/three@0.160.0';
-import { GLTFLoader } from 'https://esm.sh/three@0.160.0/examples/jsm/loaders/GLTFLoader.js';
-import { GLTFExporter } from 'https://esm.sh/three@0.160.0/examples/jsm/exporters/GLTFExporter.js';
-import { OBJExporter } from 'https://esm.sh/three@0.160.0/examples/jsm/exporters/OBJExporter.js';
-import { STLExporter } from 'https://esm.sh/three@0.160.0/examples/jsm/exporters/STLExporter.js';
-import { USDZExporter } from 'https://esm.sh/three@0.160.0/examples/jsm/exporters/USDZExporter.js';
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
+import { OBJExporter } from 'three/addons/exporters/OBJExporter.js';
+import { STLExporter } from 'three/addons/exporters/STLExporter.js';
+import { USDZExporter } from 'three/addons/exporters/USDZExporter.js';
 
 export const FORMATS = [
   { id: 'glb', label: 'glTF Binary', ext: 'glb', note: 'Godot · Blender · three.js', rig: true, anim: true, compress: true },
@@ -190,11 +190,18 @@ export async function exportCharacter(buffer, opts) {
   const upAxis = opts.upAxis || 'y';
   const scale = opts.scale || 1;
   const base = (opts.name || 'character').replace(/\.[^.]+$/, '').replace(/[^A-Za-z0-9_\-]+/g, '_') || 'character';
+  const job = opts.job || null;               // JobController → cancel between stages
+  const ck = () => { if (job) job.checkpoint(); };
+  const status = opts.onStatus || function () {};
+  const guard = (p) => (job ? job.guard(p) : p);   // cancel abandons the result
 
+  status('Parsing…'); ck();
   const scene = await parseGLB(buffer.slice(0));
+  ck();
   const anims = scene.animations || [];
   let skeletonReport = null;
   if (opts.skeleton && opts.skeleton !== 'keep' && fmt !== 'vrm') {
+    status('Renaming skeleton…'); ck();
     scene.animations = anims;                       // renameSkeleton reads them
     skeletonReport = await renameSkeleton(scene, opts.skeleton);
   }
@@ -217,21 +224,25 @@ export async function exportCharacter(buffer, opts) {
     // Texture atlas + material merge (draw-call reducer). Runs before the
     // up-axis/scale wrap so world-baking stays correct.
     const { mergeToAtlas } = await import('./atlas-merge.js');
-    const a = await mergeToAtlas(scene, { size: opts.atlasSize || 2048, onStatus: opts.onStatus });
+    status('Atlasing textures…'); ck();
+    const a = await mergeToAtlas(scene, { size: opts.atlasSize || 2048, onStatus: opts.onStatus, job });
     atlasReport = a.report;
+    ck();
   }
 
   const container = transformed(scene, upAxis, scale);
 
   if (fmt === 'glb' || fmt === 'gltf') {
+    status('Writing ' + fmt.toUpperCase() + '…'); ck();
     const binary = fmt === 'glb';
     const exporter = new GLTFExporter();
-    const out = await new Promise((res, rej) => exporter.parse(container, res, rej, { binary, animations: anims, onlyVisible: false, embedImages: true }));
+    const out = await guard(new Promise((res, rej) => exporter.parse(container, res, rej, { binary, animations: anims, onlyVisible: false, embedImages: true })));
     if (binary && opts.compress && opts.compress !== 'none') {
       // Draco (geometry) or meshopt (buffers) via glTF-Transform; KHR material
       // extensions (transmission/clearcoat/sheen/iridescence) pass through.
+      status('Compressing (' + opts.compress + ')…'); ck();
       const { optimizeGLB } = await import('./glb-optimize.js');
-      const r = await optimizeGLB(out, { method: opts.compress });
+      const r = await guard(optimizeGLB(out, { method: opts.compress, job }));
       download(new Blob([r.buffer], { type: 'model/gltf-binary' }), base + '.glb');
       return { format: fmt, file: base + '.glb', skeleton: skeletonReport, compression: r, atlas: atlasReport };
     }

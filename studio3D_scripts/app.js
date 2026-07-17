@@ -247,10 +247,16 @@ async function runBind(q) {
     : 'Computing bone-distance weights for every vertex.';
   try {
     const t0 = performance.now();
-    const stat = await E.bind({
-      quality: q, res, falloff,
+    const job = new JobController({
+      label: 'rig-bind',
       onProgress: (phase, frac) => setProgress(phase, frac),
     });
+    setCancel(() => job.cancel());
+    let stat;
+    try {
+      stat = await E.bind({ quality: q, res, falloff, job });
+      job.settle();
+    } finally { clearCancel(); }
     const secs = ((performance.now() - t0) / 1000).toFixed(1);
     hideLoading();
     bound = true;
@@ -265,6 +271,11 @@ async function runBind(q) {
     toast(`Rigged! ${stat.bones} bones bound in ${secs}s. Play a test clip below.`, 'success');
   } catch (err) {
     hideLoading();
+    if (JobController.isCancel(err)) {
+      toast('Bind cancelled — joints are as you left them.', 'success');
+      setStep(2);
+      return;
+    }
     console.error(err);
     toast('Bind failed: ' + err.message, 'error');
     setStep(2);
@@ -464,9 +475,26 @@ $$('.sec-head').forEach(h => h.addEventListener('click', () => {
 function openSec(id, open) { const s = document.getElementById(id); if (s) s.classList.toggle('collapsed', !open); }
 
 const loading = $('#loading');
+const loadCancel = $('#loadCancel');
+let _cancelFn = null;
+function setCancel(fn) {
+  _cancelFn = fn;
+  if (!loadCancel) return;
+  loadCancel.style.display = fn ? '' : 'none';
+  loadCancel.disabled = false;
+  loadCancel.textContent = 'Cancel';
+}
+function clearCancel() { _cancelFn = null; if (loadCancel) loadCancel.style.display = 'none'; }
+if (loadCancel) loadCancel.addEventListener('click', () => {
+  if (!_cancelFn) return;
+  loadCancel.disabled = true;
+  loadCancel.textContent = 'Cancelling\u2026';
+  _cancelFn();
+});
 function showLoading(title, phase) {
   $('#loadTitle').textContent = title; $('#loadPhase').textContent = phase || '';
   $('#loadBar').style.width = '0%'; $('#loadPct').textContent = '0%'; $('#loadSub').textContent = '';
+  clearCancel();
   loading.classList.add('show');
 }
 function setProgress(phase, frac) {

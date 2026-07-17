@@ -12,7 +12,7 @@
 // live THREE.ShaderMaterial; physical presets carry their own make()/params.
 // Imported by showcase-engine.js. Same THREE singleton (esm.sh dedupes URLs).
 // ============================================================
-import * as THREE from 'https://esm.sh/three@0.160.0';
+import * as THREE from 'three';
 import { AXIS, LIQ, GLASS_ABOVE } from './shader-glue.js';
 
 // ---- core presets (curated set), one file per category ----

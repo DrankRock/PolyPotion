@@ -7,12 +7,12 @@
 // topology; OBJ export hands the lightened mesh back to you.
 // Loaded by dynamic import from Decimate.dc.html, like the other engines.
 // ============================================================
-import * as THREE from 'https://esm.sh/three@0.160.0';
+import * as THREE from 'three';
 import { applyOrbitScheme } from './nav-scheme.js';
-import { OrbitControls } from 'https://esm.sh/three@0.160.0/examples/jsm/controls/OrbitControls.js';
-import { FBXLoader } from 'https://esm.sh/three@0.160.0/examples/jsm/loaders/FBXLoader.js';
-import { GLTFLoader } from 'https://esm.sh/three@0.160.0/examples/jsm/loaders/GLTFLoader.js';
-import { OBJLoader } from 'https://esm.sh/three@0.160.0/examples/jsm/loaders/OBJLoader.js';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { OBJLoader } from 'three/addons/loaders/OBJLoader.js';
 import { fetchAssetBuffer } from './chunk-loader.js';
 import { decimateMesh } from './qem.js';
 
@@ -140,11 +140,11 @@ export class DEEngine {
   }
 
   // ---------------------------------------------------------- DECIMATE
-  async decimateTo(ratio) {
+  async decimateTo(ratio, job) {
     if (!this.origPos) return null;
     this._status('Decimating…');
     await new Promise(r => setTimeout(r, 20));
-    const out = decimateMesh(this.origPos, ratio, { onStatus: m => this._status(m) });
+    const out = await decimateMesh(this.origPos, ratio, { onStatus: m => this._status(m), job });
     if (!out) { this._status(''); return null; }
     this._setGeometry(out.position, out.normal);
     this.curTris = out.stats.outTris;
@@ -155,20 +155,21 @@ export class DEEngine {
   // "Make LODs" (Frontier Audit): decimate the ORIGINAL at set ratios and
   // export one GLB whose meshes are named <name>_LOD0..N — the naming Unity
   // (LOD Group) and Unreal auto-recognise. Ratios default to 100/60/30/12%.
-  async makeLODs(ratios) {
+  async makeLODs(ratios, job) {
     if (!this.origPos) throw new Error('Load a model first');
     ratios = (ratios && ratios.length ? ratios : [1, 0.6, 0.3, 0.12]);
-    const { GLTFExporter } = await import('https://esm.sh/three@0.160.0/examples/jsm/exporters/GLTFExporter.js');
+    const { GLTFExporter } = await import('three/addons/exporters/GLTFExporter.js');
     const group = new THREE.Group();
     group.name = (this.modelName || 'character') + '_LODs';
     const rungs = [];
     for (let i = 0; i < ratios.length; i++) {
+      if (job) job.checkpoint();
       this._status('LOD' + i + ' — ' + Math.round(ratios[i] * 100) + '%…');
       await new Promise(r => setTimeout(r, 20));
       let position, normal, tris;
       if (ratios[i] >= 0.999) { position = this.origPos; normal = null; tris = this.origTris; }
       else {
-        const out = decimateMesh(this.origPos, ratios[i], { onStatus: m => this._status(m) });
+        const out = await decimateMesh(this.origPos, ratios[i], { onStatus: m => this._status(m), job });
         if (!out) continue;
         position = out.position; normal = out.normal; tris = out.stats.outTris;
       }

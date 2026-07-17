@@ -12,7 +12,7 @@
        plane. (True vendoring is still better; this is the client-side half.)
    Bump CACHE_VERSION whenever shell files change so clients pick them up.
    ============================================================ */
-const CACHE_VERSION = 'pp-v40';
+const CACHE_VERSION = 'pp-v47';
 const CORE_CACHE = CACHE_VERSION + '-core';
 const RUNTIME_CACHE = CACHE_VERSION + '-runtime';
 const CDN_CACHE = CACHE_VERSION + '-cdn';
@@ -53,6 +53,10 @@ const CORE = [
   'studio3D_scripts/glb-optimize.js',
   'studio3D_scripts/atlas-merge.js',
   'studio3D_scripts/nav-scheme.js',
+  'studio3D_scripts/job.js',
+  'vendor/three/build/three.module.js',
+  'vendor/manifold-3d/manifold.js',
+  'vendor/manifold-3d/manifold.wasm',
   'studio3D_scripts/color-space.js',
   'studio3D_scripts/symmetry-map.js',
   'studio3D_scripts/sample-shapes.js',

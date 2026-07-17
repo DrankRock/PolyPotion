@@ -3,6 +3,15 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script type="importmap">
+{
+  "imports": {
+    "three": "./vendor/three/build/three.module.js",
+    "three/addons/": "./vendor/three/examples/jsm/",
+    "manifold-3d": "./vendor/manifold-3d/manifold.js"
+  }
+}
+</script>
 <title>PolyPotion — 3D Character Pipeline</title>
 <meta name="description" content="Free, open-source, all-in-one 3D character suite — rig, mocap, pose, sculpt, paint and animate, entirely in your browser. Nothing is uploaded.">
 <meta property="og:title" content="PolyPotion — 3D Character Pipeline">
@@ -20,6 +29,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;500;600;700&family=Nunito:ital,wght@0,400;0,600;0,700;0,800;1,600&display=swap" rel="stylesheet">
 <script src="theme.js"></script>
+<script src="studio3D_scripts/job.js"></script>
 <style>
 :root{
   --ink:#5a3e28; --ink-soft:#8a6a4a;
@@ -1818,7 +1828,7 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
   function closeExport() { $('#exportModal').style.display = 'none'; }
   { const b = $('#btnExport'); if (b) b.addEventListener('click', openExport); }
   { const b = $('#exClose'); if (b) b.addEventListener('click', closeExport); }
-  { const b = $('#exCancel'); if (b) b.addEventListener('click', closeExport); }
+  { const b = $('#exCancel'); if (b) b.addEventListener('click', () => { if (b.__job) { b.__job.cancel(); b.textContent = 'Cancelling\u2026'; } else closeExport(); }); }
   { const m = $('#exportModal'); if (m) m.addEventListener('click', e => { if (e.target === m) closeExport(); }); }
   { const s = $('#exScale'); if (s) s.addEventListener('input', e => { exState.scale = +e.target.value; $('#exScaleVal').textContent = (exState.scale / 100).toFixed(2) + '×'; }); }
   { const a = $('#exAuthor'); if (a) a.addEventListener('input', e => { exState.author = e.target.value; }); }
@@ -1826,11 +1836,15 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
   { const g = $('#exGo'); if (g) g.addEventListener('click', async () => {
       const it = activeChar && activeChar.it;
       if (!it) { toast('Open a character first — nothing to export', 'warn'); return; }
+      const job = window.JobController ? new window.JobController({ label: 'export', onProgress: (phase) => { g.textContent = '⏳ ' + (phase || 'Working…'); } }) : null;
+      const exC = $('#exCancel'); const exCLabel = exC ? exC.textContent : '';
+      if (exC && job) { exC.textContent = 'Cancel'; exC.__job = job; }
       g.disabled = true; const label = g.textContent; g.textContent = '⏳ Preparing…';
       try {
         const buf = await activeCharBuffer();
         if (!buf) { toast('Could not read the character data', 'error'); return; }
-        const r = await window.PPExport.exportCharacter(buf, { format: exState.format, upAxis: exState.up, scale: exState.scale / 100, name: it.label, skeleton: exState.skeleton || 'keep', author: exState.author || '', licence: exState.licence || 'CC BY 4.0', compress: exState.compress || 'none', atlas: !!exState.atlas });
+        const r = await window.PPExport.exportCharacter(buf, { format: exState.format, upAxis: exState.up, scale: exState.scale / 100, name: it.label, skeleton: exState.skeleton || 'keep', author: exState.author || '', licence: exState.licence || 'CC BY 4.0', compress: exState.compress || 'none', atlas: !!exState.atlas, job, onStatus: (m) => { g.textContent = '⏳ ' + m; } });
+        if (job) job.settle();
         let msg = 'Exported ' + r.file;
         if (r.atlas && r.atlas.before && r.atlas.after) msg += ' — atlas: ' + r.atlas.before.draws + '→' + r.atlas.after.draws + ' draw' + (r.atlas.after.draws === 1 ? '' : 's') + ', ' + r.atlas.before.materials + '→' + r.atlas.after.materials + ' material' + (r.atlas.after.materials === 1 ? '' : 's');
         if (r.compression && r.compression.method !== 'none') msg += ' — ' + r.compression.method + ': ' + (r.compression.before / 1048576).toFixed(1) + ' → ' + (r.compression.after / 1048576).toFixed(1) + ' MB (' + r.compression.savedPct + '% smaller)';
@@ -1838,8 +1852,11 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
         if (r.skeleton && r.skeleton.renamed) msg += ' — ' + r.skeleton.renamed + ' bones renamed (' + r.skeleton.detected + ' → ' + (exState.skeleton) + ')';
         if (r.vrm) msg += ' — ' + r.vrm.bones + ' humanoid bones, ' + r.vrm.expressions + ' expressions';
         toast(msg, 'success'); closeExport();
-      } catch (e) { toast('Export failed: ' + (e && e.message || e), 'error'); }
-      finally { g.disabled = false; g.textContent = label; }
+      } catch (e) {
+        if (window.JobController && window.JobController.isCancel(e)) toast('Export cancelled', 'info');
+        else toast('Export failed: ' + (e && e.message || e), 'error');
+      }
+      finally { g.disabled = false; g.textContent = label; if (exC) { exC.textContent = exCLabel; exC.__job = null; } }
     }); }
   const btnTheme = $('#btnTheme');
   function themeLabel(){ const ST = window.StudioTheme; if (!ST) return '◐ Theme'; const n = ST.get(); const m = (ST.META && ST.META[n]) || { label: n, dark: false }; return (m.dark ? '◑ ' : '◐ ') + m.label; }
@@ -2007,11 +2024,11 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
   // warm the shared HTTP cache with the three.js module graph so the first
   // tool workspace opens near-instantly (iframes share the cache).
   setTimeout(() => {
-    ['https://esm.sh/three@0.160.0',
-     'https://esm.sh/three@0.160.0/examples/jsm/controls/OrbitControls.js',
-     'https://esm.sh/three@0.160.0/examples/jsm/loaders/GLTFLoader.js',
-     'https://esm.sh/three@0.160.0/examples/jsm/loaders/FBXLoader.js',
-     'https://esm.sh/three@0.160.0/examples/jsm/loaders/OBJLoader.js'
+    ['three',
+     'three/addons/controls/OrbitControls.js',
+     'three/addons/loaders/GLTFLoader.js',
+     'three/addons/loaders/FBXLoader.js',
+     'three/addons/loaders/OBJLoader.js'
     ].forEach(u => { try { import(u).catch(() => {}); } catch (e) {} });
   }, 1500);
 

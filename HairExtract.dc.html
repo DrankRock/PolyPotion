@@ -3,6 +3,15 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<script type="importmap">
+{
+  "imports": {
+    "three": "./vendor/three/build/three.module.js",
+    "three/addons/": "./vendor/three/examples/jsm/",
+    "manifold-3d": "./vendor/manifold-3d/manifold.js"
+  }
+}
+</script>
 <script src="./support.js"></script>
 </head>
 <body>
@@ -256,8 +265,8 @@ class Component extends DCLogic {
   fileRef = (el) => { this.fileEl = el; };
 
   async componentDidMount() {
-    const T = await import('https://esm.sh/three@0.160.0');
-    const { OrbitControls } = await import('https://esm.sh/three@0.160.0/examples/jsm/controls/OrbitControls.js');
+    const T = await import('three');
+    const { OrbitControls } = await import('three/addons/controls/OrbitControls.js');
     this.T = T; this.OrbitControls = OrbitControls;
     if (!this.viewportEl) return;
     this.initScene();
@@ -520,14 +529,14 @@ class Component extends DCLogic {
       const buf = await file.arrayBuffer();
       let meshes = [];
       if (ext === 'glb' || ext === 'gltf') {
-        const { GLTFLoader } = await import('https://esm.sh/three@0.160.0/examples/jsm/loaders/GLTFLoader.js');
+        const { GLTFLoader } = await import('three/addons/loaders/GLTFLoader.js');
         const gltf = await new Promise((res, rej) => new GLTFLoader().parse(buf, '', res, rej));
         meshes = this.collect(gltf.scene);
       } else if (ext === 'fbx') {
-        const { FBXLoader } = await import('https://esm.sh/three@0.160.0/examples/jsm/loaders/FBXLoader.js');
+        const { FBXLoader } = await import('three/addons/loaders/FBXLoader.js');
         const obj = new FBXLoader().parse(buf, ''); meshes = this.collect(obj);
       } else if (ext === 'obj') {
-        const { OBJLoader } = await import('https://esm.sh/three@0.160.0/examples/jsm/loaders/OBJLoader.js');
+        const { OBJLoader } = await import('three/addons/loaders/OBJLoader.js');
         const obj = new OBJLoader().parse(new TextDecoder().decode(buf)); meshes = this.collect(obj);
       } else throw new Error('Unsupported: .' + ext);
       if (!meshes.length) throw new Error('No mesh found in file');
@@ -596,7 +605,7 @@ class Component extends DCLogic {
     if (!mesh) return;
     this.setState({ [key]: true });
     try {
-      const { GLTFExporter } = await import('https://esm.sh/three@0.160.0/examples/jsm/exporters/GLTFExporter.js');
+      const { GLTFExporter } = await import('three/addons/exporters/GLTFExporter.js');
       const grp = new this.T.Group(); grp.add(mesh.clone());
       new GLTFExporter().parse(grp, (buf) => {
         const blob = new Blob([buf], { type: 'model/gltf-binary' });
@@ -611,7 +620,7 @@ class Component extends DCLogic {
     this.setState({ exportingFull: true });
     (async () => {
       try {
-        const { GLTFExporter } = await import('https://esm.sh/three@0.160.0/examples/jsm/exporters/GLTFExporter.js');
+        const { GLTFExporter } = await import('three/addons/exporters/GLTFExporter.js');
         const grp = new this.T.Group(); grp.add(this.bodyMesh.clone()); grp.add(this.hairMesh.clone());
         new GLTFExporter().parse(grp, (buf) => {
           const blob = new Blob([buf], { type: 'model/gltf-binary' });

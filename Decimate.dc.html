@@ -3,6 +3,15 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<script type="importmap">
+{
+  "imports": {
+    "three": "./vendor/three/build/three.module.js",
+    "three/addons/": "./vendor/three/examples/jsm/",
+    "manifold-3d": "./vendor/manifold-3d/manifold.js"
+  }
+}
+</script>
 <script src="./studio3D_scripts/support.js"></script>
 </head>
 <body>
@@ -12,6 +21,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Spline+Sans+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="theme.js"></script>
+<script src="studio3D_scripts/job.js"></script>
 <style>
   html,body{margin:0;padding:0;height:100%;background:var(--gutter);}
   *{box-sizing:border-box;}
@@ -68,6 +78,9 @@
         <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:rgba(18,20,24,.8);color:var(--muted);">
           <div style="width:38px;height:38px;border:3px solid var(--panel-3);border-top-color:var(--accent);border-radius:50%;animation:de-spin .9s linear infinite;"></div>
           <div style="font-size:12px;">{{ loadingMsg }}</div>
+          <sc-if value="{{ canCancel }}" hint-placeholder-val="{{ false }}">
+            <button onClick="{{ cancelJob }}" style="margin-top:4px;padding:7px 16px;border-radius:6px;font-size:12px;font-weight:600;background:transparent;border:1px solid var(--edge);color:var(--text);cursor:pointer;">Cancel</button>
+          </sc-if>
         </div>
       </sc-if>
 
@@ -146,9 +159,18 @@ class Component extends DCLogic {
   }
 
   state = {
-    meshName: 'no model', loading: false, loadingMsg: '',
+    meshName: 'no model', loading: false, loadingMsg: '', canCancel: false,
     hasModel: false, origTris: 0, curTris: 0, target: 50, wire: false,
   };
+
+  _makeJob(msg) {
+    const job = new JobController({ label: 'decimate' });
+    this._job = job;
+    this.setState({ loading: true, loadingMsg: msg, canCancel: true });
+    return job;
+  }
+  _cancelActiveJob() { if (this._job) this._job.cancel(); this.setState({ loadingMsg: 'Cancelling\u2026', canCancel: false }); }
+  _endJob() { this._job = null; this.setState({ loading: false, canCancel: false }); }
 
   componentDidMount() { this.setupEmbed(); this.boot(); this.setupDrop(); }
 
@@ -182,20 +204,25 @@ class Component extends DCLogic {
   async runDecimate() {
     const eng = this._eng;
     if (!eng || !eng.hasModel()) { this.toast('Load a mesh first'); return; }
-    this.setState({ loading: true, loadingMsg: 'Decimating…' });
+    const job = this._makeJob('Decimating…');
     try {
-      const r = await eng.decimateTo(this.state.target / 100);
-      this.refresh(); this.setState({ loading: false });
+      const r = await eng.decimateTo(this.state.target / 100, job);
+      job.settle(); this.refresh();
       if (!r) this.toast('Nothing to reduce'); else this.toast('Reduced to ' + r.tris.toLocaleString() + ' tris (' + Math.round(r.tris / Math.max(1, r.origTris) * 100) + '% of original)');
-    } catch (e) { this.setState({ loading: false }); this.toast('Decimate failed: ' + (e && e.message || e)); }
+    } catch (e) {
+      if (JobController.isCancel(e)) this.toast('Decimate cancelled — mesh unchanged.');
+      else this.toast('Decimate failed: ' + (e && e.message || e));
+    } finally { this._endJob(); }
   }
 
   async doLODs() {
     const eng = this._eng;
     if (!eng || !eng.hasModel()) { this.toast('Load a mesh first'); return; }
     if (!eng.makeLODs) { this.toast('Engine update pending — reload the app (old version cached)'); return; }
+    const job = this._makeJob('Building LODs…');
     try {
-      const r = await eng.makeLODs();
+      const r = await eng.makeLODs(undefined, job);
+      job.settle();
       const blob = new Blob([r.buffer], { type: 'model/gltf-binary' });
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
@@ -203,7 +230,10 @@ class Component extends DCLogic {
       document.body.appendChild(a); a.click();
       setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
       this.toast('LOD chain: ' + r.rungs.map(x => 'LOD' + x.lod + ' ' + x.tris.toLocaleString()).join(' · '));
-    } catch (e) { this.toast(String(e && e.message || e)); }
+    } catch (e) {
+      if (JobController.isCancel(e)) this.toast('LODs cancelled.');
+      else this.toast(String(e && e.message || e));
+    } finally { this._endJob(); }
   }
 
   doExport() {
@@ -260,6 +290,7 @@ class Component extends DCLogic {
     return {
       meshName: st.meshName, dotColor: st.hasModel ? 'var(--good)' : 'var(--muted)',
       noModel: !st.hasModel && !st.loading, loading: st.loading, loadingMsg: st.loadingMsg,
+      canCancel: st.canCancel, cancelJob: () => this._cancelActiveJob(),
       modeBadge: st.hasModel ? 'DECIMATE — set a target, then Decimate' : 'IMPORT A MESH',
       pickFile: () => document.getElementById('de-file').click(),
       loadSample: () => this.pickSampleFlow(),

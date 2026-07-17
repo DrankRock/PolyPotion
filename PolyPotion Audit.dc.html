@@ -3,6 +3,15 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<script type="importmap">
+{
+  "imports": {
+    "three": "./vendor/three/build/three.module.js",
+    "three/addons/": "./vendor/three/examples/jsm/",
+    "manifold-3d": "./vendor/manifold-3d/manifold.js"
+  }
+}
+</script>
 <script src="./support.js"></script>
 </head>
 <body>
@@ -277,6 +286,7 @@ class Component extends DCLogic {
           { t: 'One navigation contract', d: 'nav-scheme.js: RIGHT-drag orbits, MIDDLE pans, wheel zooms — identical in all 24 viewport tools (was drifting between orbit and pan per tool).' },
           { t: 'One colour-management contract', d: 'color-space.js: import-tags every map sRGB-vs-linear (fixes FBX/OBJ normal washout), plus a Showcase view transform — sRGB / Neutral / AgX / ACES + exposure. Default sRGB keeps the classic look.' },
           { t: 'One symmetry contract', d: 'symmetry-map.js: buildMirrorMap gives every brush tool the same scale-relative X-mirror (was three different weld tolerances across Morph / Sculpt / Weight Paint); mirrorBonePartners resolves L/R twins.' },
+          { t: 'One compute-job contract', d: 'job.js: JobController unifies progress + a real cancel over one AbortController — worker termination, cooperative checkpoints, promise guarding. Wired into every long op: the HQ rig bind (the flagship Worker gap), the Decimate / LOD collapse loop, the whole Export pipeline (atlas-merge, glb-optimize + the export itself) and animation retarget. One Cancel button, one shape, everywhere.' },
           { t: 'Cross-origin isolation shipped', d: 'Deployable _headers (Netlify / CF Pages): COOP same-origin + COEP credentialless lights up SharedArrayBuffer so the WASM solvers thread — without require-corp breaking CDN loads. Docs reconciled.' },
           { t: 'Onboarding on-ramp', d: 'HumanGen in the dock as "start here" + a dismissible 4-step first-brew tour.' },
           { t: 'Honest, on-device AI', d: 'On-device Text-to-Pose (24-pose library, no key); NETWORKED badge + banner when a cloud provider is chosen.' },
@@ -311,7 +321,6 @@ class Component extends DCLogic {
 
   smallData() {
     return [
-      'Progress bar AND a cancel button on every long operation (parse/solve in workers where possible)',
       'Rolling 2\u20133 snapshots per character instead of one overwritable record',
       'GIF + transparent-background options for turntable capture',
       'A visible per-tool history panel on top of the uniform undo',

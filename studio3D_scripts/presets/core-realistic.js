@@ -3,7 +3,7 @@
 // Physical (MeshPhysicalMaterial) + hand-written shader looks.
 // Merged into SHADER_PRESETS by ../shader-lib.js.
 // ============================================================
-import * as THREE from 'https://esm.sh/three@0.160.0';
+import * as THREE from 'three';
 
 export const CORE_REALISTIC = [
   {

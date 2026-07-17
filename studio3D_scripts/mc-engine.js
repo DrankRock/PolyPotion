@@ -1,11 +1,11 @@
 // MoCap 3D engine — loads rigged FBX/GLB characters (keeping their skeleton)
 // and retargets MediaPipe pose world-landmarks onto Mixamo-named bones.
-import * as THREE from 'https://esm.sh/three@0.160.0';
+import * as THREE from 'three';
 import { applyOrbitScheme } from './nav-scheme.js';
 import { fetchAssetBuffer } from './chunk-loader.js';
-import { FBXLoader } from 'https://esm.sh/three@0.160.0/examples/jsm/loaders/FBXLoader.js';
-import { GLTFLoader } from 'https://esm.sh/three@0.160.0/examples/jsm/loaders/GLTFLoader.js';
-import { OrbitControls } from 'https://esm.sh/three@0.160.0/examples/jsm/controls/OrbitControls.js';
+import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
 const norm = (n) => (n || '').toLowerCase().replace(/mixamorig\d*/g, '').replace(/[\s_:.\-]/g, '');
 

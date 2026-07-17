@@ -12,7 +12,7 @@
 // live in engine.root so they align 1:1 with the element mesh at origin.
 // On commit it writes welded positions back to every triangle corner.
 // ============================================================
-import * as THREE from 'https://esm.sh/three@0.160.0';
+import * as THREE from 'three';
 
 const V = (x, y, z) => new THREE.Vector3(x, y, z);
 const QUANT = 2000; // weld precision — matches the engine's island/adjacency weld

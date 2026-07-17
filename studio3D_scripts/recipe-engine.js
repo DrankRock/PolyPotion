@@ -13,14 +13,14 @@
 // node the user selects — the runners never touch it.
 // Loaded by dynamic import from Recipe.dc.html, like the other engines.
 // ============================================================
-import * as THREE from 'https://esm.sh/three@0.160.0';
+import * as THREE from 'three';
 import { applyOrbitScheme } from './nav-scheme.js';
-import { OrbitControls } from 'https://esm.sh/three@0.160.0/examples/jsm/controls/OrbitControls.js';
-import { FBXLoader } from 'https://esm.sh/three@0.160.0/examples/jsm/loaders/FBXLoader.js';
-import { GLTFLoader } from 'https://esm.sh/three@0.160.0/examples/jsm/loaders/GLTFLoader.js';
-import { OBJLoader } from 'https://esm.sh/three@0.160.0/examples/jsm/loaders/OBJLoader.js';
-import { GLTFExporter } from 'https://esm.sh/three@0.160.0/examples/jsm/exporters/GLTFExporter.js';
-import { mergeVertices } from 'https://esm.sh/three@0.160.0/examples/jsm/utils/BufferGeometryUtils.js';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { OBJLoader } from 'three/addons/loaders/OBJLoader.js';
+import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
+import { mergeVertices } from 'three/addons/utils/BufferGeometryUtils.js';
 import { decimateMesh } from './qem.js';
 import { voxelRemesh } from './remesh.js';
 import { buildBVH, rayOccluded } from './ao-engine.js';
@@ -154,19 +154,21 @@ export const STEPS = {
     async run(buffer, p, ctx) {
       const root = await parseGLB(buffer);
       const ratio = Math.max(0.03, Math.min(0.95, (p.keep == null ? 40 : p.keep) / 100));
-      eachMesh(root, m => {
+      const meshes = [];
+      root.traverse(o => { if (o.isMesh && o.geometry && o.geometry.attributes && o.geometry.attributes.position) meshes.push(o); });
+      for (const m of meshes) {
         const g = m.geometry.index ? m.geometry.toNonIndexed() : m.geometry;
         const pos = g.attributes.position.array;
         ctx.onStatus('Decimating ' + (pos.length / 9 | 0).toLocaleString() + ' tris…');
-        const r = decimateMesh(pos instanceof Float32Array ? pos : new Float32Array(pos), ratio, { onStatus: ctx.onStatus });
-        if (!r) return;
+        const r = await decimateMesh(pos instanceof Float32Array ? pos : new Float32Array(pos), ratio, { onStatus: ctx.onStatus, job: ctx.job });
+        if (!r) continue;
         const ng = new THREE.BufferGeometry();
         ng.setAttribute('position', new THREE.BufferAttribute(r.position, 3));
         ng.setAttribute('normal', new THREE.BufferAttribute(r.normal, 3));
         const mat = Array.isArray(m.material) ? m.material[0] : m.material;
         if (mat) { mat.map = null; mat.vertexColors = false; mat.needsUpdate = true; }
         m.geometry = ng;
-      });
+      }
       return { buffer: await exportGLB(root), stats: statsOf(root) };
     },
   },

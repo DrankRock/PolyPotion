@@ -204,6 +204,96 @@ audit lists under Platform hardening / Audience — don't reopen the rest.
 
 ## Log
 
+- 2026-07-17 — **Job contract rollout complete: animation retarget**
+  (`retarget-engine.js`, `Retarget.dc.html`). The last long op. `exportGLB(job)`
+  now `guard()`s its GLTFExporter.parse so a cancel abandons the pack before the
+  download; `Retarget.dc.html` loads `job.js`, shows a **Cancel** button in the
+  export overlay, and treats cancel as a clean no-op. `retarget()` itself is a
+  single atomic `SkeletonUtils.retargetClip` call that can't be interrupted
+  mid-call, so `runRetarget()` was made async only to paint the busy overlay
+  before blocking (honest: no Cancel offered on the atomic step, only on the
+  guardable export). **Every long op in the suite now shares the JobController
+  contract** — rig bind, decimate/LOD, the whole export pipeline, retarget.
+  The "progress + cancel on every long op" follow-up is closed. sw.js → pp-v46.
+
+
+- 2026-07-17 — **Job contract rolled through the whole Export pipeline**
+  (`exporter.js`, `atlas-merge.js`, `glb-optimize.js`, `index.html`). The
+  Export dialog ran three back-to-back heavy stages (texture atlas → GLTF
+  serialize → Draco/meshopt compress) with only a disabled "⏳ Preparing…"
+  button and no way out. Threaded a `JobController` through
+  `exportCharacter(buffer, {…, job, onStatus})`: it checkpoints between every
+  stage, `guard()`s the opaque GLTFExporter.parse + optimize promises (so a
+  cancel abandons the result before the download fires), and reports the live
+  phase back to the button. `mergeToAtlas` checkpoints per group + per mesh;
+  `optimizeGLB` checkpoints between its (black-box) glTF-Transform passes. In
+  the shell, the modal's existing **Cancel** button doubles as a job-cancel
+  while an export is running (falls back to closing the dialog otherwise), and
+  the Go button streams the phase text ("Atlasing textures…", "Compressing
+  (meshopt)…"). Cancel is treated as a clean info toast, not a failure.
+  sw.js → pp-v45. Last long op left on the contract: animation retarget.
+
+
+- 2026-07-17 — **Job contract rolled to Decimate + LOD** (`qem.js`,
+  `decimate-engine.js`, `Decimate.dc.html`, `recipe-engine.js`). The quadric
+  collapse loop was synchronous and blocked the main thread, so its overlay
+  spinner could never be cancelled \u2014 a heavy LOD chain (3 decimations back to
+  back) meant a multi-second freeze. Made `decimateMesh` **async + cooperative**:
+  at the existing 8191-tri checkpoint it now yields (`await job.tick()`) so a
+  Cancel click is processed, reports a progress fraction, and throws
+  `JobCancelled` when cancelled. `decimateTo(ratio, job)` / `makeLODs(ratios, job)`
+  thread the job through; `Decimate.dc.html` loads `job.js`, shows a **Cancel**
+  button in the busy overlay, and treats cancel as a clean no-op (mesh
+  unchanged). Also fixed the other `decimateMesh` caller (`recipe-engine.js`
+  decimate step) to `await` the now-async function (was relying on a sync
+  return). sw.js \u2192 pp-v44. Remaining long ops on the contract: atlas-merge,
+  glb-optimize, retarget, export.
+
+
+- 2026-07-17 — **Floor: the compute-job contract** (`studio3D_scripts/job.js`).
+  Long ops improvised cancellation five different ways (Bake Maps `_cancel`
+  flag, Director `cancelRecord`, SW AbortController) and the flagship — the HQ
+  rig bind, which runs in `skin-worker.js` — had NO cancel at all: start a
+  voxel-geodesic solve on a heavy mesh and you waited it out. New `JobController`
+  wraps one AbortController and carries `progress(phase,frac)`, `checkpoint()` /
+  `await tick()` cooperative cancel points for main-thread loops,
+  `attachWorker()` (cancel → `worker.terminate()`), `guard(promise)`, and a
+  `JobController.isCancel(err)` classifier (cancellation rejects as a
+  `JobCancelled` / message `'cancelled'`, treated as a clean user action, not a
+  failure). Wired into `E.bind` (engine.js) + `bindHQ` (terminates the worker
+  and rejects cancelled on abort) + `runBind` (app.js): the loading overlay now
+  shows a **Cancel** button during a bind; cancelling drops you back to joint
+  placement with joints untouched. This is the Phase-1 seed — decimate,
+  atlas-merge, glb-optimize, retarget and export roll onto the same shape next.
+  job.js added to sw.js CORE precache; sw.js \u2192 pp-v43.
+
+
+- 2026-07-16 — **Floor: dependency imports unified (vendoring step 1/2)**.
+  The suite had TWO CDNs and TWO mechanisms: AutoRig + `rig_scripts/engine.js`
+  used an import map (jsDelivr) with bare `three`/`three/addons/` specifiers,
+  while all 14 `studio3D_scripts` engines hard-coded ~40 `esm.sh/three@0.160.0`
+  URLs directly. Unified everything onto the import-map + bare-specifier
+  convention: swapped every esm.sh three URL → bare `three`/`three/addons/`
+  across 35 JS files + inline imports in 4 HTML files; injected the canonical
+  map (three + three/addons + manifold-3d, jsDelivr) into index.html + all 32
+  tool `*.dc.html` docs (AutoRig already had it). manifold-3d centralized too.
+  Runtime bytes identical (same version), so no behaviour change — now the
+  CDN/version lives in ONE map block per doc. Actual offline drop-in (files into
+  `vendor/` + one find-replace of the map URLs) is documented in `vendor/README.md`;
+  that is step 2/2 and needs the binaries on a networked machine. Remaining CDN
+  deps (non-three): mp4-muxer, MediaPipe. sw.js → pp-v42.
+
+
+- 2026-07-16 — **Floor: A-pose fit in Rig** (`rig_scripts/engine.js` `setArmPose` +
+  `chkApose` in `AutoRig.html`/`app.js`). Most meshy.ai catalog meshes rest in
+  A-pose, so the T-pose joint template dropped arm/finger joints in empty space
+  on "Fit to mesh". New "Arms hang in A-pose" checkbox rotates the arm + finger
+  joint homes ~41° down about each side’s shoulder (mirrored per side) so auto-fit
+  lands them on the angled arms; re-applied on fresh mesh load while checked
+  (batch rigging), toggle off restores the T-pose template. Roadmap doc
+  (`uploads/Audit.html`) marked shipped. sw.js → pp-v41.
+
+
 - 2026-07-16 — **Big bet #2 shipped: multi-character stage** (`Stage.dc.html`
   + `stage-engine.js`; took over the disabled "Scene" dock slot). Drop several
   library characters/props onto one ground; each actor is wrapped

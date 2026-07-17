@@ -13,12 +13,12 @@
 // The skinned mesh deforms live as you pose. Loaded by dynamic import from
 // Pose.dc.html, same pattern as the other engines.
 // ============================================================
-import * as THREE from 'https://esm.sh/three@0.160.0';
+import * as THREE from 'three';
 import { applyOrbitScheme } from './nav-scheme.js';
 import { fetchAssetBuffer } from './chunk-loader.js';
-import { OrbitControls } from 'https://esm.sh/three@0.160.0/examples/jsm/controls/OrbitControls.js';
-import { FBXLoader } from 'https://esm.sh/three@0.160.0/examples/jsm/loaders/FBXLoader.js';
-import { GLTFLoader } from 'https://esm.sh/three@0.160.0/examples/jsm/loaders/GLTFLoader.js';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
 const V = (x, y, z) => new THREE.Vector3(x, y, z);
 const norm = (n) => (n || '').toLowerCase().replace(/mixamorig\d*/g, '').replace(/[\s_:.\-]/g, '');

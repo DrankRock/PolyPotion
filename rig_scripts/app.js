@@ -52,6 +52,7 @@ async function handleFile(file, keepLoading) {
     loadedName = info.name;
     // build joints from template
     joints = E.buildJoints(RigTemplate.build(), groupsOn);
+    if (typeof chkApose !== 'undefined' && chkApose && chkApose.checked) E.setArmPose('a');
     renderGroups();
     dzStage.classList.add('hide');
     $('#vpTools').classList.remove('hide');
@@ -129,6 +130,17 @@ function updateBadge() {
 $('#btnAutoFit').addEventListener('click', () => { E.autoFit(); markPlacedReset(); toast('Joints fit to mesh bounds', 'success'); });
 $('#btnReset').addEventListener('click', () => { E.resetPoses(); markPlacedReset(); });
 function markPlacedReset() { joints = joints.map(j => ({ ...j, placed: false })); renderGroups(); }
+
+// ---- A-pose fit: drop the arm joints to match a relaxed (~45deg) A-pose mesh ----
+const chkApose = $('#chkApose');
+if (chkApose) chkApose.addEventListener('change', () => {
+  if (!joints.length) { chkApose.checked = false; toast('Load a mesh first', 'warn'); return; }
+  E.setArmPose(chkApose.checked ? 'a' : 't');
+  markPlacedReset();
+  toast(chkApose.checked
+    ? 'Arm joints dropped to A-pose \u2014 nudge if needed, then bind. Turn off for T-pose meshes.'
+    : 'Arm joints back to T-pose.', 'success');
+});
 
 // ============================================================
 // SELECTION

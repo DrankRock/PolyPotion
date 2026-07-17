@@ -39,7 +39,7 @@ function dracoEncoder() {
     dracoEncP = withTimeout(new Promise((res, rej) => {
       if (self.DracoEncoderModule) return res();
       const s = document.createElement('script');
-      s.src = 'https://esm.sh/three@0.160.0/examples/jsm/libs/draco/draco_encoder.js?raw';
+      s.src = 'three/addons/libs/draco/draco_encoder.js?raw';
       s.onload = res; s.onerror = () => rej(new Error('Draco encoder failed to load'));
       document.head.appendChild(s);
     }), 20000, 'Draco encoder download').then(() => {
@@ -69,10 +69,13 @@ function meshoptEncoder() {
 export async function optimizeGLB(buffer, opts) {
   opts = opts || {};
   const method = opts.method || 'draco';
+  const job = opts.job || null;   // JobController → checkpoint between (opaque) stages
+  const ck = () => { if (job) job.checkpoint(); };
   const before = buffer.byteLength;
   if (method === 'none') return { buffer, before, after: before, savedPct: 0, method };
 
   const { core, ext, fns } = await lib();
+  ck();
   const io = new core.WebIO().registerExtensions(ext.ALL_EXTENSIONS);
 
   const deps = {};
@@ -81,9 +84,11 @@ export async function optimizeGLB(buffer, opts) {
   io.registerDependencies(deps);
 
   const doc = await io.readBinary(new Uint8Array(buffer));
+  ck();
 
   // safe clean-up passes first (no visual change)
   await doc.transform(fns.dedup(), fns.prune());
+  ck();
 
   if (method === 'draco') {
     await doc.transform(fns.draco({ method: 'edgebreaker' }));
@@ -91,6 +96,7 @@ export async function optimizeGLB(buffer, opts) {
     // meshopt: reorder + quantize, then EXT_meshopt_compression on write
     await doc.transform(fns.meshopt({ encoder: await meshoptEncoder(), level: 'medium' }));
   }
+  ck();
 
   const out = await io.writeBinary(doc);
   const ab = out.buffer.slice(out.byteOffset, out.byteOffset + out.byteLength);

@@ -11,8 +11,8 @@
 <script type="importmap">
 {
   "imports": {
-    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
-    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+    "three": "./vendor/three/build/three.module.js",
+    "three/addons/": "./vendor/three/examples/jsm/"
   }
 }
 </script>
@@ -319,7 +319,11 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;heigh
           <div class="btn-row" style="margin-top:4px;">
             <button class="btn ghost sm" id="btnAutoFit">⤢ Fit to mesh</button>
             <button class="btn ghost sm" id="btnReset">↺ Reset poses</button>
-          </div><div class="btn-row" style="margin-top:7px;"><button class="btn ghost sm" id="btnMirrorRL" title="Place the RIGHT half carefully, then stamp it onto the left">⇋ Mirror R → L</button><button class="btn ghost sm" id="btnMirrorLR" title="Place the LEFT half carefully, then stamp it onto the right">⇋ Mirror L → R</button></div><button class="btn ghost sm" id="btnCenterAll" style="width:100%;margin-top:7px;" title="Snap every joint to the middle of the mesh volume around it (keeps its height)">◎ Auto-center all joints in mesh</button><a href="RigGuide.html" target="_blank" class="note" style="display:block;margin-top:10px;color:#ffd2bb;text-decoration:none;border:1px solid rgba(255,79,0,0.28);background:rgba(255,79,0,0.09);border-radius:7px;padding:8px 11px;">✦ Not sure where joints go? <b>Open the placement guide →</b></a>
+          </div>
+          <label id="aposeRow" style="display:flex;align-items:center;gap:7px;margin-top:7px;font-size:11px;color:var(--muted);cursor:pointer;user-select:none;" title="Turn on if the character's arms hang at ~45deg (A-pose). Fit to mesh then drops the arm joints onto the arms instead of straight out.">
+            <input type="checkbox" id="chkApose" style="accent-color:#ff5a1f;width:14px;height:14px;cursor:pointer;flex:none;">
+            <span>Arms hang in <b style="color:var(--text)">A-pose</b> — drop arm joints to fit</span>
+          </label><div class="btn-row" style="margin-top:7px;"><button class="btn ghost sm" id="btnMirrorRL" title="Place the RIGHT half carefully, then stamp it onto the left">⇋ Mirror R → L</button><button class="btn ghost sm" id="btnMirrorLR" title="Place the LEFT half carefully, then stamp it onto the right">⇋ Mirror L → R</button></div><button class="btn ghost sm" id="btnCenterAll" style="width:100%;margin-top:7px;" title="Snap every joint to the middle of the mesh volume around it (keeps its height)">◎ Auto-center all joints in mesh</button><a href="RigGuide.html" target="_blank" class="note" style="display:block;margin-top:10px;color:#ffd2bb;text-decoration:none;border:1px solid rgba(255,79,0,0.28);background:rgba(255,79,0,0.09);border-radius:7px;padding:8px 11px;">✦ Not sure where joints go? <b>Open the placement guide →</b></a>
         </div>
       </div>
     </aside>
@@ -385,6 +389,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;heigh
         <div class="barwrap"><div class="bar" id="loadBar"></div></div>
         <div class="pct" id="loadPct">0%</div>
         <div class="sub" id="loadSub"></div>
+        <button class="btn ghost sm" id="loadCancel" style="display:none;margin-top:20px;">Cancel</button>
       </div>
     </div>
 
@@ -556,6 +561,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;heigh
 <script src="studio3D_scripts/template.js"></script>
 <script src="studio3D_scripts/presets.js"></script>
 <script src="studio3D_scripts/fbx-export.js"></script>
+<script src="studio3D_scripts/job.js"></script>
 <script type="module" src="studio3D_scripts/engine.js"></script>
 <script type="module" src="studio3D_scripts/app.js"></script>
 </body>

@@ -4,9 +4,9 @@
 // cards show the actual mesh instead of a glyph. Runs on-device, disposes its
 // WebGL context immediately (no context leak), and never touches the network.
 // ============================================================
-import * as THREE from 'https://esm.sh/three@0.160.0';
-import { GLTFLoader } from 'https://esm.sh/three@0.160.0/examples/jsm/loaders/GLTFLoader.js';
-import { FBXLoader } from 'https://esm.sh/three@0.160.0/examples/jsm/loaders/FBXLoader.js';
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
 
 async function render(buffer, ext, size) {
   size = size || 256;

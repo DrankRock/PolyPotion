@@ -3,6 +3,15 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<script type="importmap">
+{
+  "imports": {
+    "three": "./vendor/three/build/three.module.js",
+    "three/addons/": "./vendor/three/examples/jsm/",
+    "manifold-3d": "./vendor/manifold-3d/manifold.js"
+  }
+}
+</script>
 <script src="./studio3D_scripts/support.js"></script>
 </head>
 <body>
@@ -12,6 +21,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Spline+Sans+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="theme.js"></script>
+<script src="studio3D_scripts/job.js"></script>
 <style>
   html,body{margin:0;padding:0;height:100%;background:var(--gutter);}
   *{box-sizing:border-box;}
@@ -63,6 +73,9 @@
         <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:rgba(18,20,24,.8);color:var(--muted);">
           <div style="width:38px;height:38px;border:3px solid var(--panel-3);border-top-color:var(--accent);border-radius:50%;animation:rt-spin .9s linear infinite;"></div>
           <div style="font-size:12px;">{{ loadingMsg }}</div>
+          <sc-if value="{{ canCancel }}" hint-placeholder-val="{{ false }}">
+            <button onClick="{{ cancelJob }}" style="margin-top:4px;padding:7px 16px;border-radius:6px;font-size:12px;font-weight:600;background:transparent;border:1px solid var(--edge);color:var(--text);cursor:pointer;">Cancel</button>
+          </sc-if>
         </div>
       </sc-if>
 
@@ -163,7 +176,16 @@
 </x-dc>
 <script type="text/x-dc" data-dc-script>
 class Component extends DCLogic {
-  state = { loading: false, loadingMsg: '', preserveHips: false, playing: true, tick: 0 };
+  state = { loading: false, loadingMsg: '', canCancel: false, preserveHips: false, playing: true, tick: 0 };
+
+  _makeJob(msg) {
+    const job = new JobController({ label: 'retarget' });
+    this._job = job;
+    this.setState({ loading: true, loadingMsg: msg, canCancel: true });
+    return job;
+  }
+  _cancelActiveJob() { if (this._job) this._job.cancel(); this.setState({ loadingMsg: 'Cancelling\u2026', canCancel: false }); }
+  _endJob() { this._job = null; this.setState({ loading: false, canCancel: false }); }
 
   componentDidMount() { this.setupEmbed(); this.boot(); this.setupDrop(); }
 
@@ -194,18 +216,25 @@ class Component extends DCLogic {
     }
   }
 
-  runRetarget() {
+  async runRetarget() {
     if (!this._eng) return;
+    // retargetClip is one atomic synchronous call — show the overlay and let it
+    // paint before we block the thread (no mid-call cancel is possible).
+    this.setState({ loading: true, loadingMsg: 'Retargeting…', canCancel: false });
+    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
     try {
       const r = this._eng.retarget({ preserveHips: this.state.preserveHips });
       this.toast('Retargeted — ' + r.tracks + ' tracks over ' + r.bones + ' bones, ' + r.duration.toFixed(2) + 's');
     } catch (e) { this.toast(String(e && e.message || e)); }
+    finally { this.setState({ loading: false }); }
   }
 
   async doExport() {
     if (!this._eng) return;
+    const job = this._makeJob('Packing GLB…');
     try {
-      const buf = await this._eng.exportGLB();
+      const buf = await this._eng.exportGLB(job);
+      job.settle();
       const st = this._eng.stats();
       const blob = new Blob([buf], { type: 'model/gltf-binary' });
       const a = document.createElement('a');
@@ -214,7 +243,10 @@ class Component extends DCLogic {
       document.body.appendChild(a); a.click();
       setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
       this.toast('Exported ' + a.download);
-    } catch (e) { this.toast(String(e && e.message || e)); }
+    } catch (e) {
+      if (JobController.isCancel(e)) this.toast('Export cancelled.');
+      else this.toast(String(e && e.message || e));
+    } finally { this._endJob(); }
   }
 
   setupDrop() {
@@ -264,6 +296,7 @@ class Component extends DCLogic {
       empty: !s.source && !s.target && !st.loading,
       hasAny: !!(s.source || s.target),
       loading: st.loading, loadingMsg: st.loadingMsg,
+      canCancel: st.canCancel, cancelJob: () => this._cancelActiveJob(),
       pickSource: () => document.getElementById('rt-src-file').click(),
       pickTarget: () => document.getElementById('rt-tgt-file').click(),
       srcBadge: s.source ? convLabel(s.source.convention).toUpperCase() : 'EMPTY',

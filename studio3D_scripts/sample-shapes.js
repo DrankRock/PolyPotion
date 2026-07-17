@@ -10,9 +10,9 @@
 //       pick = { kind:'shape', buffer, name } | { kind:'library' } | { kind:'humangen' }
 // Used by every tool's empty-state "Load sample" button.
 // ============================================================
-import * as THREE from 'https://esm.sh/three@0.160.0';
-import { mergeGeometries } from 'https://esm.sh/three@0.160.0/examples/jsm/utils/BufferGeometryUtils.js';
-import { GLTFExporter } from 'https://esm.sh/three@0.160.0/examples/jsm/exporters/GLTFExporter.js';
+import * as THREE from 'three';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
 
 // ---------------------------------------------------------- geometry
 function g(geo, x, y, z, rx, rz) {

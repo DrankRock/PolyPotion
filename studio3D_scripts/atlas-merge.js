@@ -14,8 +14,8 @@
 //     report = { before:{draws,materials,textures}, after:{...}, atlas:size }
 // ============================================================
 
-import * as THREE from 'https://esm.sh/three@0.160.0';
-import { mergeGeometries } from 'https://esm.sh/three@0.160.0/examples/jsm/utils/BufferGeometryUtils.js';
+import * as THREE from 'three';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 
 // Draw a source texture (or a solid colour) into one atlas cell.
 function paintCell(ctx, tex, color, cx, cy, cell, fallbackWhite) {
@@ -55,6 +55,7 @@ function texFromCanvas(cv, srgb) {
 export async function mergeToAtlas(scene, opts) {
   opts = opts || {};
   const status = opts.onStatus || function () {};
+  const job = opts.job || null;   // JobController → cooperative cancel between groups/meshes
   const CAP = Math.min(Math.max(opts.size || 2048, 512), 4096);
   scene.updateMatrixWorld(true);
 
@@ -79,6 +80,7 @@ export async function mergeToAtlas(scene, opts) {
 
   let groupIdx = 0;
   for (const [skeleton, list] of groups) {
+    if (job) job.checkpoint();
     groupIdx++;
     if (list.length < 2) continue;    // a lone mesh in its group — leave it
     status('Atlasing group ' + groupIdx + ' (' + list.length + ' meshes)…');
@@ -140,6 +142,7 @@ export async function mergeToAtlas(scene, opts) {
     const scaleU = cell / W, scaleV = cell / H;
     const geos = [];
     list.forEach((m, mi) => {
+      if (job) job.checkpoint();
       let geo = m.geometry.index ? m.geometry.toNonIndexed() : m.geometry.clone();
       // bake the mesh's world transform into the geometry so merged parts keep
       // their relative placement (skinned meshes stay in bind space → identity)

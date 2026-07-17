@@ -25,9 +25,11 @@ class MinHeap {
   pop() { const a = this.a; const top = a[0], last = a.pop(); if (a.length) { a[0] = last; let i = 0, n = a.length; for (;;) { let l = i * 2 + 1, r = l + 1, s = i; if (l < n && a[l].cost < a[s].cost) s = l; if (r < n && a[r].cost < a[s].cost) s = r; if (s === i) break; [a[s], a[i]] = [a[i], a[s]]; i = s; } } return top; }
 }
 
-export function decimateMesh(positions, target, opts) {
+export async function decimateMesh(positions, target, opts) {
   opts = opts || {};
   const status = opts.onStatus || function () {};
+  const job = opts.job || null;   // JobController → cooperative cancel + yield
+  const onProgress = opts.onProgress || null;
   const inTris = (positions.length / 9) | 0;
   if (inTris < 4) return null;
   const targetTris = target < 1 ? Math.max(4, Math.round(inTris * target)) : Math.max(4, Math.round(target));
@@ -172,7 +174,13 @@ export function decimateMesh(positions, target, opts) {
     // recompute pairs around i
     neighborsOf(i, tmpN);
     for (const k of tmpN) pushPair(i, k);
-    if ((faceCount & 8191) === 0) status('Collapsing… ' + faceCount.toLocaleString() + ' tris');
+    if ((faceCount & 8191) === 0) {
+      status('Collapsing… ' + faceCount.toLocaleString() + ' tris');
+      if (onProgress) onProgress((nf - faceCount) / Math.max(1, nf - targetTris));
+      // Yield to the event loop so a Cancel click can be processed, then
+      // checkpoint. job.tick() throws JobCancelled when cancelled.
+      if (job) await job.tick();
+    }
   }
 
   // ---- compact survivors ----
