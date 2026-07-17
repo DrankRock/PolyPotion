@@ -1075,6 +1075,7 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
   }
   function idbNuke() {
     try { if (IDB._db) { IDB._db.close(); IDB._db = null; } indexedDB.deleteDatabase(IDB.name); } catch (e) {}
+    opfsClear();
     _idbWarned = false;
     session.characters = session.characters.filter(c => !c.restored);
     renderLib(); toast('Library storage reset \u2014 saved characters wiped', 'warn');
@@ -1092,15 +1093,55 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
     try { const db = await idbOpen(); return await new Promise((res, rej) => { const tx = db.transaction(IDB.store, mode); const st = tx.objectStore(IDB.store); const out = fn(st); tx.oncomplete = () => res(out && out.result !== undefined ? out.result : out); tx.onerror = () => rej(tx.error); }); }
     catch (e) { return null; }
   }
-  function idbSaveChar(it) {
+  // ---------- OPFS mesh store ----------
+  // The heavy GLB payloads live as files in the Origin Private File System, not
+  // as ArrayBuffers inside IndexedDB. OPFS avoids the structured-clone cost of
+  // big buffers, doesn't bloat the IDB, and is roomier under quota. The IDB
+  // record becomes a light manifest (metadata + an `opfs:true` flag); the buffer
+  // is keyed by the same record id. Falls back to buffer-in-IDB when OPFS is
+  // missing (older Safari), and still restores legacy buffer-in-IDB records.
+  const OPFS = { dir: 'meshes', _root: null, ok: !!(navigator.storage && navigator.storage.getDirectory) };
+  async function opfsDir() {
+    if (!OPFS.ok) return null;
+    if (OPFS._root) return OPFS._root;
+    try { const root = await navigator.storage.getDirectory(); OPFS._root = await root.getDirectoryHandle(OPFS.dir, { create: true }); return OPFS._root; }
+    catch (e) { OPFS.ok = false; return null; }
+  }
+  const opfsKey = (id) => id.replace(/[^A-Za-z0-9_.-]/g, '_') + '.glb';
+  async function opfsWrite(id, buffer) {
+    const dir = await opfsDir(); if (!dir) return false;
+    try { const fh = await dir.getFileHandle(opfsKey(id), { create: true }); const w = await fh.createWritable(); await w.write(buffer); await w.close(); return true; }
+    catch (e) { return false; }
+  }
+  async function opfsRead(id) {
+    const dir = await opfsDir(); if (!dir) return null;
+    try { const fh = await dir.getFileHandle(opfsKey(id)); return await (await fh.getFile()).arrayBuffer(); }
+    catch (e) { return null; }
+  }
+  async function opfsDelete(id) {
+    const dir = await opfsDir(); if (!dir) return;
+    try { await dir.removeEntry(opfsKey(id)); } catch (e) {}
+  }
+  async function opfsClear() {
+    if (!OPFS.ok) return;
+    try { const root = await navigator.storage.getDirectory(); await root.removeEntry(OPFS.dir, { recursive: true }); OPFS._root = null; } catch (e) {}
+  }
+
+  // metaOnly=true skips re-writing the (unchanged) OPFS payload — e.g. when only
+  // a thumbnail changed — so a thumbnail save doesn't re-serialize the whole GLB.
+  async function idbSaveChar(it, metaOnly) {
     if (!it._buffer) return;
+    const id = it.path + '|' + it.label;
     try {
-      const rec = { id: it.path + '|' + it.label, label: it.label, path: it.path, ext: it.ext || 'glb', rig: it.rig || 'autorig', rigged: it.rigged, buffer: it._buffer.slice(0), pfp: it.pfp || null, ts: Date.now() };
+      let useOpfs = OPFS.ok;
+      if (useOpfs && !(metaOnly && it._opfs)) { const ok = await opfsWrite(id, it._buffer.slice(0)); useOpfs = ok; it._opfs = ok; }
+      const rec = { id, label: it.label, path: it.path, ext: it.ext || 'glb', rig: it.rig || 'autorig', rigged: it.rigged, pfp: it.pfp || null, ts: Date.now() };
+      if (useOpfs) rec.opfs = true; else rec.buffer = it._buffer.slice(0);   // fallback: buffer in IDB
       const p = idbTx('readwrite', st => st.put(rec));
       if (p && p.then) p.then(ok => { if (ok === null) idbWarn(); else { it._saved = true; persistDurable(); updateStorMeter(); } }, () => idbWarn());
     } catch (e) { idbWarn(); }
   }
-  function idbDeleteChar(it) { idbTx('readwrite', st => st.delete(it.path + '|' + it.label)); }
+  function idbDeleteChar(it) { const id = it.path + '|' + it.label; idbTx('readwrite', st => st.delete(id)); opfsDelete(id); }
 
   // ---------- thumbnails / rename / duplicate ----------
   // Render the actual mesh to a small PNG once, cache it on the item + in IDB,
@@ -1112,7 +1153,7 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
       if (!window.PPThumb) await import('./studio3D_scripts/thumbnailer.js');
       const url = await window.PPThumb.render(it._buffer, it.ext || 'glb', 256);
       it.pfp = url; it._thumbing = false;
-      if (it._saved) idbSaveChar(it);
+      if (it._saved) idbSaveChar(it, true);
       renderLib();
     } catch (e) { it._thumbing = false; }
   }
@@ -1138,15 +1179,20 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
     recs.sort((a, b) => (b.ts || 0) - (a.ts || 0));
     let n = 0;
     for (const r of recs) {
-      if (!r || !r.label || !r.buffer || !(r.buffer instanceof ArrayBuffer)) continue;   // skip corrupted records
+      if (!r || !r.label) continue;
       if (session.characters.some(c => c.path === r.path && c.label === r.label)) continue;
-      session.characters.push({ label: r.label, path: r.path, ext: r.ext, session: true, restored: true, rig: r.rig, rigged: r.rigged, _buffer: r.buffer, _saved: true, pfp: r.pfp || null });
+      let buf = null;
+      if (r.opfs) buf = await opfsRead(r.id);                          // payload in OPFS
+      else if (r.buffer instanceof ArrayBuffer) buf = r.buffer;        // legacy buffer-in-IDB
+      if (!buf) continue;                                             // missing / corrupted — skip
+      session.characters.push({ label: r.label, path: r.path, ext: r.ext, session: true, restored: true, rig: r.rig, rigged: r.rigged, _buffer: buf, _saved: true, _opfs: !!r.opfs, pfp: r.pfp || null });
       n++;
     }
     return n;
   }
   function clearSavedSession() {
     idbTx('readwrite', st => st.clear());
+    opfsClear();
     session.characters = session.characters.filter(c => !c.session);
     renderLib(); toast('Saved session cleared', 'info');
   }
@@ -1184,15 +1230,22 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
   async function backupAll() {
     try {
       const recs = await idbTx('readonly', st => st.getAll()) || [];
-      const chars = recs.filter(r => r && r.buffer instanceof ArrayBuffer);
+      const chars = [];
+      for (const r of recs) {
+        if (!r) continue;
+        let buf = null;
+        if (r.opfs) buf = await opfsRead(r.id);                      // payload in OPFS
+        else if (r.buffer instanceof ArrayBuffer) buf = r.buffer;    // legacy buffer-in-IDB
+        if (buf) chars.push({ r, buf });
+      }
       if (!chars.length) { toast('Nothing saved yet to back up', 'warn'); return; }
       const { zipStore, jsonBytes } = await import('./studio3D_scripts/pack.js');
       const manifest = { format: 'polypotion-bundle', version: 1, created: new Date().toISOString(), characters: [] };
       const files = [];
-      chars.forEach((r, i) => {
+      chars.forEach(({ r, buf }, i) => {
         const fname = 'meshes/' + String(i).padStart(3, '0') + '_' + (r.label || 'char').replace(/[^a-z0-9_-]+/gi, '_') + '.glb';
         manifest.characters.push({ label: r.label, path: r.path, ext: r.ext || 'glb', rig: r.rig, rigged: r.rigged, ts: r.ts, file: fname });
-        files.push({ name: fname, data: r.buffer });
+        files.push({ name: fname, data: buf });
       });
       files.unshift({ name: 'manifest.json', data: jsonBytes(manifest) });
       const blob = zipStore(files);

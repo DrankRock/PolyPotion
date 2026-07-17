@@ -204,6 +204,27 @@ audit lists under Platform hardening / Audience — don't reopen the rest.
 
 ## Log
 
+- 2026-07-17 — **Fourth-brew item 3 shipped: mesh blobs moved to OPFS**
+  (`index.html`). Heavy GLB payloads now live as files in the Origin Private
+  File System (`meshes/<id>.glb`); IndexedDB keeps only a light manifest
+  (metadata + `opfs:true`). Added `opfsDir/Write/Read/Delete/Clear` helpers;
+  `idbSaveChar` writes the buffer to OPFS + a bufferless manifest record
+  (`metaOnly` skips re-serializing the GLB on a thumbnail-only save);
+  `idbDeleteChar`/`idbNuke`/`clearSavedSession` clear OPFS too; `idbRestore`
+  and `backupAll` read payloads back from OPFS. **Backward compatible**: legacy
+  buffer-in-IDB records still restore/back-up and migrate to OPFS on next save.
+  **Graceful fallback**: if OPFS is unavailable (older Safari) every call is
+  try/caught and it reverts to buffer-in-IDB. Avoids the structured-clone cost
+  of big ArrayBuffers through IDB and stops the library bloating IndexedDB.
+  Verified the OPFS API sequence in a harness (sandbox blocks OPFS by origin, so
+  final confirm needs a real origin/localhost). sw.js → pp-v52.
+  Fourth-brew status: item 1 (vendor three.js locally) **abandoned — bug-inducing,
+  already tried**; item 2 (sample characters) **not needed — the user already
+  ships a heavy chunked library**; item 3 (OPFS) done. Fourth brew closed; next
+  up per the audit is the Audience section (community index, a11y pass) or a big
+  bet (local-network co-op).
+
+
 - 2026-07-17 — **Theme pass, round 3: accents unified.** Converted every tool's
   bespoke primary-accent colour to `var(--accent)` / `var(--on-accent)` /
   `var(--accent-dim)`: Director (#d8935a), Lipsync (#d87ba3), MeshDoctor
