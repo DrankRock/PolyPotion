@@ -32,7 +32,7 @@
   #ph-root ::-webkit-scrollbar-track{background:var(--gutter);}
   #ph-root ::-webkit-scrollbar-thumb{background:var(--panel-3);border:2px solid var(--gutter);border-radius:6px;}
   #ph-root input[type=range]{-webkit-appearance:none;height:4px;border-radius:2px;background:var(--panel);outline:none;}
-  #ph-root input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--new);cursor:pointer;border:2px solid var(--panel);}
+  #ph-root input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--accent);cursor:pointer;border:2px solid var(--panel);}
   #ph-root input[type=number]{background:var(--panel);border:1px solid var(--edge);color:var(--text);border-radius:5px;padding:5px 6px;font-family:var(--font-mono);font-size:11px;width:56px;}
   #ph-root select{background:var(--panel);border:1px solid var(--edge);color:var(--text);border-radius:5px;padding:5px 6px;font-size:11px;flex:1;min-width:0;}
 </style>
@@ -42,7 +42,7 @@
 
   <header style="height:46px;flex:none;display:flex;align-items:center;gap:18px;padding:0 14px;background:var(--header);border-bottom:1px solid var(--seam);">
     <div style="display:flex;align-items:center;gap:9px;">
-      <div style="width:26px;height:26px;border-radius:5px;display:flex;align-items:center;justify-content:center;background:var(--new);color:#04201f;font-weight:700;font-size:15px;box-shadow:0 1px 2px rgba(0,0,0,.4),0 0 0 1px rgba(255,255,255,.08) inset;">≈</div>
+      <div style="width:26px;height:26px;border-radius:5px;display:flex;align-items:center;justify-content:center;background:var(--accent);color:var(--on-accent);font-weight:700;font-size:15px;box-shadow:0 1px 2px rgba(0,0,0,.4),0 0 0 1px rgba(255,255,255,.08) inset;">≈</div>
       <div>
         <div style="font-weight:700;letter-spacing:.04em;font-size:14px;">PHYSICS</div>
         <div style="font-family:var(--font-mono);font-size:10px;color:var(--muted);letter-spacing:.1em;margin-top:1px;">SOFT-BODY · CLOTH · LIQUID · WASM XPBD</div>
@@ -50,7 +50,7 @@
     </div>
     <div style="flex:1;"></div>
     <div style="display:flex;align-items:center;gap:8px;font-size:11px;color:var(--text2);padding:4px 10px;background:var(--panel);border:1px solid var(--seam);border-radius:5px;font-family:var(--font-mono);">
-      <span style="color:var(--new);">WASM</span><span style="color:var(--muted);">{{ kbLabel }}</span>
+      <span style="color:var(--accent);">WASM</span><span style="color:var(--muted);">{{ kbLabel }}</span>
     </div>
     <button style="display:inline-flex;align-items:center;gap:7px;height:30px;padding:0 13px;border-radius:6px;font-size:11.5px;font-weight:600;background:var(--panel3);border:1px solid var(--edge);color:var(--text);cursor:pointer;" onClick="{{ pickFile }}">⬇ Import model…</button>
     <div style="display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--text2);padding:4px 10px;background:var(--panel);border:1px solid var(--seam);border-radius:5px;">
@@ -73,25 +73,25 @@
           <button style="{{ playStyle }}" onClick="{{ togglePlay }}">{{ playLabel }}</button>
           <button style="flex:none;width:46px;padding:9px 0;border-radius:6px;font-size:13px;background:var(--panel3);border:1px solid var(--edge);color:var(--text);cursor:pointer;" title="Reset to rest shape" onClick="{{ reset }}">↺</button>
         </div>
-        <button style="display:flex;align-items:center;justify-content:center;gap:7px;padding:9px;border-radius:6px;font-size:12px;font-weight:600;background:var(--newDim);border:1px solid rgba(67,182,196,.35);color:#aee3ea;cursor:pointer;" title="Random impulse — watch it jiggle" onClick="{{ flick }}">✦ Flick it</button>
+        <button style="display:flex;align-items:center;justify-content:center;gap:7px;padding:9px;border-radius:6px;font-size:12px;font-weight:600;background:var(--newDim);border:1px solid var(--accent-dim);color:#aee3ea;cursor:pointer;" title="Random impulse — watch it jiggle" onClick="{{ flick }}">✦ Flick it</button>
       </div>
 
       <div style="border-top:1px solid var(--seam);">
         <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--header);border-bottom:1px solid var(--seam);">
           <span style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);">💧 Liquid</span>
-          <span style="margin-left:auto;font-family:var(--font-mono);font-size:10px;color:var(--new);">{{ liqCountLabel }}</span>
+          <span style="margin-left:auto;font-family:var(--font-mono);font-size:10px;color:var(--accent);">{{ liqCountLabel }}</span>
         </div>
         <div style="padding:12px;">
           <div style="display:flex;gap:8px;margin-bottom:11px;">
-            <button style="flex:1;padding:8px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid rgba(67,182,196,.4);background:var(--newDim);color:#aee3ea;" title="Drop a ball of liquid (above the container if there is one)" onClick="{{ dropBall }}">💧 Drop ball</button>
+            <button style="flex:1;padding:8px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid var(--accent-dim);background:var(--newDim);color:#aee3ea;" title="Drop a ball of liquid (above the container if there is one)" onClick="{{ dropBall }}">💧 Drop ball</button>
             <button style="{{ placeStyle }}" title="Then click anywhere in the viewport — inside a glass, on the floor…" onClick="{{ togglePlace }}">⊕ Place</button>
           </div>
 
-          <label style="display:block;font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:7px;">Ball size <span style="float:right;font-family:IBM Plex Mono,monospace;color:var(--text2);">{{ liqRLabel }}</span></label>
+          <label style="display:block;font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:7px;">Ball size <span style="float:right;font-family:var(--font-mono);color:var(--text2);">{{ liqRLabel }}</span></label>
           <input type="range" min="12" max="45" value="{{ liqRSlide }}" onInput="{{ onLiqR }}" style="width:100%;margin-bottom:14px;">
-          <label style="display:block;font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:7px;">Detail <span style="float:right;font-family:IBM Plex Mono,monospace;color:var(--text2);">{{ liqPartsLabel }}</span></label>
+          <label style="display:block;font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:7px;">Detail <span style="float:right;font-family:var(--font-mono);color:var(--text2);">{{ liqPartsLabel }}</span></label>
           <input type="range" min="6" max="16" value="{{ liqDetailSlide }}" onInput="{{ onLiqDetail }}" style="width:100%;margin-bottom:14px;">
-          <label style="display:block;font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:7px;">Viscosity <span style="float:right;font-family:IBM Plex Mono,monospace;color:var(--text2);">{{ viscLabel }}</span></label>
+          <label style="display:block;font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:7px;">Viscosity <span style="float:right;font-family:var(--font-mono);color:var(--text2);">{{ viscLabel }}</span></label>
           <input type="range" min="0" max="100" value="{{ viscSlide }}" onInput="{{ onVisc }}" style="width:100%;margin-bottom:14px;">
           <label style="display:block;font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:7px;">Water color</label>
           <div style="display:flex;gap:6px;align-items:center;margin-bottom:14px;">
@@ -100,11 +100,11 @@
             </sc-for>
             <input type="color" value="{{ waterColor }}" onInput="{{ onWaterColor }}" title="Custom color" style="width:30px;height:24px;padding:0;border:1px solid var(--edge);border-radius:5px;background:var(--panel);cursor:pointer;">
           </div>
-          <label style="display:block;font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:7px;">Gloss <span style="float:right;font-family:IBM Plex Mono,monospace;color:var(--text2);">{{ glossLabel }}</span></label>
+          <label style="display:block;font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:7px;">Gloss <span style="float:right;font-family:var(--font-mono);color:var(--text2);">{{ glossLabel }}</span></label>
           <input type="range" min="0" max="100" value="{{ glossSlide }}" onInput="{{ onGloss }}" style="width:100%;margin-bottom:14px;">
-          <label style="display:block;font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:7px;">Glow <span style="float:right;font-family:IBM Plex Mono,monospace;color:var(--text2);">{{ glowLabel }}</span></label>
+          <label style="display:block;font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:7px;">Glow <span style="float:right;font-family:var(--font-mono);color:var(--text2);">{{ glowLabel }}</span></label>
           <input type="range" min="0" max="100" value="{{ glowSlide }}" onInput="{{ onGlow }}" style="width:100%;margin-bottom:14px;">
-          <label style="display:block;font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:7px;">Transparency <span style="float:right;font-family:IBM Plex Mono,monospace;color:var(--text2);">{{ clarityLabel }}</span></label>
+          <label style="display:block;font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:7px;">Transparency <span style="float:right;font-family:var(--font-mono);color:var(--text2);">{{ clarityLabel }}</span></label>
           <input type="range" min="0" max="60" value="{{ claritySlide }}" onInput="{{ onClarity }}" style="width:100%;margin-bottom:11px;">
           <button style="width:100%;padding:8px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid var(--edge);background:var(--panel3);color:var(--text);" onClick="{{ clearLiquid }}">Clear liquid</button>
         </div>
@@ -197,10 +197,10 @@
             <button style="{{ waterLiveStyle }}" title="Record the screen as-is — balls stay balls" onClick="{{ setWaterLive }}">● Balls</button>
           </div>
           <div style="font-size:10px;line-height:1.5;color:var(--muted);margin-bottom:12px;">{{ waterNote }}</div>
-          <label style="display:block;font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:7px;">Length <span style="float:right;font-family:IBM Plex Mono,monospace;color:var(--text2);">{{ recSecsLabel }}</span></label>
+          <label style="display:block;font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:7px;">Length <span style="float:right;font-family:var(--font-mono);color:var(--text2);">{{ recSecsLabel }}</span></label>
           <input type="range" min="1" max="12" value="{{ recSecsSlide }}" onInput="{{ onRecSecs }}" style="width:100%;margin-bottom:11px;">
           <button style="width:100%;padding:9px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;border:1px solid var(--edge);background:var(--panel3);color:var(--text);margin-bottom:7px;" onClick="{{ record }}">{{ recordLabel }}</button>
-          <button style="width:100%;padding:9px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid rgba(67,182,196,.4);background:var(--newDim);color:#aee3ea;" title="Reset, run the motion program from the start, and record exactly its length" onClick="{{ progRecord }}">▶ Run program + record</button>
+          <button style="width:100%;padding:9px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid var(--accent-dim);background:var(--newDim);color:#aee3ea;" title="Reset, run the motion program from the start, and record exactly its length" onClick="{{ progRecord }}">▶ Run program + record</button>
         </div>
       </div>
 
@@ -209,11 +209,11 @@
           <span style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);">Material</span>
         </div>
         <div style="padding:12px;">
-          <label style="display:block;font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:7px;">Gravity <span style="float:right;font-family:IBM Plex Mono,monospace;color:var(--text2);">{{ gravLabel }}</span></label>
+          <label style="display:block;font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:7px;">Gravity <span style="float:right;font-family:var(--font-mono);color:var(--text2);">{{ gravLabel }}</span></label>
           <input type="range" min="0" max="200" value="{{ gravSlide }}" onInput="{{ onGrav }}" style="width:100%;margin-bottom:14px;">
-          <label style="display:block;font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:7px;">Stiffness <span style="float:right;font-family:IBM Plex Mono,monospace;color:var(--text2);">{{ stiffLabel }}</span></label>
+          <label style="display:block;font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:7px;">Stiffness <span style="float:right;font-family:var(--font-mono);color:var(--text2);">{{ stiffLabel }}</span></label>
           <input type="range" min="1" max="24" value="{{ stiffSlide }}" onInput="{{ onStiff }}" style="width:100%;margin-bottom:14px;">
-          <label style="display:block;font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:7px;">Bounce <span style="float:right;font-family:IBM Plex Mono,monospace;color:var(--text2);">{{ dampLabel }}</span></label>
+          <label style="display:block;font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:7px;">Bounce <span style="float:right;font-family:var(--font-mono);color:var(--text2);">{{ dampLabel }}</span></label>
           <input type="range" min="0" max="100" value="{{ dampSlide }}" onInput="{{ onDamp }}" style="width:100%;margin-bottom:4px;">
         </div>
       </div>
@@ -226,7 +226,7 @@
         <div style="padding:12px;">
           <label style="display:block;font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:7px;">Strength</label>
           <input type="range" min="0" max="100" value="{{ windSlide }}" onInput="{{ onWind }}" style="width:100%;margin-bottom:14px;">
-          <label style="display:block;font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:7px;">Direction <span style="float:right;font-family:IBM Plex Mono,monospace;color:var(--text2);">{{ angLabel }}</span></label>
+          <label style="display:block;font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:7px;">Direction <span style="float:right;font-family:var(--font-mono);color:var(--text2);">{{ angLabel }}</span></label>
           <input type="range" min="0" max="360" value="{{ angSlide }}" onInput="{{ onAngle }}" style="width:100%;">
         </div>
       </div>
@@ -253,13 +253,13 @@
 
       <sc-if value="{{ noModel }}" hint-placeholder-val="{{ true }}">
         <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;background:rgba(18,20,24,.86);">
-          <div style="width:70px;height:70px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:30px;background:var(--newDim);border:1px solid rgba(67,182,196,.3);color:var(--new);">≈</div>
+          <div style="width:70px;height:70px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:30px;background:var(--newDim);border:1px solid var(--accent-dim);color:var(--accent);">≈</div>
           <div style="text-align:center;">
             <div style="font-size:16px;font-weight:700;margin-bottom:6px;">Make it move</div>
             <div style="font-size:12.5px;color:var(--text2);max-width:460px;line-height:1.6;">Pour <b>liquid into a glass</b> and slosh it around, turn a character into a <b>jiggling soft body</b>, or drop a <b>cloth</b> and blow wind through it. Everything runs right here on your machine — and you can record the result as an <b>MP4 or GIF</b>.</div>
           </div>
           <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center;">
-            <button style="padding:10px 18px;border-radius:7px;font-size:12.5px;font-weight:600;background:var(--new);border:1px solid var(--new);color:#04201f;cursor:pointer;box-shadow:0 2px 12px rgba(67,182,196,.35);" onClick="{{ loadSplash }}">💦 Water in a glass</button>
+            <button style="padding:10px 18px;border-radius:7px;font-size:12.5px;font-weight:600;background:var(--accent);border:1px solid var(--accent);color:#04201f;cursor:pointer;box-shadow:0 2px 12px var(--accent-dim);" onClick="{{ loadSplash }}">💦 Water in a glass</button>
             <button style="padding:10px 18px;border-radius:7px;font-size:12.5px;font-weight:600;background:var(--panel3);border:1px solid var(--edge);color:var(--text);cursor:pointer;" onClick="{{ loadClothBig }}">≋ Drop a cloth</button>
             <button style="padding:10px 18px;border-radius:7px;font-size:12.5px;font-weight:600;background:var(--panel3);border:1px solid var(--edge);color:var(--text);cursor:pointer;" onClick="{{ loadSample }}">Jiggle a figure</button>
             <button style="padding:10px 18px;border-radius:7px;font-size:12.5px;font-weight:600;background:var(--panel3);border:1px solid var(--edge);color:var(--text);cursor:pointer;" onClick="{{ pickFile }}">⬇ Import…</button>
@@ -269,20 +269,20 @@
 
       <sc-if value="{{ loading }}" hint-placeholder-val="{{ false }}">
         <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:rgba(18,20,24,.8);color:var(--muted);">
-          <div style="width:38px;height:38px;border:3px solid var(--panel-3);border-top-color:var(--new);border-radius:50%;animation:ph-spin .9s linear infinite;"></div>
+          <div style="width:38px;height:38px;border:3px solid var(--panel-3);border-top-color:var(--accent);border-radius:50%;animation:ph-spin .9s linear infinite;"></div>
           <div style="font-size:12px;">{{ loadingMsg }}</div>
         </div>
       </sc-if>
 
       <!-- bottom presets -->
       <div style="position:absolute;left:50%;bottom:12px;transform:translateX(-50%);display:flex;align-items:center;gap:5px;background:rgba(15,15,15,.86);border:1px solid var(--edge);border-radius:9px;padding:6px 8px;">
-        <span style="font-size:10px;font-family:IBM Plex Mono,monospace;color:var(--muted);padding:0 6px;">PRESETS</span>
+        <span style="font-size:10px;font-family:var(--font-mono);color:var(--muted);padding:0 6px;">PRESETS</span>
         <sc-for list="{{ presets }}" as="p" hint-placeholder-count="5">
           <button style="font-size:11px;font-weight:600;padding:6px 11px;border-radius:6px;cursor:pointer;background:var(--panel3);border:1px solid var(--edge);color:var(--text);" onClick="{{ p.onClick }}">{{ p.label }}</button>
         </sc-for>
       </div>
 
-      <div style="position:absolute;left:12px;top:12px;display:flex;flex-direction:column;gap:6px;font-family:IBM Plex Mono,monospace;font-size:10px;color:var(--text2);background:rgba(15,15,15,.7);border:1px solid var(--seam);border-radius:7px;padding:9px 11px;">
+      <div style="position:absolute;left:12px;top:12px;display:flex;flex-direction:column;gap:6px;font-family:var(--font-mono);font-size:10px;color:var(--text2);background:rgba(15,15,15,.7);border:1px solid var(--seam);border-radius:7px;padding:9px 11px;">
         <sc-for list="{{ stats }}" as="s" hint-placeholder-count="5">
           <div style="display:flex;justify-content:space-between;gap:18px;"><span style="color:var(--muted);">{{ s.k }}</span><span>{{ s.v }}</span></div>
         </sc-for>
@@ -366,7 +366,7 @@ class Component extends DCLogic {
     if (this._eng) this._eng.setWaterStyle({ color: st.waterColor, gloss: st.gloss / 100, glow: st.glow / 100, opacity: 1 - st.clarity / 100 });
   }
   _swatch(color, selected) {
-    return 'width:24px;height:24px;flex:none;border-radius:6px;cursor:pointer;padding:0;font-size:10px;font-weight:700;color:var(--muted);background:' + color + ';border:2px solid ' + (selected ? 'var(--new)' : 'var(--edge)') + ';';
+    return 'width:24px;height:24px;flex:none;border-radius:6px;cursor:pointer;padding:0;font-size:10px;font-weight:700;color:var(--muted);background:' + color + ';border:2px solid ' + (selected ? 'var(--accent)' : 'var(--edge)') + ';';
   }
   _syncProg(list) {
     if (!this._eng) return;
@@ -442,12 +442,12 @@ class Component extends DCLogic {
   toast(msg) {
     const wrap = document.getElementById('ph-toasts'); if (!wrap) return;
     const el = document.createElement('div');
-    el.style.cssText = 'padding:11px 15px;border-radius:7px;font-size:12px;background:var(--panel-3);border:1px solid var(--edge);border-left:3px solid var(--new);box-shadow:0 8px 24px rgba(0,0,0,.45);max-width:340px;color:var(--text);animation:ph-tin .25s cubic-bezier(.2,1,.3,1);';
+    el.style.cssText = 'padding:11px 15px;border-radius:7px;font-size:12px;background:var(--panel-3);border:1px solid var(--edge);border-left:3px solid var(--accent);box-shadow:0 8px 24px rgba(0,0,0,.45);max-width:340px;color:var(--text);animation:ph-tin .25s cubic-bezier(.2,1,.3,1);';
     el.textContent = msg; wrap.appendChild(el);
     setTimeout(() => { el.style.transition = 'opacity .3s'; el.style.opacity = '0'; setTimeout(() => el.remove(), 300); }, 3200);
   }
 
-  pill(on) { return 'flex:1;padding:8px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid ' + (on ? 'var(--new)' : 'var(--edge)') + ';background:' + (on ? 'rgba(67,182,196,0.16)' : 'var(--panel-3)') + ';color:' + (on ? '#aee3ea' : 'var(--text)') + ';'; }
+  pill(on) { return 'flex:1;padding:8px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid ' + (on ? 'var(--accent)' : 'var(--edge)') + ';background:' + (on ? 'var(--accent-dim)' : 'var(--panel-3)') + ';color:' + (on ? '#aee3ea' : 'var(--text)') + ';'; }
 
   loadSplashRef() {
     const eng = this._eng; if (!eng) return;
@@ -477,7 +477,7 @@ class Component extends DCLogic {
       kbLabel: st.kb ? st.kb + 'KB core' : 'core',
       fpsLabel: st.sim ? (st.fps + ' fps') : 'paused', fpsColor: st.sim ? (st.fps >= 50 ? 'var(--good)' : (st.fps >= 30 ? 'var(--warn)' : 'var(--danger)')) : 'var(--muted)',
       playLabel: st.sim ? '❚❚ Pause' : '▶ Simulate',
-      playStyle: 'flex:1;padding:9px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;border:1px solid ' + (st.sim ? 'var(--active)' : 'var(--new)') + ';background:' + (st.sim ? 'var(--active)' : 'var(--new)') + ';color:' + (st.sim ? 'var(--on-accent)' : '#04201f') + ';',
+      playStyle: 'flex:1;padding:9px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;border:1px solid ' + (st.sim ? 'var(--active)' : 'var(--accent)') + ';background:' + (st.sim ? 'var(--active)' : 'var(--accent)') + ';color:' + (st.sim ? 'var(--on-accent)' : '#04201f') + ';',
       togglePlay: () => { if (!eng || !eng.hasModel()) { this.toast('Load something first'); return; } const on = eng.toggle(); this.setState({ sim: on }); },
       reset: () => { if (eng) { eng.reset(); this.refresh(); this.toast('Reset to rest'); } },
       flick: () => { if (!eng || !st.hasModel) { this.toast('Load something first'); return; } eng.flick(this.state.mode === 'cloth' ? 0.04 : 0.08); this.setState({ sim: true }); },

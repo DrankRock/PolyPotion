@@ -31,7 +31,7 @@
   #tl-root ::-webkit-scrollbar-track{background:var(--gutter);}
   #tl-root ::-webkit-scrollbar-thumb{background:var(--panel-3);border:2px solid var(--gutter);border-radius:6px;}
   #tl-root input[type="range"]{-webkit-appearance:none;appearance:none;background:var(--panel-3);border-radius:3px;height:4px;outline:none;}
-  #tl-root input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:12px;height:12px;border-radius:50%;background:#5a8fd8;cursor:pointer;border:none;}
+  #tl-root input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:12px;height:12px;border-radius:50%;background:var(--accent);cursor:pointer;border:none;}
 </style>
 </helmet>
 
@@ -40,7 +40,7 @@
   <!-- TOP BAR -->
   <header style="height:46px;flex:none;display:flex;align-items:center;gap:14px;padding:0 14px;background:var(--header);border-bottom:1px solid var(--seam);">
     <div style="display:flex;align-items:center;gap:9px;">
-      <div style="width:26px;height:26px;border-radius:5px;display:flex;align-items:center;justify-content:center;background:#5a8fd8;color:#0c1a2e;font-weight:700;font-size:14px;box-shadow:0 1px 2px rgba(0,0,0,.4),0 0 0 1px rgba(255,255,255,.08) inset;">≡</div>
+      <div style="width:26px;height:26px;border-radius:5px;display:flex;align-items:center;justify-content:center;background:var(--accent);color:var(--on-accent);font-weight:700;font-size:14px;box-shadow:0 1px 2px rgba(0,0,0,.4),0 0 0 1px rgba(255,255,255,.08) inset;">≡</div>
       <div>
         <div style="font-weight:700;letter-spacing:.04em;font-size:14px;">TIMELINE</div>
         <div style="font-family:var(--font-mono);font-size:10px;color:var(--muted);letter-spacing:.1em;margin-top:1px;">NLA · BLEND CLIPS · BAKE ONE PERFORMANCE</div>
@@ -62,13 +62,13 @@
 
       <sc-if value="{{ noModel }}" hint-placeholder-val="{{ true }}">
         <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;background:rgba(18,20,24,.86);">
-          <div style="width:70px;height:70px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:28px;background:rgba(90,143,216,.16);border:1px solid rgba(90,143,216,.35);color:#5a8fd8;font-weight:700;">≡</div>
+          <div style="width:70px;height:70px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:28px;background:var(--accent-dim);border:1px solid var(--accent-dim);color:var(--accent);font-weight:700;">≡</div>
           <div style="text-align:center;">
             <div style="font-size:16px;font-weight:700;margin-bottom:6px;">Cut one performance from many clips</div>
             <div style="font-size:12.5px;color:var(--text2);max-width:460px;line-height:1.6;">Drop a <b>.glb / .fbx</b> with animation clips (or open one from the Library). Lay clips on the timeline, trim them, set speeds, crossfade between them — then bake the whole thing into <b>one new clip</b> inside the GLB. You can even borrow clips from a second file; they retarget by bone name.</div>
           </div>
           <div style="display:flex;gap:10px;">
-            <button style="padding:10px 18px;border-radius:7px;font-size:12.5px;font-weight:600;background:#5a8fd8;border:1px solid #5a8fd8;color:#0c1a2e;cursor:pointer;box-shadow:0 2px 12px rgba(90,143,216,.35);" onClick="{{ pickFile }}">⬇ Import file…</button>
+            <button style="padding:10px 18px;border-radius:7px;font-size:12.5px;font-weight:600;background:var(--accent);border:1px solid var(--accent);color:var(--on-accent);cursor:pointer;box-shadow:0 2px 12px var(--accent-dim);" onClick="{{ pickFile }}">⬇ Import file…</button>
             <button style="padding:10px 18px;border-radius:7px;font-size:12.5px;font-weight:600;background:var(--panel3);border:1px solid var(--edge);color:var(--text);cursor:pointer;" onClick="{{ loadSample }}">Load a sample…</button>
           </div>
         </div>
@@ -76,7 +76,7 @@
 
       <sc-if value="{{ loading }}" hint-placeholder-val="{{ false }}">
         <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:rgba(18,20,24,.8);color:var(--muted);z-index:5;">
-          <div style="width:38px;height:38px;border:3px solid var(--panel-3);border-top-color:#5a8fd8;border-radius:50%;animation:tl-spin .9s linear infinite;"></div>
+          <div style="width:38px;height:38px;border:3px solid var(--panel-3);border-top-color:var(--accent);border-radius:50%;animation:tl-spin .9s linear infinite;"></div>
           <div style="font-size:12px;">{{ loadingMsg }}</div>
         </div>
       </sc-if>
@@ -100,7 +100,7 @@
                 <span style="width:7px;height:7px;border-radius:2px;flex:none;background:{{ cr.color }};"></span>
                 <span style="flex:1;font-size:11px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="{{ cr.name }}">{{ cr.name }}</span>
                 <span style="font-family:var(--font-mono);font-size:9.5px;color:var(--muted);flex:none;">{{ cr.dur }}</span>
-                <button style="flex:none;font-size:10px;font-weight:700;padding:3px 8px;border-radius:4px;background:rgba(90,143,216,.15);border:1px solid #5a8fd8;color:#9cc0ee;cursor:pointer;" onClick="{{ cr.onAdd }}">＋ lay</button>
+                <button style="flex:none;font-size:10px;font-weight:700;padding:3px 8px;border-radius:4px;background:var(--accent-dim);border:1px solid var(--accent);color:var(--accent);cursor:pointer;" onClick="{{ cr.onAdd }}">＋ lay</button>
               </div>
             </sc-for>
           </sc-if>
@@ -154,7 +154,7 @@
           <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--header);border-bottom:1px solid var(--seam);"><span style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);">Bake the mix</span></div>
           <div style="padding:11px 12px;display:flex;flex-direction:column;gap:7px;">
             <sc-if value="{{ embedded }}" hint-placeholder-val="{{ false }}">
-              <button style="display:flex;align-items:center;justify-content:center;gap:7px;padding:10px;border-radius:6px;font-size:12.5px;font-weight:700;background:#5a8fd8;border:1px solid #5a8fd8;color:#0c1a2e;width:100%;cursor:pointer;box-shadow:0 1px 0 rgba(255,255,255,.18) inset,0 2px 12px rgba(90,143,216,.35);" onClick="{{ doSave }}">≡ Bake → save to Library</button>
+              <button style="display:flex;align-items:center;justify-content:center;gap:7px;padding:10px;border-radius:6px;font-size:12.5px;font-weight:700;background:var(--accent);border:1px solid var(--accent);color:var(--on-accent);width:100%;cursor:pointer;box-shadow:0 1px 0 rgba(255,255,255,.18) inset,0 2px 12px var(--accent-dim);" onClick="{{ doSave }}">≡ Bake → save to Library</button>
             </sc-if>
             <button style="display:flex;align-items:center;justify-content:center;gap:7px;padding:9px;border-radius:6px;font-size:12px;font-weight:600;background:var(--panel3);border:1px solid var(--edge);color:var(--text);width:100%;cursor:pointer;" onClick="{{ doDownload }}">⬇ Bake → download .glb</button>
             <div style="font-size:10.5px;color:var(--muted);line-height:1.5;">Bakes the whole timeline into one 30fps clip called <b>timeline_mix</b> — plays anywhere: Showcase, Director, Curves, any glTF viewer.</div>
@@ -163,7 +163,7 @@
       </sc-if>
 
       <div style="padding:12px;">
-        <div style="display:flex;gap:9px;padding:9px 11px;border-radius:7px;font-size:11px;line-height:1.5;background:rgba(90,143,216,.12);border:1px solid rgba(90,143,216,.3);color:var(--text2);"><span style="flex:none;color:#5a8fd8;font-weight:700;">≡</span><span>Idle → walk → run → skid → idle, with 0.3s crossfades, reads as one continuous performance. Trim each block to a beat that loops before fading to the next.</span></div>
+        <div style="display:flex;gap:9px;padding:9px 11px;border-radius:7px;font-size:11px;line-height:1.5;background:var(--accent-dim);border:1px solid var(--accent-dim);color:var(--text2);"><span style="flex:none;color:var(--accent);font-weight:700;">≡</span><span>Idle → walk → run → skid → idle, with 0.3s crossfades, reads as one continuous performance. Trim each block to a beat that loops before fading to the next.</span></div>
       </div>
     </aside>
   </div>
@@ -172,7 +172,7 @@
   <footer style="flex:none;background:var(--panel);border-top:1px solid var(--seam);">
     <div style="display:flex;align-items:center;gap:10px;padding:7px 12px;border-bottom:1px solid var(--seam);">
       <button style="width:30px;height:26px;border-radius:5px;background:var(--panel3);border:1px solid var(--edge);color:var(--text);cursor:pointer;font-size:12px;" onClick="{{ toStart }}" title="back to start">⏮</button>
-      <button style="width:38px;height:26px;border-radius:5px;background:#5a8fd8;border:1px solid #5a8fd8;color:#0c1a2e;cursor:pointer;font-size:12px;font-weight:700;" onClick="{{ togglePlay }}">{{ playLabel }}</button>
+      <button style="width:38px;height:26px;border-radius:5px;background:var(--accent);border:1px solid var(--accent);color:var(--on-accent);cursor:pointer;font-size:12px;font-weight:700;" onClick="{{ togglePlay }}">{{ playLabel }}</button>
       <button style="{{ loopStyle }}" onClick="{{ toggleLoop }}" title="loop playback">⟳ loop</button>
       <span id="tl-time" style="font-family:var(--font-mono);font-size:11px;color:var(--text2);">0.0s</span>
       <span style="font-family:var(--font-mono);font-size:11px;color:var(--muted);">/ {{ totalLabel }}</span>
@@ -332,14 +332,14 @@ class Component extends DCLogic {
   toast(msg) {
     const wrap = document.getElementById('tl-toasts'); if (!wrap) return;
     const el = document.createElement('div');
-    el.style.cssText = 'padding:11px 15px;border-radius:7px;font-size:12px;background:var(--panel-3);border:1px solid var(--edge);border-left:3px solid #5a8fd8;box-shadow:0 8px 24px rgba(0,0,0,.45);max-width:340px;color:var(--text);animation:tl-tin .25s cubic-bezier(.2,1,.3,1);';
+    el.style.cssText = 'padding:11px 15px;border-radius:7px;font-size:12px;background:var(--panel-3);border:1px solid var(--edge);border-left:3px solid var(--accent);box-shadow:0 8px 24px rgba(0,0,0,.45);max-width:340px;color:var(--text);animation:tl-tin .25s cubic-bezier(.2,1,.3,1);';
     el.textContent = msg; wrap.appendChild(el);
     setTimeout(() => { el.style.transition = 'opacity .3s'; el.style.opacity = '0'; setTimeout(() => el.remove(), 300); }, 3400);
   }
 
   renderVals() {
     const st = this.state, eng = this._eng;
-    const CLIP_COLORS = ['#5a8fd8', '#6aa88a', '#c9a44a', '#b07bd8', '#d87ba3', '#d8935a', '#7fd7b8', '#9c92e8'];
+    const CLIP_COLORS = ['var(--accent)', '#6aa88a', '#c9a44a', '#b07bd8', '#d87ba3', '#d8935a', '#7fd7b8', '#9c92e8'];
     const clips = eng && eng.clips || [];
     const segs = eng && eng.segments || [];
     const total = eng ? eng.totalDur() : 0;
@@ -402,7 +402,7 @@ class Component extends DCLogic {
       toStart: () => { if (eng) { eng.pause(); eng.seek(0); } },
       togglePlay: () => { if (!eng) return; if (eng.playing) eng.pause(); else eng.play(); this.bump(); },
       playLabel: eng && eng.playing ? '⏸' : '▶',
-      loopStyle: 'height:26px;padding:0 10px;border-radius:5px;font-size:10.5px;font-weight:600;cursor:pointer;' + (eng && eng.loop ? 'background:rgba(90,143,216,.18);border:1px solid #5a8fd8;color:#9cc0ee;' : 'background:var(--panel3);border:1px solid var(--edge);color:var(--text2);'),
+      loopStyle: 'height:26px;padding:0 10px;border-radius:5px;font-size:10.5px;font-weight:600;cursor:pointer;' + (eng && eng.loop ? 'background:var(--accent-dim);border:1px solid var(--accent);color:var(--accent);' : 'background:var(--panel3);border:1px solid var(--edge);color:var(--text2);'),
       toggleLoop: () => { if (eng) { eng.loop = !eng.loop; this.bump(); } },
       totalLabel: total.toFixed(1) + 's',
       segHint: segs.length ? segs.length + ' block' + (segs.length === 1 ? '' : 's') + ' — click one to edit, ＋ lay adds more' : 'press ＋ lay on a shelf clip to start building',

@@ -17,15 +17,16 @@
 <body>
 <x-dc>
 <helmet>
+  <script src="theme.js"></script>
   <style>
-    html, body { margin: 0; height: 100%; background: #16171b; overflow: hidden; }
-    * { box-sizing: border-box; font-family: 'Sora', system-ui, sans-serif; }
-    input[type="range"] { accent-color: #c98a5a; }
+    html, body { margin: 0; height: 100%; background: var(--bg); overflow: hidden; }
+    * { box-sizing: border-box; font-family: var(--font-ui); }
+    input[type="range"] { accent-color: var(--accent); }
     @keyframes bl-spin { to { transform: rotate(360deg); } }
   </style>
 </helmet>
 
-<div style="display:flex;height:100vh;color:#e8e6e1;">
+<div style="display:flex;height:100vh;color:var(--text);">
 
   <!-- viewport -->
   <div style="flex:1;position:relative;min-width:0;">
@@ -36,16 +37,16 @@
         <div style="font-size:34px;">⊘</div>
         <div style="text-align:center;">
           <div style="font-size:16px;font-weight:700;margin-bottom:6px;">Boolean surgery on any mesh</div>
-          <div style="font-size:12.5px;color:#8a8f98;max-width:420px;line-height:1.6;">Drop a <b>.glb / .fbx / .obj</b> here or open one from the Library, place the cutter, and run exact CSG — union, subtract, intersect — via Manifold WASM, all on-device.</div>
+          <div style="font-size:12.5px;color:var(--muted);max-width:420px;line-height:1.6;">Drop a <b>.glb / .fbx / .obj</b> here or open one from the Library, place the cutter, and run exact CSG — union, subtract, intersect — via Manifold WASM, all on-device.</div>
         </div>
-        <button style="pointer-events:auto;padding:9px 16px;border-radius:7px;font-size:12px;font-weight:600;background:#26282e;border:1px solid #383b42;color:#e8e6e1;cursor:pointer;" onClick="{{ pickFile }}">Choose a file…</button>
+        <button style="pointer-events:auto;padding:9px 16px;border-radius:7px;font-size:12px;font-weight:600;background:var(--panel-2);border:1px solid var(--edge);color:var(--text);cursor:pointer;" onClick="{{ pickFile }}">Choose a file…</button>
       </div>
     </sc-if>
 
     <sc-if value="{{ busy }}" hint-placeholder-val="{{ false }}">
-      <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:rgba(18,20,24,.8);">
-        <div style="width:38px;height:38px;border:3px solid #33363d;border-top-color:#c98a5a;border-radius:50%;animation:bl-spin .9s linear infinite;"></div>
-        <div style="font-size:12px;color:#8a8f98;">{{ busyMsg }}</div>
+      <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:color-mix(in srgb, var(--bg) 55%, transparent);">
+        <div style="width:38px;height:38px;border:3px solid var(--edge);border-top-color:var(--accent);border-radius:50%;animation:bl-spin .9s linear infinite;"></div>
+        <div style="font-size:12px;color:var(--muted);">{{ busyMsg }}</div>
       </div>
     </sc-if>
 
@@ -54,18 +55,18 @@
   </div>
 
   <!-- side panel -->
-  <aside style="width:272px;flex:none;background:#1d1f24;border-left:1px solid #2b2e34;overflow-y:auto;display:flex;flex-direction:column;">
+  <aside style="width:272px;flex:none;background:var(--panel);border-left:1px solid var(--seam);overflow-y:auto;display:flex;flex-direction:column;">
 
-    <div style="padding:12px;border-bottom:1px solid #2b2e34;">
-      <div style="font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#8a8f98;margin-bottom:8px;">Model</div>
+    <div style="padding:12px;border-bottom:1px solid var(--seam);">
+      <div style="font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;">Model</div>
       <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
         <div style="font-size:12.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ meshName }}</div>
-        <div style="font-family:ui-monospace,monospace;font-size:10.5px;color:#8a8f98;flex:none;">{{ triLabel }}</div>
+        <div style="font-family:var(--font-mono);font-size:10.5px;color:var(--muted);flex:none;">{{ triLabel }}</div>
       </div>
     </div>
 
-    <div style="padding:12px;border-bottom:1px solid #2b2e34;display:flex;flex-direction:column;gap:11px;">
-      <div style="font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#8a8f98;">Cutter</div>
+    <div style="padding:12px;border-bottom:1px solid var(--seam);display:flex;flex-direction:column;gap:11px;">
+      <div style="font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);">Cutter</div>
 
       <div style="display:flex;gap:6px;">
         <sc-for list="{{ shapes }}" as="s" hint-placeholder-count="3">
@@ -75,28 +76,28 @@
 
       <sc-for list="{{ sliders }}" as="sl" hint-placeholder-count="5">
         <div>
-          <label style="display:flex;justify-content:space-between;font-size:10.5px;font-weight:600;color:#8a8f98;margin-bottom:4px;"><span>{{ sl.label }}</span><span style="font-family:ui-monospace,monospace;color:#e8e6e1;">{{ sl.valLabel }}</span></label>
+          <label style="display:flex;justify-content:space-between;font-size:10.5px;font-weight:600;color:var(--muted);margin-bottom:4px;"><span>{{ sl.label }}</span><span style="font-family:var(--font-mono);color:var(--text);">{{ sl.valLabel }}</span></label>
           <input type="range" min="{{ sl.min }}" max="{{ sl.max }}" value="{{ sl.val }}" onInput="{{ sl.onInput }}" style="width:100%;">
         </div>
       </sc-for>
     </div>
 
-    <div style="padding:12px;border-bottom:1px solid #2b2e34;display:flex;flex-direction:column;gap:7px;">
-      <div style="font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#8a8f98;">Apply</div>
-      <button style="padding:9px;border-radius:7px;font-size:12px;font-weight:700;background:#c98a5a;border:1px solid #c98a5a;color:#1a1206;cursor:pointer;" onClick="{{ opSubtract }}">⊖ Subtract cutter</button>
+    <div style="padding:12px;border-bottom:1px solid var(--seam);display:flex;flex-direction:column;gap:7px;">
+      <div style="font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);">Apply</div>
+      <button style="padding:9px;border-radius:7px;font-size:12px;font-weight:700;background:var(--accent);border:1px solid var(--accent);color:var(--on-accent);cursor:pointer;" onClick="{{ opSubtract }}">⊖ Subtract cutter</button>
       <div style="display:flex;gap:7px;">
-        <button style="flex:1;padding:8px;border-radius:7px;font-size:11.5px;font-weight:600;background:#26282e;border:1px solid #383b42;color:#e8e6e1;cursor:pointer;" onClick="{{ opUnion }}">⊕ Union</button>
-        <button style="flex:1;padding:8px;border-radius:7px;font-size:11.5px;font-weight:600;background:#26282e;border:1px solid #383b42;color:#e8e6e1;cursor:pointer;" onClick="{{ opIntersect }}">⊗ Intersect</button>
+        <button style="flex:1;padding:8px;border-radius:7px;font-size:11.5px;font-weight:600;background:var(--panel-2);border:1px solid var(--edge);color:var(--text);cursor:pointer;" onClick="{{ opUnion }}">⊕ Union</button>
+        <button style="flex:1;padding:8px;border-radius:7px;font-size:11.5px;font-weight:600;background:var(--panel-2);border:1px solid var(--edge);color:var(--text);cursor:pointer;" onClick="{{ opIntersect }}">⊗ Intersect</button>
       </div>
-      <button style="padding:8px;border-radius:7px;font-size:11.5px;font-weight:600;background:transparent;border:1px solid #383b42;color:{{ undoColor }};cursor:pointer;" onClick="{{ undo }}">↶ Undo ({{ undoCount }})</button>
+      <button style="padding:8px;border-radius:7px;font-size:11.5px;font-weight:600;background:transparent;border:1px solid var(--edge);color:{{ undoColor }};cursor:pointer;" onClick="{{ undo }}">↶ Undo ({{ undoCount }})</button>
     </div>
 
-    <div style="padding:12px;border-bottom:1px solid #2b2e34;">
-      <button style="width:100%;padding:9px;border-radius:7px;font-size:12px;font-weight:600;background:#26282e;border:1px solid #383b42;color:#e8e6e1;cursor:pointer;" onClick="{{ exportGLB }}">⬇ Export .glb</button>
+    <div style="padding:12px;border-bottom:1px solid var(--seam);">
+      <button style="width:100%;padding:9px;border-radius:7px;font-size:12px;font-weight:600;background:var(--panel-2);border:1px solid var(--edge);color:var(--text);cursor:pointer;" onClick="{{ exportGLB }}">⬇ Export .glb</button>
     </div>
 
     <div style="padding:12px;">
-      <div style="display:flex;gap:9px;padding:9px 11px;border-radius:7px;font-size:11px;line-height:1.5;background:rgba(201,138,90,.12);border:1px solid rgba(201,138,90,.3);color:#e8cbb0;"><span style="flex:none;">✂</span><span>Exact booleans run in <b>Manifold</b> (WASM) — the same kernel used in production CAD. The mesh must be watertight; results are always watertight, so ops chain cleanly.</span></div>
+      <div style="display:flex;gap:9px;padding:9px 11px;border-radius:7px;font-size:11px;line-height:1.5;background:var(--accent-dim);border:1px solid var(--accent-dim);color:var(--text);"><span style="flex:none;">✂</span><span>Exact booleans run in <b>Manifold</b> (WASM) — the same kernel used in production CAD. The mesh must be watertight; results are always watertight, so ops chain cleanly.</span></div>
     </div>
   </aside>
 </div>
@@ -190,15 +191,15 @@ class Component extends DCLogic {
   toast(msg) {
     const wrap = document.getElementById('bl-toasts'); if (!wrap) return;
     const el = document.createElement('div');
-    el.style.cssText = 'padding:11px 15px;border-radius:7px;font-size:12px;background:#26282e;border:1px solid #383b42;border-left:3px solid #c98a5a;box-shadow:0 8px 24px rgba(0,0,0,.45);max-width:340px;color:#e8e6e1;';
+    el.style.cssText = 'padding:11px 15px;border-radius:7px;font-size:12px;background:var(--panel-2);border:1px solid var(--edge);border-left:3px solid var(--accent);box-shadow:0 8px 24px rgba(0,0,0,.45);max-width:340px;color:var(--text);';
     el.textContent = msg; wrap.appendChild(el);
     setTimeout(() => { el.style.transition = 'opacity .3s'; el.style.opacity = '0'; setTimeout(() => el.remove(), 300); }, 3200);
   }
 
   segStyle(on) {
     return 'flex:1;padding:7px 0;border-radius:6px;font-size:11.5px;font-weight:600;cursor:pointer;' +
-      (on ? 'background:rgba(201,138,90,.18);border:1px solid #c98a5a;color:#e8cbb0;'
-          : 'background:#26282e;border:1px solid #383b42;color:#8a8f98;');
+      (on ? 'background:var(--accent-dim);border:1px solid var(--accent);color:var(--text);'
+          : 'background:var(--panel-2);border:1px solid var(--edge);color:var(--muted);');
   }
 
   renderVals() {
@@ -229,7 +230,7 @@ class Component extends DCLogic {
       opUnion: () => this.runOp('union'),
       opIntersect: () => this.runOp('intersect'),
       undo: () => this.doUndo(),
-      undoColor: st.canUndo ? '#e8e6e1' : '#5c6068',
+      undoColor: st.canUndo ? 'var(--text)' : 'var(--muted-2)',
       undoCount: st.undoCount,
       exportGLB: () => { if (eng && eng.hasModel()) eng.exportGLB(); else this.toast('Load a mesh first'); },
       pickFile: () => document.getElementById('bl-file').click(),

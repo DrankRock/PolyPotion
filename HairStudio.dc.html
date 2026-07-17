@@ -19,62 +19,62 @@
 <helmet>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Spline+Sans+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script src="theme.js"></script>
   <style>
     *{box-sizing:border-box}
-    html,body{margin:0;height:100%;background:#c2beb5;font-family:'Archivo',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+    html,body{margin:0;height:100%;background:var(--bg);font-family:var(--font-ui);-webkit-font-smoothing:antialiased}
     @keyframes hgpulse{0%,100%{opacity:1}50%{opacity:.2}}
     .hgscroll::-webkit-scrollbar{width:10px}
-    .hgscroll::-webkit-scrollbar-thumb{background:rgba(20,18,12,.22);border:3px solid #e7e4dd}
+    .hgscroll::-webkit-scrollbar-thumb{background:var(--edge);border:3px solid var(--panel)}
     .hgscroll::-webkit-scrollbar-track{background:transparent}
-    input[type=range]{-webkit-appearance:none;appearance:none;height:3px;border-radius:0;background:rgba(20,18,12,.22);outline:none;accent-color:#ff4f00}
-    input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:18px;border-radius:1px;background:#ff4f00;cursor:pointer;box-shadow:0 1px 2px rgba(0,0,0,.35)}
-    input[type=range]::-moz-range-thumb{width:12px;height:18px;border:none;border-radius:1px;background:#ff4f00;cursor:pointer}
+    input[type=range]{-webkit-appearance:none;appearance:none;height:3px;border-radius:0;background:var(--edge);outline:none;accent-color:var(--accent)}
+    input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:18px;border-radius:1px;background:var(--accent);cursor:pointer;box-shadow:0 1px 2px rgba(0,0,0,.35)}
+    input[type=range]::-moz-range-thumb{width:12px;height:18px;border:none;border-radius:1px;background:var(--accent);cursor:pointer}
   </style>
 </helmet>
-<div style="position:fixed;inset:0;display:flex;background:#c2beb5;color:#16150f;overflow:hidden;font-family:'Archivo',sans-serif">
+<div style="position:fixed;inset:0;display:flex;background:var(--bg);color:var(--text);overflow:hidden;font-family:var(--font-ui)">
 
   <!-- VIEWPORT -->
-  <div style="position:relative;flex:1;min-width:0;background:linear-gradient(176deg,#dad7d0 0%,#cdc9c1 50%,#bbb6ac 100%)">
+  <div style="position:relative;flex:1;min-width:0;background:var(--viewport)">
     <div ref="{{ viewportRef }}" style="position:absolute;inset:0"></div>
 
-    <div style="position:absolute;top:18px;left:18px;width:13px;height:13px;border-left:1px solid rgba(20,18,12,.35);border-top:1px solid rgba(20,18,12,.35);pointer-events:none"></div>
-    <div style="position:absolute;top:18px;right:18px;width:13px;height:13px;border-right:1px solid rgba(20,18,12,.35);border-top:1px solid rgba(20,18,12,.35);pointer-events:none"></div>
-    <div style="position:absolute;bottom:18px;left:18px;width:13px;height:13px;border-left:1px solid rgba(20,18,12,.35);border-bottom:1px solid rgba(20,18,12,.35);pointer-events:none"></div>
-    <div style="position:absolute;bottom:18px;right:18px;width:13px;height:13px;border-right:1px solid rgba(20,18,12,.35);border-bottom:1px solid rgba(20,18,12,.35);pointer-events:none"></div>
+    <div style="position:absolute;top:18px;left:18px;width:13px;height:13px;border-left:1px solid var(--edge);border-top:1px solid var(--edge);pointer-events:none"></div>
+    <div style="position:absolute;top:18px;right:18px;width:13px;height:13px;border-right:1px solid var(--edge);border-top:1px solid var(--edge);pointer-events:none"></div>
+    <div style="position:absolute;bottom:18px;left:18px;width:13px;height:13px;border-left:1px solid var(--edge);border-bottom:1px solid var(--edge);pointer-events:none"></div>
+    <div style="position:absolute;bottom:18px;right:18px;width:13px;height:13px;border-right:1px solid var(--edge);border-bottom:1px solid var(--edge);pointer-events:none"></div>
 
-    <div style="position:absolute;top:30px;left:34px;font:500 10px 'Spline Sans Mono';letter-spacing:.18em;color:rgba(20,18,12,.55);pointer-events:none">PERSP · 32MM · ORBIT</div>
-    <div style="position:absolute;bottom:30px;left:34px;font:400 10px 'Spline Sans Mono';letter-spacing:.14em;color:rgba(20,18,12,.45);pointer-events:none">DRAG ORBIT — SCROLL ZOOM</div>
+    <div style="position:absolute;top:30px;left:34px;font:500 10px var(--font-mono);letter-spacing:.18em;color:var(--edge);pointer-events:none">PERSP · 32MM · ORBIT</div>
+    <div style="position:absolute;bottom:30px;left:34px;font:400 10px var(--font-mono);letter-spacing:.14em;color:var(--edge);pointer-events:none">DRAG ORBIT — SCROLL ZOOM</div>
 
     <div style="position:absolute;bottom:26px;right:30px;display:flex;gap:8px">
-      <div style="display:flex;align-items:center;gap:8px;height:30px;padding:0 12px;background:#e0dcd4;border:1px solid rgba(20,18,12,.18);font:500 10.5px 'Spline Sans Mono';letter-spacing:.1em;color:#16150f">
-        <span style="color:#8a857a">CARDS</span><span>{{ cardCount }}</span>
+      <div style="display:flex;align-items:center;gap:8px;height:30px;padding:0 12px;background:var(--panel-2);border:1px solid var(--edge);font:500 10.5px var(--font-mono);letter-spacing:.1em;color:var(--text)">
+        <span style="color:var(--muted)">CARDS</span><span>{{ cardCount }}</span>
       </div>
-      <button onClick="{{ toggleRotate }}" style="display:flex;align-items:center;gap:8px;height:30px;padding:0 12px;cursor:pointer;background:{{ rotateBg }};border:1px solid {{ rotateBorder }};font:500 10.5px 'Spline Sans Mono';letter-spacing:.1em;color:{{ rotateColor }}">
+      <button onClick="{{ toggleRotate }}" style="display:flex;align-items:center;gap:8px;height:30px;padding:0 12px;cursor:pointer;background:{{ rotateBg }};border:1px solid {{ rotateBorder }};font:500 10.5px var(--font-mono);letter-spacing:.1em;color:{{ rotateColor }}">
         <span style="width:7px;height:7px;background:{{ rotateColor }}"></span>{{ rotateLabel }}
       </button>
     </div>
 
     <sc-if value="{{ loading }}" hint-placeholder-val="{{ true }}">
-      <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:rgba(205,201,193,.55)">
-        <div style="width:13px;height:13px;background:#ff4f00;animation:hgpulse .9s ease-in-out infinite"></div>
-        <span style="font:500 11px 'Spline Sans Mono';letter-spacing:.22em;color:#16150f">BUILDING</span>
+      <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:color-mix(in srgb, var(--viewport) 55%, transparent)">
+        <div style="width:13px;height:13px;background:var(--accent);animation:hgpulse .9s ease-in-out infinite"></div>
+        <span style="font:500 11px var(--font-mono);letter-spacing:.22em;color:var(--text)">BUILDING</span>
       </div>
     </sc-if>
   </div>
 
   <!-- PANEL -->
-  <aside style="width:360px;flex-shrink:0;height:100%;display:flex;flex-direction:column;background:#e7e4dd;border-left:1px solid rgba(20,18,12,.18)">
+  <aside style="width:360px;flex-shrink:0;height:100%;display:flex;flex-direction:column;background:var(--panel);border-left:1px solid var(--edge)">
 
-    <div style="display:flex;align-items:center;gap:13px;padding:20px 22px;border-bottom:1px solid rgba(20,18,12,.16)">
-      <div style="width:36px;height:36px;flex-shrink:0;background:#16150f;display:flex;align-items:center;justify-content:center">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ff4f00" stroke-width="1.6" stroke-linecap="round"><path d="M7 21c-1-6 0-12 5-18"/><path d="M12 21c-.5-6 .5-12 4-18"/><path d="M17 21c0-6 .5-11 2-17"/></svg>
+    <div style="display:flex;align-items:center;gap:13px;padding:20px 22px;border-bottom:1px solid var(--edge)">
+      <div style="width:36px;height:36px;flex-shrink:0;background:var(--accent);display:flex;align-items:center;justify-content:center">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--on-accent)" stroke-width="1.6" stroke-linecap="round"><path d="M7 21c-1-6 0-12 5-18"/><path d="M12 21c-.5-6 .5-12 4-18"/><path d="M17 21c0-6 .5-11 2-17"/></svg>
       </div>
       <div style="flex:1">
-        <div style="font:700 16px 'Archivo';letter-spacing:-.01em;line-height:1">Hair Studio</div>
-        <div style="margin-top:5px;font:500 9.5px 'Spline Sans Mono';letter-spacing:.2em;color:#8a857a">HAIR-CARD SYSTEM</div>
+        <div style="font:700 16px var(--font-ui);letter-spacing:-.01em;line-height:1">Hair Studio</div>
+        <div style="margin-top:5px;font:500 9.5px var(--font-mono);letter-spacing:.2em;color:var(--muted)">HAIR-CARD SYSTEM</div>
       </div>
-      <div style="font:500 10px 'Spline Sans Mono';letter-spacing:.1em;color:#8a857a;border:1px solid rgba(20,18,12,.18);padding:3px 7px">v1.0</div>
+      <div style="font:500 10px var(--font-mono);letter-spacing:.1em;color:var(--muted);border:1px solid var(--edge);padding:3px 7px">v1.0</div>
     </div>
 
     <div class="hgscroll" style="flex:1;overflow-y:auto;overflow-x:hidden">
@@ -82,15 +82,15 @@
       <!-- 01 STYLE -->
       <div style="padding:22px 22px 24px">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
-          <span style="font:500 10px 'Spline Sans Mono';color:#ff4f00;letter-spacing:.1em">01</span>
-          <span style="font:600 11px 'Spline Sans Mono';letter-spacing:.2em;color:#16150f">STYLE</span>
-          <span style="flex:1;height:1px;background:rgba(20,18,12,.16)"></span>
+          <span style="font:500 10px var(--font-mono);color:var(--accent);letter-spacing:.1em">01</span>
+          <span style="font:600 11px var(--font-mono);letter-spacing:.2em;color:var(--text)">STYLE</span>
+          <span style="flex:1;height:1px;background:var(--edge)"></span>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px">
           <sc-for list="{{ styleButtons }}" as="item" hint-placeholder-count="4">
             <button onClick="{{ item.onClick }}" style="display:flex;flex-direction:column;align-items:flex-start;gap:3px;padding:13px;cursor:pointer;text-align:left;background:{{ item.bg }};border:1px solid {{ item.border }};transition:all .1s">
-              <span style="font:600 13px 'Archivo';color:{{ item.color }}">{{ item.name }}</span>
-              <span style="font:500 9px 'Spline Sans Mono';letter-spacing:.08em;text-transform:uppercase;color:{{ item.tagColor }}">{{ item.tag }}</span>
+              <span style="font:600 13px var(--font-ui);color:{{ item.color }}">{{ item.name }}</span>
+              <span style="font:500 9px var(--font-mono);letter-spacing:.08em;text-transform:uppercase;color:{{ item.tagColor }}">{{ item.tag }}</span>
             </button>
           </sc-for>
         </div>
@@ -99,10 +99,10 @@
       <!-- 02 COLOR -->
       <div style="padding:0 22px 24px">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
-          <span style="font:500 10px 'Spline Sans Mono';color:#ff4f00;letter-spacing:.1em">02</span>
-          <span style="font:600 11px 'Spline Sans Mono';letter-spacing:.2em;color:#16150f">COLOR</span>
-          <span style="flex:1;height:1px;background:rgba(20,18,12,.16)"></span>
-          <span style="font:500 9.5px 'Spline Sans Mono';letter-spacing:.12em;color:#8a857a">{{ colorName }}</span>
+          <span style="font:500 10px var(--font-mono);color:var(--accent);letter-spacing:.1em">02</span>
+          <span style="font:600 11px var(--font-mono);letter-spacing:.2em;color:var(--text)">COLOR</span>
+          <span style="flex:1;height:1px;background:var(--edge)"></span>
+          <span style="font:500 9.5px var(--font-mono);letter-spacing:.12em;color:var(--muted)">{{ colorName }}</span>
         </div>
         <div style="display:flex;flex-wrap:wrap;gap:11px">
           <sc-for list="{{ colorSwatches }}" as="item" hint-placeholder-count="7">
@@ -114,20 +114,20 @@
       <!-- 03 SHAPE -->
       <div style="padding:0 22px 24px">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
-          <span style="font:500 10px 'Spline Sans Mono';color:#ff4f00;letter-spacing:.1em">03</span>
-          <span style="font:600 11px 'Spline Sans Mono';letter-spacing:.2em;color:#16150f">SHAPE</span>
-          <span style="flex:1;height:1px;background:rgba(20,18,12,.16)"></span>
+          <span style="font:500 10px var(--font-mono);color:var(--accent);letter-spacing:.1em">03</span>
+          <span style="font:600 11px var(--font-mono);letter-spacing:.2em;color:var(--text)">SHAPE</span>
+          <span style="flex:1;height:1px;background:var(--edge)"></span>
         </div>
 
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:9px">
-          <span style="font:500 11px 'Spline Sans Mono';letter-spacing:.12em;color:#6b675d">DENSITY</span>
-          <span style="font:500 11px 'Spline Sans Mono';color:#16150f;border:1px solid rgba(20,18,12,.18);padding:2px 8px;min-width:50px;text-align:center">{{ densityPct }}</span>
+          <span style="font:500 11px var(--font-mono);letter-spacing:.12em;color:var(--muted-2)">DENSITY</span>
+          <span style="font:500 11px var(--font-mono);color:var(--text);border:1px solid var(--edge);padding:2px 8px;min-width:50px;text-align:center">{{ densityPct }}</span>
         </div>
         <input type="range" min="0.45" max="1.45" step="0.05" value="{{ density }}" onInput="{{ onDensity }}" style="width:100%;margin-bottom:20px">
 
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:9px">
-          <span style="font:500 11px 'Spline Sans Mono';letter-spacing:.12em;color:#6b675d">LENGTH</span>
-          <span style="font:500 11px 'Spline Sans Mono';color:#16150f;border:1px solid rgba(20,18,12,.18);padding:2px 8px;min-width:50px;text-align:center">{{ lengthPct }}</span>
+          <span style="font:500 11px var(--font-mono);letter-spacing:.12em;color:var(--muted-2)">LENGTH</span>
+          <span style="font:500 11px var(--font-mono);color:var(--text);border:1px solid var(--edge);padding:2px 8px;min-width:50px;text-align:center">{{ lengthPct }}</span>
         </div>
         <input type="range" min="0.6" max="1.5" step="0.05" value="{{ length }}" onInput="{{ onLength }}" style="width:100%">
       </div>
@@ -135,14 +135,14 @@
       <!-- 04 DETAIL -->
       <div style="padding:0 22px 24px">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
-          <span style="font:500 10px 'Spline Sans Mono';color:#ff4f00;letter-spacing:.1em">04</span>
-          <span style="font:600 11px 'Spline Sans Mono';letter-spacing:.2em;color:#16150f">DETAIL</span>
-          <span style="flex:1;height:1px;background:rgba(20,18,12,.16)"></span>
+          <span style="font:500 10px var(--font-mono);color:var(--accent);letter-spacing:.1em">04</span>
+          <span style="font:600 11px var(--font-mono);letter-spacing:.2em;color:var(--text)">DETAIL</span>
+          <span style="flex:1;height:1px;background:var(--edge)"></span>
         </div>
-        <button onClick="{{ toggleFly }}" style="display:flex;align-items:center;justify-content:space-between;width:100%;padding:13px 14px;cursor:pointer;background:#ded9d0;border:1px solid rgba(20,18,12,.16)">
+        <button onClick="{{ toggleFly }}" style="display:flex;align-items:center;justify-content:space-between;width:100%;padding:13px 14px;cursor:pointer;background:var(--panel-2);border:1px solid var(--edge)">
           <div style="text-align:left">
-            <div style="font:600 12.5px 'Archivo';color:#16150f">Flyaways</div>
-            <div style="margin-top:2px;font:500 9px 'Spline Sans Mono';letter-spacing:.08em;color:#8a857a">STRAY STRANDS</div>
+            <div style="font:600 12.5px var(--font-ui);color:var(--text)">Flyaways</div>
+            <div style="margin-top:2px;font:500 9px var(--font-mono);letter-spacing:.08em;color:var(--muted)">STRAY STRANDS</div>
           </div>
           <span style="position:relative;width:40px;height:22px;border-radius:2px;background:{{ flyTrack }};transition:background .15s">
             <span style="position:absolute;top:2px;left:{{ flyKnob }};width:18px;height:18px;border-radius:1px;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.3);transition:left .15s"></span>
@@ -151,16 +151,16 @@
       </div>
     </div>
 
-    <div style="padding:16px 22px 20px;border-top:1px solid rgba(20,18,12,.16)">
-      <div style="display:flex;justify-content:space-between;margin-bottom:11px;font:500 9px 'Spline Sans Mono';letter-spacing:.14em;color:#8a857a">
+    <div style="padding:16px 22px 20px;border-top:1px solid var(--edge)">
+      <div style="display:flex;justify-content:space-between;margin-bottom:11px;font:500 9px var(--font-mono);letter-spacing:.14em;color:var(--muted)">
         <span>OUTPUT</span><span>GLB · glTF 2.0</span>
       </div>
-      <button onClick="{{ exportGLB }}" style="display:flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:14px;cursor:pointer;background:#16150f;color:#efece4;border:none;font:600 11px 'Spline Sans Mono';letter-spacing:.18em;transition:background .12s" style-hover="background:#ff4f00">
+      <button onClick="{{ exportGLB }}" style="display:flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:14px;cursor:pointer;background:var(--accent);color:var(--on-accent);border:none;font:600 11px var(--font-mono);letter-spacing:.18em;transition:background .12s" style-hover="background:var(--accent)">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
         {{ exportLabel }}
       </button>
       <sc-if value="{{ embedded }}" hint-placeholder-val="{{ false }}">
-        <button onClick="{{ sendToStudio }}" style="display:flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:14px;margin-top:8px;cursor:pointer;background:#ff4f00;color:#fff;border:none;font:700 12px 'Space Grotesk';letter-spacing:.08em">
+        <button onClick="{{ sendToStudio }}" style="display:flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:14px;margin-top:8px;cursor:pointer;background:var(--accent);color:var(--on-accent);border:none;font:700 12px var(--font-ui);letter-spacing:.08em">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg>
           {{ sendLabel }}
         </button>
@@ -532,15 +532,15 @@ class Component extends DCLogic {
 
   // ---------------- render ----------------
   renderVals() {
-    const st = this.state, ink = '#16150f', acc = '#ff4f00';
+    const st = this.state, ink = 'var(--text)', acc = 'var(--accent)';
     const styleButtons = this.STYLES.map((x, i) => {
       const on = i === st.style;
       return {
         name: x.name, tag: x.tag,
-        bg: on ? 'rgba(255,79,0,0.08)' : '#ded9d0',
-        border: on ? acc : 'rgba(20,18,12,0.16)',
+        bg: on ? 'var(--accent-dim)' : 'var(--panel-2)',
+        border: on ? acc : 'var(--edge)',
         color: ink,
-        tagColor: on ? acc : '#8a857a',
+        tagColor: on ? acc : 'var(--muted)',
         onClick: () => this.setState({ style: i }),
       };
     });
@@ -548,7 +548,7 @@ class Component extends DCLogic {
       const on = i === st.color;
       return {
         color: x.c, label: x.n,
-        shadow: on ? '0 0 0 2px #e7e4dd, 0 0 0 3.5px ' + acc : 'inset 0 0 0 1px rgba(20,18,12,0.22)',
+        shadow: on ? '0 0 0 2px var(--panel), 0 0 0 3.5px ' + acc : 'inset 0 0 0 1px var(--edge)',
         onClick: () => this.setState({ color: i }),
       };
     });
@@ -559,13 +559,13 @@ class Component extends DCLogic {
       densityPct: Math.round(st.density * 100) + '%', lengthPct: Math.round(st.length * 100) + '%',
       onDensity: this.onDensity, onLength: this.onLength,
       toggleFly: this.toggleFly,
-      flyTrack: st.fly ? acc : 'rgba(20,18,12,0.22)', flyKnob: st.fly ? '20px' : '2px',
+      flyTrack: st.fly ? acc : 'var(--edge)', flyKnob: st.fly ? '20px' : '2px',
       exportGLB: this.exportGLB, exportLabel: st.exporting ? 'EXPORTING…' : 'EXPORT · GLB',
       embedded: st.embedded, sendToStudio: this.sendToStudio, sendLabel: st.sending ? 'SENDING…' : 'USE IN STUDIO',
       toggleRotate: this.toggleRotate, rotateLabel: st.rotate ? 'SPIN' : 'STATIC',
       rotateColor: st.rotate ? acc : ink,
-      rotateBg: '#e0dcd4',
-      rotateBorder: st.rotate ? acc : 'rgba(20,18,12,0.18)',
+      rotateBg: 'var(--panel-2)',
+      rotateBorder: st.rotate ? acc : 'var(--edge)',
     };
   }
 }

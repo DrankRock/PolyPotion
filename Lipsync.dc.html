@@ -32,7 +32,7 @@
   #lp-root ::-webkit-scrollbar-track{background:var(--gutter);}
   #lp-root ::-webkit-scrollbar-thumb{background:var(--panel-3);border:2px solid var(--gutter);border-radius:6px;}
   #lp-root input[type="range"]{-webkit-appearance:none;appearance:none;background:var(--panel-3);border-radius:3px;height:4px;outline:none;}
-  #lp-root input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:12px;height:12px;border-radius:50%;background:#d87ba3;cursor:pointer;border:none;}
+  #lp-root input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:12px;height:12px;border-radius:50%;background:var(--accent);cursor:pointer;border:none;}
 </style>
 </helmet>
 
@@ -41,7 +41,7 @@
   <!-- TOP BAR -->
   <header style="height:46px;flex:none;display:flex;align-items:center;gap:14px;padding:0 14px;background:var(--header);border-bottom:1px solid var(--seam);">
     <div style="display:flex;align-items:center;gap:9px;">
-      <div style="width:26px;height:26px;border-radius:5px;display:flex;align-items:center;justify-content:center;background:#d87ba3;color:#2a0e1a;font-weight:700;font-size:13px;box-shadow:0 1px 2px rgba(0,0,0,.4),0 0 0 1px rgba(255,255,255,.08) inset;">👄</div>
+      <div style="width:26px;height:26px;border-radius:5px;display:flex;align-items:center;justify-content:center;background:var(--accent);color:var(--on-accent);font-weight:700;font-size:13px;box-shadow:0 1px 2px rgba(0,0,0,.4),0 0 0 1px rgba(255,255,255,.08) inset;">👄</div>
       <div>
         <div style="font-weight:700;letter-spacing:.04em;font-size:14px;">LIPSYNC</div>
         <div style="font-family:var(--font-mono);font-size:10px;color:var(--muted);letter-spacing:.1em;margin-top:1px;">AUDIO → TALKING CHARACTER · ON-DEVICE</div>
@@ -63,13 +63,13 @@
 
       <sc-if value="{{ noModel }}" hint-placeholder-val="{{ true }}">
         <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;background:rgba(18,20,24,.86);">
-          <div style="width:70px;height:70px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:28px;background:rgba(216,123,163,.16);border:1px solid rgba(216,123,163,.35);">👄</div>
+          <div style="width:70px;height:70px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:28px;background:var(--accent-dim);border:1px solid var(--accent-dim);">👄</div>
           <div style="text-align:center;">
             <div style="font-size:16px;font-weight:700;margin-bottom:6px;">Make your character talk</div>
             <div style="font-size:12.5px;color:var(--text2);max-width:450px;line-height:1.6;">Drop a <b>.glb / .fbx</b> character here or open one from the Library, then give it a voice — record a line on the mic or load an audio file. The mouth is driven from the audio itself: viseme morphs if it has them, the jaw bone if not, and a procedural jaw built on the fly as a last resort. Bakes to an animation clip inside the GLB.</div>
           </div>
           <div style="display:flex;gap:10px;">
-            <button style="padding:10px 18px;border-radius:7px;font-size:12.5px;font-weight:600;background:#d87ba3;border:1px solid #d87ba3;color:#2a0e1a;cursor:pointer;box-shadow:0 2px 12px rgba(216,123,163,.35);" onClick="{{ pickFile }}">⬇ Import file…</button>
+            <button style="padding:10px 18px;border-radius:7px;font-size:12.5px;font-weight:600;background:var(--accent);border:1px solid var(--accent);color:var(--on-accent);cursor:pointer;box-shadow:0 2px 12px var(--accent-dim);" onClick="{{ pickFile }}">⬇ Import file…</button>
             <button style="padding:10px 18px;border-radius:7px;font-size:12.5px;font-weight:600;background:var(--panel3);border:1px solid var(--edge);color:var(--text);cursor:pointer;" onClick="{{ loadSample }}">Load a sample…</button>
           </div>
         </div>
@@ -77,7 +77,7 @@
 
       <sc-if value="{{ loading }}" hint-placeholder-val="{{ false }}">
         <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:rgba(18,20,24,.8);color:var(--muted);z-index:5;">
-          <div style="width:38px;height:38px;border:3px solid var(--panel-3);border-top-color:#d87ba3;border-radius:50%;animation:lp-spin .9s linear infinite;"></div>
+          <div style="width:38px;height:38px;border:3px solid var(--panel-3);border-top-color:var(--accent);border-radius:50%;animation:lp-spin .9s linear infinite;"></div>
           <div style="font-size:12px;">{{ loadingMsg }}</div>
         </div>
       </sc-if>
@@ -113,7 +113,7 @@
               <span style="font-family:var(--font-mono);font-size:10px;color:var(--muted);flex:none;">{{ audioDur }}</span>
             </div>
             <canvas id="lp-wave" style="width:100%;height:44px;display:block;border-radius:6px;background:var(--viewport);border:1px solid var(--seam);"></canvas>
-            <button style="display:flex;align-items:center;justify-content:center;gap:8px;padding:10px;border-radius:6px;font-size:12.5px;font-weight:700;background:#d87ba3;border:1px solid #d87ba3;color:#2a0e1a;width:100%;cursor:pointer;box-shadow:0 1px 0 rgba(255,255,255,.18) inset,0 2px 12px rgba(216,123,163,.35);" onClick="{{ togglePlay }}">{{ playLabel }}</button>
+            <button style="display:flex;align-items:center;justify-content:center;gap:8px;padding:10px;border-radius:6px;font-size:12.5px;font-weight:700;background:var(--accent);border:1px solid var(--accent);color:var(--on-accent);width:100%;cursor:pointer;box-shadow:0 1px 0 rgba(255,255,255,.18) inset,0 2px 12px var(--accent-dim);" onClick="{{ togglePlay }}">{{ playLabel }}</button>
           </sc-if>
           <sc-if value="{{ noAudio }}" hint-placeholder-val="{{ true }}">
             <div style="font-size:11px;color:var(--muted);line-height:1.55;">Record straight from the mic, or load .mp3 / .wav / .ogg / .m4a. Decoding and analysis stay on your machine.</div>
@@ -173,7 +173,7 @@
       </sc-if>
 
       <div style="padding:12px;">
-        <div style="display:flex;gap:9px;padding:9px 11px;border-radius:7px;font-size:11px;line-height:1.5;background:rgba(216,123,163,.12);border:1px solid rgba(216,123,163,.3);color:var(--text2);"><span style="flex:none;">👄</span><span>Made a face in <b>Morph</b>? Name your shapes <b>jawOpen</b>, <b>ee</b>, <b>oo</b> and Lipsync picks them up automatically — vowels open, fricatives widen, plosives shut.</span></div>
+        <div style="display:flex;gap:9px;padding:9px 11px;border-radius:7px;font-size:11px;line-height:1.5;background:var(--accent-dim);border:1px solid var(--accent-dim);color:var(--text2);"><span style="flex:none;">👄</span><span>Made a face in <b>Morph</b>? Name your shapes <b>jawOpen</b>, <b>ee</b>, <b>oo</b> and Lipsync picks them up automatically — vowels open, fricatives widen, plosives shut.</span></div>
       </div>
     </aside>
   </div>
@@ -279,7 +279,7 @@ class Component extends DCLogic {
     const ctx = cv.getContext('2d');
     ctx.clearRect(0, 0, w, h);
     const env = eng.env, n = env.length;
-    ctx.fillStyle = 'rgba(216,123,163,.55)';
+    ctx.fillStyle = 'var(--accent-dim)';
     const bw = Math.max(1, w / n);
     for (let i = 0; i < n; i++) {
       const v = Math.min(1, env[i] * eng.gain);
@@ -338,7 +338,7 @@ class Component extends DCLogic {
   toast(msg) {
     const wrap = document.getElementById('lp-toasts'); if (!wrap) return;
     const el = document.createElement('div');
-    el.style.cssText = 'padding:11px 15px;border-radius:7px;font-size:12px;background:var(--panel-3);border:1px solid var(--edge);border-left:3px solid #d87ba3;box-shadow:0 8px 24px rgba(0,0,0,.45);max-width:340px;color:var(--text);animation:lp-tin .25s cubic-bezier(.2,1,.3,1);';
+    el.style.cssText = 'padding:11px 15px;border-radius:7px;font-size:12px;background:var(--panel-3);border:1px solid var(--edge);border-left:3px solid var(--accent);box-shadow:0 8px 24px rgba(0,0,0,.45);max-width:340px;color:var(--text);animation:lp-tin .25s cubic-bezier(.2,1,.3,1);';
     el.textContent = msg; wrap.appendChild(el);
     setTimeout(() => { el.style.transition = 'opacity .3s'; el.style.opacity = '0'; setTimeout(() => el.remove(), 300); }, 3400);
   }
@@ -371,7 +371,7 @@ class Component extends DCLogic {
       pickAudio: () => document.getElementById('lp-audio').click(),
       loadSample: () => this.pickSampleFlow(),
       driverLabel: info ? info.label : '',
-      driverColor: info && info.kind === 'none' ? '#d94f2f' : '#eea8c6',
+      driverColor: info && info.kind === 'none' ? '#d94f2f' : 'var(--accent)',
       frameFace: () => { if (eng) eng.frameFace(); },
       frameBody: () => { if (eng) eng.frameBody(); },
       recBtnStyle: 'flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:9px 6px;border-radius:6px;font-size:11.5px;font-weight:600;cursor:pointer;' + (st.recording ? 'background:rgba(217,79,47,.18);border:1px solid #d94f2f;color:#ff8f73;animation:lp-blink 1.2s ease infinite;' : 'background:var(--panel3);border:1px solid var(--edge);color:var(--text);'),
@@ -389,7 +389,7 @@ class Component extends DCLogic {
       isBone: !!(info && info.kind === 'bone'),
       jawMax: eng ? eng.jawMax : 0.35, jawMaxLabel: eng ? Math.round(eng.jawMax * 57.3) + '°' : '',
       onJawMax: (e) => { if (eng) { eng.jawMax = parseFloat(e.target.value); this.bump(); } },
-      nodStyle: 'display:flex;align-items:center;justify-content:center;gap:6px;padding:7px;border-radius:5px;font-size:11px;font-weight:600;width:100%;cursor:pointer;' + (eng && eng.headNod ? 'background:rgba(216,123,163,.15);border:1px solid #d87ba3;color:#eea8c6;' : 'background:var(--panel3);border:1px solid var(--edge);color:var(--text2);'),
+      nodStyle: 'display:flex;align-items:center;justify-content:center;gap:6px;padding:7px;border-radius:5px;font-size:11px;font-weight:600;width:100%;cursor:pointer;' + (eng && eng.headNod ? 'background:var(--accent-dim);border:1px solid var(--accent);color:var(--accent);' : 'background:var(--panel3);border:1px solid var(--edge);color:var(--text2);'),
       nodLabel: eng && eng.headNod ? '✓ subtle head bob on speech' : 'head bob off',
       toggleNod: () => { if (eng) { eng.headNod = !eng.headNod; this.bump(); } },
       hasMorphMap: isMorphy && morphOpts.length > 0,

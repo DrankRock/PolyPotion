@@ -31,7 +31,7 @@
   #sc-root ::-webkit-scrollbar-track{background:var(--gutter);}
   #sc-root ::-webkit-scrollbar-thumb{background:var(--panel-3);border:2px solid var(--gutter);border-radius:6px;}
   #sc-root input[type=range]{-webkit-appearance:none;height:4px;border-radius:2px;background:var(--panel);outline:none;}
-  #sc-root input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:#c98a5a;cursor:pointer;border:2px solid var(--panel);}
+  #sc-root input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--accent);cursor:pointer;border:2px solid var(--panel);}
 </style>
 </helmet>
 
@@ -40,7 +40,7 @@
   <!-- TOP BAR (hidden when embedded) -->
   <header style="height:46px;flex:none;display:flex;align-items:center;gap:14px;padding:0 14px;background:var(--header);border-bottom:1px solid var(--seam);">
     <div style="display:flex;align-items:center;gap:9px;">
-      <div style="width:26px;height:26px;border-radius:5px;display:flex;align-items:center;justify-content:center;background:var(--accent);color:#0d0f1f;font-weight:700;font-size:15px;">◈</div>
+      <div style="width:26px;height:26px;border-radius:5px;display:flex;align-items:center;justify-content:center;background:var(--accent);color:var(--on-accent);font-weight:700;font-size:15px;">◈</div>
       <div>
         <div style="font-weight:700;letter-spacing:.04em;font-size:14px;">SHOWCASE</div>
         <div style="font-family:var(--font-mono);font-size:10px;color:var(--muted);letter-spacing:.1em;margin-top:1px;">TURNTABLE VIEWER · LOCAL</div>
@@ -75,12 +75,12 @@
 
       <sc-if value="{{ noModel }}" hint-placeholder-val="{{ true }}">
         <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;background:rgba(18,20,24,.86);">
-          <div style="width:70px;height:70px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:30px;background:var(--accentDim);border:1px solid rgba(201,138,90,.3);color:var(--accent);">◈</div>
+          <div style="width:70px;height:70px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:30px;background:var(--accentDim);border:1px solid var(--accent-dim);color:var(--accent);">◈</div>
           <div style="text-align:center;">
             <div style="font-size:16px;font-weight:700;margin-bottom:6px;">Show off a character</div>
             <div style="font-size:12.5px;color:var(--text2);max-width:430px;line-height:1.6;">Pick anything from the Library and it lands here — orbit around it, spin the turntable, and play a motion clip on it if it's rigged. Drop a <b>.glb / .fbx / .obj</b> to view one directly.</div>
           </div>
-          <button style="padding:10px 18px;border-radius:7px;font-size:12.5px;font-weight:600;background:var(--accent);border:1px solid var(--accent);color:#0d0f1f;cursor:pointer;" onClick="{{ pickFile }}">⬇ Open file…</button>
+          <button style="padding:10px 18px;border-radius:7px;font-size:12.5px;font-weight:600;background:var(--accent);border:1px solid var(--accent);color:var(--on-accent);cursor:pointer;" onClick="{{ pickFile }}">⬇ Open file…</button>
           <div style="display:flex;flex-direction:column;align-items:center;gap:8px;">
             <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:.14em;color:var(--muted);text-transform:uppercase;">or drop a demo shape into the shader lab</div>
             <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center;max-width:340px;">
@@ -156,7 +156,7 @@
         <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--header);border-bottom:1px solid var(--seam);">
           <span style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);">Shader</span>
           <sc-if value="{{ hasActiveShader }}" hint-placeholder-val="{{ false }}">
-            <span style="margin-left:auto;font-family:var(--font-mono);font-size:9px;letter-spacing:.1em;color:#c98a5a;text-transform:uppercase;">{{ activeShaderName }}</span>
+            <span style="margin-left:auto;font-family:var(--font-mono);font-size:9px;letter-spacing:.1em;color:var(--accent);text-transform:uppercase;">{{ activeShaderName }}</span>
           </sc-if>
         </div>
         <div style="padding:11px 12px;display:flex;flex-direction:column;gap:12px;">
@@ -236,7 +236,7 @@
         <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--header);border-bottom:1px solid var(--seam);">
           <span style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);">Bake to asset</span>
           <sc-if value="{{ baked }}" hint-placeholder-val="{{ false }}">
-            <span style="margin-left:auto;font-family:var(--font-mono);font-size:9px;letter-spacing:.1em;color:#8fd3a0;text-transform:uppercase;">baked · frozen</span>
+            <span style="margin-left:auto;font-family:var(--font-mono);font-size:9px;letter-spacing:.1em;color:var(--good);text-transform:uppercase;">baked · frozen</span>
           </sc-if>
         </div>
         <div style="padding:11px 12px;display:flex;flex-direction:column;gap:11px;">
@@ -260,7 +260,7 @@
 
           <sc-if value="{{ baked }}" hint-placeholder-val="{{ false }}">
             <div style="display:flex;flex-direction:column;gap:8px;">
-              <button style="display:flex;align-items:center;justify-content:center;gap:7px;padding:9px;border-radius:6px;font-size:12px;font-weight:600;background:var(--accent);border:1px solid var(--accent);color:#0d0f1f;width:100%;cursor:pointer;" onClick="{{ downloadBakedGLB }}">⬇ Download .glb <span style="font-family:var(--font-mono);font-size:9.5px;opacity:.75;">unlit · baked</span></button>
+              <button style="display:flex;align-items:center;justify-content:center;gap:7px;padding:9px;border-radius:6px;font-size:12px;font-weight:600;background:var(--accent);border:1px solid var(--accent);color:var(--on-accent);width:100%;cursor:pointer;" onClick="{{ downloadBakedGLB }}">⬇ Download .glb <span style="font-family:var(--font-mono);font-size:9.5px;opacity:.75;">unlit · baked</span></button>
               <button style="display:flex;align-items:center;justify-content:center;gap:7px;padding:8px;border-radius:6px;font-size:11.5px;font-weight:600;background:var(--panel-3);border:1px solid var(--edge);color:var(--text);width:100%;cursor:pointer;" onClick="{{ downloadBakedPNG }}">▣ Download texture PNG</button>
               <button style="display:flex;align-items:center;justify-content:center;gap:7px;padding:8px;border-radius:6px;font-size:11.5px;font-weight:600;background:transparent;border:1px solid var(--edge);color:var(--text);width:100%;cursor:pointer;" onClick="{{ revertBaked }}">↺ Revert to original material</button>
             </div>
@@ -368,7 +368,7 @@
             <input type="range" min="20" max="300" value="{{ exposureSlide }}" onInput="{{ onExposure }}" style="width:100%;">
           </div>
           <label style="display:flex;align-items:center;gap:9px;font-size:12px;cursor:pointer;">
-            <input type="checkbox" checked="{{ envBgOn }}" onChange="{{ toggleEnvBg }}" style="width:15px;height:15px;accent-color:#c98a5a;">
+            <input type="checkbox" checked="{{ envBgOn }}" onChange="{{ toggleEnvBg }}" style="width:15px;height:15px;accent-color:var(--accent);">
             <span>Show environment as backdrop</span>
           </label>
         </div>
@@ -387,7 +387,7 @@
             </div>
           </div>
           <label style="display:flex;align-items:center;gap:9px;font-size:12px;cursor:pointer;">
-            <input type="checkbox" checked="{{ groundOn }}" onChange="{{ toggleGround }}" style="width:15px;height:15px;accent-color:#c98a5a;">
+            <input type="checkbox" checked="{{ groundOn }}" onChange="{{ toggleGround }}" style="width:15px;height:15px;accent-color:var(--accent);">
             <span>Ground &amp; grid</span>
           </label>
           <button style="width:100%;padding:8px;border-radius:6px;font-size:11.5px;font-weight:600;background:var(--panel3);border:1px solid var(--edge);color:var(--text);cursor:pointer;" onClick="{{ reframe }}">⤢ Reframe</button>
@@ -395,7 +395,7 @@
       </div>
 
       <div style="padding:12px;">
-        <div style="display:flex;gap:9px;padding:9px 11px;border-radius:7px;font-size:11px;line-height:1.5;background:var(--accentDim);border:1px solid rgba(201,138,90,.3);color:#e8cbb0;"><span style="flex:none;">✦</span><span>Built-in clips play automatically for mocap'd characters. Library clips are retargeted onto the skeleton by matching bone names — motion only, applied in place.</span></div>
+        <div style="display:flex;gap:9px;padding:9px 11px;border-radius:7px;font-size:11px;line-height:1.5;background:var(--accentDim);border:1px solid var(--accent-dim);color:var(--text-2);"><span style="flex:none;">✦</span><span>Built-in clips play automatically for mocap'd characters. Library clips are retargeted onto the skeleton by matching bone names — motion only, applied in place.</span></div>
       </div>
     </aside>
   </div>
@@ -523,15 +523,15 @@ class Component extends DCLogic {
   toast(msg) {
     const wrap = document.getElementById('sc-toasts'); if (!wrap) return;
     const el = document.createElement('div');
-    el.style.cssText = 'padding:11px 15px;border-radius:7px;font-size:12px;background:var(--panel-3);border:1px solid var(--edge);border-left:3px solid #c98a5a;box-shadow:0 8px 24px rgba(0,0,0,.45);max-width:340px;color:var(--text);animation:sc-tin .25s cubic-bezier(.2,1,.3,1);';
+    el.style.cssText = 'padding:11px 15px;border-radius:7px;font-size:12px;background:var(--panel-3);border:1px solid var(--edge);border-left:3px solid var(--accent);box-shadow:0 8px 24px rgba(0,0,0,.45);max-width:340px;color:var(--text);animation:sc-tin .25s cubic-bezier(.2,1,.3,1);';
     el.textContent = msg; wrap.appendChild(el);
     setTimeout(() => { el.style.transition = 'opacity .3s'; el.style.opacity = '0'; setTimeout(() => el.remove(), 300); }, 2800);
   }
 
   fmtTime(t) { t = Math.max(0, t || 0); const s = Math.floor(t), cs = Math.floor((t - s) * 100); return s + '.' + String(cs).padStart(2, '0') + 's'; }
-  rowStyle(on) { return 'display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 10px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;text-align:left;border:1px solid ' + (on ? '#c98a5a' : 'var(--edge)') + ';background:' + (on ? 'rgba(201,138,90,.16)' : 'var(--panel-3)') + ';color:' + (on ? '#e6c3a3' : 'var(--text)') + ';'; }
-  chip(on) { return 'font-family:Spline Sans Mono,monospace;font-size:10px;padding:5px 10px;border-radius:5px;cursor:pointer;background:rgba(15,15,15,.6);border:1px solid ' + (on ? '#c98a5a' : 'var(--edge)') + ';color:' + (on ? '#e6c3a3' : 'var(--text-2)') + ';'; }
-  swatch(colors, on) { return 'width:30px;height:24px;border-radius:5px;cursor:pointer;border:2px solid ' + (on ? '#c98a5a' : 'var(--edge)') + ';background:linear-gradient(' + colors[0] + ',' + colors[1] + ');'; }
+  rowStyle(on) { return 'display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 10px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;text-align:left;border:1px solid ' + (on ? 'var(--accent)' : 'var(--edge)') + ';background:' + (on ? 'var(--accent-dim)' : 'var(--panel-3)') + ';color:' + (on ? '#e6c3a3' : 'var(--text)') + ';'; }
+  chip(on) { return 'font-family:Spline Sans Mono,monospace;font-size:10px;padding:5px 10px;border-radius:5px;cursor:pointer;background:rgba(15,15,15,.6);border:1px solid ' + (on ? 'var(--accent)' : 'var(--edge)') + ';color:' + (on ? '#e6c3a3' : 'var(--text-2)') + ';'; }
+  swatch(colors, on) { return 'width:30px;height:24px;border-radius:5px;cursor:pointer;border:2px solid ' + (on ? 'var(--accent)' : 'var(--edge)') + ';background:linear-gradient(' + colors[0] + ',' + colors[1] + ');'; }
 
   _dl(blob, name) { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 600); }
   async doSnapshot() {
@@ -630,7 +630,7 @@ class Component extends DCLogic {
     }));
 
     const envDefs = [['studio', 'Studio'], ['sunset', 'Sunset'], ['overcast', 'Overcast'], ['night', 'Night'], ['rim', 'Rim'], ['none', 'Off']];
-    const envBtn = (on) => 'font-size:10.5px;font-weight:600;padding:6px 11px;border-radius:6px;cursor:pointer;border:1px solid ' + (on ? '#c98a5a' : 'var(--edge)') + ';background:' + (on ? 'rgba(201,138,90,.16)' : 'var(--panel-3)') + ';color:' + (on ? '#e6c3a3' : 'var(--text)') + ';';
+    const envBtn = (on) => 'font-size:10.5px;font-weight:600;padding:6px 11px;border-radius:6px;cursor:pointer;border:1px solid ' + (on ? 'var(--accent)' : 'var(--edge)') + ';background:' + (on ? 'var(--accent-dim)' : 'var(--panel-3)') + ';color:' + (on ? '#e6c3a3' : 'var(--text)') + ';';
     const envOpts = envDefs.map(([k, label]) => ({ label, style: envBtn(st.env === k), onClick: () => { this.setState({ env: k }); if (eng) eng.setEnvironment(k); } }));
 
     const scrub = st.duration ? Math.round((st.time / st.duration) * 1000) : 0;
@@ -645,7 +645,7 @@ class Component extends DCLogic {
       this.setState({ activeShader: id, shaderParams: defaults, baked: false });
       if (eng) eng.applyShader(id, defaults, st.shaderTarget);
     };
-    const presetTile = (p, on) => 'display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:6px;cursor:pointer;font-size:11px;font-weight:600;text-align:left;overflow:hidden;border:1px solid ' + (on ? '#c98a5a' : 'var(--edge)') + ';background:' + (on ? 'rgba(201,138,90,.16)' : 'var(--panel-3)') + ';color:' + (on ? '#e6c3a3' : 'var(--text)') + ';';
+    const presetTile = (p, on) => 'display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:6px;cursor:pointer;font-size:11px;font-weight:600;text-align:left;overflow:hidden;border:1px solid ' + (on ? 'var(--accent)' : 'var(--edge)') + ';background:' + (on ? 'var(--accent-dim)' : 'var(--panel-3)') + ';color:' + (on ? '#e6c3a3' : 'var(--text)') + ';';
     const swatchStyle = (cols) => 'flex:none;width:20px;height:20px;border-radius:4px;border:1px solid rgba(0,0,0,.25);background:linear-gradient(135deg,' + (cols[0] || '#888') + ',' + (cols[1] || '#444') + ');';
     const catOrder = [];
     presets.forEach(p => { if (catOrder.indexOf(p.category) < 0) catOrder.push(p.category); });
@@ -697,7 +697,7 @@ class Component extends DCLogic {
     };
 
     // ---------- bake shader → asset ----------
-    const bakeResBtn = (on) => 'flex:1;font-size:10.5px;font-weight:600;padding:7px 4px;border-radius:5px;cursor:pointer;border:1px solid ' + (on ? '#c98a5a' : 'var(--edge)') + ';background:' + (on ? 'rgba(201,138,90,.16)' : 'var(--panel-3)') + ';color:' + (on ? '#e6c3a3' : 'var(--text)') + ';';
+    const bakeResBtn = (on) => 'flex:1;font-size:10.5px;font-weight:600;padding:7px 4px;border-radius:5px;cursor:pointer;border:1px solid ' + (on ? 'var(--accent)' : 'var(--edge)') + ';background:' + (on ? 'var(--accent-dim)' : 'var(--panel-3)') + ';color:' + (on ? '#e6c3a3' : 'var(--text)') + ';';
     const bakeResOpts = [512, 1024, 2048].map(n => ({ label: n + '²', style: bakeResBtn(st.bakeRes === n), onClick: () => this.setState({ bakeRes: n }) }));
 
     return {
@@ -725,7 +725,7 @@ class Component extends DCLogic {
       canBake: !!activePreset && !st.baked,
       baked: st.baked,
       bakeResOpts,
-      bakeBtnStyle: 'display:flex;align-items:center;justify-content:center;gap:7px;padding:9px;border-radius:6px;font-size:12px;font-weight:600;width:100%;cursor:' + (st.baking ? 'wait' : 'pointer') + ';background:' + (st.baking ? 'var(--panel-3)' : 'var(--accent)') + ';border:1px solid ' + (st.baking ? 'var(--edge)' : 'var(--accent)') + ';color:' + (st.baking ? 'var(--text2)' : '#0d0f1f') + ';',
+      bakeBtnStyle: 'display:flex;align-items:center;justify-content:center;gap:7px;padding:9px;border-radius:6px;font-size:12px;font-weight:600;width:100%;cursor:' + (st.baking ? 'wait' : 'pointer') + ';background:' + (st.baking ? 'var(--panel-3)' : 'var(--accent)') + ';border:1px solid ' + (st.baking ? 'var(--edge)' : 'var(--accent)') + ';color:' + (st.baking ? 'var(--text2)' : 'var(--on-accent)') + ';',
       bakeBtnLabel: st.baking ? '● Baking…' : '☀ Bake current look',
       doBakeShader: () => this.doBakeShader(),
       downloadBakedGLB: () => this.downloadBakedGLB(),
@@ -736,7 +736,7 @@ class Component extends DCLogic {
       views,
       trisLabel: st.tris ? st.tris.toLocaleString() : '—',
       skelLabel: st.hasSkeleton ? (st.bones ? st.bones + ' bones' : 'rigged') : 'none',
-      skelColor: st.hasSkeleton ? '#8fd3a0' : 'var(--muted)',
+      skelColor: st.hasSkeleton ? 'var(--good)' : 'var(--muted)',
       hasEmbedded: st.clips.length > 0, embeddedClips,
       skelOk: st.hasSkeleton, noSkel: st.hasModel && !st.hasSkeleton,
       hasLibAnims: libAnims.length > 0, noLibAnims: libAnims.length === 0, libAnims,
@@ -761,12 +761,12 @@ class Component extends DCLogic {
       onCapSec: (e) => this.setState({ capSec: +e.target.value }),
       capBusy: !!st.capBusy, capPct: Math.round((st.capProg || 0) * 100) + '%',
       capBtnLabel: st.capBusy ? ('● Recording ' + Math.round((st.capProg || 0) * 100) + '%') : '◉ Record turntable → WebM',
-      capBtnStyle: 'display:flex;align-items:center;justify-content:center;gap:7px;padding:9px;border-radius:6px;font-size:12px;font-weight:600;width:100%;cursor:' + (st.capBusy ? 'wait' : 'pointer') + ';background:' + (st.capBusy ? 'var(--panel-3)' : 'var(--accent)') + ';border:1px solid ' + (st.capBusy ? 'var(--edge)' : 'var(--accent)') + ';color:' + (st.capBusy ? 'var(--text2)' : '#0d0f1f') + ';',
+      capBtnStyle: 'display:flex;align-items:center;justify-content:center;gap:7px;padding:9px;border-radius:6px;font-size:12px;font-weight:600;width:100%;cursor:' + (st.capBusy ? 'wait' : 'pointer') + ';background:' + (st.capBusy ? 'var(--panel-3)' : 'var(--accent)') + ';border:1px solid ' + (st.capBusy ? 'var(--edge)' : 'var(--accent)') + ';color:' + (st.capBusy ? 'var(--text2)' : 'var(--on-accent)') + ';',
       doSnapshot: () => this.doSnapshot(),
       doRecord: () => this.doRecord(),
       doXR: () => this.doXR(),
       xrLabel: st.xrBusy ? '◉ In XR session…' : '⬡ View in your room (AR / VR)',
-      xrBtnStyle: 'display:flex;align-items:center;justify-content:center;gap:7px;padding:9px;border-radius:6px;font-size:12px;font-weight:600;width:100%;cursor:' + (st.xrBusy ? 'wait' : 'pointer') + ';background:var(--accentDim);border:1px solid rgba(124,131,255,.45);color:#c9cdf6;',
+      xrBtnStyle: 'display:flex;align-items:center;justify-content:center;gap:7px;padding:9px;border-radius:6px;font-size:12px;font-weight:600;width:100%;cursor:' + (st.xrBusy ? 'wait' : 'pointer') + ';background:var(--accentDim);border:1px solid rgba(124,131,255,.45);color:var(--text);',
       envIntSlide: st.envInt, envIntLabel: (st.envInt / 100).toFixed(2) + '×',
       onEnvInt: (e) => { const v = +e.target.value; this.setState({ envInt: v }); if (eng) eng.setEnvIntensity(v / 100); },
       shadowSlide: st.shadow, shadowLabel: (st.shadow / 100).toFixed(2),

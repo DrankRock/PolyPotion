@@ -98,7 +98,7 @@
           <span style="margin-left:auto;font-family:var(--font-mono);font-size:10px;color:var(--muted);background:var(--panel);padding:1px 7px;border-radius:9px;border:1px solid var(--seam);">MediaPipe</span>
         </div>
         <div style="padding:11px 12px;">
-          <div style="display:flex;gap:9px;padding:9px 11px;border-radius:7px;font-size:11px;line-height:1.5;background:var(--accentDim);border:1px solid rgba(255,79,0,.3);color:#ffd2bb;margin-bottom:11px;">
+          <div style="display:flex;gap:9px;padding:9px 11px;border-radius:7px;font-size:11px;line-height:1.5;background:var(--accentDim);border:1px solid rgba(255,79,0,.3);color:var(--text-2);margin-bottom:11px;">
             <span style="flex:none;">✦</span><span>Three models run together client-side. More models = lower fps — disable face if you only need body + hands.</span>
           </div>
           <div style="display:flex;flex-direction:column;gap:7px;margin-bottom:12px;">
@@ -189,14 +189,14 @@
             </div>
           </sc-if>
           <sc-if value="{{ camTrackerLoading }}" hint-placeholder-val="{{ false }}">
-            <div style="position:absolute;left:50%;top:14px;transform:translateX(-50%);display:flex;align-items:center;gap:8px;font-family:var(--font-mono);font-size:10px;color:#ffd2bb;background:rgba(15,15,15,.8);border:1px solid rgba(255,79,0,.3);padding:5px 11px;border-radius:5px;">
+            <div style="position:absolute;left:50%;top:14px;transform:translateX(-50%);display:flex;align-items:center;gap:8px;font-family:var(--font-mono);font-size:10px;color:var(--text-2);background:rgba(15,15,15,.8);border:1px solid rgba(255,79,0,.3);padding:5px 11px;border-radius:5px;">
               <span style="width:7px;height:7px;border-radius:50%;background:var(--warn);animation:mc-pulse 1s infinite;"></span>loading pose model…
             </div>
           </sc-if>
           <!-- HUD bottom-left -->
           <div style="position:absolute;left:10px;bottom:10px;background:rgba(15,15,15,.78);border:1px solid var(--edge);border-radius:6px;padding:8px 11px;font-family:var(--font-mono);font-size:10px;color:var(--text2);min-width:160px;pointer-events:none;">
             <div style="display:flex;justify-content:space-between;margin-bottom:5px;"><span style="color:var(--muted);">LANDMARKS</span><span id="mc-lm" style="color:var(--text);">75</span></div>
-            <div style="display:flex;justify-content:space-between;margin-bottom:7px;"><span style="color:var(--muted);">INFER</span><span id="mc-fpsval" style="color:var(--new);">29.4 fps</span></div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:7px;"><span style="color:var(--muted);">INFER</span><span id="mc-fpsval" style="color:var(--accent);">29.4 fps</span></div>
             <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;"><span style="color:var(--muted);width:34px;">BODY</span><div style="flex:1;height:4px;background:var(--panel);border-radius:2px;overflow:hidden;"><div id="mc-bar-body" style="height:100%;width:94%;background:var(--good);"></div></div></div>
             <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;"><span style="color:var(--muted);width:34px;">HANDS</span><div style="flex:1;height:4px;background:var(--panel);border-radius:2px;overflow:hidden;"><div id="mc-bar-hands" style="height:100%;width:71%;background:var(--warn);"></div></div></div>
             <div style="display:flex;align-items:center;gap:6px;"><span style="color:var(--muted);width:34px;">FACE</span><div style="flex:1;height:4px;background:var(--panel);border-radius:2px;overflow:hidden;"><div id="mc-bar-face" style="height:100%;width:0%;background:var(--accent);"></div></div></div>
@@ -241,7 +241,7 @@
           </div>
         </div>
         <div style="font-family:var(--font-mono);font-size:10px;color:var(--muted);text-align:right;flex:none;">
-          <div id="mc-fpsval2" style="color:var(--new);">29.4 fps</div>
+          <div id="mc-fpsval2" style="color:var(--accent);">29.4 fps</div>
           <div>{{ frameCount }} frames</div>
         </div>
       </div>
@@ -261,7 +261,7 @@
               <span style="font-family:var(--font-mono);font-size:10px;padding:3px 8px;border-radius:4px;background:var(--panel);border:1px solid var(--seam);color:var(--muted);">MP4</span>
               <span style="font-family:var(--font-mono);font-size:10px;padding:3px 8px;border-radius:4px;background:var(--panel);border:1px solid var(--seam);color:var(--muted);">MOV</span>
               <span style="font-family:var(--font-mono);font-size:10px;padding:3px 8px;border-radius:4px;background:var(--panel);border:1px solid var(--seam);color:var(--muted);">WEBM</span>
-              <span style="font-family:var(--font-mono);font-size:10px;padding:3px 8px;border-radius:4px;background:var(--panel);border:1px solid rgba(255,79,0,.4);color:#ffd2bb;cursor:pointer;" onClick="{{ startLive }}">↳ load sample clip</span>
+              <span style="font-family:var(--font-mono);font-size:10px;padding:3px 8px;border-radius:4px;background:var(--panel);border:1px solid rgba(255,79,0,.4);color:var(--text-2);cursor:pointer;" onClick="{{ startLive }}">↳ load sample clip</span>
             </div>
           </div>
         </div>
@@ -321,7 +321,7 @@
             <span style="margin-left:auto;font-family:var(--font-mono);font-size:10px;color:var(--muted);background:var(--panel);padding:1px 7px;border-radius:9px;border:1px solid var(--seam);">joints</span>
           </div>
           <div style="padding:11px 12px;">
-            <div style="display:flex;gap:9px;padding:9px 11px;border-radius:7px;font-size:11px;line-height:1.5;background:var(--activeDim);border:1px solid rgba(255,79,0,.28);color:#ffd2bb;margin-bottom:11px;">
+            <div style="display:flex;gap:9px;padding:9px 11px;border-radius:7px;font-size:11px;line-height:1.5;background:var(--activeDim);border:1px solid rgba(255,79,0,.28);color:var(--text-2);margin-bottom:11px;">
               <span style="flex:none;">◆</span><span>A single webcam can't tell a palm-up wrist from palm-down — depth is ambiguous. The solver clamps each joint to its real range of motion so hands never flip to impossible angles.</span>
             </div>
             <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 9px;border-radius:6px;background:var(--panel2);border:1px solid var(--seam);margin-bottom:11px;">
@@ -464,7 +464,7 @@
       <!-- SOURCE STEP HINT -->
       <sc-if value="{{ isSource }}" hint-placeholder-val="{{ false }}">
         <div style="padding:14px;">
-          <div style="display:flex;gap:9px;padding:9px 11px;border-radius:7px;font-size:11px;line-height:1.5;background:var(--accentDim);border:1px solid rgba(255,79,0,.3);color:#ffd2bb;">
+          <div style="display:flex;gap:9px;padding:9px 11px;border-radius:7px;font-size:11px;line-height:1.5;background:var(--accentDim);border:1px solid rgba(255,79,0,.3);color:var(--text-2);">
             <span style="flex:none;">✦</span><span>Choose a source to begin. Tip: keep the camera still and roughly chest-height — single-cam depth is noisiest on full-body locomotion, best on upper body + hands.</span>
           </div>
         </div>
@@ -1145,7 +1145,7 @@ class Component extends DCLogic {
 
   // ---- style helpers ----
   stepRow(n){ const s=this.state.step; const active=n===s; const done=n<s;
-    let bg='transparent',col='var(--muted)'; if(active){bg='var(--accent-dim)';col='#ffd2bb';} else if(done){col='var(--good)';}
+    let bg='transparent',col='var(--muted)'; if(active){bg='var(--accent-dim)';col='var(--text-2)';} else if(done){col='var(--good)';}
     return 'display:flex;align-items:center;gap:7px;padding:5px 11px;border-radius:5px;font-size:11.5px;font-weight:500;letter-spacing:.02em;cursor:pointer;background:'+bg+';color:'+col+';'; }
   stepNum(n){ const s=this.state.step; const active=n===s; const done=n<s;
     let bg='var(--panel)',col='var(--muted)',bd='var(--panel-3)'; if(active){bg='var(--accent)';col='#fff';bd='var(--accent)';} else if(done){bg='var(--good)';col='#10240f';bd='var(--good)';}
@@ -1154,7 +1154,7 @@ class Component extends DCLogic {
   knob(on){ return 'position:absolute;top:1px;left:'+(on?'14px':'1px')+';width:13px;height:13px;border-radius:50%;transition:.18s;background:'+(on?'var(--accent)':'#5a574f')+';'; }
   seg(on){ return 'flex:1;padding:6px 8px;border-radius:4px;font-size:11px;font-weight:600;cursor:pointer;border:none;background:'+(on?'var(--panel-3)':'transparent')+';color:'+(on?'var(--text)':'var(--text-2)')+';box-shadow:'+(on?'0 1px 2px rgba(0,0,0,.3)':'none')+';'; }
   segA(on){ return 'flex:1;padding:6px 8px;border-radius:4px;font-size:11px;font-weight:600;cursor:pointer;border:none;background:'+(on?'var(--accent)':'transparent')+';color:'+(on?'#fff':'var(--text-2)')+';'; }
-  chip(on){ return 'font-family:IBM Plex Mono,monospace;font-size:10px;padding:4px 9px;border-radius:5px;cursor:pointer;background:rgba(15,15,15,.6);border:1px solid '+(on?'var(--accent)':'var(--edge)')+';color:'+(on?'#ffd2bb':'var(--text-2)')+';'; }
+  chip(on){ return 'font-family:var(--font-mono);font-size:10px;padding:4px 9px;border-radius:5px;cursor:pointer;background:rgba(15,15,15,.6);border:1px solid '+(on?'var(--accent)':'var(--edge)')+';color:'+(on?'var(--text-2)':'var(--text-2)')+';'; }
   modelDot(on,col){ return 'width:8px;height:8px;border-radius:50%;flex:none;background:'+(on?col:'var(--muted-2)')+';box-shadow:'+(on?'0 0 6px '+col:'none')+';'; }
 
   renderVals(){
@@ -1172,7 +1172,7 @@ class Component extends DCLogic {
       toggle:()=>this.setState(s=>({models:{...s.models,[m.key]:!s.models[m.key]}})) }));
 
     const tag=(txt,kind)=>{ const c={ok:['var(--good)','rgba(90,168,107,0.14)'],warn:['var(--warn)','rgba(255,79,0,0.14)'],clamp:['var(--accent)','var(--accent-dim)']}[kind];
-      return {tag:txt, tagStyle:'font-family:IBM Plex Mono,monospace;font-size:9px;padding:2px 7px;border-radius:9px;color:'+c[0]+';background:'+c[1]+';',
+      return {tag:txt, tagStyle:'font-family:var(--font-mono);font-size:9px;padding:2px 7px;border-radius:9px;color:'+c[0]+';background:'+c[1]+';',
         dotStyle:'width:8px;height:8px;border-radius:50%;flex:none;background:'+c[0]+';'}; };
     const jc=(label,txt,kind)=>{ const o=tag(txt,kind); return {label,tag:o.tag,tagStyle:o.tagStyle,dotStyle:o.dotStyle}; };
     const jointChecks=[
@@ -1218,7 +1218,7 @@ class Component extends DCLogic {
         { label: 'Hands', on: st.models.hands, col: 'var(--accent)' },
         { label: 'Face', on: st.models.face, col: 'var(--accent)' },
       ].map(c => ({ label: (c.on ? '● ' : '○ ') + c.label,
-        style: 'font-family:IBM Plex Mono,monospace;font-size:9.5px;padding:3px 9px;border-radius:9px;border:1px solid ' + (c.on ? c.col : 'var(--header)') + ';color:' + (c.on ? c.col : 'var(--muted-2)') + ';background:' + (c.on ? 'rgba(255,255,255,0.02)' : 'transparent') + ';' })),
+        style: 'font-family:var(--font-mono);font-size:9.5px;padding:3px 9px;border-radius:9px;border:1px solid ' + (c.on ? c.col : 'var(--header)') + ';color:' + (c.on ? c.col : 'var(--muted-2)') + ';background:' + (c.on ? 'rgba(255,255,255,0.02)' : 'transparent') + ';' })),
       // step booleans
       isSource: st.step===1, isCapture: st.step===2, isRetarget: st.step===3, isExport: st.step===4,
       // source
@@ -1278,7 +1278,7 @@ class Component extends DCLogic {
       openAutoRig:()=>this.toast('Opening AutoRig handoff…'),
       characters: (st.characters||[]).map(ch=>({
         label:ch.label, ext:ch.ext,
-        rowStyle:'display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:6px;cursor:pointer;font-size:11.5px;border:1px solid '+(st.activeChar===ch.path?'var(--accent)':'var(--seam)')+';background:'+(st.activeChar===ch.path?'var(--accent-dim)':'var(--panel-2)')+';color:'+(st.activeChar===ch.path?'#ffd2bb':'var(--text)')+';',
+        rowStyle:'display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:6px;cursor:pointer;font-size:11.5px;border:1px solid '+(st.activeChar===ch.path?'var(--accent)':'var(--seam)')+';background:'+(st.activeChar===ch.path?'var(--accent-dim)':'var(--panel-2)')+';color:'+(st.activeChar===ch.path?'var(--text-2)':'var(--text)')+';',
         dotStyle:'width:8px;height:8px;border-radius:50%;flex:none;background:'+(st.activeChar===ch.path?'var(--good)':'var(--muted-2)')+';box-shadow:'+(st.activeChar===ch.path?'0 0 7px var(--good)':'none')+';',
         onClick:()=>this.loadCharacterUrl(ch),
       })),
@@ -1289,7 +1289,7 @@ class Component extends DCLogic {
       charDriven: st.charInfo? st.charInfo.driven : 0,
       charRigKind: st.charInfo? (st.charInfo.rigKind === 'autorig' ? 'AutoRig' : 'Mixamo') : '—',
       charFingers: st.charInfo? (st.charInfo.hasFingers ? 'tracked' : 'no finger bones') : '—',
-      charFingersStyle: 'font-family:IBM Plex Mono,monospace;font-size:11px;color:'+(st.charInfo && st.charInfo.hasFingers ? 'var(--good)' : 'var(--muted)')+';',
+      charFingersStyle: 'font-family:var(--font-mono);font-size:11px;color:'+(st.charInfo && st.charInfo.hasFingers ? 'var(--good)' : 'var(--muted)')+';',
       driveSwStyle:this.sw(st.drive), driveKnobStyle:this.knob(st.drive),
       face0Style:this.seg(st.facing===0), face180Style:this.seg(st.facing===180), faceLStyle:this.seg(st.facing===90), faceRStyle:this.seg(st.facing===270),
       setFace0:()=>{ if(this._engine)this._engine.setFacing(0); this.setState({facing:0}); },

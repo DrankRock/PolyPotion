@@ -32,7 +32,7 @@
   #dt-root ::-webkit-scrollbar-track{background:var(--gutter);}
   #dt-root ::-webkit-scrollbar-thumb{background:var(--panel-3);border:2px solid var(--gutter);border-radius:6px;}
   #dt-root input[type="range"]{-webkit-appearance:none;appearance:none;background:var(--panel-3);border-radius:3px;height:4px;outline:none;}
-  #dt-root input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:12px;height:12px;border-radius:50%;background:#d8935a;cursor:pointer;border:none;}
+  #dt-root input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:12px;height:12px;border-radius:50%;background:var(--accent);cursor:pointer;border:none;}
 </style>
 </helmet>
 
@@ -41,7 +41,7 @@
   <!-- TOP BAR -->
   <header style="height:46px;flex:none;display:flex;align-items:center;gap:14px;padding:0 14px;background:var(--header);border-bottom:1px solid var(--seam);">
     <div style="display:flex;align-items:center;gap:9px;">
-      <div style="width:26px;height:26px;border-radius:5px;display:flex;align-items:center;justify-content:center;background:#d8935a;color:#2a1608;font-weight:700;font-size:13px;box-shadow:0 1px 2px rgba(0,0,0,.4),0 0 0 1px rgba(255,255,255,.08) inset;">🎬</div>
+      <div style="width:26px;height:26px;border-radius:5px;display:flex;align-items:center;justify-content:center;background:var(--accent);color:var(--on-accent);font-weight:700;font-size:13px;box-shadow:0 1px 2px rgba(0,0,0,.4),0 0 0 1px rgba(255,255,255,.08) inset;">🎬</div>
       <div>
         <div style="font-weight:700;letter-spacing:.04em;font-size:14px;">DIRECTOR</div>
         <div style="font-family:var(--font-mono);font-size:10px;color:var(--muted);letter-spacing:.1em;margin-top:1px;">CAMERA SEQUENCER · VIDEO RENDER-OUT · LOCAL</div>
@@ -63,13 +63,13 @@
 
       <sc-if value="{{ noModel }}" hint-placeholder-val="{{ true }}">
         <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;background:rgba(18,20,24,.86);">
-          <div style="width:70px;height:70px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:28px;background:rgba(216,147,90,.16);border:1px solid rgba(216,147,90,.35);">🎬</div>
+          <div style="width:70px;height:70px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:28px;background:var(--accent-dim);border:1px solid var(--accent-dim);">🎬</div>
           <div style="text-align:center;">
             <div style="font-size:16px;font-weight:700;margin-bottom:6px;">Direct a short film of your character</div>
             <div style="font-size:12.5px;color:var(--text2);max-width:440px;line-height:1.6;">Drop a <b>.glb / .fbx</b> here or open one from the Library. Cut camera shots — orbits, push-ins, low rises, close-ups — over the character's own animation, scrub the sequence, and render the whole thing to a <b>.webm</b> video. Entirely on-device.</div>
           </div>
           <div style="display:flex;gap:10px;">
-            <button style="padding:10px 18px;border-radius:7px;font-size:12.5px;font-weight:600;background:#d8935a;border:1px solid #d8935a;color:#2a1608;cursor:pointer;box-shadow:0 2px 12px rgba(216,147,90,.35);" onClick="{{ pickFile }}">⬇ Import file…</button>
+            <button style="padding:10px 18px;border-radius:7px;font-size:12.5px;font-weight:600;background:var(--accent);border:1px solid var(--accent);color:var(--on-accent);cursor:pointer;box-shadow:0 2px 12px var(--accent-dim);" onClick="{{ pickFile }}">⬇ Import file…</button>
             <button style="padding:10px 18px;border-radius:7px;font-size:12.5px;font-weight:600;background:var(--panel3);border:1px solid var(--edge);color:var(--text);cursor:pointer;" onClick="{{ loadSample }}">Load a sample…</button>
           </div>
         </div>
@@ -77,7 +77,7 @@
 
       <sc-if value="{{ loading }}" hint-placeholder-val="{{ false }}">
         <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:rgba(18,20,24,.8);color:var(--muted);z-index:5;">
-          <div style="width:38px;height:38px;border:3px solid var(--panel-3);border-top-color:#d8935a;border-radius:50%;animation:dt-spin .9s linear infinite;"></div>
+          <div style="width:38px;height:38px;border:3px solid var(--panel-3);border-top-color:var(--accent);border-radius:50%;animation:dt-spin .9s linear infinite;"></div>
           <div style="font-size:12px;">{{ loadingMsg }}</div>
         </div>
       </sc-if>
@@ -159,13 +159,13 @@
               <button style="{{ qc.style }}" onClick="{{ qc.onClick }}">{{ qc.label }}</button>
             </sc-for>
           </div>
-          <button style="display:flex;align-items:center;justify-content:center;gap:8px;padding:10px;border-radius:6px;font-size:12.5px;font-weight:700;background:#d8935a;border:1px solid #d8935a;color:#2a1608;width:100%;cursor:pointer;box-shadow:0 1px 0 rgba(255,255,255,.18) inset,0 2px 12px rgba(216,147,90,.35);" onClick="{{ doRecord }}"><span style="width:9px;height:9px;border-radius:50%;background:#8f1f00;flex:none;"></span>Render sequence → .webm</button>
+          <button style="display:flex;align-items:center;justify-content:center;gap:8px;padding:10px;border-radius:6px;font-size:12.5px;font-weight:700;background:var(--accent);border:1px solid var(--accent);color:var(--on-accent);width:100%;cursor:pointer;box-shadow:0 1px 0 rgba(255,255,255,.18) inset,0 2px 12px var(--accent-dim);" onClick="{{ doRecord }}"><span style="width:9px;height:9px;border-radius:50%;background:#8f1f00;flex:none;"></span>Render sequence → .webm</button>
           <div style="font-size:10.5px;color:var(--muted);line-height:1.5;">Plays the sequence once from the top and records the viewport in real time. Keep this tab visible while it films.</div>
         </div>
       </div>
 
       <div style="padding:12px;">
-        <div style="display:flex;gap:9px;padding:9px 11px;border-radius:7px;font-size:11px;line-height:1.5;background:rgba(216,147,90,.12);border:1px solid rgba(216,147,90,.3);color:var(--text2);"><span style="flex:none;">🎬</span><span>Grammar of a good turntable: open on a <b>low rise</b>, hold an <b>orbit</b>, end tight on a <b>close-up</b>. Vary the lengths — a long middle shot reads calm, short cuts read punchy.</span></div>
+        <div style="display:flex;gap:9px;padding:9px 11px;border-radius:7px;font-size:11px;line-height:1.5;background:var(--accent-dim);border:1px solid var(--accent-dim);color:var(--text2);"><span style="flex:none;">🎬</span><span>Grammar of a good turntable: open on a <b>low rise</b>, hold an <b>orbit</b>, end tight on a <b>close-up</b>. Vary the lengths — a long middle shot reads calm, short cuts read punchy.</span></div>
       </div>
     </aside>
   </div>
@@ -174,7 +174,7 @@
   <footer style="flex:none;background:var(--panel);border-top:1px solid var(--seam);">
     <div style="display:flex;align-items:center;gap:10px;padding:7px 12px;border-bottom:1px solid var(--seam);">
       <button style="width:30px;height:26px;border-radius:5px;background:var(--panel3);border:1px solid var(--edge);color:var(--text);cursor:pointer;font-size:12px;" onClick="{{ toStart }}" title="back to start">⏮</button>
-      <button style="width:38px;height:26px;border-radius:5px;background:#d8935a;border:1px solid #d8935a;color:#2a1608;cursor:pointer;font-size:12px;font-weight:700;" onClick="{{ togglePlay }}">{{ playLabel }}</button>
+      <button style="width:38px;height:26px;border-radius:5px;background:var(--accent);border:1px solid var(--accent);color:var(--on-accent);cursor:pointer;font-size:12px;font-weight:700;" onClick="{{ togglePlay }}">{{ playLabel }}</button>
       <span id="dt-time" style="font-family:var(--font-mono);font-size:11px;color:var(--text2);">0.0s</span>
       <span style="font-family:var(--font-mono);font-size:11px;color:var(--muted);">/ {{ totalLabel }}</span>
       <div style="flex:1;"></div>
@@ -325,20 +325,20 @@ class Component extends DCLogic {
   toast(msg) {
     const wrap = document.getElementById('dt-toasts'); if (!wrap) return;
     const el = document.createElement('div');
-    el.style.cssText = 'padding:11px 15px;border-radius:7px;font-size:12px;background:var(--panel-3);border:1px solid var(--edge);border-left:3px solid #d8935a;box-shadow:0 8px 24px rgba(0,0,0,.45);max-width:340px;color:var(--text);animation:dt-tin .25s cubic-bezier(.2,1,.3,1);';
+    el.style.cssText = 'padding:11px 15px;border-radius:7px;font-size:12px;background:var(--panel-3);border:1px solid var(--edge);border-left:3px solid var(--accent);box-shadow:0 8px 24px rgba(0,0,0,.45);max-width:340px;color:var(--text);animation:dt-tin .25s cubic-bezier(.2,1,.3,1);';
     el.textContent = msg; wrap.appendChild(el);
     setTimeout(() => { el.style.transition = 'opacity .3s'; el.style.opacity = '0'; setTimeout(() => el.remove(), 300); }, 3600);
   }
 
   chip(on, accent) {
-    const a = accent || '#d8935a';
-    return 'font-size:10.5px;font-weight:600;padding:5px 10px;border-radius:5px;cursor:pointer;background:' + (on ? 'rgba(216,147,90,.18)' : 'var(--panel3)') + ';border:1px solid ' + (on ? a : 'var(--edge)') + ';color:' + (on ? '#eebd8f' : 'var(--text2)') + ';';
+    const a = accent || 'var(--accent)';
+    return 'font-size:10.5px;font-weight:600;padding:5px 10px;border-radius:5px;cursor:pointer;background:' + (on ? 'var(--accent-dim)' : 'var(--panel3)') + ';border:1px solid ' + (on ? a : 'var(--edge)') + ';color:' + (on ? 'var(--accent)' : 'var(--text2)') + ';';
   }
 
   renderVals() {
     const st = this.state, eng = this._eng, mod = this._mod;
     const MOVES = mod ? mod.MOVES : {};
-    const MCOL = { orbit: '#d8935a', arc: '#c9a44a', push: '#7b6fd8', pull: '#9c92e8', rise: '#5a8fd8', closeup: '#d87ba3', still: '#6aa88a' };
+    const MCOL = { orbit: 'var(--accent)', arc: '#c9a44a', push: '#7b6fd8', pull: '#9c92e8', rise: '#5a8fd8', closeup: '#d87ba3', still: '#6aa88a' };
     const shots = this._shots || [];
     const total = shots.reduce((a, s) => a + s.dur, 0);
     const sel = shots[st.sel];

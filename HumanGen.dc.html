@@ -18,85 +18,85 @@
 <x-dc>
 <helmet>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <script src="theme.js"></script>
   <style>
     *{box-sizing:border-box}
-    html,body{margin:0;height:100%;background:#0e0f13;font-family:'Space Grotesk',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
-    a{color:#5fe3c0}a:hover{color:#8fecd4}
+    html,body{margin:0;height:100%;background:var(--bg);font-family:var(--font-ui);-webkit-font-smoothing:antialiased}
+    a{color:var(--accent)}a:hover{color:var(--accent)}
     @keyframes hgspin{to{transform:rotate(360deg)}}
-    input[type=range]{-webkit-appearance:none;appearance:none;height:4px;border-radius:2px;background:rgba(255,255,255,.12);outline:none;margin:0}
-    input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:14px;height:14px;border-radius:50%;background:#5fe3c0;border:none;cursor:pointer;box-shadow:0 0 0 3px rgba(95,227,192,.15)}
-    input[type=range]::-moz-range-thumb{width:14px;height:14px;border-radius:50%;background:#5fe3c0;border:none;cursor:pointer}
+    input[type=range]{-webkit-appearance:none;appearance:none;height:4px;border-radius:2px;background:var(--edge);outline:none;margin:0}
+    input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:14px;height:14px;border-radius:50%;background:var(--accent);border:none;cursor:pointer;box-shadow:0 0 0 3px var(--accent-dim)}
+    input[type=range]::-moz-range-thumb{width:14px;height:14px;border-radius:50%;background:var(--accent);border:none;cursor:pointer}
   </style>
 </helmet>
-<div style="position:fixed;inset:0;display:flex;background:#0e0f13;color:#e9ecf1;overflow:hidden">
+<div style="position:fixed;inset:0;display:flex;background:var(--bg);color:var(--text);overflow:hidden">
 
   <!-- LEFT PANEL — PROPORTIONS -->
-  <aside style="width:300px;flex-shrink:0;height:100%;display:flex;flex-direction:column;background:#15171e;border-right:1px solid rgba(255,255,255,.07)">
-    <div style="padding:20px 20px 16px;border-bottom:1px solid rgba(255,255,255,.06)">
+  <aside style="width:300px;flex-shrink:0;height:100%;display:flex;flex-direction:column;background:var(--panel);border-right:1px solid var(--edge)">
+    <div style="padding:20px 20px 16px;border-bottom:1px solid var(--edge)">
       <div style="display:flex;align-items:center;gap:9px">
-        <div style="width:9px;height:9px;border-radius:50%;background:#5fe3c0;box-shadow:0 0 10px #5fe3c0"></div>
-        <span style="font:600 13px 'JetBrains Mono';letter-spacing:.22em;text-transform:uppercase">Human&nbsp;Gen</span>
+        <div style="width:9px;height:9px;border-radius:50%;background:var(--accent);box-shadow:0 0 10px var(--accent)"></div>
+        <span style="font:600 13px var(--font-mono);letter-spacing:.22em;text-transform:uppercase">Human&nbsp;Gen</span>
       </div>
-      <div style="margin-top:8px;font:700 16px 'Space Grotesk'">Proportions</div>
-      <div style="margin-top:3px;font:400 12px 'Space Grotesk';color:#8b929e;line-height:1.45">Body lives in <span style="font:400 10.5px 'JetBrains Mono';color:#aab1bc">human-body.js</span></div>
+      <div style="margin-top:8px;font:700 16px var(--font-ui)">Proportions</div>
+      <div style="margin-top:3px;font:400 12px var(--font-ui);color:var(--muted);line-height:1.45">Body lives in <span style="font:400 10.5px var(--font-mono);color:var(--muted-2)">human-body.js</span></div>
     </div>
 
     <div style="flex:1;overflow-y:auto;padding:20px 20px 10px">
       <sc-for list="{{ sliders }}" as="item" hint-placeholder-count="9">
         <div style="margin-bottom:16px">
           <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:7px">
-            <span style="font:500 12.5px 'Space Grotesk';color:#cfd4dc">{{ item.label }}</span>
-            <span style="font:400 11px 'JetBrains Mono';color:#5fe3c0">{{ item.valueText }}</span>
+            <span style="font:500 12.5px var(--font-ui);color:var(--text-2)">{{ item.label }}</span>
+            <span style="font:400 11px var(--font-mono);color:var(--accent)">{{ item.valueText }}</span>
           </div>
           <input type="range" min="{{ item.min }}" max="{{ item.max }}" step="{{ item.step }}" value="{{ item.value }}" onChange="{{ item.onChange }}" style="width:100%;display:block">
         </div>
       </sc-for>
     </div>
 
-    <div style="padding:14px 20px 20px;border-top:1px solid rgba(255,255,255,.06);display:grid;grid-template-columns:1fr 1fr;gap:9px">
-      <button onClick="{{ randomize }}" style="display:flex;align-items:center;justify-content:center;gap:7px;padding:11px 8px;border-radius:10px;border:none;cursor:pointer;background:#5fe3c0;color:#06231d;font:700 13px 'Space Grotesk';transition:transform .1s" style-hover="transform:translateY(-1px)" style-active="transform:translateY(0)">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#06231d" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3h5v5"/><path d="M4 20 21 3"/><path d="M21 16v5h-5"/><path d="m15 15 6 6"/><path d="M4 4l5 5"/></svg>
+    <div style="padding:14px 20px 20px;border-top:1px solid var(--edge);display:grid;grid-template-columns:1fr 1fr;gap:9px">
+      <button onClick="{{ randomize }}" style="display:flex;align-items:center;justify-content:center;gap:7px;padding:11px 8px;border-radius:10px;border:none;cursor:pointer;background:var(--accent);color:var(--on-accent);font:700 13px var(--font-ui);transition:transform .1s" style-hover="transform:translateY(-1px)" style-active="transform:translateY(0)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--on-accent)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3h5v5"/><path d="M4 20 21 3"/><path d="M21 16v5h-5"/><path d="m15 15 6 6"/><path d="M4 4l5 5"/></svg>
         Random
       </button>
-      <button onClick="{{ reset }}" style="padding:11px 8px;border-radius:10px;cursor:pointer;background:rgba(255,255,255,.04);color:#cfd4dc;border:1px solid rgba(255,255,255,.12);font:600 13px 'Space Grotesk';transition:background .12s" style-hover="background:rgba(255,255,255,.08)">Reset</button>
+      <button onClick="{{ reset }}" style="padding:11px 8px;border-radius:10px;cursor:pointer;background:var(--panel-2);color:var(--text-2);border:1px solid var(--edge);font:600 13px var(--font-ui);transition:background .12s" style-hover="background:var(--panel-3)">Reset</button>
     </div>
   </aside>
 
   <!-- VIEWPORT -->
-  <div style="position:relative;flex:1;min-width:0;background:radial-gradient(120% 100% at 50% 20%, #2b303d 0%, #181b22 55%, #0f1116 100%)">
+  <div style="position:relative;flex:1;min-width:0;background:var(--viewport)">
     <div ref="{{ viewportRef }}" style="position:absolute;inset:0"></div>
 
     <!-- T-pose badge -->
-    <div style="position:absolute;top:20px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:7px;padding:6px 11px;border-radius:7px;background:rgba(95,227,192,.08);border:1px solid rgba(95,227,192,.25);pointer-events:none">
-      <span style="font:500 10.5px 'JetBrains Mono';letter-spacing:.12em;color:#5fe3c0">{{ badgeText }}</span>
+    <div style="position:absolute;top:20px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:7px;padding:6px 11px;border-radius:7px;background:var(--accent-dim);border:1px solid var(--accent-dim);pointer-events:none">
+      <span style="font:500 10.5px var(--font-mono);letter-spacing:.12em;color:var(--accent)">{{ badgeText }}</span>
     </div>
 
     <!-- orbit hint -->
-    <div style="position:absolute;bottom:18px;left:50%;transform:translateX(-50%);font:400 11px 'JetBrains Mono';color:#69707c;letter-spacing:.04em;pointer-events:none;white-space:nowrap">drag to orbit · scroll to zoom</div>
+    <div style="position:absolute;bottom:18px;left:50%;transform:translateX(-50%);font:400 11px var(--font-mono);color:var(--muted);letter-spacing:.04em;pointer-events:none;white-space:nowrap">drag to orbit · scroll to zoom</div>
 
     <!-- loading / fusing -->
     <sc-if value="{{ busy }}" hint-placeholder-val="{{ true }}">
-      <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;background:rgba(14,15,19,.45)">
-        <div style="width:34px;height:34px;border-radius:50%;border:3px solid rgba(95,227,192,.2);border-top-color:#5fe3c0;animation:hgspin .8s linear infinite"></div>
-        <span style="font:500 12px 'JetBrains Mono';letter-spacing:.1em;color:#9aa1ad;text-transform:uppercase">{{ busyText }}</span>
+      <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;background:color-mix(in srgb, var(--bg) 55%, transparent)">
+        <div style="width:34px;height:34px;border-radius:50%;border:3px solid var(--accent-dim);border-top-color:var(--accent);animation:hgspin .8s linear infinite"></div>
+        <span style="font:500 12px var(--font-mono);letter-spacing:.1em;color:var(--text-2);text-transform:uppercase">{{ busyText }}</span>
       </div>
     </sc-if>
   </div>
 
   <!-- RIGHT PANEL — APPEARANCE + ACTIONS -->
-  <aside style="width:280px;flex-shrink:0;height:100%;display:flex;flex-direction:column;background:#15171e;border-left:1px solid rgba(255,255,255,.07)">
-    <div style="padding:20px 20px 16px;border-bottom:1px solid rgba(255,255,255,.06)">
-      <div style="font:700 16px 'Space Grotesk'">Appearance</div>
-      <div style="margin-top:3px;font:400 12px 'Space Grotesk';color:#8b929e">Material · mesh · display</div>
+  <aside style="width:280px;flex-shrink:0;height:100%;display:flex;flex-direction:column;background:var(--panel);border-left:1px solid var(--edge)">
+    <div style="padding:20px 20px 16px;border-bottom:1px solid var(--edge)">
+      <div style="font:700 16px var(--font-ui)">Appearance</div>
+      <div style="margin-top:3px;font:400 12px var(--font-ui);color:var(--muted)">Material · mesh · display</div>
     </div>
 
     <div style="flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:22px">
 
       <!-- clay color -->
       <div>
-        <div style="font:500 11px 'JetBrains Mono';letter-spacing:.14em;text-transform:uppercase;color:#8b929e;margin-bottom:10px">Clay color</div>
+        <div style="font:500 11px var(--font-mono);letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:10px">Clay color</div>
         <div style="display:flex;gap:9px">
           <sc-for list="{{ swatches }}" as="item" hint-placeholder-count="4">
             <button onClick="{{ item.pick }}" title="{{ item.hex }}" style="width:34px;height:34px;border-radius:9px;cursor:pointer;background:{{ item.hex }};border:2px solid {{ item.ring }};transition:transform .1s" style-hover="transform:scale(1.08)"></button>
@@ -106,16 +106,16 @@
 
       <!-- fuse -->
       <div>
-        <div style="font:500 11px 'JetBrains Mono';letter-spacing:.14em;text-transform:uppercase;color:#8b929e;margin-bottom:10px">Mesh</div>
-        <button onClick="{{ fuse }}" style="display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:12px;border-radius:11px;cursor:pointer;background:{{ fuseBg }};color:{{ fuseColor }};border:1px solid {{ fuseBorder }};font:700 13px 'Space Grotesk';transition:transform .1s" style-hover="transform:translateY(-1px)">
+        <div style="font:500 11px var(--font-mono);letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:10px">Mesh</div>
+        <button onClick="{{ fuse }}" style="display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:12px;border-radius:11px;cursor:pointer;background:{{ fuseBg }};color:{{ fuseColor }};border:1px solid {{ fuseBorder }};font:700 13px var(--font-ui);transition:transform .1s" style-hover="transform:translateY(-1px)">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 12a4 4 0 1 1 8 0 4 4 0 0 1-8 0"/><path d="M12 2v4"/><path d="M12 18v4"/><path d="M2 12h4"/><path d="M18 12h4"/></svg>
           {{ fuseLabel }}
         </button>
-        <div style="margin-top:8px;font:400 11px 'Space Grotesk';color:#767d89;line-height:1.5">{{ fuseHint }}</div>
+        <div style="margin-top:8px;font:400 11px var(--font-ui);color:var(--muted);line-height:1.5">{{ fuseHint }}</div>
         <div style="margin-top:14px">
           <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:7px">
-            <span style="font:500 12px 'Space Grotesk';color:#cfd4dc">Fillet size</span>
-            <span style="font:400 11px 'JetBrains Mono';color:#5fe3c0">{{ smoothPowerText }}</span>
+            <span style="font:500 12px var(--font-ui);color:var(--text-2)">Fillet size</span>
+            <span style="font:400 11px var(--font-mono);color:var(--accent)">{{ smoothPowerText }}</span>
           </div>
           <input type="range" min="0.05" max="1" step="0.01" value="{{ smoothPower }}" onChange="{{ setSmoothPower }}" style="width:100%;display:block">
         </div>
@@ -123,12 +123,12 @@
 
       <!-- display toggles -->
       <div style="display:flex;flex-direction:column;gap:9px">
-        <div style="font:500 11px 'JetBrains Mono';letter-spacing:.14em;text-transform:uppercase;color:#8b929e;margin-bottom:1px">Display</div>
-        <button onClick="{{ toggleWire }}" style="display:flex;align-items:center;justify-content:space-between;width:100%;padding:11px 13px;border-radius:10px;cursor:pointer;background:{{ wireBg }};border:1px solid {{ wireBorder }};color:{{ wireColor }};font:500 12.5px 'Space Grotesk';transition:background .12s">
+        <div style="font:500 11px var(--font-mono);letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:1px">Display</div>
+        <button onClick="{{ toggleWire }}" style="display:flex;align-items:center;justify-content:space-between;width:100%;padding:11px 13px;border-radius:10px;cursor:pointer;background:{{ wireBg }};border:1px solid {{ wireBorder }};color:{{ wireColor }};font:500 12.5px var(--font-ui);transition:background .12s">
           <span>Wireframe overlay</span>
           <span style="width:8px;height:8px;border-radius:50%;background:{{ wireColor }}"></span>
         </button>
-        <button onClick="{{ toggleRotate }}" style="display:flex;align-items:center;justify-content:space-between;width:100%;padding:11px 13px;border-radius:10px;cursor:pointer;background:{{ rotateBg }};border:1px solid {{ rotateBorder }};color:{{ rotateColor }};font:500 12.5px 'Space Grotesk';transition:background .12s">
+        <button onClick="{{ toggleRotate }}" style="display:flex;align-items:center;justify-content:space-between;width:100%;padding:11px 13px;border-radius:10px;cursor:pointer;background:{{ rotateBg }};border:1px solid {{ rotateBorder }};color:{{ rotateColor }};font:500 12.5px var(--font-ui);transition:background .12s">
           <span>Auto-rotate</span>
           <span style="width:8px;height:8px;border-radius:50%;background:{{ rotateColor }}"></span>
         </button>
@@ -136,14 +136,14 @@
     </div>
 
     <!-- ACTIONS -->
-    <div style="padding:16px 20px 20px;border-top:1px solid rgba(255,255,255,.06);display:flex;flex-direction:column;gap:10px">
-      <div style="font:400 11px 'JetBrains Mono';color:#5a616c;text-align:center">{{ statsText }}</div>
-      <button onClick="{{ exportGLB }}" style="display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:12px;border-radius:11px;cursor:pointer;background:rgba(255,255,255,.04);color:#cfd4dc;border:1px solid rgba(255,255,255,.12);font:600 13px 'Space Grotesk';transition:background .12s" style-hover="background:rgba(255,255,255,.08)">
+    <div style="padding:16px 20px 20px;border-top:1px solid var(--edge);display:flex;flex-direction:column;gap:10px">
+      <div style="font:400 11px var(--font-mono);color:var(--muted);text-align:center">{{ statsText }}</div>
+      <button onClick="{{ exportGLB }}" style="display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:12px;border-radius:11px;cursor:pointer;background:var(--panel-2);color:var(--text-2);border:1px solid var(--edge);font:600 13px var(--font-ui);transition:background .12s" style-hover="background:var(--panel-3)">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
         {{ exportLabel }}
       </button>
       <sc-if value="{{ embedded }}" hint-placeholder-val="{{ false }}">
-        <button onClick="{{ sendToStudio }}" style="display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:12px;border-radius:11px;cursor:pointer;background:#5fe3c0;color:#06231d;border:none;font:700 13px 'Space Grotesk';transition:transform .1s" style-hover="transform:translateY(-1px)">
+        <button onClick="{{ sendToStudio }}" style="display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:12px;border-radius:11px;cursor:pointer;background:var(--accent);color:var(--on-accent);border:none;font:700 13px var(--font-ui);transition:transform .1s" style-hover="transform:translateY(-1px)">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg>
           {{ sendLabel }}
         </button>
@@ -162,7 +162,7 @@ class Component extends DCLogic {
 
 
 
-  ACCENT = '#5fe3c0';
+  ACCENT = 'var(--accent)';
   SWATCHES = ['#bfc5cf', '#c8ad92', '#77808d', '#a5b8ae'];
   viewportRef = (el) => { this.viewportEl = el; };
 
@@ -262,10 +262,12 @@ class Component extends DCLogic {
     ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true; scene.add(ground);
   }
 
+  themeAccent() { try { return getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#e6934f'; } catch (e) { return '#e6934f'; } }
+
   buildFigure(params) {
     const T = this.T;
     this.mat = new T.MeshStandardMaterial({ color: this.state.clay, roughness: 0.55, metalness: 0.05 });
-    this.wireMat = new T.MeshBasicMaterial({ color: this.ACCENT, wireframe: true, transparent: true, opacity: 0.16, depthTest: true });
+    this.wireMat = new T.MeshBasicMaterial({ color: this.themeAccent(), wireframe: true, transparent: true, opacity: 0.16, depthTest: true });
     const geo = this.HB.buildHumanGeometry(T, params);
     this.mesh = new T.Mesh(geo, this.mat);
     this.mesh.name = 'Body';
@@ -401,7 +403,7 @@ class Component extends DCLogic {
     })) : [];
     const swatches = this.SWATCHES.map(hex => ({
       hex, pick: () => this.pickClay(hex),
-      ring: st.clay === hex ? A : 'rgba(255,255,255,.14)',
+      ring: st.clay === hex ? A : 'var(--edge)',
     }));
     return {
       viewportRef: this.viewportRef,
@@ -418,22 +420,22 @@ class Component extends DCLogic {
       smoothPower: st.smoothPower,
       smoothPowerText: Math.round(st.smoothPower * 100) + '',
       setSmoothPower: this.setSmoothPower,
-      fuseBg: st.fused ? 'rgba(95,227,192,.12)' : '#5fe3c0',
-      fuseColor: st.fused ? A : '#06231d',
-      fuseBorder: st.fused ? 'rgba(95,227,192,.4)' : 'transparent',
+      fuseBg: st.fused ? 'var(--accent-dim)' : 'var(--accent)',
+      fuseColor: st.fused ? A : 'var(--on-accent)',
+      fuseBorder: st.fused ? 'var(--accent-dim)' : 'transparent',
       exportGLB: this.exportGLB,
       exportLabel: st.exporting ? 'Exporting\u2026' : 'Export GLB',
       embedded: st.embedded,
       sendToStudio: this.sendToStudio,
       sendLabel: st.sending ? 'Sending\u2026' : 'Use in Studio',
       toggleRotate: this.toggleRotate,
-      rotateColor: st.rotate ? A : '#8b929e',
-      rotateBg: st.rotate ? 'rgba(95,227,192,.10)' : 'rgba(255,255,255,.03)',
-      rotateBorder: st.rotate ? 'rgba(95,227,192,.4)' : 'rgba(255,255,255,.1)',
+      rotateColor: st.rotate ? A : 'var(--muted)',
+      rotateBg: st.rotate ? 'var(--accent-dim)' : 'var(--panel-2)',
+      rotateBorder: st.rotate ? 'var(--accent-dim)' : 'var(--edge)',
       toggleWire: this.toggleWire,
-      wireColor: st.wire ? A : '#8b929e',
-      wireBg: st.wire ? 'rgba(95,227,192,.08)' : 'rgba(255,255,255,.03)',
-      wireBorder: st.wire ? 'rgba(95,227,192,.35)' : 'rgba(255,255,255,.09)',
+      wireColor: st.wire ? A : 'var(--muted)',
+      wireBg: st.wire ? 'var(--accent-dim)' : 'var(--panel-2)',
+      wireBorder: st.wire ? 'var(--accent-dim)' : 'var(--edge)',
     };
   }
 }

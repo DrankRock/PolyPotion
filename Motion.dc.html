@@ -40,7 +40,7 @@
   <!-- TOP BAR -->
   <header style="height:46px;flex:none;display:flex;align-items:center;gap:18px;padding:0 14px;background:var(--header);border-bottom:1px solid var(--seam);">
     <div style="display:flex;align-items:center;gap:9px;">
-      <div style="width:26px;height:26px;border-radius:5px;display:flex;align-items:center;justify-content:center;background:var(--new);color:#04201f;font-weight:700;font-size:15px;box-shadow:0 1px 2px rgba(0,0,0,.4),0 0 0 1px rgba(255,255,255,.08) inset;">⌗</div>
+      <div style="width:26px;height:26px;border-radius:5px;display:flex;align-items:center;justify-content:center;background:var(--accent);color:var(--on-accent);font-weight:700;font-size:15px;box-shadow:0 1px 2px rgba(0,0,0,.4),0 0 0 1px rgba(255,255,255,.08) inset;">⌗</div>
       <div>
         <div style="font-weight:700;letter-spacing:.04em;font-size:14px;">MOTION</div>
         <div style="font-family:var(--font-mono);font-size:10px;color:var(--muted);letter-spacing:.1em;margin-top:1px;">EDIT · LAYER · MERGE · POSE</div>
@@ -163,7 +163,7 @@
           <div style="border-top:1px solid var(--seam);">
             <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--header);border-bottom:1px solid var(--seam);">
               <span style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);">Clip</span>
-              <span style="margin-left:auto;font-family:var(--font-mono);font-size:10px;color:var(--new);">{{ segLane }}</span>
+              <span style="margin-left:auto;font-family:var(--font-mono);font-size:10px;color:var(--accent);">{{ segLane }}</span>
             </div>
             <div style="padding:11px 12px;">
               <div style="display:flex;justify-content:space-between;font-size:11px;padding:3px 0;"><span style="color:var(--muted);">Name</span><span style="font-family:var(--font-mono);color:var(--text);">{{ segName }}</span></div>
@@ -340,7 +340,7 @@ class Component extends DCLogic {
     this.setState(ns);
   }
 
-  toast(msg) { const w = document.getElementById('mo-toasts'); if (!w) return; const el = document.createElement('div'); el.style.cssText = 'padding:11px 15px;border-radius:7px;font-size:12px;background:var(--panel-3);border:1px solid var(--edge);border-left:3px solid var(--new);box-shadow:0 8px 24px rgba(0,0,0,.45);max-width:340px;color:var(--text);animation:mo-tin .25s cubic-bezier(.2,1,.3,1);'; el.textContent = msg; w.appendChild(el); setTimeout(() => { el.style.transition = 'opacity .3s'; el.style.opacity = '0'; setTimeout(() => el.remove(), 300); }, 2600); }
+  toast(msg) { const w = document.getElementById('mo-toasts'); if (!w) return; const el = document.createElement('div'); el.style.cssText = 'padding:11px 15px;border-radius:7px;font-size:12px;background:var(--panel-3);border:1px solid var(--edge);border-left:3px solid var(--accent);box-shadow:0 8px 24px rgba(0,0,0,.45);max-width:340px;color:var(--text);animation:mo-tin .25s cubic-bezier(.2,1,.3,1);'; el.textContent = msg; w.appendChild(el); setTimeout(() => { el.style.transition = 'opacity .3s'; el.style.opacity = '0'; setTimeout(() => el.remove(), 300); }, 2600); }
 
   tc(f) { const s = Math.floor(f / 30); return String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0') + ':' + String(f % 30).padStart(2, '0'); }
 
@@ -385,7 +385,7 @@ class Component extends DCLogic {
   _drawCamHand(ctx, lm, w, h) {
     const C = [[0,1],[1,2],[2,3],[3,4],[0,5],[5,6],[6,7],[7,8],[5,9],[9,10],[10,11],[11,12],[9,13],[13,14],[14,15],[15,16],[13,17],[17,18],[18,19],[19,20],[0,17]];
     const P = lm.map(p => [(1 - p.x) * w, p.y * h]);
-    ctx.strokeStyle = 'var(--new)'; ctx.lineWidth = 3; ctx.lineCap = 'round';
+    ctx.strokeStyle = 'var(--accent)'; ctx.lineWidth = 3; ctx.lineCap = 'round';
     C.forEach(([a, b]) => { ctx.beginPath(); ctx.moveTo(P[a][0], P[a][1]); ctx.lineTo(P[b][0], P[b][1]); ctx.stroke(); });
     ctx.fillStyle = '#f0c070'; P.forEach(p => { ctx.beginPath(); ctx.arc(p[0], p[1], 4, 0, 7); ctx.fill(); });
   }
@@ -408,7 +408,7 @@ class Component extends DCLogic {
     const st = this.state, eng = this._eng, PX = this.PX();
     const tl = st.tl || { lanes: [], duration: 1 };
     const dur = Math.max(60, st.duration);
-    const chip = (on, color) => 'font-family:IBM Plex Mono,monospace;font-size:10px;padding:5px 9px;border-radius:5px;cursor:pointer;background:rgba(15,15,15,.6);border:1px solid ' + (on ? (color || 'var(--accent)') : 'var(--edge)') + ';color:' + (on ? '#ffd2bb' : 'var(--text-2)') + ';';
+    const chip = (on, color) => 'font-family:var(--font-mono);font-size:10px;padding:5px 9px;border-radius:5px;cursor:pointer;background:rgba(15,15,15,.6);border:1px solid ' + (on ? (color || 'var(--accent)') : 'var(--edge)') + ';color:' + (on ? '#ffd2bb' : 'var(--text-2)') + ';';
     const seg = (on) => 'flex:1;padding:6px 9px;border-radius:5px;font-size:11px;font-weight:600;cursor:pointer;border:none;background:' + (on ? 'var(--panel-3)' : 'transparent') + ';color:' + (on ? 'var(--text)' : 'var(--text-2)') + ';';
 
     // clip library grouped
@@ -425,7 +425,7 @@ class Component extends DCLogic {
     // timeline geometry
     const ticks = [];
     for (let f = 0; f <= dur; f += 30) ticks.push({ x: f * PX, label: this.tc(f).slice(0, 5) });
-    const laneColors = { body: 'var(--accent)', handL: 'var(--accent)', handR: 'var(--new)', face: '#b07ad6' };
+    const laneColors = { body: 'var(--accent)', handL: 'var(--accent)', handR: 'var(--accent)', face: '#b07ad6' };
     const laneRows = tl.lanes.map(l => ({
       bg: l.id === this.laneForHand() && st.tab === 'hand' ? 'background:rgba(255,79,0,0.05);' : '',
       segs: l.segments.map(s => ({
@@ -441,7 +441,7 @@ class Component extends DCLogic {
       onClick: () => { if (l.kind === 'hand') this.setState({ tab: 'hand', selHand: l.id === 'handL' ? 'left' : 'right' }); },
     }));
 
-    const presets = Object.keys(this._PRESETS || {}).map(k => { const p = this._PRESETS[k]; return { label: p.label, style: 'font-family:IBM Plex Mono,monospace;font-size:10px;padding:5px 9px;border-radius:5px;cursor:pointer;background:' + (st.pose.name === p.label ? 'var(--activeDim)' : 'var(--panel3)') + ';border:1px solid ' + (st.pose.name === p.label ? 'var(--active)' : 'var(--edge)') + ';color:' + (st.pose.name === p.label ? '#ffd2bb' : 'var(--text2)') + ';', onClick: () => this.setPose(p, p.label) }; });
+    const presets = Object.keys(this._PRESETS || {}).map(k => { const p = this._PRESETS[k]; return { label: p.label, style: 'font-family:var(--font-mono);font-size:10px;padding:5px 9px;border-radius:5px;cursor:pointer;background:' + (st.pose.name === p.label ? 'var(--activeDim)' : 'var(--panel3)') + ';border:1px solid ' + (st.pose.name === p.label ? 'var(--active)' : 'var(--edge)') + ';color:' + (st.pose.name === p.label ? '#ffd2bb' : 'var(--text2)') + ';', onClick: () => this.setPose(p, p.label) }; });
     const fingerNames = ['Thumb', 'Index', 'Middle', 'Ring', 'Pinky'];
     const fingers = fingerNames.map((nm, i) => ({ label: nm, val: Math.round(st.pose.curl[i] * 100), pct: Math.round(st.pose.curl[i] * 100), onInput: (e) => { const curl = st.pose.curl.slice(); curl[i] = +e.target.value / 100; const pose = { curl, spread: st.pose.spread, name: 'Custom' }; this.setState({ pose }); if (eng) eng.previewHand(st.selHand, pose); } }));
 
@@ -452,7 +452,7 @@ class Component extends DCLogic {
       toggleMann: () => { const m = !st.mann; this.setState({ mann: m }); if (eng) eng.setLayers(m, st.skel); },
       toggleSkel: () => { const k = !st.skel; this.setState({ skel: k }); if (eng) eng.setLayers(st.mann, k); },
       frameLabel: st.frame, durLabel: dur, tcLabel: this.tc(st.frame),
-      followLChip: chip(st.followL, 'var(--accent)'), followRChip: chip(st.followR, 'var(--new)'),
+      followLChip: chip(st.followL, 'var(--accent)'), followRChip: chip(st.followR, 'var(--accent)'),
       toggleFollowL: () => { const v = !st.followL; this.setState({ followL: v }); if (eng) eng.setFollowAxis('left', v); this.toast('Left wrist ' + (v ? 'follows the forearm axis' : 'free / posed')); },
       toggleFollowR: () => { const v = !st.followR; this.setState({ followR: v }); if (eng) eng.setFollowAxis('right', v); this.toast('Right wrist ' + (v ? 'follows the forearm axis' : 'free / posed')); },
       // transport

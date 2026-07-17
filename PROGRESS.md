@@ -204,6 +204,59 @@ audit lists under Platform hardening / Audience — don't reopen the rest.
 
 ## Log
 
+- 2026-07-17 — **Theme pass, round 3: accents unified.** Converted every tool's
+  bespoke primary-accent colour to `var(--accent)` / `var(--on-accent)` /
+  `var(--accent-dim)`: Director (#d8935a), Lipsync (#d87ba3), MeshDoctor
+  (#2fa07c), Recipe (#b8a3e8), Retopo (#e0894f), ShaderLab (#7b6fd8), Timeline
+  (#5a8fd8), TexturePaint (#c8743c), Showcase (#c98a5a). Their remaining
+  hardcoded hex are genuinely semantic and kept as content: danger/warn shades,
+  per-clip/track lane palettes (Director/Timeline), node-type colours
+  (Recipe/ShaderLab), and retopo quad-validity greens. Also tokenised residual
+  CSS-chrome text in TexturePaint/Showcase/MoCap (cream/tan text → var(--text-2)/
+  var(--on-accent), success green → var(--good)); left canvas draw colours
+  (skeleton gizmos, brush cursors, graph fills — fillStyle/strokeStyle) hardcoded
+  on purpose, since those are viewport content, not app chrome. sw.js → pp-v51.
+  Net: all app chrome across the shell + 38 tools now reads from theme.js.
+
+
+- 2026-07-17 — **Theme pass, round 2 (full audit).** Swept every doc, not just
+  the ones the user named. Found + fixed: (1) **Boolean.dc.html** — the last
+  tool with no `theme.js` and a wholly hardcoded dark palette/'Sora' font; fully
+  converted to tokens + loads theme.js now. (2) **index.html dark-on-dark** —
+  the shell's `.tbtn` top buttons, `.dock-cat` labels and `.fchip` filter chips
+  set `color:var(--wood-dark)`, but `--wood-dark` is a dark shadow colour in
+  *every* theme, so in the dark themes it was dark-grey text on a dark panel
+  (exactly the reported bug). Switched those to `color:var(--text)`. (3)
+  Tokenised dark button inks (`#0d0f1f`/`#04201f`/…) that sit on
+  `background:var(--accent)` → `var(--on-accent)` across 13 tools, so accent-
+  button contrast is guaranteed in any theme. Audited all remaining hardcoded
+  dark `color:#…`: the rest are dark ink on bright accent buttons or on semantic
+  per-clip/lane/data colours (Director/Timeline clips, HairExtract stat numbers)
+  — correct dark-on-bright, left as content. sw.js → pp-v50. (Still bespoke, not
+  a contrast bug: a few tools use a per-tool bright button colour, e.g.
+  Director/Lipsync/Retopo/ShaderLab/Timeline, instead of var(--accent) — readable
+  everywhere, optional future uniformity tweak.)
+
+
+- 2026-07-17 — **GUI theme-consistency pass.** Several tools ignored the shared
+  `theme.js` CSS-variable palette. Fixed: (1) **HumanGen** and **HairStudio**
+  were built on their own hardcoded palettes/fonts (Space Grotesk + mint;
+  Archivo + editorial tan/orange) and did not respond to theme switching at all
+  — both fully converted to `var(--bg/panel/text/accent/on-accent/muted/edge/
+  accent-dim)` + `var(--font-ui/mono)`, keeping only genuine content colours
+  (clay swatches, hair-colour swatches, canvas hair textures, 3D light colours).
+  (2) **Sculpt** used `var(--new)` (a blue) for its brush chips/pills — the
+  "light blue" the user spotted; swapped to `var(--accent)`, and did the same
+  across the other tools that used `var(--new)` for interactive chrome
+  (Physics/Motion/MeshEdit/MoCap/TexturePaint) for one uniform accent. (3)
+  Global `IBM Plex Mono` → `var(--font-mono)` (9 files); stray `#7c83ff` blue
+  (Decimate/Retarget) and `#4fb6a2` teal (UVUnwrap) → `var(--accent)`.
+  HairExtract was already fully themed (not an offender). sw.js → pp-v48.
+  Remaining polish (not yet done): tokenize the hardcoded `rgba(15,15,15)` chip
+  backgrounds + `rgba(255,255,255,.0x)` hairline borders still scattered across
+  most tools (they look right on dark themes but wash out on the light ones).
+
+
 - 2026-07-17 — **Two load-time breakages fixed** (`_headers`,
   `SECURITY_HEADERS.md`, `sw.js`). (1) The enforced CSP `script-src` was missing
   `'unsafe-eval'`, so the DC runtime's `Function()`-compiled logic class was

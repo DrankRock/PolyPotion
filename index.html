@@ -69,7 +69,7 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
 .spacer{flex:1;}
 .tbtn{display:inline-flex;align-items:center;gap:7px;height:38px;padding:0 16px;border-radius:12px;
   font-family:var(--font-mono);font-size:13px;font-weight:600;letter-spacing:.02em;
-  background:var(--cream-2);border:3px solid var(--wood-dark);color:var(--wood-dark);box-shadow:0 4px 0 rgba(107,74,43,.30);
+  background:var(--cream-2);border:3px solid var(--wood-dark);color:var(--text);box-shadow:0 4px 0 rgba(107,74,43,.30);
   transition:transform .12s ease, box-shadow .12s ease;}
 .tbtn:hover{transform:translateY(-2px);box-shadow:0 6px 0 rgba(107,74,43,.30);}
 .tbtn:active{transform:translateY(2px);box-shadow:0 2px 0 rgba(107,74,43,.30);}
@@ -97,7 +97,7 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
 .dock-group.closed .dock-group-items{display:none;}
 .dock-cat{width:64px;flex:none;display:flex;align-items:center;justify-content:center;gap:4px;padding:4px 0 3px;
   font-family:var(--font-mono);font-size:9.5px;font-weight:700;letter-spacing:.05em;text-transform:lowercase;
-  color:var(--wood-dark);background:var(--cream);border:2px solid var(--wood-dark);border-radius:9px;
+  color:var(--text);background:var(--cream);border:2px solid var(--wood-dark);border-radius:9px;
   box-shadow:0 3px 0 rgba(107,74,43,.22);cursor:pointer;transition:transform .12s ease, box-shadow .12s ease;}
 .dock-cat:hover{transform:translateY(-1px);box-shadow:0 4px 0 rgba(107,74,43,.26);}
 .dock-cat:active{transform:translateY(1px);box-shadow:0 1px 0 rgba(107,74,43,.26);}
@@ -160,7 +160,7 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
 /* library filter bar */
 .lib-filters{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:0 0 24px;}
 .lib-filters .flabel{font-family:var(--font-mono);font-size:11px;font-weight:600;color:var(--ink-soft);margin-right:2px;}
-.fchip{cursor:pointer;font-family:var(--font-mono);font-size:11px;font-weight:600;padding:5px 12px;border-radius:20px;background:var(--cream);border:3px solid var(--wood-dark);color:var(--wood-dark);box-shadow:0 3px 0 rgba(107,74,43,.25);transition:transform .12s ease, box-shadow .12s ease, background .12s;user-select:none;}
+.fchip{cursor:pointer;font-family:var(--font-mono);font-size:11px;font-weight:600;padding:5px 12px;border-radius:20px;background:var(--cream);border:3px solid var(--wood-dark);color:var(--text);box-shadow:0 3px 0 rgba(107,74,43,.25);transition:transform .12s ease, box-shadow .12s ease, background .12s;user-select:none;}
 .fchip:hover{transform:translateY(-2px);box-shadow:0 5px 0 rgba(107,74,43,.25);}
 .fchip.on{background:var(--clay);border-color:var(--wood-dark);color:#fff6e0;box-shadow:0 2px 0 rgba(107,74,43,.35);}
 .fchip .ct{opacity:.6;font-weight:500;margin-left:4px;}
@@ -791,7 +791,7 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
     ];
     const cheat = $('#cheat');
     $('#cheatGrid').innerHTML = CHEAT.map(([k,v]) =>
-      '<div style="display:flex;align-items:center;gap:10px;"><span style="font-family:IBM Plex Mono,monospace;font-size:11px;color:#ffd2bb;background:#1c1b19;border:1px solid #2a2823;border-radius:5px;padding:3px 8px;min-width:54px;text-align:center;">'+k+'</span><span style="color:#9b958a;">'+v+'</span></div>'
+      '<div style="display:flex;align-items:center;gap:10px;"><span style="font-family:var(--font-mono);font-size:11px;color:#ffd2bb;background:#1c1b19;border:1px solid #2a2823;border-radius:5px;padding:3px 8px;min-width:54px;text-align:center;">'+k+'</span><span style="color:#9b958a;">'+v+'</span></div>'
     ).join('');
     function openCheat() { cheat.style.display = 'flex'; }
     function closeCheat() { cheat.style.display = 'none'; }

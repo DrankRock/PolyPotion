@@ -32,7 +32,7 @@
   #rc-root ::-webkit-scrollbar-track{background:var(--gutter);}
   #rc-root ::-webkit-scrollbar-thumb{background:var(--panel-3);border:2px solid var(--gutter);border-radius:6px;}
   #rc-root input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:4px;border-radius:2px;background:var(--panel-3);outline:none;}
-  #rc-root input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:13px;height:13px;border-radius:50%;background:#b8a3e8;cursor:pointer;border:2px solid var(--gutter);}
+  #rc-root input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:13px;height:13px;border-radius:50%;background:var(--accent);cursor:pointer;border:2px solid var(--gutter);}
 </style>
 </helmet>
 
@@ -41,7 +41,7 @@
   <!-- TOP BAR -->
   <header style="height:46px;flex:none;display:flex;align-items:center;gap:14px;padding:0 14px;background:var(--header);border-bottom:1px solid var(--seam);">
     <div style="display:flex;align-items:center;gap:9px;">
-      <div style="width:26px;height:26px;border-radius:5px;display:flex;align-items:center;justify-content:center;background:#b8a3e8;color:#1c1030;font-weight:700;font-size:15px;box-shadow:0 1px 2px rgba(0,0,0,.4),0 0 0 1px rgba(255,255,255,.08) inset;">⧉</div>
+      <div style="width:26px;height:26px;border-radius:5px;display:flex;align-items:center;justify-content:center;background:var(--accent);color:var(--on-accent);font-weight:700;font-size:15px;box-shadow:0 1px 2px rgba(0,0,0,.4),0 0 0 1px rgba(255,255,255,.08) inset;">⧉</div>
       <div>
         <div style="font-weight:700;letter-spacing:.04em;font-size:14px;">RECIPE</div>
         <div style="font-family:var(--font-mono);font-size:10px;color:var(--muted);letter-spacing:.1em;margin-top:1px;">NON-DESTRUCTIVE PIPELINE · GLB WIRES · LOCAL</div>
@@ -73,7 +73,7 @@
         </sc-for>
       </div>
       <div style="padding:10px 12px;margin-top:auto;">
-        <div style="display:flex;gap:8px;padding:8px 10px;border-radius:7px;font-size:10.5px;line-height:1.5;background:rgba(184,163,232,.1);border:1px solid rgba(184,163,232,.3);color:var(--text2);"><span style="flex:none;color:#b8a3e8;">⧉</span><span>Click a step to add it, then drag from a node's <b>right port</b> to another's <b>left port</b>. Change anything — everything downstream re-brews itself.</span></div>
+        <div style="display:flex;gap:8px;padding:8px 10px;border-radius:7px;font-size:10.5px;line-height:1.5;background:var(--accent-dim);border:1px solid var(--accent-dim);color:var(--text2);"><span style="flex:none;color:var(--accent);">⧉</span><span>Click a step to add it, then drag from a node's <b>right port</b> to another's <b>left port</b>. Change anything — everything downstream re-brews itself.</span></div>
       </div>
     </aside>
 
@@ -94,9 +94,9 @@
             </div>
             <div style="padding:7px 9px;font-family:var(--font-mono);font-size:9.5px;color:var(--text2);line-height:1.6;pointer-events:none;">{{ n.line1 }}<br>{{ n.line2 }}</div>
             <sc-if value="{{ n.hasIn }}" hint-placeholder-val="{{ false }}">
-              <span style="position:absolute;left:-7px;top:15px;width:13px;height:13px;border-radius:50%;background:var(--panel);border:2.5px solid #b8a3e8;cursor:crosshair;" onClick="{{ n.onInPort }}" title="input — click while dragging a wire"></span>
+              <span style="position:absolute;left:-7px;top:15px;width:13px;height:13px;border-radius:50%;background:var(--panel);border:2.5px solid var(--accent);cursor:crosshair;" onClick="{{ n.onInPort }}" title="input — click while dragging a wire"></span>
             </sc-if>
-            <span style="position:absolute;right:-7px;top:15px;width:13px;height:13px;border-radius:50%;background:#b8a3e8;border:2.5px solid var(--panel);cursor:crosshair;" onClick="{{ n.onOutPort }}" title="output — click, then click another node's input"></span>
+            <span style="position:absolute;right:-7px;top:15px;width:13px;height:13px;border-radius:50%;background:var(--accent);border:2.5px solid var(--panel);cursor:crosshair;" onClick="{{ n.onOutPort }}" title="output — click, then click another node's input"></span>
           </div>
         </sc-for>
 
@@ -113,7 +113,7 @@
       <div style="flex:1;overflow-y:auto;min-height:0;">
         <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--header);border-bottom:1px solid var(--seam);">
           <span style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);">Node</span>
-          <span style="margin-left:auto;font-family:var(--font-mono);font-size:10px;color:#b8a3e8;background:var(--panel);padding:1px 7px;border-radius:9px;border:1px solid var(--seam);">{{ selBadge }}</span>
+          <span style="margin-left:auto;font-family:var(--font-mono);font-size:10px;color:var(--accent);background:var(--panel);padding:1px 7px;border-radius:9px;border:1px solid var(--seam);">{{ selBadge }}</span>
         </div>
 
         <sc-if value="{{ hasSel }}" hint-placeholder-val="{{ false }}">
@@ -143,7 +143,7 @@
           </div>
           <div style="padding:11px 12px;display:flex;flex-direction:column;gap:7px;">
             <sc-if value="{{ embedded }}" hint-placeholder-val="{{ false }}">
-              <button style="display:flex;align-items:center;justify-content:center;gap:7px;padding:9px;border-radius:6px;font-size:12px;font-weight:700;background:#b8a3e8;border:1px solid #b8a3e8;color:#1c1030;width:100%;cursor:pointer;" onClick="{{ doSave }}">▤ Save this output to Library</button>
+              <button style="display:flex;align-items:center;justify-content:center;gap:7px;padding:9px;border-radius:6px;font-size:12px;font-weight:700;background:var(--accent);border:1px solid var(--accent);color:var(--on-accent);width:100%;cursor:pointer;" onClick="{{ doSave }}">▤ Save this output to Library</button>
             </sc-if>
             <button style="display:flex;align-items:center;justify-content:center;gap:7px;padding:9px;border-radius:6px;font-size:12px;font-weight:600;background:var(--panel3);border:1px solid var(--edge);color:var(--text);width:100%;cursor:pointer;" onClick="{{ doDownload }}">⬇ Download this output .glb</button>
           </div>
@@ -452,12 +452,12 @@ class Component extends DCLogic {
   toast(msg) {
     const wrap = document.getElementById('rc-toasts'); if (!wrap) return;
     const el = document.createElement('div');
-    el.style.cssText = 'padding:11px 15px;border-radius:7px;font-size:12px;background:var(--panel-3);border:1px solid var(--edge);border-left:3px solid #b8a3e8;box-shadow:0 8px 24px rgba(0,0,0,.45);max-width:340px;color:var(--text);animation:rc-tin .25s cubic-bezier(.2,1,.3,1);';
+    el.style.cssText = 'padding:11px 15px;border-radius:7px;font-size:12px;background:var(--panel-3);border:1px solid var(--edge);border-left:3px solid var(--accent);box-shadow:0 8px 24px rgba(0,0,0,.45);max-width:340px;color:var(--text);animation:rc-tin .25s cubic-bezier(.2,1,.3,1);';
     el.textContent = msg; wrap.appendChild(el);
     setTimeout(() => { el.style.transition = 'opacity .3s'; el.style.opacity = '0'; setTimeout(() => el.remove(), 300); }, 3200);
   }
 
-  chip(on) { return 'font-family:var(--font-mono);font-size:9.5px;padding:4px 8px;border-radius:4px;cursor:pointer;background:rgba(15,15,15,.6);border:1px solid ' + (on ? '#b8a3e8' : 'var(--edge)') + ';color:' + (on ? '#d8c9f5' : 'var(--text-2)') + ';'; }
+  chip(on) { return 'font-family:var(--font-mono);font-size:9.5px;padding:4px 8px;border-radius:4px;cursor:pointer;background:rgba(15,15,15,.6);border:1px solid ' + (on ? 'var(--accent)' : 'var(--edge)') + ';color:' + (on ? 'var(--accent)' : 'var(--text-2)') + ';'; }
 
   // ---------------------------------------------------------- RENDER
   renderVals() {
@@ -489,7 +489,7 @@ class Component extends DCLogic {
       return {
         name: isSrc ? ('Source · ' + (st.srcName === 'no source' ? 'empty' : st.srcName)) : m.name,
         icon: m.icon, tint: m.tint,
-        style: 'position:absolute;left:' + n.x + 'px;top:' + n.y + 'px;width:' + NW + 'px;background:var(--panel);border:1.5px solid ' + (sel ? '#b8a3e8' : 'var(--edge)') + ';border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,.35);cursor:default;' + (sel ? 'z-index:3;' : 'z-index:2;'),
+        style: 'position:absolute;left:' + n.x + 'px;top:' + n.y + 'px;width:' + NW + 'px;background:var(--panel);border:1.5px solid ' + (sel ? 'var(--accent)' : 'var(--edge)') + ';border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,.35);cursor:default;' + (sel ? 'z-index:3;' : 'z-index:2;'),
         dotStyle: 'flex:none;width:8px;height:8px;border-radius:50%;background:' + sm[0] + ';' + (n.status === 'run' ? 'animation:rc-pulse .8s ease-in-out infinite;' : ''),
         statusTitle: sm[1],
         line1: s ? (Math.round(s.tris).toLocaleString() + ' tris · ' + s.verts.toLocaleString() + ' verts') : (isSrc ? 'drop a mesh / import' : sm[1]),
@@ -519,7 +519,7 @@ class Component extends DCLogic {
       return React.createElement('path', {
         key: e.from + '>' + e.to,
         d: mkPath(a.x + NW, a.y + PORT_Y, b.x, b.y + PORT_Y),
-        fill: 'none', stroke: ok ? '#b8a3e8' : 'rgba(128,140,160,.45)', strokeWidth: 2.5,
+        fill: 'none', stroke: ok ? 'var(--accent)' : 'rgba(128,140,160,.45)', strokeWidth: 2.5,
         style: { pointerEvents: 'stroke', cursor: 'pointer' },
         onClick: (ev) => { ev.stopPropagation(); this.disconnect(e.to); },
       });
@@ -529,7 +529,7 @@ class Component extends DCLogic {
       wirePaths.push(React.createElement('path', {
         key: '__pending',
         d: mkPath(a.x + NW, a.y + PORT_Y, st.pendingXY.x, st.pendingXY.y),
-        fill: 'none', stroke: '#b8a3e8', strokeWidth: 2, strokeDasharray: '6 5',
+        fill: 'none', stroke: 'var(--accent)', strokeWidth: 2, strokeDasharray: '6 5',
       }));
     }
     const wiresSvg = React.createElement('svg', { width: 2400, height: 1500, style: { position: 'absolute', inset: 0, pointerEvents: 'none' } }, wirePaths);

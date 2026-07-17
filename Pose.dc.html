@@ -198,7 +198,7 @@
         </div>
         <div style="padding:6px 12px 12px;">
           <sc-for list="{{ stats }}" as="s" hint-placeholder-count="3">
-            <div style="display:flex;justify-content:space-between;font-size:11px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.03);"><span style="color:var(--muted);">{{ s.k }}</span><span style="font-family:IBM Plex Mono,monospace;color:var(--text);">{{ s.v }}</span></div>
+            <div style="display:flex;justify-content:space-between;font-size:11px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.03);"><span style="color:var(--muted);">{{ s.k }}</span><span style="font-family:var(--font-mono);color:var(--text);">{{ s.v }}</span></div>
           </sc-for>
         </div>
       </div>
@@ -457,7 +457,7 @@ class Component extends DCLogic {
     setTimeout(() => { el.style.transition = 'opacity .3s'; el.style.opacity = '0'; setTimeout(() => el.remove(), 300); }, 2600);
   }
 
-  chip(on, color) { color = color || 'var(--accent)'; return 'font-family:IBM Plex Mono,monospace;font-size:10px;padding:5px 10px;border-radius:5px;cursor:pointer;background:rgba(15,15,15,.6);border:1px solid ' + (on ? color : 'var(--edge)') + ';color:' + (on ? '#ffd2bb' : 'var(--text-2)') + ';'; }
+  chip(on, color) { color = color || 'var(--accent)'; return 'font-family:var(--font-mono);font-size:10px;padding:5px 10px;border-radius:5px;cursor:pointer;background:rgba(15,15,15,.6);border:1px solid ' + (on ? color : 'var(--edge)') + ';color:' + (on ? '#ffd2bb' : 'var(--text-2)') + ';'; }
   topChip(on) { return 'display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 12px;border-radius:6px;font-size:11.5px;font-weight:600;cursor:pointer;background:' + (on ? 'var(--activeDim)' : 'var(--panel3)') + ';border:1px solid ' + (on ? 'var(--active)' : 'var(--edge)') + ';color:' + (on ? '#ffd2bb' : 'var(--text)') + ';'; }
 
   renderVals() {
@@ -482,7 +482,7 @@ class Component extends DCLogic {
       noSavedPoses: !(st.poses && st.poses.length),
       savedPoses: (st.poses || []).map(p => ({
         label: p.name,
-        style: 'font-family:IBM Plex Mono,monospace;font-size:10px;padding:5px 10px;border-radius:5px;cursor:pointer;background:var(--panel2);border:1px solid var(--edge);color:var(--text);',
+        style: 'font-family:var(--font-mono);font-size:10px;padding:5px 10px;border-radius:5px;cursor:pointer;background:var(--panel2);border:1px solid var(--edge);color:var(--text);',
         apply: () => this.applySavedPose(p),
         del: (e) => { e.preventDefault(); this.deleteSavedPose(p); },
       })),

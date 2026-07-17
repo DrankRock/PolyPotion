@@ -318,14 +318,14 @@
       <!-- CUT MODE -->
       <sc-if value="{{ isCut }}" hint-placeholder-val="{{ false }}">
         <div style="border-bottom:1px solid var(--seam);">
-          <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--header);border-bottom:1px solid var(--seam);"><span style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);">Plane cut</span><span style="margin-left:auto;font-family:var(--font-mono);font-size:10px;color:var(--new);">slice</span></div>
+          <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--header);border-bottom:1px solid var(--seam);"><span style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);">Plane cut</span><span style="margin-left:auto;font-family:var(--font-mono);font-size:10px;color:var(--accent);">slice</span></div>
           <div style="padding:11px 12px;">
             <sc-if value="{{ noCut }}" hint-placeholder-val="{{ true }}">
               <div style="font-size:11px;line-height:1.5;color:var(--text2);margin-bottom:10px;">Click any element to drop a cut ring on it. Slide it to the seam, pick the axis, and slice it cleanly into two elements.</div>
               <button style="display:flex;align-items:center;justify-content:center;gap:7px;padding:9px;border-radius:6px;font-size:12px;font-weight:600;background:var(--panel3);border:1px solid var(--edge);color:var(--text);width:100%;cursor:pointer;" onClick="{{ cutSelected }}">◴ Cut selected element</button>
             </sc-if>
             <sc-if value="{{ cutting }}" hint-placeholder-val="{{ false }}">
-              <div style="display:flex;justify-content:space-between;font-size:11px;padding:3px 0;margin-bottom:9px;"><span style="color:var(--muted);">Cutting</span><span style="font-family:var(--font-mono);color:var(--new);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:160px;">{{ cutName }}</span></div>
+              <div style="display:flex;justify-content:space-between;font-size:11px;padding:3px 0;margin-bottom:9px;"><span style="color:var(--muted);">Cutting</span><span style="font-family:var(--font-mono);color:var(--accent);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:160px;">{{ cutName }}</span></div>
               <label style="display:block;font-size:10.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">Axis</label>
               <div style="display:flex;gap:6px;margin-bottom:11px;">
                 <sc-for list="{{ cutAxes }}" as="a" hint-placeholder-count="3"><button style="{{ a.style }}" onClick="{{ a.onClick }}">{{ a.label }}</button></sc-for>
@@ -342,7 +342,7 @@
       <!-- REMESH MODE -->
       <sc-if value="{{ isRemesh }}" hint-placeholder-val="{{ false }}">
         <div style="border-bottom:1px solid var(--seam);">
-          <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--header);border-bottom:1px solid var(--seam);"><span style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);">Voxel remesh</span><span style="margin-left:auto;font-family:var(--font-mono);font-size:10px;color:var(--new);">watertight</span></div>
+          <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--header);border-bottom:1px solid var(--seam);"><span style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);">Voxel remesh</span><span style="margin-left:auto;font-family:var(--font-mono);font-size:10px;color:var(--accent);">watertight</span></div>
           <div style="padding:11px 12px;">
             <div style="font-size:11px;line-height:1.5;color:var(--text2);margin-bottom:11px;">Dissolve the mesh into a 3D distance field and re-extract <b>one clean, watertight surface</b> — seams welded, holes sealed, topology even. The fix for a messy single-object scan, or for fusing pieces you cut &amp; moved.</div>
             <label style="display:flex;justify-content:space-between;font-size:10.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;"><span>Resolution</span><span style="font-family:var(--font-mono);color:var(--text2);">{{ remeshResLabel }}</span></label>
@@ -483,7 +483,7 @@ class Component extends DCLogic {
   _stepAmt() { const S = { fine: { n: 0.01, r: 5, s: 1.04 }, med: { n: 0.03, r: 15, s: 1.1 }, coarse: { n: 0.08, r: 45, s: 1.25 } }; return S[this.state.editStep] || S.med; }
   setMode(m) { this.setState({ mode: m }); if (this._eng) this._eng.setMode(m); }
   seg(on) { return 'font-size:11px;font-weight:600;padding:6px 11px;border-radius:5px;cursor:pointer;border:none;background:' + (on ? 'var(--panel-3)' : 'transparent') + ';color:' + (on ? 'var(--text)' : 'var(--text-2)') + ';box-shadow:' + (on ? '0 1px 2px rgba(0,0,0,.3)' : 'none') + ';'; }
-  chip(on) { return 'font-family:IBM Plex Mono,monospace;font-size:10px;padding:5px 10px;border-radius:5px;cursor:pointer;background:rgba(15,15,15,.6);border:1px solid ' + (on ? 'var(--accent)' : 'var(--edge)') + ';color:' + (on ? '#ffd2bb' : 'var(--text-2)') + ';'; }
+  chip(on) { return 'font-family:var(--font-mono);font-size:10px;padding:5px 10px;border-radius:5px;cursor:pointer;background:rgba(15,15,15,.6);border:1px solid ' + (on ? 'var(--accent)' : 'var(--edge)') + ';color:' + (on ? '#ffd2bb' : 'var(--text-2)') + ';'; }
 
   renderVals() {
     const st = this.state, eng = this._eng;
@@ -509,7 +509,7 @@ class Component extends DCLogic {
           label: p.label, tris: (p.tris >= 1000 ? (p.tris / 1000).toFixed(1) + 'k' : p.tris),
           rowStyle: 'display:flex;align-items:center;gap:7px;padding:5px 8px;border-radius:5px;cursor:pointer;margin-left:4px;border:1px solid ' + (on ? 'var(--accent)' : 'transparent') + ';background:' + (on ? 'var(--accent-dim)' : 'transparent') + ';color:' + (on ? '#ffd2bb' : 'var(--text)') + ';',
           dotStyle: 'width:7px;height:7px;border-radius:50%;flex:none;background:' + (on ? 'var(--accent)' : 'var(--muted-2)') + ';',
-          tag: p.isCloth ? 'cloth' : '', tagStyle: 'font-family:IBM Plex Mono,monospace;font-size:8.5px;color:#ffd2bb;',
+          tag: p.isCloth ? 'cloth' : '', tagStyle: 'font-family:var(--font-mono);font-size:8.5px;color:#ffd2bb;',
           onClick: (e) => eng && eng.select(p.id, e && (e.shiftKey || e.metaKey)),
         };
       }),
@@ -517,7 +517,7 @@ class Component extends DCLogic {
 
     const views = ['Persp', 'Front', 'Side', 'Top', 'Back'].map(v => ({ label: v, onClick: () => eng && eng.setView(v.toLowerCase()) }));
     const ax = (label, axis, col) => ({ label, col, minus: () => eng && eng.nudgeSelected(axis, -0.03), plus: () => eng && eng.nudgeSelected(axis, 0.03) });
-    const cutAxes = ['x', 'y', 'z'].map(a => ({ label: a.toUpperCase(), style: 'flex:1;font-size:11px;font-weight:600;padding:7px;border-radius:5px;cursor:pointer;border:1px solid ' + (st.cutAxis === a ? 'var(--new)' : 'var(--edge)') + ';background:' + (st.cutAxis === a ? 'rgba(67,182,196,0.16)' : 'var(--panel-3)') + ';color:' + (st.cutAxis === a ? '#86d3dd' : 'var(--text)') + ';', onClick: () => { this.setState({ cutAxis: a }); if (eng) eng.setCutAxis(a); } }));
+    const cutAxes = ['x', 'y', 'z'].map(a => ({ label: a.toUpperCase(), style: 'flex:1;font-size:11px;font-weight:600;padding:7px;border-radius:5px;cursor:pointer;border:1px solid ' + (st.cutAxis === a ? 'var(--accent)' : 'var(--edge)') + ';background:' + (st.cutAxis === a ? 'var(--accent-dim)' : 'var(--panel-3)') + ';color:' + (st.cutAxis === a ? '#86d3dd' : 'var(--text)') + ';', onClick: () => { this.setState({ cutAxis: a }); if (eng) eng.setCutAxis(a); } }));
 
     const modeLabel = st.mode === 'paint' ? 'PAINT — drag to select faces (alt erases)' : st.mode === 'cut' ? 'CUT — click an element' : st.mode === 'move' ? 'MOVE — drag pieces · merge to weld back' : st.mode === 'remesh' ? 'REMESH — voxel-fuse to one watertight skin' : st.mode === 'cloth' ? 'CLOTH' : st.mode === 'verts' ? 'EDIT — 1/2/3 mode · G grab R rotate S scale E extrude · box-select drag' : 'SELECT — click element · shift adds';
 
