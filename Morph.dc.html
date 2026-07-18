@@ -133,7 +133,16 @@
         </div>
         <sc-if value="{{ camOn }}" hint-placeholder-val="{{ false }}">
           <video id="mo-cam" autoplay playsinline muted style="width:100%;border-radius:7px;border:1px solid var(--edge);transform:scaleX(-1);background:#000;min-height:60px;"></video>
-          <div style="font-size:10px;color:var(--muted);line-height:1.5;">Your face drives the ARKit sliders live. Stop to freeze, then ⊕ Save the expression.</div>
+          <div style="display:flex;gap:6px;">
+            <button style="{{ calBtn }}" onClick="{{ doCalibrate }}" title="Hold a neutral face for 1 second — your resting expression becomes the zero point">⊕ Calibrate</button>
+            <button style="{{ recBtn }}" onClick="{{ recToggle }}">{{ recLabel }}</button>
+          </div>
+          <div style="display:flex;align-items:center;gap:7px;">
+            <span style="font-size:10px;color:var(--muted);flex:none;">Gain</span>
+            <input type="range" min="50" max="250" value="{{ gainVal }}" onInput="{{ onGain }}" style="flex:1;">
+            <span style="font-family:var(--font-mono);font-size:10px;color:var(--text2);width:34px;text-align:right;">{{ gainLabel }}</span>
+          </div>
+          <div style="font-size:10px;color:var(--muted);line-height:1.5;">Your face drives the ARKit sliders live. Stop to freeze, then ⊕ Save the expression. ⏺ records a take.</div>
         </sc-if>
         <sc-if value="{{ camStatusShow }}" hint-placeholder-val="{{ false }}">
           <div style="font-size:10px;color:var(--text2);line-height:1.5;">{{ camStatus }}</div>
@@ -173,7 +182,7 @@
 <script type="text/x-dc" data-dc-script>
 class Component extends DCLogic {
   state = {
-    camOn: false, camStatus: '',
+    camOn: false, camStatus: '', camGain: 100, camRec: false,
     meshName: 'no model', hasModel: false, loading: false, loadingMsg: '',
     mode: 'grab', radius: 14, strength: 60, symmetry: true,
     morphs: [], active: -1, tick: 0,
@@ -322,6 +331,31 @@ class Component extends DCLogic {
       })) : [],
       // webcam face capture
       camOn: st.camOn, camStatus: st.camStatus, camStatusShow: !!st.camStatus,
+      calBtn: 'flex:1;padding:6px;border-radius:6px;font-size:10.5px;font-weight:700;cursor:pointer;background:var(--panel-3);border:1px solid var(--edge);color:var(--text);',
+      recBtn: 'flex:1;padding:6px;border-radius:6px;font-size:10.5px;font-weight:700;cursor:pointer;background:' + (st.camRec ? 'rgba(224,113,79,.2)' : 'var(--panel-3)') + ';border:1px solid ' + (st.camRec ? 'rgba(224,113,79,.6)' : 'var(--edge)') + ';color:' + (st.camRec ? '#e0714f' : 'var(--text)') + ';',
+      recLabel: st.camRec ? '⏹ Stop take' : '⏺ Record take',
+      doCalibrate: async () => {
+        const cap = this._faceCap; if (!cap) return;
+        this.toast('Hold a neutral face…');
+        const n = await cap.calibrate(1000);
+        this.toast(n ? 'Calibrated — resting face is now zero' : 'No frames seen — is your face in view?');
+      },
+      recToggle: () => {
+        const cap = this._faceCap; if (!cap) return;
+        if (!this.state.camRec) { cap.startRecording(); this.setState({ camRec: true }); this.toast('Recording — act the line, then ⏹'); return; }
+        const take = cap.stopRecording('face take ' + new Date().toLocaleTimeString());
+        this.setState({ camRec: false });
+        if (!take) { this.toast('Take too short'); return; }
+        try {
+          const takes = JSON.parse(localStorage.getItem('pp-face-takes') || '[]');
+          takes.push(take); while (takes.length > 12) takes.shift();
+          localStorage.setItem('pp-face-takes', JSON.stringify(takes));
+          this.toast('⏺ ' + take.duration.toFixed(1) + 's take saved (' + take.tracks.length + ' shapes' + (take.pose ? ' + head' : '') + ') — pp-face-takes shelf');
+        } catch (e) { this.toast('Take too big to store: ' + (e && e.message || e)); }
+      },
+      gainVal: st.camGain,
+      gainLabel: st.camGain + '%',
+      onGain: (e) => { const v = +e.target.value; this.setState({ camGain: v }); if (this._faceCap) this._faceCap.gain.master = v / 100; },
       camToggle: () => this.camToggleFlow(),
       camLabel: st.camOn ? '\u25a0 Stop capture' : '\u25c9 Capture from webcam',
       camBtn: 'flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:7px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;background:' + (st.camOn ? 'rgba(224,113,79,.15)' : 'var(--panel-3)') + ';border:1px solid ' + (st.camOn ? 'rgba(224,113,79,.5)' : 'var(--edge)') + ';color:' + (st.camOn ? '#e0714f' : 'var(--text)') + ';',

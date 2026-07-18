@@ -12,6 +12,7 @@
 // Pure GLB JSON-chunk surgery — no three.js needed.
 // ============================================================
 import { buildBoneMap, validateForVRM } from './bone-map.js';
+import { detectChainsFromGLTF, buildVRMC, buildSecondary } from './spring-bones.js';
 
 // ---- GLB chunk plumbing ------------------------------------
 function parseGLB(buf) {
@@ -118,6 +119,26 @@ export function exportVRM(glbBuffer, opts) {
   }
   preset.neutral = { isBinary: false, overrideBlink: 'none', overrideLookAt: 'none', overrideMouth: 'none' };
 
+  // 2b. PerfectSync: expose every ARKit morph as a custom expression so
+  // iPhone trackers (VSeeFace / VTube Studio / Warudo) can drive the full 52.
+  const custom = {};
+  for (const mm of meshMorphs) {
+    mm.names.forEach((nm, mi) => {
+      if (custom[nm]) { custom[nm].morphTargetBinds.push({ node: mm.nodeIndex, index: mi, weight: 1 }); return; }
+      custom[nm] = { morphTargetBinds: [{ node: mm.nodeIndex, index: mi, weight: 1 }], isBinary: false, overrideBlink: 'none', overrideLookAt: 'none', overrideMouth: 'none' };
+    });
+  }
+
+  // 2c. firstPerson annotations: the mesh carrying face morphs is the head —
+  // thirdPersonOnly so POV/VR cameras don't sit inside it; all others 'both'.
+  const faceNodes = new Set(meshMorphs.map(m => m.nodeIndex));
+  const meshAnnotations = nodes.map((n, ni) => n.mesh === undefined ? null :
+    { node: ni, type: faceNodes.has(ni) ? 'thirdPersonOnly' : 'both' }).filter(Boolean);
+
+  // 2d. spring bones: auto-detect hair/tail/accessory chains by name —
+  // hair that sways is the single biggest "looks alive" multiplier.
+  const springChains = detectChainsFromGLTF(json);
+
   // 3. assemble VRMC_vrm
   const vrm = {
     specVersion: '1.0',
@@ -134,7 +155,7 @@ export function exportVRM(glbBuffer, opts) {
       modification: 'prohibited',
     },
     humanoid: { humanBones },
-    firstPerson: { meshAnnotations: [] },
+    firstPerson: { meshAnnotations },
     lookAt: {
       type: (preset.lookUp || preset.lookLeft) ? 'expression' : 'bone',
       offsetFromHeadBone: [0, 0.06, 0],
@@ -143,18 +164,78 @@ export function exportVRM(glbBuffer, opts) {
       rangeMapVerticalDown: { inputMaxValue: 90, outputScale: 10 },
       rangeMapVerticalUp: { inputMaxValue: 90, outputScale: 10 },
     },
-    expressions: { preset },
+    expressions: { preset, custom },
   };
 
   json.extensions = json.extensions || {};
-  json.extensions.VRMC_vrm = vrm;
-  json.extensionsUsed = Array.from(new Set([...(json.extensionsUsed || []), 'VRMC_vrm']));
   json.asset = json.asset || {};
   json.asset.generator = ((json.asset.generator || '') + ' + PolyPotion VRM export').trim();
 
+  // 4. serialize as 1.0 (VRMC_vrm) or legacy 0.x (extension "VRM") —
+  // VSeeFace and many Unity pipelines still read 0.x most reliably.
+  if (opts.version === '0.x') {
+    json.extensions.VRM = buildVRM0(vrm, preset, custom, nodes, names, map);
+    if (springChains.length) json.extensions.VRM.secondaryAnimation = buildSecondary(springChains);
+    json.extensionsUsed = Array.from(new Set([...(json.extensionsUsed || []), 'VRM']));
+  } else {
+    json.extensions.VRMC_vrm = vrm;
+    if (springChains.length) json.extensions.VRMC_springBone = buildVRMC(springChains);
+    json.extensionsUsed = Array.from(new Set([...(json.extensionsUsed || []), 'VRMC_vrm', ...(springChains.length ? ['VRMC_springBone'] : [])]));
+  }
+
   return {
     buffer: buildGLB(json, bin),
-    report: { convention, bones: Object.keys(humanBones).length, expressions: boundCount, morphMeshes: meshMorphs.length },
+    report: { convention, bones: Object.keys(humanBones).length, expressions: boundCount, customExpressions: Object.keys(custom).length, morphMeshes: meshMorphs.length, springs: springChains.length, version: opts.version === '0.x' ? '0.x' : '1.0' },
+  };
+}
+
+// ---- VRM 0.x (legacy) serializer ---------------------------
+// Same data, older dialect: humanBones as an array, expressions as
+// blendShapeMaster groups with weights 0-100, firstPerson flags by name.
+const PRESET_0X = { aa: 'A', ih: 'I', ou: 'U', ee: 'E', oh: 'O', blink: 'Blink', blinkLeft: 'Blink_L', blinkRight: 'Blink_R', happy: 'Joy', angry: 'Angry', sad: 'Sorrow', surprised: 'Surprised', lookUp: 'LookUp', lookDown: 'LookDown', lookLeft: 'LookLeft', lookRight: 'LookRight', neutral: 'Neutral' };
+function buildVRM0(vrm, preset, custom, nodes, names, map) {
+  const humanBones = Object.entries(map).map(([slot, boneName]) => ({
+    bone: slot, node: names.indexOf(boneName), useDefaultValues: true,
+  })).filter(b => b.node >= 0);
+  const groups = [];
+  const toGroup = (name, presetName, def) => ({
+    name, presetName,
+    binds: (def.morphTargetBinds || []).map(b => {
+      const node = nodes[b.node];
+      return { mesh: node ? node.mesh : 0, index: b.index, weight: Math.round((b.weight || 1) * 100) };
+    }),
+    materialValues: [], isBinary: false,
+  });
+  for (const [k, def] of Object.entries(preset)) {
+    // 0.x has no 'surprised' preset — keep the group but mark presetName unknown
+    const pn = k === 'surprised' ? 'unknown' : (PRESET_0X[k] || 'unknown').toLowerCase();
+    groups.push(toGroup(PRESET_0X[k] || k, pn, def));
+  }
+  for (const [k, def] of Object.entries(custom)) groups.push(toGroup(k, 'unknown', def));
+  const m = vrm.meta;
+  return {
+    exporterVersion: 'PolyPotion',
+    specVersion: '0.0',
+    meta: {
+      title: m.name, version: m.version, author: m.authors[0],
+      allowedUserName: 'OnlyAuthor', violentUssageName: 'Disallow', sexualUssageName: 'Disallow',
+      commercialUssageName: m.commercialUsage === 'personalNonProfit' ? 'Disallow' : 'Allow',
+      licenseName: 'Other', otherLicenseUrl: m.licenseUrl,
+    },
+    humanoid: { humanBones, armStretch: 0.05, legStretch: 0.05, upperArmTwist: 0.5, lowerArmTwist: 0.5, upperLegTwist: 0.5, lowerLegTwist: 0.5, feetSpacing: 0, hasTranslationDoF: false },
+    firstPerson: {
+      firstPersonBone: humanBones.find(b => b.bone === 'head') ? humanBones.find(b => b.bone === 'head').node : -1,
+      firstPersonBoneOffset: { x: 0, y: 0.06, z: 0 },
+      meshAnnotations: (vrm.firstPerson.meshAnnotations || []).map(a => ({ mesh: nodes[a.node] ? nodes[a.node].mesh : 0, firstPersonFlag: a.type === 'thirdPersonOnly' ? 'ThirdPersonOnly' : 'Both' })),
+      lookAtTypeName: vrm.lookAt.type === 'expression' ? 'BlendShape' : 'Bone',
+      lookAtHorizontalInner: { curve: [0, 0, 0, 1, 1, 1, 1, 0], xRange: 90, yRange: 10 },
+      lookAtHorizontalOuter: { curve: [0, 0, 0, 1, 1, 1, 1, 0], xRange: 90, yRange: 10 },
+      lookAtVerticalDown: { curve: [0, 0, 0, 1, 1, 1, 1, 0], xRange: 90, yRange: 10 },
+      lookAtVerticalUp: { curve: [0, 0, 0, 1, 1, 1, 1, 0], xRange: 90, yRange: 10 },
+    },
+    blendShapeMaster: { blendShapeGroups: groups },
+    secondaryAnimation: { boneGroups: [], colliderGroups: [] },
+    materialProperties: [],
   };
 }
 

@@ -15,6 +15,8 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { OBJLoader } from 'three/addons/loaders/OBJLoader.js';
+import { STLLoader } from 'three/addons/loaders/STLLoader.js';
+import { PLYLoader } from 'three/addons/loaders/PLYLoader.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { fetchAssetBuffer } from './chunk-loader.js';
 import { getShaderPresets, buildShaderMaterial, presetDescriptors } from './shader-lib.js';
@@ -427,6 +429,11 @@ export class SCEngine {
       clips = g.animations || [];
     } else if (ext === 'obj') {
       root = this._obj.parse(typeof buffer === 'string' ? buffer : new TextDecoder().decode(buffer));
+    } else if (ext === 'stl' || ext === 'ply') {
+      const geo = (ext === 'stl' ? new STLLoader() : new PLYLoader()).parse(buffer);
+      if (!geo.getAttribute('normal')) geo.computeVertexNormals();
+      root = new THREE.Group();
+      root.add(new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ color: 0xb9bec6, roughness: 0.8 })));
     } else {
       throw new Error('Unsupported format: .' + ext);
     }

@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/",
+    "manifold-3d": "https://cdn.jsdelivr.net/npm/manifold-3d@3.2.1/manifold.js"
+  }
+}
+</script>
+<script src="./studio3D_scripts/support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Spline+Sans+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="theme.js"></script>
+<style>
+  html,body{margin:0;padding:0;height:100%;background:var(--gutter);}
+  *{box-sizing:border-box;}
+  @keyframes st-spin{to{transform:rotate(360deg);}}
+  @keyframes st-tin{from{transform:translateX(120%);opacity:0;}to{transform:translateX(0);opacity:1;}}
+  @keyframes st-pulse{0%,100%{opacity:1;}50%{opacity:.35;}}
+</style>
+</helmet>
+
+<div id="st-root" style="display:flex;flex-direction:column;height:100vh;width:100%;overflow:hidden;background:var(--gutter);color:var(--text);font-family:var(--font-ui);font-size:13px;-webkit-font-smoothing:antialiased;user-select:none;">
+
+  <header id="st-header" style="height:46px;flex:none;display:flex;align-items:center;gap:14px;padding:0 14px;background:var(--header);border-bottom:1px solid var(--seam);">
+    <div style="display:flex;align-items:center;gap:9px;">
+      <div style="width:26px;height:26px;border-radius:5px;display:flex;align-items:center;justify-content:center;background:var(--accent);color:var(--on-accent);font-weight:700;font-size:14px;">🎥</div>
+      <div>
+        <div style="font-weight:700;letter-spacing:.04em;font-size:14px;">STREAM STAGE</div>
+        <div style="font-family:var(--font-mono);font-size:10px;color:var(--muted);letter-spacing:.1em;margin-top:1px;">GO LIVE · ALL ON-DEVICE</div>
+      </div>
+    </div>
+    <div style="flex:1;"></div>
+  </header>
+
+  <div style="flex:1;display:flex;min-height:0;">
+
+    <!-- STAGE -->
+    <div id="st-stagewrap" style="flex:1;position:relative;min-width:0;min-height:0;background:var(--viewport);">
+      <canvas id="st-gl" style="position:absolute;inset:0;width:100%;height:100%;display:block;"></canvas>
+
+      <sc-if value="{{ noModel }}" hint-placeholder-val="{{ true }}">
+        <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;background:rgba(18,20,24,.86);">
+          <div style="width:70px;height:70px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:30px;background:var(--accentDim);border:1px solid var(--accent-dim);color:var(--accent);">🎥</div>
+          <div style="text-align:center;">
+            <div style="font-size:16px;font-weight:700;margin-bottom:6px;">Go live as your character</div>
+            <div style="font-size:12.5px;color:var(--text2);max-width:460px;line-height:1.6;">Pick a character in the <b>Library</b>, turn on <b>Face capture</b>, choose a backdrop, and pop the stage into its own window — OBS window-captures it and you're streaming. Everything runs on this device; nothing is uploaded.</div>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ loading }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:rgba(18,20,24,.8);color:var(--muted);z-index:5;">
+          <div style="width:38px;height:38px;border:3px solid var(--panel-3);border-top-color:var(--accent);border-radius:50%;animation:st-spin .9s linear infinite;"></div>
+          <div style="font-size:12px;">{{ loadingMsg }}</div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ liveBadge }}" hint-placeholder-val="{{ false }}">
+        <div id="st-live" style="position:absolute;left:12px;top:12px;display:flex;align-items:center;gap:7px;font-family:var(--font-mono);font-size:10px;font-weight:700;letter-spacing:.1em;color:#fff;background:rgba(200,40,40,.85);padding:6px 11px;border-radius:6px;">
+          <span style="width:8px;height:8px;border-radius:50%;background:#fff;animation:st-pulse 1.6s infinite;"></span> TRACKING
+        </div>
+      </sc-if>
+      <video id="st-cam" autoplay playsinline muted style="position:absolute;right:12px;bottom:12px;width:150px;border-radius:8px;border:1px solid var(--edge);transform:scaleX(-1);background:#000;display:none;z-index:6;"></video>
+    </div>
+
+    <!-- CONTROLS -->
+    <aside id="st-panel" style="width:300px;flex:none;background:var(--panel);border-left:1px solid var(--seam);display:flex;flex-direction:column;min-height:0;overflow-y:auto;">
+
+      <div style="padding:13px 14px;border-bottom:1px solid var(--seam);">
+        <div style="font-family:var(--font-mono);font-size:9.5px;letter-spacing:.14em;color:var(--muted);margin-bottom:7px;">TALENT</div>
+        <div style="font-weight:700;font-size:13.5px;">{{ meshName }}</div>
+      </div>
+
+      <div style="padding:13px 14px;border-bottom:1px solid var(--seam);display:flex;flex-direction:column;gap:8px;">
+        <div style="font-family:var(--font-mono);font-size:9.5px;letter-spacing:.14em;color:var(--muted);">DRIVE THE FACE</div>
+        <button style="{{ camBtn }}" onClick="{{ camToggle }}">{{ camLabel }}</button>
+        <sc-if value="{{ camOn }}" hint-placeholder-val="{{ false }}">
+          <button style="{{ smallBtn }}" onClick="{{ doCalibrate }}">⊕ Calibrate neutral</button>
+          <div style="display:flex;align-items:center;gap:7px;">
+            <span style="font-size:10px;color:var(--muted);flex:none;">Head</span>
+            <input type="range" min="0" max="200" value="{{ headAmp }}" onInput="{{ onHeadAmp }}" style="flex:1;">
+            <span style="font-family:var(--font-mono);font-size:10px;color:var(--text2);width:34px;text-align:right;">{{ headAmpLabel }}</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:7px;">
+            <span style="font-size:10px;color:var(--muted);flex:none;">Gain</span>
+            <input type="range" min="50" max="250" value="{{ gainVal }}" onInput="{{ onGain }}" style="flex:1;">
+            <span style="font-family:var(--font-mono);font-size:10px;color:var(--text2);width:34px;text-align:right;">{{ gainLabel }}</span>
+          </div>
+        </sc-if>
+        <button style="{{ micBtn }}" onClick="{{ micToggle }}">{{ micLabel }}</button>
+        <button style="{{ lifeBtn }}" onClick="{{ lifeToggle }}">{{ lifeLabel }}</button>
+        <button style="{{ swayBtn }}" onClick="{{ swayToggle }}">{{ swayLabel }}</button>
+        <sc-if value="{{ noFace }}" hint-placeholder-val="{{ false }}">
+          <div style="font-size:10.5px;color:var(--muted);line-height:1.5;">This character has no ARKit face shapes — run <b>⚗ ARKit 52</b> in Morph first for full face drive. Mic lipsync + auto-life still work if it has any mouth/blink morphs.</div>
+        </sc-if>
+      </div>
+
+      <div style="padding:13px 14px;border-bottom:1px solid var(--seam);display:flex;flex-direction:column;gap:8px;">
+        <div style="font-family:var(--font-mono);font-size:9.5px;letter-spacing:.14em;color:var(--muted);">BACKDROP</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          <sc-for list="{{ backdrops }}" as="b" hint-placeholder-count="4">
+            <button style="{{ b.style }}" onClick="{{ b.onClick }}" title="{{ b.tip }}">{{ b.label }}</button>
+          </sc-for>
+        </div>
+      </div>
+
+      <div style="padding:13px 14px;border-bottom:1px solid var(--seam);display:flex;flex-direction:column;gap:8px;">
+        <div style="font-family:var(--font-mono);font-size:9.5px;letter-spacing:.14em;color:var(--muted);">FRAMING</div>
+        <div style="display:flex;gap:6px;">
+          <sc-for list="{{ framings }}" as="f" hint-placeholder-count="3">
+            <button style="{{ f.style }}" onClick="{{ f.onClick }}">{{ f.label }}</button>
+          </sc-for>
+        </div>
+      </div>
+
+      <div style="padding:13px 14px;display:flex;flex-direction:column;gap:8px;">
+        <div style="font-family:var(--font-mono);font-size:9.5px;letter-spacing:.14em;color:var(--muted);">GO LIVE</div>
+        <button style="{{ popBtn }}" onClick="{{ doPopout }}">⧉ Pop out stage window</button>
+        <button style="{{ smallBtn }}" onClick="{{ doHideUI }}">👁 Hide UI (H restores)</button>
+        <div style="font-size:10.5px;color:var(--muted);line-height:1.6;">In OBS: <b>Window Capture</b> → this window. Green backdrop + a chroma-key filter removes the background. H toggles the panels any time.</div>
+      </div>
+
+      <div style="margin-top:auto;padding:12px 14px;border-top:1px solid var(--seam);font-size:11px;line-height:1.55;color:var(--muted);">Camera and mic never leave this device. No accounts, no uploads — the stage is just pixels for OBS.</div>
+    </aside>
+  </div>
+
+  <div id="st-toasts" style="position:fixed;bottom:16px;right:16px;z-index:300;display:flex;flex-direction:column;gap:8px;"></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = {
+    meshName: 'no talent yet', loading: false, loadingMsg: '', hasModel: false,
+    camOn: false, micOn: false, life: true, hasFace: false, sway: false, swayCount: 0,
+    backdrop: 'green', framing: 'bust', headAmp: 100, gain: 100, uiHidden: false,
+  };
+
+  componentDidMount() { this.setupEmbed(); this.boot(); }
+
+  async boot() {
+    try {
+      const canvas = document.getElementById('st-gl');
+      const mod = await import('./studio3D_scripts/showcase-engine.js');
+      const eng = new mod.SCEngine(canvas); this._eng = eng;
+      eng.onStatus = (m) => this.setState({ loading: !!m, loadingMsg: m || '' });
+      eng.onChange = () => this.refresh();
+      eng.autoSpin = false;
+      this.setBackdrop('green');
+      this._morphMeshes = [];
+      this._head = null; this._neck = null;
+      this._lifeMod = null;
+      this._clock = performance.now();
+      const tick = () => { this._tick(); requestAnimationFrame(tick); };
+      requestAnimationFrame(tick);
+      window.addEventListener('keydown', (e) => { if ((e.key === 'h' || e.key === 'H') && !/INPUT|TEXTAREA/.test((e.target && e.target.tagName) || '')) this.toggleUI(); });
+      if (this._pending) { const p = this._pending; this._pending = null; p(); }
+    } catch (e) {
+      this.toast('Engine failed: ' + (e && e.message || e));
+      if (this._post) this._post('studio:error', { tool: 'live', message: String(e && e.message || e) });
+    }
+  }
+
+  refresh() {
+    const eng = this._eng; if (!eng) return;
+    const has = eng.hasModel && eng.hasModel();
+    this._morphMeshes = [];
+    this._head = null; this._neck = null;
+    let hasFace = false;
+    if (has && eng.model) {
+      eng.model.traverse(o => {
+        if (o.morphTargetDictionary) {
+          this._morphMeshes.push(o);
+          if (o.morphTargetDictionary.jawOpen != null) hasFace = true;
+        }
+        if (o.isBone) {
+          const n = o.name.toLowerCase();
+          if (!this._head && /head/.test(n) && !/headtop|end/.test(n)) this._head = { bone: o, rest: o.quaternion.clone() };
+          if (!this._neck && /neck/.test(n)) this._neck = { bone: o, rest: o.quaternion.clone() };
+        }
+      });
+    }
+    this.setState({ hasModel: has, hasFace, meshName: has ? eng.stats().name : 'no talent yet' });
+    this._springs = null;
+    if (this.state.sway && has) this.initSprings();
+    if (has) this.applyFraming(this.state.framing);
+  }
+
+  // ---- weights → mesh (capture wins over auto-life over mic) ----
+  _applyWeights(w) {
+    for (const mesh of this._morphMeshes) {
+      const dict = mesh.morphTargetDictionary;
+      for (const k in w) { const i = dict[k]; if (i != null) mesh.morphTargetInfluences[i] = w[k]; }
+    }
+  }
+  _applyHead(hp) {
+    if (!hp) return;
+    const apply = (ref, f) => {
+      if (!ref) return;
+      ref.bone.quaternion.copy(ref.rest);
+      ref.bone.rotateY(hp.yaw * f); ref.bone.rotateX(hp.pitch * f); ref.bone.rotateZ(hp.roll * f);
+    };
+    apply(this._head, 0.65);
+    apply(this._neck, 0.35);
+  }
+
+  async initSprings() {
+    const eng = this._eng; if (!eng || !eng.model) return;
+    try {
+      const mod = this._springMod || (this._springMod = await import('./studio3D_scripts/spring-bones.js'));
+      const THREE = await import('three');
+      this._springs = new mod.SpringSim(eng.model, THREE);
+      this.setState({ swayCount: this._springs.count });
+      if (!this._springs.count) this.toast('No springy bones found — sway looks for hair/tail/ribbon-named chains');
+    } catch (e) { this.toast('Sway failed: ' + (e && e.message || e)); }
+  }
+
+  _tick() {
+    const now = performance.now(); const dt = Math.min(0.05, (now - this._clock) / 1000); this._clock = now;
+    if (!this.state.hasModel) return;
+    const merged = {};
+    if (this.state.life && this._life) Object.assign(merged, this._life.sample(dt));
+    if (this.state.micOn && this._micLevel != null) {
+      const v = this._micLevel;
+      merged.jawOpen = Math.max(merged.jawOpen || 0, Math.min(0.7, v * 1.6));
+      merged.mouthFunnel = Math.min(0.4, v * 0.8);
+    }
+    if (this._camWeights) Object.assign(merged, this._camWeights);
+    if (Object.keys(merged).length) this._applyWeights(merged);
+    if (this._camPose) this._applyHead(this._camPose);
+    if (this.state.sway && this._springs) this._springs.step(dt);
+    if (this.state.micOn && this._analyser) {
+      this._analyser.getByteTimeDomainData(this._micBuf);
+      let sum = 0; for (let i = 0; i < this._micBuf.length; i++) { const d = (this._micBuf[i] - 128) / 128; sum += d * d; }
+      const rms = Math.sqrt(sum / this._micBuf.length);
+      this._micLevel = this._micLevel == null ? rms : this._micLevel * 0.6 + rms * 0.4 * 3;
+    }
+  }
+
+  async camToggle() {
+    if (this.state.camOn) {
+      if (this._cap) { this._cap.stop(); this._cap = null; }
+      this._camWeights = null; this._camPose = null;
+      document.getElementById('st-cam').style.display = 'none';
+      this.setState({ camOn: false });
+      return;
+    }
+    if (!this.state.hasModel) { this.toast('Pick a character in the Library first'); return; }
+    this.setState({ loading: true, loadingMsg: 'Loading the face model…' });
+    try {
+      const mod = this._capMod || (this._capMod = await import('./studio3D_scripts/face-capture.js'));
+      const cap = new mod.FaceCapture(); this._cap = cap;
+      cap.onStatus = (m) => this.setState({ loadingMsg: m || '' });
+      cap.gain.master = this.state.gain / 100;
+      cap.headAmplitude = this.state.headAmp / 100;
+      cap.onWeights = (w, hp) => { this._camWeights = w; this._camPose = hp; };
+      const video = document.getElementById('st-cam');
+      video.style.display = 'block';
+      await cap.start(video);
+      this.setState({ camOn: true, loading: false });
+      this.toast('Tracking — you are on the air (locally)');
+    } catch (e) {
+      if (this._cap) { this._cap.stop(); this._cap = null; }
+      document.getElementById('st-cam').style.display = 'none';
+      this.setState({ camOn: false, loading: false });
+      this.toast('Capture failed: ' + (e && e.message || e));
+    }
+  }
+
+  async micToggle() {
+    if (this.state.micOn) {
+      if (this._micStream) { this._micStream.getTracks().forEach(t => t.stop()); this._micStream = null; }
+      if (this._audioCtx) { try { this._audioCtx.close(); } catch (e) {} this._audioCtx = null; }
+      this._analyser = null; this._micLevel = null;
+      this.setState({ micOn: false });
+      return;
+    }
+    try {
+      this._micStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+      this._audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const src = this._audioCtx.createMediaStreamSource(this._micStream);
+      this._analyser = this._audioCtx.createAnalyser(); this._analyser.fftSize = 512;
+      this._micBuf = new Uint8Array(this._analyser.fftSize);
+      src.connect(this._analyser);
+      this.setState({ micOn: true });
+      this.toast('Mic lipsync on — talk and the mouth follows');
+    } catch (e) { this.toast('Mic failed: ' + (e && e.message || e)); }
+  }
+
+  async ensureLife() {
+    if (!this._lifeMod) {
+      this._lifeMod = await import('./studio3D_scripts/face-capture.js');
+      this._life = new this._lifeMod.AutoLife();
+    }
+  }
+
+  setBackdrop(k) {
+    const eng = this._eng; if (!eng) return;
+    this.setState({ backdrop: k });
+    const solid = { green: 0x00b140, magenta: 0xff00ff, dark: 0x15171b, sky: 0x87b7d9 }[k];
+    if (eng.scene) {
+      if (eng.floor) eng.floor.visible = (k === 'dark');
+      if (eng.grid) eng.grid.visible = false;
+      const THREE_Color = eng.scene.background && eng.scene.background.constructor;
+      eng.scene.background = null;
+      eng.renderer.setClearColor(solid, 1);
+    }
+  }
+
+  applyFraming(k) {
+    const eng = this._eng; if (!eng || !eng.hasModel()) return;
+    this.setState({ framing: k });
+    const c = eng.modelCenter, r = eng.modelRadius || 1;
+    const p = { bust: { y: c.y + r * 0.55, d: r * 1.15 }, half: { y: c.y + r * 0.25, d: r * 1.8 }, full: { y: c.y, d: r * 2.6 } }[k];
+    eng.camera.position.set(0, p.y, p.d);
+    eng.controls.target.set(0, p.y - r * 0.05, 0);
+    eng.controls.update();
+  }
+
+  toggleUI() {
+    const hide = !this.state.uiHidden;
+    this.setState({ uiHidden: hide });
+    const h = document.getElementById('st-header'), p = document.getElementById('st-panel');
+    if (h) h.style.display = hide ? 'none' : (this._embedded ? 'none' : 'flex');
+    if (p) p.style.display = hide ? 'none' : 'flex';
+    if (!hide) return;
+    this.toast('UI hidden — press H to bring it back');
+  }
+
+  doPopout() {
+    const url = new URL(location.href);
+    url.searchParams.set('popout', '1');
+    const w = window.open(url.toString(), 'pp-stage', 'width=1280,height=720');
+    if (!w) { this.toast('Pop-up blocked — allow pop-ups for this site'); return; }
+    this.toast('Stage popped out — pick the character again in its Library if it opens empty, then point OBS Window Capture at it');
+  }
+
+  setupEmbed() {
+    const params = new URLSearchParams(location.search);
+    this._embedded = params.get('embed') === '1' || (window.parent !== window && !params.get('popout'));
+    this._popout = params.get('popout') === '1';
+    this._post = (type, payload) => { try { window.parent && window.parent.postMessage(Object.assign({ __studio: true, type }, payload || {}), '*'); } catch (e) {} };
+    if (this._embedded || this._popout) { const hide = () => { const h = document.getElementById('st-header'); if (h && this._embedded) h.style.display = 'none'; }; hide(); setTimeout(hide, 60); setTimeout(hide, 300); }
+    window.addEventListener('message', (e) => {
+      const d = e.data; if (!d || !d.__studio) return;
+      if (d.type === 'studio:loadCharUrl') this.loadVia(() => this._eng.loadUrl(d.url, d.ext, { chunked: d.chunked, chunks: d.chunks }), d.label);
+      else if (d.type === 'studio:loadCharBuffer') this.loadVia(() => this._eng.loadBuffer(d.buffer, d.name, (d.name || '').split('.').pop()), d.name);
+    });
+    if (this._popout) {
+      // popout window: ask the opener's stage frame for the character
+      try { if (window.opener) window.opener.postMessage({ __studio: true, type: 'stage:popout-ready' }, '*'); } catch (e) {}
+      this.ensureLife();
+    } else { this.ensureLife(); }
+    setTimeout(() => this._post('studio:ready', { tool: 'live' }), 0);
+  }
+
+  async loadVia(fn, label) {
+    if (!this._eng) { this._pending = () => this.loadVia(fn, label); return; }
+    this.setState({ loading: true, loadingMsg: 'Loading ' + (label || 'character') + '…' });
+    try {
+      await fn();
+      this.refresh(); this.setState({ loading: false });
+      this.setBackdrop(this.state.backdrop);
+      this.toast('On stage: ' + this._eng.stats().name);
+    } catch (e) {
+      this.setState({ loading: false });
+      this.toast('Load failed: ' + (e && e.message || e));
+    }
+  }
+
+  toast(msg) {
+    const wrap = document.getElementById('st-toasts'); if (!wrap) return;
+    const el = document.createElement('div');
+    el.style.cssText = 'padding:11px 15px;border-radius:7px;font-size:12px;background:var(--panel-3);border:1px solid var(--edge);border-left:3px solid var(--accent);box-shadow:0 8px 24px rgba(0,0,0,.45);max-width:340px;color:var(--text);animation:st-tin .25s cubic-bezier(.2,1,.3,1);';
+    el.textContent = msg; wrap.appendChild(el);
+    setTimeout(() => { el.style.transition = 'opacity .3s'; el.style.opacity = '0'; setTimeout(() => el.remove(), 300); }, 3200);
+  }
+
+  chip(on) { return 'flex:1;font-size:11px;font-weight:600;padding:7px 10px;border-radius:6px;cursor:pointer;border:1px solid ' + (on ? 'var(--accent)' : 'var(--edge)') + ';background:' + (on ? 'var(--accent-dim)' : 'var(--panel-3)') + ';color:' + (on ? '#e6c3a3' : 'var(--text)') + ';'; }
+
+  renderVals() {
+    const st = this.state;
+    const bd = [['green', '🟩 Green', 'Chroma-key green — OBS removes it'], ['magenta', '🟪 Magenta', 'Alt key color if your character is green'], ['dark', '⬛ Studio', 'Dark studio floor — no keying'], ['sky', '🟦 Sky', 'Flat sky blue']];
+    return {
+      noModel: !st.hasModel && !st.loading,
+      loading: st.loading, loadingMsg: st.loadingMsg,
+      meshName: st.meshName,
+      liveBadge: st.camOn,
+      camOn: st.camOn,
+      camBtn: this.chip(st.camOn), camLabel: st.camOn ? '■ Stop face capture' : '◉ Face capture (webcam)',
+      camToggle: () => this.camToggle(),
+      micBtn: this.chip(st.micOn), micLabel: st.micOn ? '■ Stop mic lipsync' : '🎙 Mic lipsync (no camera)',
+      micToggle: () => this.micToggle(),
+      lifeBtn: this.chip(st.life), lifeLabel: st.life ? '✓ Auto-life on (blink & drift)' : 'Auto-life off',
+      lifeToggle: () => { this.setState({ life: !st.life }); this.ensureLife(); },
+      swayBtn: this.chip(st.sway),
+      swayLabel: st.sway ? ('✓ Hair sway on' + (st.swayCount ? ' (' + st.swayCount + ' bones)' : '')) : '🍃 Hair sway (preview)',
+      swayToggle: () => {
+        const on = !st.sway;
+        this.setState({ sway: on });
+        if (on) { if (!this._springs) this.initSprings(); }
+        else if (this._springs) this._springs.reset();
+      },
+      noFace: st.hasModel && !st.hasFace,
+      doCalibrate: async () => { if (!this._cap) return; this.toast('Hold a neutral face…'); const n = await this._cap.calibrate(1000); this.toast(n ? 'Calibrated' : 'No face seen'); },
+      headAmp: st.headAmp, headAmpLabel: st.headAmp + '%',
+      onHeadAmp: (e) => { const v = +e.target.value; this.setState({ headAmp: v }); if (this._cap) this._cap.headAmplitude = v / 100; },
+      gainVal: st.gain, gainLabel: st.gain + '%',
+      onGain: (e) => { const v = +e.target.value; this.setState({ gain: v }); if (this._cap) this._cap.gain.master = v / 100; },
+      backdrops: bd.map(([k, label, tip]) => ({ label, tip, style: this.chip(st.backdrop === k), onClick: () => this.setBackdrop(k) })),
+      framings: [['bust', 'Bust'], ['half', 'Half'], ['full', 'Full']].map(([k, label]) => ({ label, style: this.chip(st.framing === k), onClick: () => this.applyFraming(k) })),
+      popBtn: 'padding:11px;border-radius:8px;font-size:12.5px;font-weight:700;cursor:pointer;background:var(--accent);border:1px solid var(--accent);color:var(--on-accent);',
+      smallBtn: 'padding:7px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;background:var(--panel-3);border:1px solid var(--edge);color:var(--text);',
+      doPopout: () => this.doPopout(),
+      doHideUI: () => this.toggleUI(),
+    };
+  }
+}
+</script>
+</body>
+</html>

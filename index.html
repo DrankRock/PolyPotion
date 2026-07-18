@@ -186,6 +186,9 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
 .dropzone p{margin:0;font-size:12.5px;color:var(--ink-soft);font-weight:600;}
 .dropzone .dz-cta{margin-left:auto;flex:none;pointer-events:none;}
 
+/* keyboard a11y — visible focus everywhere interactive */
+.tbtn:focus-visible,.act:focus-visible,.dock-item:focus-visible,.fchip:focus-visible,.asset button:focus-visible,button:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid var(--accent);outline-offset:2px;border-radius:6px;}
+
 /* status bar = wooden footer */
 .statusbar{height:32px;flex:none;display:flex;align-items:center;gap:14px;padding:0 16px;
   background:var(--cream-2);border-top:4px solid var(--wood-dark);font-family:var(--font-mono);font-size:11px;color:var(--ink-soft);}
@@ -337,16 +340,23 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
           <div class="dock-item" data-tool="timeline" title="Timeline — lay clips out, trim, crossfade, bake one performance (NLA)"><span class="ic">≡</span><span class="lb">Timeline</span></div>
           <div class="dock-item" data-tool="retarget" title="Retarget — put any clip on any humanoid: auto bone-map + root-scale correction"><span class="ic">⇄</span><span class="lb">Retarget</span></div>
           <div class="dock-item" data-tool="curves" title="Curves — F-curve editor + onion skinning"><span class="ic">∿</span><span class="lb">Curves</span></div>
+          <div class="dock-item" data-tool="director" title="Director — cut camera shots over your character's animation, render to .webm video"><span class="ic">🎬</span><span class="lb">Director</span></div>
           <div class="dock-item" data-tool="vat" title="VAT Bake — bake an animation clip into a texture for zero-skeleton GPU replay"><span class="ic">⧈</span><span class="lb">VAT</span></div>
           <div class="dock-item" data-tool="physics" title="Physics — soft-body & cloth (WASM)"><span class="ic">≈</span><span class="lb">Physics</span></div>
         </div>
       </div>
-      <div class="dock-group" data-cat="perform">
-        <button class="dock-cat" type="button" aria-expanded="true"><span class="chev">▾</span>perform</button>
+      <div class="dock-group" data-cat="vtube">
+        <button class="dock-cat" type="button" aria-expanded="true"><span class="chev">▾</span>vtube</button>
         <div class="dock-group-items">
           <div class="dock-item" data-tool="mocap"><span class="ic">⛷</span><span class="lb">MoCap</span></div>
           <div class="dock-item" data-tool="lipsync" title="Lipsync — record or load audio, drive the mouth from it, bake the take into the GLB"><span class="ic">👄</span><span class="lb">Lipsync</span></div>
-          <div class="dock-item" data-tool="director" title="Director — cut camera shots over your character's animation, render to .webm video"><span class="ic">🎬</span><span class="lb">Director</span></div>
+          <div class="dock-item" data-tool="live" title="Stream Stage — go live: webcam drives the face, chroma backdrop, pop-out window for OBS"><span class="ic">🎥</span><span class="lb">Live</span></div>
+        </div>
+      </div>
+      <div class="dock-group" data-cat="play">
+        <button class="dock-cat" type="button" aria-expanded="true"><span class="chev">▾</span>play</button>
+        <div class="dock-group-items">
+          <div class="dock-item" data-tool="playground" title="Playground — be your character: WASD / gamepad drive, jump course, first-person, mirror & VR"><span class="ic">⛹</span><span class="lb">Play</span></div>
         </div>
       </div>
       <div class="dock-spacer"></div>
@@ -365,7 +375,7 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
             <div class="lib-tab" data-tab="animations">Animations</div>
           </div>
           <button class="tbtn ghost lib-import" id="libImport">⬇ Import file…</button>
-          <input type="file" id="libFile" accept=".fbx,.glb,.gltf,.obj" style="display:none;">
+          <input type="file" id="libFile" accept=".fbx,.glb,.gltf,.obj,.stl,.ply" style="display:none;">
           <div class="spacer" style="flex:1;"></div>
           <div id="storMeter" title="Browser storage used by your saved library" style="display:flex;align-items:center;gap:8px;font-family:var(--font-mono);font-size:11px;color:var(--ink-soft);"></div>
           <button class="tbtn ghost" id="btnBackup" title="Download a single .polypotion file with your whole library — your backup / to move machines">⬇ Backup all</button>
@@ -377,10 +387,10 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
             <div class="dz-ic">⬇</div>
             <div>
               <h2>Drop any mesh to begin</h2>
-              <p>.glb · .fbx · .obj — it lands in Showcase, and PolyPotion tells you what to brew next</p>
+              <p>.glb · .fbx · .obj · .stl · .ply · .vrm — lands in Showcase · .bvh mocap → Retarget</p>
             </div>
             <span class="tbtn primary dz-cta">⬇ Choose a file…</span>
-            <input type="file" id="dropFile" accept=".glb,.gltf,.fbx,.obj" style="display:none;">
+            <input type="file" id="dropFile" accept=".glb,.gltf,.fbx,.obj,.stl,.ply,.bvh,.vrm" style="display:none;">
           </div>
           <div class="lib-section-label" id="libLabel">Rigged characters · drop in <span class="mono" style="color:var(--text-2)">data/characters/</span></div>
           <div style="margin:0 0 14px;"><input id="libSearch" type="search" placeholder="🔍  Search characters by name…" aria-label="Search the character library by name" style="width:100%;max-width:340px;height:34px;padding:0 13px;border-radius:20px;border:3px solid var(--wood-dark);background:var(--cream);color:var(--ink);font-family:var(--font-mono);font-size:12px;outline:none;"></div>
@@ -393,6 +403,16 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
       <!-- Showcase tool -->
       <div class="tool-pane" id="pane-showcase">
         <div class="tool-loading" id="load-showcase"><div class="ring"></div><div>Loading Showcase…</div></div>
+      </div>
+
+      <!-- Playground tool -->
+      <div class="tool-pane" id="pane-playground">
+        <div class="tool-loading" id="load-playground"><div class="ring"></div><div>Loading Playground…</div></div>
+      </div>
+
+      <!-- Stream Stage tool -->
+      <div class="tool-pane" id="pane-live">
+        <div class="tool-loading" id="load-live"><div class="ring"></div><div>Loading Stream Stage…</div></div>
       </div>
 
       <!-- Decimate tool -->
@@ -704,6 +724,8 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
     const TOOLDEFS = [
       { k:'library', label:'Library', icon:'▤', key:'0' },
       { k:'showcase', label:'Showcase', icon:'◈', key:'9' },
+      { k:'playground', label:'Playground — be your character (WASD · gamepad · first-person · VR)', icon:'⛹', key:'' },
+      { k:'live', label:'Stream Stage — go live for OBS (face capture · chroma · pop-out)', icon:'🎥', key:'' },
       { k:'rig', label:'Rig', icon:'⦿', key:'1' },
       { k:'mocap', label:'MoCap', icon:'⛷', key:'2' },
       { k:'motion', label:'Motion', icon:'⌗', key:'3' },
@@ -732,6 +754,7 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
       { k:'hairstudio', label:'Hair Studio', icon:'〰', key:'' },
     ];
     const COMMANDS = [
+      { id:'fun:roulette', title:'🎲 Surprise me — random character + random clip', hint:'🎲', run:() => surpriseMe() },
       ...TOOLDEFS.map(t => ({ id:'go:'+t.k, title:'Go to ' + t.label, hint:t.icon + '  ·  ' + t.key, run:() => S.setTool(t.k) })),
       { id:'physics:cloth', title:'Physics — Drop a cloth', hint:'≋', run:() => { S.setTool('physics'); setTimeout(()=>physicsPost('studio:cmd',{cmd:'cloth'}),120); } },
       { id:'physics:flag', title:'Physics — Flag in wind', hint:'🏳', run:() => { S.setTool('physics'); setTimeout(()=>physicsPost('studio:cmd',{cmd:'flag'}),120); } },
@@ -836,6 +859,8 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
 
   const TOOLS = {
     showcase:{ src: 'Showcase.dc.html?embed=1', frame: null, ready: false, label: 'Showcase' },
+    playground:{ src: 'Playground.dc.html?embed=1', frame: null, ready: false, label: 'Playground' },
+    live:{ src: 'StreamStage.dc.html?embed=1', frame: null, ready: false, label: 'Stream Stage' },
     rig:   { src: 'AutoRig.html?embed=1', frame: null, ready: false, label: 'Rig' },
     mocap: { src: 'MoCap.dc.html?embed=1', frame: null, ready: false, label: 'MoCap' },
     edit:  { src: 'MeshEdit.dc.html?embed=1', frame: null, ready: false, label: 'Edit' },
@@ -877,7 +902,7 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
   function saveLibPrefs(){ ppCookie('pp.libFilters', [...libFilters].join(',')); ppCookie('pp.libSort', libSort); ppCookie('pp.libNsfw', libNsfw ? '1' : '0'); }
   let libSearchQ = '';          // library name search
   let activeChar = null;        // shared character state — { it, deliveredTo:Set } follows you across tools
-  const CHAR_TOOLS = ['showcase', 'mocap', 'pose', 'edit', 'sculpt', 'physics', 'decimate', 'doctor', 'shaderlab', 'director', 'lipsync', 'timeline', 'retarget', 'retopo', 'recipe', 'bake', 'hair', 'csg', 'uv', 'paint', 'weightpaint', 'morph', 'bakemaps', 'curves', 'vat', 'stage'];
+  const CHAR_TOOLS = ['showcase', 'playground', 'live', 'mocap', 'pose', 'edit', 'sculpt', 'physics', 'decimate', 'doctor', 'shaderlab', 'director', 'lipsync', 'timeline', 'retarget', 'retopo', 'recipe', 'bake', 'hair', 'csg', 'uv', 'paint', 'weightpaint', 'morph', 'bakemaps', 'curves', 'vat', 'stage'];
   let lastLoadedName = '';
 
   // ---------- toasts ----------
@@ -887,6 +912,24 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
     el.textContent = msg;
     $('#toasts').appendChild(el);
     setTimeout(() => { el.style.transition = 'opacity .3s'; el.style.opacity = '0'; setTimeout(() => el.remove(), 300); }, 3400);
+  }
+
+  // an error toast with a one-click frame reload (fed by theme.js's error pulse)
+  const _toolErrAt = {};
+  function toastReload(msg, tool) {
+    const el = document.createElement('div');
+    el.className = 'toast error';
+    el.textContent = msg;
+    if (tool) {
+      const b = document.createElement('button');
+      b.textContent = '↻ Reload tool';
+      b.setAttribute('aria-label', 'Reload ' + (TOOLS[tool] ? TOOLS[tool].label : 'tool'));
+      b.style.cssText = 'margin-left:10px;padding:2px 9px;border-radius:6px;border:1px solid currentColor;background:transparent;color:inherit;font:inherit;font-size:11px;cursor:pointer;';
+      b.addEventListener('click', () => { el.remove(); reviveFrame(tool); });
+      el.appendChild(b);
+    }
+    $('#toasts').appendChild(el);
+    setTimeout(() => { el.style.transition = 'opacity .3s'; el.style.opacity = '0'; setTimeout(() => el.remove(), 300); }, 9000);
   }
 
   // ---------- iframe lifecycle ----------
@@ -937,7 +980,12 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
     const now = Date.now();
     const live = CTX.mru.filter(t => TOOLS[t].frame && t !== activeTool);
     if (live.length + 1 <= CTX.budget) return;                       // under budget → keep them warm
-    live.forEach(tool => { if (now - (TOOLS[tool].lastUsed || 0) > CTX.idleMs) evictFrame(tool); });
+    live.forEach(tool => {
+      if (now - (TOOLS[tool].lastUsed || 0) > CTX.idleMs) {
+        const lb = TOOLS[tool].label;
+        if (evictFrame(tool)) toast(lb + ' was idle — put to sleep to save memory (it reopens fresh; anything unsaved there is gone)', 'info');
+      }
+    });
   }
   // Same-origin iframes let us catch a lost GL context and rebuild that one
   // workspace instead of leaving the user staring at a black viewport.
@@ -1021,6 +1069,8 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
     updateFlow(tool);
     $('#btnHandoff').style.display = tool === 'rig' ? '' : 'none';
     if (tool === 'showcase') $('#stHint').textContent = 'Orbit the character, spin the turntable, and play a clip on it if it\u2019s rigged';
+    else if (tool === 'playground') $('#stHint').textContent = 'Take the wheel — WASD or a gamepad drives your persona; Space jumps, V goes first-person, and the mirror is for the persona check';
+    else if (tool === 'live') $('#stHint').textContent = 'Go live — webcam drives the face, pick a chroma backdrop, pop out the stage and window-capture it in OBS';
     else if (tool === 'mocap') $('#stHint').textContent = 'Pick a character + a clip or webcam, then retarget';
     else if (tool === 'rig') $('#stHint').textContent = 'Place joints over the mesh, then Compute Skeleton + Skin';
     else if (tool === 'edit') $('#stHint').textContent = 'Import or open a mesh, then separate / cut / simulate its pieces';
@@ -1294,6 +1344,19 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
     t.add(isNsfw(it) ? 'nsfw' : 'sfw');
     return t;
   }
+  // ---- last-opened tracking (feeds the Recent shelf + recent/never sorts) ----
+  let _opened = {}; try { _opened = JSON.parse(localStorage.getItem('pp.opened') || '{}'); } catch (e) {}
+  function openedAt(it){ return _opened[it.path || it.label] || 0; }
+  function touchOpened(it){
+    if (!it) return;
+    _opened[it.path || it.label] = Date.now();
+    try {
+      const k = Object.keys(_opened);
+      if (k.length > 800) k.sort((a, b) => _opened[a] - _opened[b]).slice(0, k.length - 800).forEach(x => delete _opened[x]);
+      localStorage.setItem('pp.opened', JSON.stringify(_opened));
+    } catch (e) {}
+  }
+
   function sortItems(arr){
     const a = [...arr];
     a.sort((x, y) => {
@@ -1303,6 +1366,8 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
         case 'oldest': return (x.ts || 0) - (y.ts || 0);
         case 'largest': return (y.size || 0) - (x.size || 0);
         case 'smallest': return (x.size || 0) - (y.size || 0);
+        case 'recent': return openedAt(y) - openedAt(x) || (x.label || '').localeCompare(y.label || '');
+        case 'never': return (openedAt(x) ? 1 : 0) - (openedAt(y) ? 1 : 0) || (x.label || '').localeCompare(y.label || '');
         default: return (x.label || '').localeCompare(y.label || '');
       }
     });
@@ -1354,9 +1419,16 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
     bar.style.display = 'flex';
     const nsfwCount = allRaw.filter(isNsfw).length;
     bar.innerHTML = '';
+    const rb = document.createElement('button');
+    rb.className = 'tbtn ghost'; rb.textContent = '🎲 Surprise me';
+    rb.title = 'Open a random character — with a random clip if it’s rigged';
+    rb.setAttribute('aria-label', 'Open a random character with a random clip');
+    rb.style.cssText = 'font-size:11px;padding:4px 10px;';
+    rb.addEventListener('click', surpriseMe);
+    bar.appendChild(rb);
     const sl = document.createElement('span'); sl.className = 'tlabel'; sl.textContent = 'Sort:'; bar.appendChild(sl);
     const sel = document.createElement('select'); sel.className = 'lib-sort';
-    [['name','Name  A → Z'],['name-desc','Name  Z → A'],['newest','Newest first'],['oldest','Oldest first'],['largest','Largest'],['smallest','Smallest']].forEach(([v, l]) => { const o = document.createElement('option'); o.value = v; o.textContent = l; if (v === libSort) o.selected = true; sel.appendChild(o); });
+    [['name','Name  A → Z'],['name-desc','Name  Z → A'],['newest','Newest first'],['oldest','Oldest first'],['recent','Recently opened'],['never','Never opened first'],['largest','Largest'],['smallest','Smallest']].forEach(([v, l]) => { const o = document.createElement('option'); o.value = v; o.textContent = l; if (v === libSort) o.selected = true; sel.appendChild(o); });
     sel.addEventListener('change', () => { libSort = sel.value; saveLibPrefs(); renderLib(); });
     bar.appendChild(sel);
     const tog = document.createElement('div'); tog.className = 'nsfw-toggle' + (libNsfw ? ' on' : '');
@@ -1422,7 +1494,54 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
       grid.innerHTML = '<div style="color:var(--muted);font-size:12px;padding:30px 0;">No characters match “' + q.replace(/[<>&]/g, '') + '”.</div>';
       return;
     }
-    shown.forEach(it => grid.appendChild(libTab === 'characters' ? charCard(it) : animCard(it)));
+    const maker = libTab === 'characters' ? charCard : animCard;
+    // Recent shelf — only on the default browse view (no search, no filters)
+    if (libTab === 'characters' && !q && !libFilters.size && libSort !== 'recent' && shown.length > 8) {
+      const rec = shown.filter(it => openedAt(it)).sort((a, b) => openedAt(b) - openedAt(a)).slice(0, 6);
+      if (rec.length >= 2) {
+        grid.appendChild(shelfLabel('⌛ Recently opened'));
+        rec.forEach(it => grid.appendChild(charCard(it)));
+        grid.appendChild(shelfLabel('Everything · ' + shown.length));
+      }
+    }
+    mountCards(grid, shown, maker);
+  }
+
+  function shelfLabel(txt) {
+    const d = document.createElement('div');
+    d.className = 'lib-section-label';
+    d.style.cssText = 'grid-column:1/-1;margin:4px 0 -4px;';
+    d.textContent = txt;
+    return d;
+  }
+
+  // Virtualized card mounting: with hundreds of characters, building every
+  // card (and decoding every thumbnail) up front makes the tab crawl. Past a
+  // threshold, cards below the fold are cheap placeholders that materialize
+  // as they approach the viewport.
+  let libIO = null;
+  function mountCards(grid, shown, maker) {
+    if (libIO) { libIO.disconnect(); libIO = null; }
+    const EAGER = 24;
+    if (shown.length <= 60) { shown.forEach(it => grid.appendChild(maker(it))); return; }
+    shown.slice(0, EAGER).forEach(it => grid.appendChild(maker(it)));
+    const ph_h = libTab === 'characters' ? 340 : 220;
+    libIO = new IntersectionObserver((ents) => {
+      ents.forEach(en => {
+        if (!en.isIntersecting) return;
+        libIO.unobserve(en.target);
+        en.target.replaceWith(maker(en.target._it));
+      });
+    }, { rootMargin: '900px' });
+    shown.slice(EAGER).forEach(it => {
+      const ph = document.createElement('div');
+      ph.className = 'asset';
+      ph.style.cssText = 'min-height:' + ph_h + 'px;opacity:.35;';
+      ph.innerHTML = '<div class="thumb"><span class="gly" style="opacity:.4;">⦿</span></div>';
+      ph._it = it;
+      grid.appendChild(ph);
+      libIO.observe(ph);
+    });
   }
 
   function cardEl(html) { const d = document.createElement('div'); d.className = 'asset'; d.innerHTML = html; return d; }
@@ -1442,7 +1561,7 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
           ${rig === 'mixamo' ? '<span class="bdg mixamo">mixamo</span>' : (rig === 'autorig' ? '<span class="bdg autorig">autorig</span>' : '')}
           ${it.restored ? '<span class="bdg autorig" title="restored from a previous session">saved</span>' : ''}
         </div>
-        ${it.session ? '<div class="cardTools" style="position:absolute;top:7px;right:7px;display:flex;gap:4px;"><button class="cardRen" title="Rename" style="width:22px;height:22px;border-radius:5px;border:1px solid var(--edge,#34322d);background:rgba(15,15,15,0.7);color:var(--text-2,#9b958a);font-size:11px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;">✎</button><button class="cardDup" title="Duplicate" style="width:22px;height:22px;border-radius:5px;border:1px solid var(--edge,#34322d);background:rgba(15,15,15,0.7);color:var(--text-2,#9b958a);font-size:11px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;">⧉</button><button class="cardDel" title="Remove from session" style="width:22px;height:22px;border-radius:5px;border:1px solid var(--edge,#34322d);background:rgba(15,15,15,0.7);color:var(--text-2,#9b958a);font-size:13px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;">×</button></div>' : ''}
+        ${it.session ? '<div class="cardTools" style="position:absolute;top:7px;right:7px;display:flex;gap:4px;"><button class="cardRen" title="Rename" aria-label="Rename character" style="width:22px;height:22px;border-radius:5px;border:1px solid var(--edge,#34322d);background:rgba(15,15,15,0.7);color:var(--text-2,#9b958a);font-size:11px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;">✎</button><button class="cardDup" title="Duplicate" aria-label="Duplicate character" style="width:22px;height:22px;border-radius:5px;border:1px solid var(--edge,#34322d);background:rgba(15,15,15,0.7);color:var(--text-2,#9b958a);font-size:11px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;">⧉</button><button class="cardDel" title="Remove from session" aria-label="Remove character from session" style="width:22px;height:22px;border-radius:5px;border:1px solid var(--edge,#34322d);background:rgba(15,15,15,0.7);color:var(--text-2,#9b958a);font-size:13px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;">×</button></div>' : ''}
       </div>
       <div class="meta">
         <div class="nm">${it.label}</div>
@@ -1512,6 +1631,7 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
   // "active character" and automatically follows you into every tool that can
   // host it — no re-import. Each tool receives it once (first visit).
   function setActiveChar(it, tool) {
+    touchOpened(it);
     if (!activeChar || activeChar.it !== it) activeChar = { it, deliveredTo: new Set() };
     if (tool) activeChar.deliveredTo.add(tool);
     $('#stAsset').textContent = '◉ ' + it.label + (tool ? ' → ' + (TOOLS[tool] ? TOOLS[tool].label : tool) : '');
@@ -1564,6 +1684,34 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
     toast('Using ' + it.label + ' as MoCap source…', 'info');
   }
 
+  // ---------- the roulette: a "Surprise me" button ----------
+  // Random character (weighted toward ones you've never rolled) + a random
+  // clip if it's rigged → lands in Showcase. Turns a shelf of hundreds into a toy.
+  function surpriseMe() {
+    let chars = [...session.characters, ...libData.characters].filter(it => !isHidden(it));
+    if (!libNsfw) chars = chars.filter(it => !isNsfw(it));
+    if (!chars.length) { toast('Shelf is empty — brew something first', 'warn'); return; }
+    let seen = [];
+    try { seen = (localStorage.getItem('pp.rouletteSeen') || '').split('|').filter(Boolean); } catch (e) {}
+    const seenSet = new Set(seen);
+    const fresh = chars.filter(c => !seenSet.has(c.path || c.label));
+    const pool = fresh.length ? fresh : chars;
+    const it = pool[Math.floor(Math.random() * pool.length)];
+    seen.push(it.path || it.label);
+    try { localStorage.setItem('pp.rouletteSeen', seen.slice(-500).join('|')); } catch (e) {}
+    openInShowcase(it);
+    const anims = [...session.animations, ...libData.animations];
+    if (anims.length && itemTags(it).has('rigged')) {
+      const a = anims[Math.floor(Math.random() * anims.length)];
+      const send = () => post('showcase', 'studio:playAnim', { anim: a });
+      if (TOOLS.showcase.ready) send();
+      else { const prev = TOOLS.showcase._pending; TOOLS.showcase._pending = () => { if (prev) prev(); send(); }; }
+      toast('🎲 ' + it.label + ' × ' + a.label, 'success');
+    } else {
+      toast('🎲 ' + it.label + (fresh.length ? '' : ' (full lap — everyone’s been rolled once!)'), 'success');
+    }
+  }
+
   // ---------- one-click retarget: play any library clip on the active character ----------
   // Uses Showcase's semantic retarget core (canonical bone mapping); the clip is
   // queued if the character is still loading.
@@ -1595,10 +1743,17 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
   // follows you into every other tool) and Showcase advises what to do next.
   async function openDroppedMesh(file) {
     const name = file.name; const ext = (name.split('.').pop() || 'glb').toLowerCase();
-    if (!/^(glb|gltf|fbx|obj)$/.test(ext)) { toast('Unsupported file: .' + ext, 'warn'); return; }
+    if (ext === 'bvh') { openDroppedClip(file); return; }
+    if (!/^(glb|gltf|fbx|obj|stl|ply|vrm)$/.test(ext)) { toast('Unsupported file: .' + ext, 'warn'); return; }
     let buf;
     try { buf = await file.arrayBuffer(); } catch (e) { toast('Could not read ' + name, 'error'); return; }
-    const it = { label: name.replace(/\.(glb|gltf|fbx|obj)$/i, ''), path: name, ext, session: true, dropped: true, rig: 'unknown', rigged: 'false', _buffer: buf };
+    // .vrm is a GLB with a VRM extension — loaders read it as glb; we peek the
+    // extension block so the shelf knows it's an avatar and what it carries.
+    let vrmInfo = null;
+    if (ext === 'vrm') {
+      try { vrmInfo = peekVRM(buf); } catch (e) {}
+    }
+    const it = { label: name.replace(/\.(glb|gltf|fbx|obj|stl|ply|vrm)$/i, ''), path: name, ext: ext === 'vrm' ? 'glb' : ext, session: true, dropped: true, rig: ext === 'vrm' ? 'vrm' : 'unknown', rigged: ext === 'vrm' ? 'true' : 'false', vrm: vrmInfo, _buffer: buf };
     session.characters.unshift(it);
     idbSaveChar(it);   // dropped meshes survive a reload too
     renderLib();
@@ -1606,7 +1761,35 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
     lastLoadedName = it.label;
     setTool('showcase');
     deliverChar('showcase', it);
-    toast('Dropped ' + it.label + ' → Showcase', 'success');
+    if (vrmInfo) toast('VRM avatar ' + it.label + ' → Showcase — ' + vrmInfo.spec + ', ' + vrmInfo.expressions + ' expressions, ' + vrmInfo.bones + ' humanoid bones. Edit in Morph/Pose, re-export as VRM when done.', 'success');
+    else toast('Dropped ' + it.label + ' → Showcase', 'success');
+  }
+  // Peek a .vrm's extension block (1.0 VRMC_vrm or 0.x VRM) without three.js.
+  function peekVRM(buf) {
+    const dv = new DataView(buf);
+    if (dv.getUint32(0, true) !== 0x46546C67) throw new Error('not glb');
+    const len = dv.getUint32(12, true);
+    const json = JSON.parse(new TextDecoder().decode(new Uint8Array(buf, 20, len)));
+    const ex = json.extensions || {};
+    if (ex.VRMC_vrm) {
+      const v = ex.VRMC_vrm;
+      return { spec: 'VRM 1.0', name: (v.meta && v.meta.name) || '', bones: Object.keys((v.humanoid && v.humanoid.humanBones) || {}).length, expressions: Object.keys((v.expressions && v.expressions.preset) || {}).length + Object.keys((v.expressions && v.expressions.custom) || {}).length };
+    }
+    if (ex.VRM) {
+      const v = ex.VRM;
+      return { spec: 'VRM 0.x', name: (v.meta && v.meta.title) || '', bones: ((v.humanoid && v.humanoid.humanBones) || []).length, expressions: ((v.blendShapeMaster && v.blendShapeMaster.blendShapeGroups) || []).length };
+    }
+    return null;
+  }
+  // Dropped .bvh mocap → Retarget as the motion source: pick a target
+  // character from the shelf, auto-map, bake — free mocap on any rig.
+  async function openDroppedClip(file) {
+    let buf;
+    try { buf = await file.arrayBuffer(); } catch (e) { toast('Could not read ' + file.name, 'error'); return; }
+    setTool('retarget');
+    const send = () => post('retarget', 'studio:loadClipBuffer', { buffer: buf, name: file.name });
+    if (TOOLS.retarget.ready) send(); else TOOLS.retarget._pending = send;
+    toast('Mocap clip ' + file.name + ' → Retarget — now load a target character and bake', 'info');
   }
   (function () {
     const dz = $('#dropZone'), dzFile = $('#dropFile');
@@ -1786,6 +1969,26 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
         });
       }
     }
+    // VRM version chips (VRM format only) — 0.x for VSeeFace-era apps, 1.0 modern
+    if (skelBlock) {
+      let vb = $('#exVrmBlock');
+      if (!vb) {
+        vb = document.createElement('div'); vb.id = 'exVrmBlock';
+        vb.innerHTML = '<div style="font-family:var(--font-mono);font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-soft);margin-bottom:9px;">VRM version</div><div id="exVrmV" style="display:flex;gap:7px;margin-bottom:20px;"></div>';
+        skelBlock.parentNode.insertBefore(vb, skelBlock.nextSibling);
+      }
+      vb.style.display = exState.format === 'vrm' ? '' : 'none';
+      if (exState.format === 'vrm') {
+        const w = $('#exVrmV'); w.innerHTML = '';
+        [['1.0', 'VRM 1.0 · modern'], ['0.x', 'VRM 0.x · VSeeFace / classic']].forEach(([k, lb]) => {
+          const on = (exState.vrmVersion || '1.0') === k;
+          const b = document.createElement('button'); b.className = 'fchip' + (on ? ' on' : '');
+          b.textContent = lb; b.setAttribute('aria-pressed', on ? 'true' : 'false');
+          b.addEventListener('click', () => { exState.vrmVersion = k; renderExport(); });
+          w.appendChild(b);
+        });
+      }
+    }
     runExportCheck();
     const axWrap = $('#exAxis'); axWrap.innerHTML = '';
     [['y', 'Y-up'], ['z', 'Z-up']].forEach(([k, lb]) => {
@@ -1860,15 +2063,31 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
       } catch (e) { box.style.display = 'none'; return; }
     }
     const r = exCheckCache.result; if (!r) { box.style.display = 'none'; return; }
+    // VTuber preflight (VRM format only): pass/fail on what streaming apps need
+    let vt = '';
+    if (exState.format === 'vrm' && r.vtuber) {
+      const v = r.vtuber;
+      const row = (ok, warn, label) => '<span style="display:inline-flex;align-items:center;gap:4px;margin-right:10px;white-space:nowrap;">' + (ok ? '✅' : warn ? '🟡' : '🔴') + ' ' + label + '</span>';
+      vt = '<div style="margin-top:7px;padding-top:7px;border-top:1px dashed var(--wood);font-size:11px;line-height:2;"><b>VTuber check:</b><br>'
+        + row(v.arkit >= 45, v.arkit >= 20, 'face shapes ' + v.arkit + '/52')
+        + row(v.blink, false, 'blink')
+        + row(v.look, false, 'eye look')
+        + row(v.visemes >= 3, v.visemes >= 1, 'visemes ' + v.visemes + '/5')
+        + row(v.headBone, false, 'head bone')
+        + row(v.tris <= 70000, v.tris <= 150000, (v.tris / 1000).toFixed(0) + 'k tris')
+        + row(v.materials <= 8, v.materials <= 16, v.materials + ' materials')
+        + row(v.springs > 0, true, 'spring chains ' + (v.springs || 0))
+        + '<span style="color:var(--ink-soft);">' + (v.arkit < 45 ? 'Red rows → Morph’s ⚗ ARKit 52 fixes the face. ' : '') + (v.springs ? 'Sway exports automatically.' : 'No hair/tail-named bone chains found — rename hair bones “hair…” and sway exports automatically.') + '</span></div>';
+    }
     if (r.ok) {
       box.style.display = 'flex';
-      box.innerHTML = '<span style="flex:none;">✓</span><span>Sanity check passed — character is <b>' + r.height.toFixed(2) + ' m</b> tall (a human silhouette is ~1.75 m). Units look right.</span>';
+      box.innerHTML = '<span style="flex:none;">✓</span><span>Sanity check passed — character is <b>' + r.height.toFixed(2) + ' m</b> tall (a human silhouette is ~1.75 m). Units look right.' + vt + '</span>';
       box.style.borderColor = 'var(--wood)';
     } else {
       box.style.display = 'flex';
       const fix = r.issues.find(i => i.fix);
       box.innerHTML = '<span style="flex:none;">⚠</span><span><b>Check before you export:</b> ' + r.issues.map(i => i.message).join(' ') +
-        (fix ? ' <button id="exFix" style="margin-left:6px;padding:3px 10px;border-radius:7px;border:2px solid var(--wood-dark);background:var(--cream-2);color:var(--ink);font-size:11px;font-weight:700;cursor:pointer;">Fix: scale ×' + (fix.fix >= 0.01 ? fix.fix.toFixed(2) : fix.fix) + '</button>' : '') + '</span>';
+        (fix ? ' <button id="exFix" style="margin-left:6px;padding:3px 10px;border-radius:7px;border:2px solid var(--wood-dark);background:var(--cream-2);color:var(--ink);font-size:11px;font-weight:700;cursor:pointer;">Fix: scale ×' + (fix.fix >= 0.01 ? fix.fix.toFixed(2) : fix.fix) + '</button>' : '') + vt + '</span>';
       const fb = $('#exFix');
       if (fb && fix) fb.addEventListener('click', () => { exState.scale = Math.max(1, Math.round(fix.fix * 100)); renderExport(); });
     }
@@ -1896,14 +2115,14 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
       try {
         const buf = await activeCharBuffer();
         if (!buf) { toast('Could not read the character data', 'error'); return; }
-        const r = await window.PPExport.exportCharacter(buf, { format: exState.format, upAxis: exState.up, scale: exState.scale / 100, name: it.label, skeleton: exState.skeleton || 'keep', author: exState.author || '', licence: exState.licence || 'CC BY 4.0', compress: exState.compress || 'none', atlas: !!exState.atlas, job, onStatus: (m) => { g.textContent = '⏳ ' + m; } });
+        const r = await window.PPExport.exportCharacter(buf, { format: exState.format, vrmVersion: exState.vrmVersion || '1.0', upAxis: exState.up, scale: exState.scale / 100, name: it.label, skeleton: exState.skeleton || 'keep', author: exState.author || '', licence: exState.licence || 'CC BY 4.0', compress: exState.compress || 'none', atlas: !!exState.atlas, job, onStatus: (m) => { g.textContent = '⏳ ' + m; } });
         if (job) job.settle();
         let msg = 'Exported ' + r.file;
         if (r.atlas && r.atlas.before && r.atlas.after) msg += ' — atlas: ' + r.atlas.before.draws + '→' + r.atlas.after.draws + ' draw' + (r.atlas.after.draws === 1 ? '' : 's') + ', ' + r.atlas.before.materials + '→' + r.atlas.after.materials + ' material' + (r.atlas.after.materials === 1 ? '' : 's');
         if (r.compression && r.compression.method !== 'none') msg += ' — ' + r.compression.method + ': ' + (r.compression.before / 1048576).toFixed(1) + ' → ' + (r.compression.after / 1048576).toFixed(1) + ' MB (' + r.compression.savedPct + '% smaller)';
         if (r.passport) msg += ' — ' + r.passport.trisLabel + ' tris, ' + r.passport.sizeLabel + ' all-in, opens anywhere';
         if (r.skeleton && r.skeleton.renamed) msg += ' — ' + r.skeleton.renamed + ' bones renamed (' + r.skeleton.detected + ' → ' + (exState.skeleton) + ')';
-        if (r.vrm) msg += ' — ' + r.vrm.bones + ' humanoid bones, ' + r.vrm.expressions + ' expressions';
+        if (r.vrm) msg += ' — VRM ' + (r.vrm.version || '1.0') + ', ' + r.vrm.bones + ' humanoid bones, ' + r.vrm.expressions + ' presets, ' + (r.vrm.customExpressions || 0) + ' PerfectSync shapes' + (r.vrm.springs ? ', ' + r.vrm.springs + ' spring chains' : '');
         toast(msg, 'success'); closeExport();
       } catch (e) {
         if (window.JobController && window.JobController.isCancel(e)) toast('Export cancelled', 'info');
@@ -2027,6 +2246,14 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
     }
     else if (d.type === 'studio:error') {
       toast((d.tool || 'tool') + ': ' + d.message, 'error');
+    }
+    else if (d.type === 'studio:toolError') {
+      // uncaught error inside a tool frame (posted by theme.js's error pulse)
+      const tool = Object.keys(TOOLS).find(t => TOOLS[t].frame && TOOLS[t].frame.contentWindow === e.source);
+      const key = tool || '?';
+      if (Date.now() - (_toolErrAt[key] || 0) < 20000) return;   // one toast per tool per 20s
+      _toolErrAt[key] = Date.now();
+      toastReload((tool && TOOLS[tool] ? TOOLS[tool].label : 'A tool') + ' hit an error — ' + (d.message || 'see console'), tool);
     }
   });
 

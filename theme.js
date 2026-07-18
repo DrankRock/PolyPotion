@@ -178,6 +178,23 @@
     if (d && d.__studioTheme && d.name) apply(d.name);
   });
 
+  // ---- global error pulse ----
+  // Every tool loads theme.js, so this is the ONE place a crashed engine can
+  // wave at the shell: uncaught errors/rejections inside a tool iframe post
+  // studio:toolError to the parent, which shows a toast + "Reload tool".
+  // Throttled hard so an error loop can't flood the bridge.
+  if (window !== window.top) {
+    var _errN = 0, _errT0 = 0;
+    var reportErr = function (msg) {
+      var now = Date.now();
+      if (now - _errT0 > 60000) { _errN = 0; _errT0 = now; }
+      if (++_errN > 3) return;
+      try { window.parent.postMessage({ __studio: true, type: 'studio:toolError', message: String(msg || 'Script error').slice(0, 300) }, '*'); } catch (e) {}
+    };
+    window.addEventListener('error', function (e) { reportErr(e && e.message); });
+    window.addEventListener('unhandledrejection', function (e) { var r = e && e.reason; reportErr((r && r.message) || r); });
+  }
+
   injectFonts();
   apply(read());
 

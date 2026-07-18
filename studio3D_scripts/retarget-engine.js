@@ -11,6 +11,7 @@ import { applyOrbitScheme } from './nav-scheme.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
+import { BVHLoader } from 'three/addons/loaders/BVHLoader.js';
 import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
 import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
 import { fetchAssetBuffer } from './chunk-loader.js';
@@ -63,6 +64,15 @@ export class RetargetEngine {
   // ------------------------------------------------ loading
   async _parse(buf, ext, name) {
     ext = (ext || 'glb').toLowerCase();
+    if (ext === 'bvh') {
+      // raw mocap: BVH carries a skeleton + one clip, no mesh — perfect source
+      const text = typeof buf === 'string' ? buf : new TextDecoder().decode(buf);
+      const { skeleton, clip } = new BVHLoader().parse(text);
+      const root = new THREE.Group();
+      root.add(skeleton.bones[0]);
+      clip.name = (name || 'mocap').replace(/\.bvh$/i, '');
+      return { root, clips: [clip] };
+    }
     if (ext === 'fbx') {
       const obj = new FBXLoader().parse(buf, '');
       return { root: obj, clips: obj.animations || [] };

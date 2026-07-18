@@ -178,10 +178,36 @@ function buildRigData(container, scale) {
 }
 
 // ---- main entry ----
-// checkGLB(buffer) → validateScale result for a raw GLB (pre-flight UI helper)
+// checkGLB(buffer) → validateScale result + vtuber preflight stats
 export async function checkGLB(buffer) {
   const scene = await parseGLB(buffer.slice(0));
-  return validateScale(scene);
+  const r = validateScale(scene);
+  // VTuber preflight: what streaming apps need from a VRM
+  const ARKIT_RX = /^(eye|jaw|mouth|brow|cheek|nose|tongue)/;
+  const VISEMES = [/^jawOpen$/i, /^mouthFunnel$/i, /^mouthPucker$/i, /^mouthSmile/i, /^mouthStretch/i];
+  const shapes = new Set(); let tris = 0; const mats = new Set(); let headBone = false;
+  scene.traverse(o => {
+    if (o.morphTargetDictionary) Object.keys(o.morphTargetDictionary).forEach(n => shapes.add(n));
+    if (o.isMesh && o.geometry) {
+      const p = o.geometry.attributes.position;
+      tris += o.geometry.index ? o.geometry.index.count / 3 : (p ? p.count / 3 : 0);
+      (Array.isArray(o.material) ? o.material : [o.material]).forEach(m => { if (m) mats.add(m.uuid); });
+    }
+    if (o.isBone && /head/i.test(o.name) && !/headtop|end/i.test(o.name)) headBone = true;
+  });
+  const SPRINGY = /hair|bangs|ahoge|twin|pony|braid|tail(?!or)|skirt|ribbon|cape|cloak|scarf|antenna|tassel|bell/i;
+  const NOTSPRING = /head$|neck|spine|hips|chest|shoulder|arm|hand|finger|thumb|leg|knee|foot|toe|eye/i;
+  let springRoots = 0;
+  scene.traverse(o => { if (o.isBone && SPRINGY.test(o.name) && !NOTSPRING.test(o.name) && !(o.parent && o.parent.isBone && SPRINGY.test(o.parent.name) && !NOTSPRING.test(o.parent.name))) springRoots++; });
+  const names = [...shapes];
+  r.vtuber = {
+    arkit: names.filter(n => ARKIT_RX.test(n)).length,
+    blink: shapes.has('eyeBlinkLeft') && shapes.has('eyeBlinkRight'),
+    look: names.some(n => /^eyeLook/.test(n)),
+    visemes: VISEMES.filter(rx => names.some(n => rx.test(n))).length,
+    headBone, tris: Math.round(tris), materials: mats.size, springs: springRoots,
+  };
+  return r;
 }
 
 export async function exportCharacter(buffer, opts) {
@@ -276,7 +302,7 @@ export async function exportCharacter(buffer, opts) {
     const { exportVRM } = await import('./vrm-export.js');
     const exporter = new GLTFExporter();
     const glb = await new Promise((res, rej) => exporter.parse(scene, res, rej, { binary: true, animations: [], onlyVisible: false, embedImages: true }));
-    const { buffer: vrmBuf, report } = exportVRM(glb, { name: base });
+    const { buffer: vrmBuf, report } = exportVRM(glb, { name: base, version: opts && opts.vrmVersion });
     download(new Blob([vrmBuf], { type: 'model/gltf-binary' }), base + '.vrm');
     return { format: fmt, file: base + '.vrm', vrm: report };
   }

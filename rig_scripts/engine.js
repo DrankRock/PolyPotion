@@ -11,6 +11,8 @@ import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { OBJLoader } from 'three/addons/loaders/OBJLoader.js';
 import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
+import { STLLoader } from 'three/addons/loaders/STLLoader.js';
+import { PLYLoader } from 'three/addons/loaders/PLYLoader.js';
 
 const E = {};
 let canvas, renderer, scene;
@@ -183,6 +185,11 @@ E.loadFile = async function (file) {
     obj = g.scene || g.scenes[0];
   } else if (ext === 'obj') {
     obj = loaders.obj.parse(await file.text());
+  } else if (ext === 'stl' || ext === 'ply') {
+    const geo = (ext === 'stl' ? new STLLoader() : new PLYLoader()).parse(await file.arrayBuffer());
+    if (!geo.getAttribute('normal')) geo.computeVertexNormals();
+    obj = new THREE.Group();
+    obj.add(new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ color: 0xb9bec6 })));
   } else throw new Error('Unsupported: .' + ext);
 
   // collect meshes; flatten skinned → plain (we re-rig from scratch)

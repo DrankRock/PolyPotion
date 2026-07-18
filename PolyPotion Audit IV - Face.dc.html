@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<script src="theme.js"></script>
+<style>
+  html{scroll-behavior:smooth;}
+  html,body{margin:0;padding:0;background:var(--bg);}
+  *{box-sizing:border-box;}
+  #fa ::-webkit-scrollbar{width:10px;height:10px;}
+  #fa ::-webkit-scrollbar-track{background:var(--gutter);}
+  #fa ::-webkit-scrollbar-thumb{background:var(--edge);border:2px solid var(--gutter);border-radius:6px;}
+  #fa section[id]{scroll-margin-top:22px;}
+  #fa a{color:inherit;}
+  #fa a:hover{color:var(--accent);}
+</style>
+</helmet>
+
+<div id="fa" style="display:flex;align-items:flex-start;min-height:100vh;width:100%;background:var(--bg);color:var(--text);font-family:var(--font-ui);font-size:14px;line-height:1.65;-webkit-font-smoothing:antialiased;">
+
+  <aside style="position:sticky;top:0;height:100vh;width:264px;flex:none;background:var(--panel);border-right:1px solid var(--seam);overflow-y:auto;padding:20px 14px 40px;">
+    <div style="display:flex;align-items:center;gap:9px;padding:0 6px 14px;">
+      <div style="width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--accent),var(--wood-dark));color:var(--on-accent);font-weight:700;font-size:15px;">☺</div>
+      <div>
+        <div style="font-weight:700;letter-spacing:.05em;font-size:13px;">POLYPOTION</div>
+        <div style="font-family:var(--font-mono);font-size:9px;color:var(--muted);letter-spacing:.12em;">CHAPTER IV · THE FACE AUDIT</div>
+      </div>
+    </div>
+
+    <sc-for list="{{ nav }}" as="n" hint-placeholder-count="5">
+      <a href="{{ n.href }}" style="{{ n.style }}">
+        <span style="{{ n.dot }}"></span>
+        <span style="flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ n.label }}</span>
+        <span style="font-family:var(--font-mono);font-size:9.5px;color:var(--muted);">{{ n.count }}</span>
+      </a>
+    </sc-for>
+
+    <div style="margin-top:20px;padding:12px 10px;border-top:1px solid var(--seam);">
+      <div style="font-family:var(--font-mono);font-size:9.5px;letter-spacing:.12em;color:var(--muted);margin-bottom:9px;">WHAT EACH TAG MEANS</div>
+      <sc-for list="{{ legend }}" as="l" hint-placeholder-count="4">
+        <div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:9px;">
+          <span style="flex:none;width:52px;text-align:center;font-family:var(--font-mono);font-size:9px;font-weight:700;padding:3px 0;border-radius:5px;color:{{ l.color }};background:{{ l.bg }};border:1px solid {{ l.border }};">{{ l.tag }}</span>
+          <span style="font-size:11px;color:var(--text-2);line-height:1.45;">{{ l.label }}</span>
+        </div>
+      </sc-for>
+    </div>
+    <div style="margin-top:12px;padding:10px 8px;font-size:11px;line-height:1.6;color:var(--muted);border-top:1px solid var(--seam);">Chapter IV zooms into one question: can a VTuber build an avatar here, walk out the door with it, and go live? Code swept July 18 — morph-engine, face-capture, lipsync-engine, vrm-export.</div>
+  </aside>
+
+  <main id="fa-main" style="flex:1;min-width:0;max-width:920px;padding:40px 56px 140px;">
+
+    <a href="index.html" style="display:inline-flex;align-items:center;gap:8px;font-size:12.5px;font-weight:700;color:var(--accent);text-decoration:none;margin-bottom:22px;padding:8px 14px;border:1px solid var(--seam);border-radius:8px;background:var(--panel);">← Back to Studio</a>
+
+    <header style="margin-bottom:16px;">
+      <div style="font-family:var(--font-mono);font-size:11px;letter-spacing:.14em;color:var(--accent);margin-bottom:10px;">CHAPTER IV · FACE RIGGING & THE VTUBER TEST · JULY 18, 2026</div>
+      <h1 style="font-size:36px;font-weight:700;letter-spacing:-.015em;line-height:1.1;margin:0 0 14px;">The face audit — great bones, dead eyes, no stage</h1>
+      <p style="font-size:16px;color:var(--text-2);margin:0;max-width:690px;">The face stack is genuinely strong: full <b style="color:var(--text);">ARKit-52 authoring</b> with landmark-guided synthesis, <b style="color:var(--text);">on-device webcam capture</b> that speaks the same 52 names, three-tier lipsync, and a real VRM 1.0 exporter. The architecture bet — standardise everything on ARKit names — was the right one, and it's why every fix below is small. But run the VTuber test end-to-end and it fails in four places: the exported avatar has <b style="color:var(--text);">dead eyes</b> in VSeeFace, <b style="color:var(--text);">no PerfectSync</b>, hair that's <b style="color:var(--text);">frozen solid</b>, and — the big one — there is no way to actually <b style="color:var(--text);">go live</b>.</p>
+    </header>
+
+    <section style="margin:20px 0 8px;padding:18px 22px;border:1px solid var(--seam);border-radius:12px;background:var(--panel);display:flex;gap:0;">
+      <sc-for list="{{ score }}" as="sc" hint-placeholder-count="4">
+        <div style="{{ sc.style }}">
+          <div style="font-family:var(--font-mono);font-size:26px;font-weight:700;color:{{ sc.hue }};">{{ sc.n }}</div>
+          <div style="font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-top:2px;">{{ sc.label }}</div>
+        </div>
+      </sc-for>
+    </section>
+
+    <sc-for list="{{ sections }}" as="s" hint-placeholder-count="4">
+      <section id="{{ s.id }}" data-doc style="padding:38px 0 8px;border-top:1px solid var(--seam);margin-top:30px;">
+        <div style="display:flex;align-items:center;gap:13px;margin-bottom:8px;">
+          <div style="{{ s.glyphBox }}">{{ s.glyph }}</div>
+          <div>
+            <div style="font-family:var(--font-mono);font-size:10.5px;letter-spacing:.12em;color:{{ s.hue }};margin-bottom:2px;">{{ s.kicker }}</div>
+            <h2 style="font-size:23px;font-weight:700;margin:0;">{{ s.title }}</h2>
+          </div>
+        </div>
+        <p style="font-size:15px;color:var(--text-2);margin:0 0 20px;max-width:690px;">{{ s.intro }}</p>
+
+        <div style="display:flex;flex-direction:column;gap:13px;">
+          <sc-for list="{{ s.findings }}" as="f" hint-placeholder-count="4">
+            <div style="border:1px solid var(--seam);border-radius:11px;background:var(--panel);overflow:hidden;">
+              <div style="display:flex;align-items:flex-start;gap:13px;padding:15px 17px 6px;">
+                <span style="flex:none;margin-top:1px;width:56px;text-align:center;font-family:var(--font-mono);font-size:9px;font-weight:700;padding:4px 0;border-radius:6px;color:{{ f.color }};background:{{ f.bg }};border:1px solid {{ f.border }};">{{ f.tag }}</span>
+                <div style="flex:1;">
+                  <div style="font-weight:700;font-size:15px;color:var(--text);margin-bottom:5px;">{{ f.title }}</div>
+                  <div style="font-size:13.5px;color:var(--text-2);line-height:1.62;">{{ f.why }}</div>
+                </div>
+                <span style="flex:none;font-family:var(--font-mono);font-size:10px;color:var(--muted);padding:3px 9px;border:1px solid var(--edge);border-radius:20px;">{{ f.effort }}</span>
+              </div>
+              <div style="display:flex;gap:10px;padding:9px 17px 14px 86px;">
+                <span style="flex:none;font-family:var(--font-mono);font-size:9.5px;letter-spacing:.1em;color:{{ s.hue }};padding-top:2px;">DO →</span>
+                <div style="font-size:13px;color:var(--text);line-height:1.6;">{{ f.todo }}</div>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </section>
+    </sc-for>
+
+    <section style="padding:34px 0 0;border-top:1px solid var(--seam);margin-top:30px;">
+      <p style="color:var(--text-2);font-size:14px;line-height:1.7;max-width:690px;margin:0 0 10px;"><b style="color:var(--text);">The ordering writes itself.</b> Fix the exporter first — look-at presets, PerfectSync clips, VRM 0.x, head annotation are all small edits to one file and they turn every already-made character into a working VSeeFace avatar. Then turn on head pose and recording in capture (two flags and a buffer). Spring bones are the one real engineering job. And the Stream Stage is the prize: the suite already owns every ingredient — capture, avatar, backgrounds, an iframe shell — nobody has assembled them into "go live from a browser tab" before.</p>
+      <p style="color:var(--muted);font-size:12.5px;margin:14px 0 0;">Written July 18, 2026 from a code sweep of morph-engine.js, face-capture.js, lipsync-engine.js, vrm-export.js and the Playground/Showcase face surfaces. Companion to the Chapter III audit and PROGRESS.md. Out of scope on purpose: Live2D (a different medium), VMC/OSC protocol (needs UDP — impossible in a browser without a helper app).</p>
+    </section>
+
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { activeId: 'export' };
+
+  componentDidMount() {
+    this._io = new IntersectionObserver((entries) => {
+      entries.forEach(e => { if (e.isIntersecting) this.setState({ activeId: e.target.id }); });
+    }, { rootMargin: '-6% 0px -84% 0px', threshold: 0 });
+    setTimeout(() => {
+      document.querySelectorAll('#fa-main section[id]').forEach(s => this._io.observe(s));
+    }, 80);
+  }
+  componentWillUnmount() { if (this._io) this._io.disconnect(); }
+
+  hueFor(tag) {
+    if (tag === 'GOOD') return 'var(--good)';
+    if (tag === 'PRO') return 'var(--new)';
+    if (tag === 'SPARK') return 'var(--honey)';
+    if (tag === 'FIX') return 'var(--danger)';
+    return 'var(--accent)';
+  }
+  tagStyle(tag) {
+    const h = this.hueFor(tag);
+    return {
+      color: h,
+      bg: 'color-mix(in srgb, ' + h + ' 14%, transparent)',
+      border: 'color-mix(in srgb, ' + h + ' 42%, transparent)',
+    };
+  }
+
+  sectionsData() {
+    return [
+      {
+        id: 'standing', glyph: '✓', hue: 'var(--good)', kicker: 'CREDIT WHERE DUE — WHAT ALREADY WORKS',
+        title: 'The foundation is right',
+        intro: 'Before the gaps: the face stack made one architectural bet \u2014 everything speaks ARKit-52 names \u2014 and it pays off everywhere. These aren\u2019t findings, they\u2019re the reason the findings below are cheap.',
+        findings: [
+          { tag: 'GOOD', effort: '\u2014', title: 'ARKit-52 authoring with landmark-guided synthesis', why: 'Morph creates the full 52-target set, and the 5-click landmark flow (chin / mouth / nose / eye / brow) synthesizes anchored shapes \u2014 jaw as a real rotation about an inferred hinge, gaussian regions sized by eye distance. That\u2019s the de-facto standard set that iPhone capture, MetaHuman, and VRM all speak.', todo: 'Keep. This is the moat \u2014 everything below builds on these names.' },
+          { tag: 'GOOD', effort: '\u2014', title: 'One vocabulary end to end', why: 'face-capture.js (MediaPipe) emits the SAME 52 names Morph creates, so webcam scores map straight onto applyExpression(). Lipsync finds mouths three ways (viseme morphs \u2192 jaw bone \u2192 procedural jaw). The expression library is shared via localStorage across Morph / Lipsync / Pose. Capture is fully on-device \u2014 the privacy stance holds even for the webcam.', todo: 'Keep. The findings below are all \u201cfinish the last mile\u201d, not \u201crearchitect\u201d.' },
+        ],
+      },
+      {
+        id: 'export', glyph: '⤒', hue: 'var(--danger)', kicker: 'THE EXPORTER — WHERE THE VTUBER TEST FAILS FIRST',
+        title: 'VRM export: four small edits, one file',
+        intro: 'vrm-export.js is a real VRM 1.0 packager \u2014 humanoid map, expression presets, licence meta. But load its output into VSeeFace or Warudo and the avatar is stiff in exactly the ways VTubers notice in the first ten seconds. All four fixes live in the same file.',
+        findings: [
+          { tag: 'FIX', effort: 'S', title: 'Dead eyes: no look* presets and (usually) no eye bones', why: 'EXPRESSION_MAP binds aa/ih/ou/ee/oh, blinks and four emotions \u2014 but NOT lookUp / lookDown / lookLeft / lookRight. The lookAt block then defaults to type \u201cbone\u201d\u2026 and AutoRig doesn\u2019t create eye bones, so gaze is wired to nothing. The character\u2019s eyes never move \u2014 the #1 \u201cmy avatar looks dead\u201d complaint.', todo: 'Add the four look* presets built from the eight eyeLook* ARKit morphs (they already exist on every ARKit-set character), so lookAt type flips to \u201cexpression\u201d automatically \u2014 the existing type check already does this. Add \u201csurprised\u201d (a standard VRM 1.0 preset) from eyeWide/browInnerUp/jawOpen while in there.' },
+          { tag: 'FIX', effort: 'M', title: 'No PerfectSync: the 52 shapes are exported but not exposed', why: 'PerfectSync \u2014 iPhone-driven full-face tracking in VSeeFace/VTube Studio/Warudo \u2014 works by finding custom VRM expressions named after the 52 ARKit shapes. The morphs ARE in the exported GLB, but VRMC_vrm only lists the preset expressions, so trackers can\u2019t address them individually. The suite is uniquely positioned here: it\u2019s one of very few tools that authors the 52 set at all.', todo: 'Write expressions.custom: one clip per ARKit morph present on the mesh (name = morph name, one morphTargetBind at weight 1). ~15 lines. Instantly \u201cPerfectSync-ready\u201d \u2014 a checkbox feature VTubers actively search for.' },
+          { tag: 'FIX', effort: 'M', title: 'VRM 1.0 only \u2014 but half the ecosystem still speaks 0.x', why: 'VSeeFace (the most-used free 3D VTuber app) and many Unity pipelines consume VRM 0.x most reliably; 1.0 support remains patchy across the tools VTubers actually run. Exporting only 1.0 means \u201cit loads in the viewer but not in my streaming app\u201d bug reports.', todo: 'Add a VRM 0.x variant behind the same export button (radio: 1.0 / 0.x). 0.x is also JSON-in-GLB (extension \u201cVRM\u201d, BlendShapeMaster clips, humanoid bone list with different casing, Y-flip on some nodes) \u2014 the packager already has all the ingredients; it\u2019s a second serializer over the same data, not new analysis.' },
+          { tag: 'PRO', effort: 'S', title: 'firstPerson.meshAnnotations is always empty', why: 'Nothing marks the head/face mesh thirdPersonOnly, so in first-person or VR modes downstream (and in the suite\u2019s own Playground POV) the camera sits inside the head, showing eyelash shells and inverted face polys.', todo: 'Annotate: mesh containing the face morphs \u2192 thirdPersonOnly, everything else \u2192 both. One heuristic + a checkbox in the export dialog. Bonus: Playground POV can use the same flag to hide the head locally.' },
+          { tag: 'PRO', effort: 'L', title: 'Frozen hair: no VRMC_springBone', why: 'VRoid-era VTubers expect hair, tails and accessories to swing. HairStudio drapes hair statically, but the export writes no spring-bone chains \u2014 so avatars read as rigid CG next to any VRoid model. This is the single biggest \u201clooks alive\u201d multiplier after eyes.', todo: 'The one real engineering item: author spring chains (auto-detect from hair-region bone chains or let HairStudio tag them), preview with a simple verlet in Showcase, export as VRMC_springBone (1.0) / secondaryAnimation (0.x). Scope it as its own brew.' },
+        ],
+      },
+      {
+        id: 'capture', glyph: '◉', hue: 'var(--new)', kicker: 'CAPTURE — THE TRACKER IS BLINDFOLDED',
+        title: 'Face capture: on, but half-switched-off',
+        intro: 'face-capture.js already runs MediaPipe on-device at video rate. Two of its biggest limitations are literally disabled flags and a missing buffer \u2014 the model computes more than the suite keeps.',
+        findings: [
+          { tag: 'FIX', effort: 'S', title: 'Head pose is computed and thrown away', why: 'outputFacialTransformationMatrixes is set to FALSE. Head rotation is THE core VTuber signal \u2014 nodding, tilting, leaning into the mic. MediaPipe produces the full head transform; the flag just declines it. Without it a captured character talks with a bolt-upright frozen neck.', todo: 'Flip the flag, decompose the matrix to yaw/pitch/roll, drive the head/neck bones (bone-map already knows them) with a smoothing constant + amplitude slider. Small change, night-and-day result.' },
+          { tag: 'PRO', effort: 'M', title: 'Capture can\u2019t record (carried from Chapter I)', why: 'Live weights drive the mesh but vanish \u2014 no way to record a take and keep it. VTubers and animators both want \u201cact the line once, keep the clip\u201d. Lipsync already shows the exact pattern: sample \u2192 tracks \u2192 AnimationClip \u2192 bake into the GLB.', todo: 'Record button: buffer the 52-weight frames (+ head pose) at 30fps, build NumberKeyframeTracks over morphTargetInfluences exactly like lipsync-engine\u2019s bake, save to the animation library. Pairs perfectly with a body clip on the Timeline.' },
+          { tag: 'PRO', effort: 'S', title: 'No calibration or per-shape gain', why: 'Raw MediaPipe scores are applied 1:1. Every face and webcam is different \u2014 resting faces read as 15% jawOpen, weak smiles peak at 0.5. Every serious tracker has \u201ccalibrate neutral\u201d + sensitivity; without it, capture quality depends on luck.', todo: '\u201cCalibrate\u201d button (hold neutral 1s \u2192 store offsets, subtract), master + per-group gain sliders (brows / eyes / mouth), one smoothing constant. All arithmetic on the weight map before applyExpression().' },
+          { tag: 'SPARK', effort: 'S', title: 'Auto-life: blink + idle when tracking is off or lost', why: 'The instant tracking drops (or the streamer looks away), the avatar freezes mid-expression \u2014 the uncanny \u201cdead puppet\u201d moment every VTuber knows. A tiny idle layer fixes it and doubles as free life in Showcase / Playground / Stage.', todo: 'Procedural layer: periodic eyeBlink (3\u20137s jitter), micro eye-look drift, subtle breathing via chest/browInnerUp. On by default under capture as a fallback layer; exposed as an \u201cAuto-life\u201d toggle wherever a face is on screen.' },
+        ],
+      },
+      {
+        id: 'stage', glyph: '🎥', hue: 'var(--honey)', kicker: 'THE MISSING TOOL — WHERE ALL OF IT SHOULD POINT',
+        title: 'The Stream Stage: go live from a browser tab',
+        intro: 'Every ingredient of a VTuber app already exists in the suite \u2014 avatar, 52-shape capture, lipsync, backgrounds, iframe shell. What\u2019s missing is the tool that assembles them and points them at OBS. This is the face-stack equivalent of the Playground: the reason the audience shows up.',
+        findings: [
+          { tag: 'SPARK', effort: 'L', title: 'Stream Stage — webcam in, streamable avatar out', why: 'A dedicated tool: your character front and center, face capture driving head + 52 shapes, auto-life filling the gaps, mic-envelope lipsync as a no-camera fallback \u2014 over a chroma green / solid / transparent backdrop, chrome hidden, in a pop-out window sized 16:9. OBS window-captures it and a VTuber is LIVE with a PolyPotion character having installed nothing. No free browser tool does this end-to-end.', todo: 'New tool (\u201cGo Live\u201d): Showcase\u2019s renderer + face-capture + lipsync fallback + auto-life, backdrop picker (green / magenta / solid / image), pop-out via window.open, a \u201chide UI\u201d hotkey, camera framing presets (bust / half / full). V1 is composition, not new engines.' },
+          { tag: 'PRO', effort: 'M', title: 'VRM import (carried) — now with a face reason', why: 'Chapter III wanted VRM import for the shelf; the face audit doubles the case: VTubers arrive with a VRoid avatar and want to USE the face tools on it \u2014 recapture expressions, fix a weak smile in Morph, re-export. The .vrm is a GLB; expressions parse from the same maps the exporter writes.', todo: 'Accept .vrm in the drop zone; map VRM expressions \u2192 the ARKit names where presets allow; surface custom clips as-is. Round-trip (import \u2192 edit \u2192 export) becomes the suite\u2019s VTuber pitch.' },
+          { tag: 'PRO', effort: 'S', title: 'VTuber preflight: a pass/fail report before export', why: 'A creator can\u2019t currently tell if their character is stream-ready without exporting and testing in another app. The suite knows everything needed for a verdict: ARKit coverage, blink pair, visemes, eye setup, head bone, poly/material budget, texture sizes.', todo: 'A \u201cVTuber check\u201d card in the export dialog (and Passport): green/amber/red per row \u2014 52/52 shapes \u00b7 blink \u2713 \u00b7 look\u2713 \u00b7 visemes 5/5 \u00b7 springs 0 \u00b7 38k tris \u00b7 2 materials \u2014 each red row linking to the tool that fixes it. Cheap, and it sells the whole pipeline.' },
+        ],
+      },
+    ];
+  }
+
+  renderVals() {
+    const active = this.state.activeId;
+    const raw = this.sectionsData();
+
+    const sections = raw.map(s => Object.assign({}, s, {
+      glyphBox: 'width:40px;height:40px;border-radius:9px;flex:none;display:flex;align-items:center;justify-content:center;font-size:20px;'
+        + 'background:color-mix(in srgb, ' + s.hue + ' 15%, transparent);color:' + s.hue
+        + ';border:1px solid color-mix(in srgb, ' + s.hue + ' 38%, transparent);',
+      findings: s.findings.map(f => Object.assign({}, f, this.tagStyle(f.tag))),
+    }));
+
+    const labels = { standing: 'What works', export: 'The exporter', capture: 'Capture', stage: 'The Stream Stage' };
+    const nav = raw.map(s => ({
+      href: '#' + s.id, label: labels[s.id] || s.id, count: s.findings.length,
+      style: 'display:flex;align-items:center;gap:10px;padding:7px 8px;border-radius:6px;font-size:12.5px;font-weight:' + (active === s.id ? '700' : '500')
+        + ';text-decoration:none;margin-bottom:1px;color:' + (active === s.id ? 'var(--text)' : 'var(--muted)')
+        + ';background:' + (active === s.id ? 'var(--accent-dim)' : 'transparent') + ';',
+      dot: 'width:7px;height:7px;border-radius:2px;flex:none;background:' + (active === s.id ? 'var(--accent)' : 'var(--edge)') + ';',
+    }));
+
+    const legend = [
+      { tag: 'GOOD', label: 'Already right \u2014 recorded so it doesn\u2019t get broken' },
+      { tag: 'FIX', label: 'Fails the VTuber test today \u2014 a user hits this' },
+      { tag: 'PRO', label: 'Expected by anyone serious \u2014 surprising to miss' },
+      { tag: 'SPARK', label: 'The delight \u2014 ship it and VTubers evangelise' },
+    ].map(l => Object.assign(l, this.tagStyle(l.tag)));
+
+    const all = raw.flatMap(s => s.findings).filter(f => f.tag !== 'GOOD');
+    const cnt = t => all.filter(f => f.tag === t).length;
+    const cell = (i) => 'flex:1;text-align:center;' + (i ? 'border-left:1px solid var(--seam);' : '');
+    const score = [
+      { n: String(all.length), label: 'findings', hue: 'var(--text)' },
+      { n: String(cnt('FIX')), label: 'vtuber-test fails', hue: 'var(--danger)' },
+      { n: '4', label: 'small exporter edits', hue: 'var(--new)' },
+      { n: '1', label: 'missing tool (go live)', hue: 'var(--honey)' },
+    ].map((s, i) => Object.assign(s, { style: cell(i) }));
+
+    return { nav, legend, score, sections };
+  }
+}
+</script>
+</body>
+</html>

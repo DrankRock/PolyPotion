@@ -1,5 +1,31 @@
 # PROGRESS.md — audit implementation tracker
 
+## NEXT SESSION — the face plan (Chapter IV), in order. Start at Brew 6.
+
+Plain-English context: “VTubing” = streaming as an animated character; the
+webcam moves the character’s face. Our characters export as .vrm avatars, but
+four small exporter bugs make them look lifeless in the apps VTubers use
+(VSeeFace etc.), and we have no “go live” screen. Full detail per item lives
+in `PolyPotion Audit IV — Face.dc.html`.
+
+- **Brew 6 — exporter fixes** (all in studio3D_scripts/vrm-export.js):
+  a) look* + surprised presets from eyeLook*/eyeWide morphs (fixes dead eyes);
+  b) PerfectSync: expressions.custom — one clip per ARKit morph (~15 lines);
+  c) VRM 0.x serializer + 1.0/0.x choice in the export dialog;
+  d) firstPerson.meshAnnotations (face-morph mesh = thirdPersonOnly), reuse to
+     hide head in Playground POV.
+- **Brew 7 — capture** (face-capture.js + its tool UI):
+  a) enable head-pose matrices → drive neck/head bones (+ amplitude/smoothing);
+  b) Calibrate-neutral + per-group gain; c) Record-to-clip → animation library
+  (copy lipsync bake pattern); d) Auto-life layer (blink/eye-drift/breathing).
+- **Brew 8 — Stream Stage “Go Live” tool** (the flagship): Showcase renderer +
+  capture + mic fallback + auto-life, chroma backdrop, pop-out window for OBS,
+  hide-UI hotkey, framing presets; wire into shell like Playground was.
+- **Brew 9** — a) VRM import (round-trip); b) VTuber preflight pass/fail card.
+- **Brew 10 (own brew)** — spring bones (hair sway): tag chains, verlet
+  preview, export VRMC_springBone / secondaryAnimation.
+- **USER tests owed**: Draco export, OPFS persist, Playground feel (pp-v57).
+
 Companion to `PolyPotion Audit.dc.html` (the consolidated audit — the two
 earlier chapter documents are retired). **This file is the source
 of truth for what's shipped vs. pending.** If you (a future Claude or human)
@@ -202,7 +228,295 @@ audit lists under Platform hardening / Audience — don't reopen the rest.
 - [ ] Multi-character scene assembly (stage)
 - [ ] Local-network live co-op (WebRTC)
 
+## CHAPTER III (July 18 full-solution sweep — see `PolyPotion Audit III.dc.html`)
+
+New audit document written from a fresh code sweep (shell, sw, engines, docs).
+19 findings + 11 small follow-ups, four stories:
+
+- **Reach (fix the door):** touch/tablet support (nav contract is mouse-only,
+  shell has no breakpoints); self-host the Google Fonts (~30 files, offline +
+  no-tracking integrity); sw CORE precache holes (engines, suggested_actions.js,
+  docs, LibraryEdit); a11y pass (carried).
+- **Plumbing (found in the sweep):** one tool registry instead of 6 hand-edited
+  lists (LibraryEdit already fell out of the app entirely — orphaned, referenced
+  nowhere); frame eviction can silently discard unsaved tool state (needs a
+  studio:suspend dirty-check); Library UI won't scale to the user's hundreds of
+  characters (virtualize + tags/recents); no global error surface (toolError →
+  toast + reload); Draco + OPFS still owe live-origin verification.
+- **Dialects (import parity):** VRM import, BVH mocap import → Retarget,
+  STL/PLY in the drop zone, KTX2 texture compression on export.
+- **Toy box (the fun bet):** Playground WASD test-drive (flagship — proposed as
+  the next big bet), Sprite Studio (spritesheets/GIF for 2D devs), bone-socket
+  dress-up, ragdoll in Physics, Photo Booth, library "Surprise me" roulette.
+
+Suggested fifth-brew shape: reach items first (small, compound), then registry +
+library-at-scale, then the Playground as the big bet.
+
+## NEXT SESSION — GUI separation, phase 2 (planned 2026-07-19)
+
+Phase 1 (SHIPPED, pp-v65): dock regrouped — loose pile gone. Top: Library,
+Show (universal). Groups: create / shape / surface / rig / animate (+ Director
+moved here from perform) / **vtube** (MoCap, Lipsync, Live) / **play**
+(Playground). Scene stays pinned bottom. Collapse persistence + auto-open are
+generic (data-cat), so no JS changes were needed.
+
+Phase 2 ideas, in order of value:
+1. **Workspace presets** — a row of persona chips above the dock: Sculptor /
+   Rigger / Animator / VTuber / Player. Clicking one collapses every group
+   except its own (pp.dockcat.* cookies already exist — a preset is just a
+   batch of those), highlights its primary tool, and sets the Library's
+   default open-target (e.g. VTuber → double-click a character opens Live,
+   not Showcase). ~1h, zero new architecture.
+2. **Onboarding fork** — first-run dialog “What are you here for?” (sculpt /
+   rig / animate / vtube / play) → applies the matching preset so newcomers
+   see 5 tools, not 30.
+3. **Per-group accent tints** — subtle hue per category on dock items (the
+   audit's “one registry” refactor is the right moment; don't hand-paint 30
+   items before then).
+4. Do this ON TOP of the tool-registry consolidation (still open) — the
+   registry should carry {group, personaPresets} per tool so dock, palette
+   AND presets generate from one list.
+
 ## Log
+
+- 2026-07-19 — **GUI separation phase 1** (pp-v65). Dock regrouped: perform →
+  vtube (MoCap, Lipsync, Live — Stream Stage moved in from the loose top);
+  new play group (Playground moved in); Director → animate; top now only
+  Library + Show. No JS changes (group collapse/auto-open is data-cat-generic).
+  Phase 2 (workspace presets / onboarding fork / registry-driven dock) planned
+  above. Files: index.html, sw.js.
+
+- 2026-07-19 — **Brew 10: SPRING BONES** (pp-v64). New
+  `studio3D_scripts/spring-bones.js`:
+  • detectChainsFromGLTF(json) — name-based chain detection on raw GLB JSON
+    (SPRINGY_RX hair/bangs/ahoge/twin/pony/braid/tail/skirt/ribbon/cape/scarf/
+    ear/antenna/tassel/bell, EXCLUDE_RX guards humanoid bones); roots = springy
+    node with non-springy parent; follows longest springy descent; chains ≥2.
+  • buildVRMC (1.0 VRMC_springBone: springs/joints, hitRadius .02, stiffness
+    .65, gravityPower .05, dragForce .4) + buildSecondary (0.x
+    secondaryAnimation: boneGroups with chain ROOTS, 'stiffiness' spelling,
+    ×4 scale).
+  • SpringSim — runtime verlet preview: per bone-tail particle, inertia×(1-drag)
+    + gravity + stiffness toward rest tail, length constraint, bone re-aimed
+    via setFromUnitVectors in parent space. reset() restores rest.
+  Wiring: vrm-export.js auto-detects + writes springs in BOTH dialects (report
+  gains .springs; export toast shows chain count). Stream Stage: 🍃 Hair sway
+  preview toggle (SpringSim stepped in the rAF tick, resets on off). Preflight
+  card: springs row now real (green if >0) with a rename hint instead of
+  "coming feature". sw CORE += spring-bones.js → pp-v64.
+  Follow-ups: sway preview in Showcase/Playground; per-chain stiffness UI;
+  colliders (chest/head spheres) so long hair doesn't clip the body.
+  THE FACE PLAN (Brews 6-10) IS NOW FULLY SHIPPED.
+
+- 2026-07-19 — **VTuber-brews audit pass** (pp-v63). Re-read every file touched
+  by Brews 6-9. Found & fixed:
+  • CRITICAL — Brew 7's edit deleted FaceCapture._status() while inserting
+    calibrate/record; start() calls it → face capture crashed on start in
+    Morph AND Stream Stage. Restored.
+  • VRM 0.x: 'surprised' is not a legal 0.x presetName → group kept, presetName
+    'unknown' (apps read it as a custom clip).
+  • Export dialog: #exVrmBlock label used a nonexistent .exLabel class → inline
+    style matching the Bone-naming label.
+  Verified clean: GLB chunk math (parse/build), PerfectSync custom binds merge
+  across meshes, 0.x bind weights 0-100 + mesh indices, meshAnnotations both
+  dialects, head-pose decompose + selfie mirroring, calibrate/gain pipeline
+  order (offset→gain→clamp→smooth), AutoLife envelopes, StreamStage merge
+  order (life < mic < camera), key rename stage→live (pp-v62), peekVRM offsets,
+  checkGLB vtuber stats. Both --accent-dim and --accentDim exist in theme.js —
+  mixed usage in Playground/StreamStage is harmless.
+  Files: face-capture.js, vrm-export.js, index.html, sw.js.
+
+- 2026-07-18 — **Fix: Stream Stage key collision** (pp-v62). Brew 8 registered
+  Stream Stage under key `stage`, which ALREADY belonged to the scene-assembly
+  Stage tool — duplicate data-tool buttons, duplicate #pane-stage ids, later
+  TOOLS key silently shadowed. Renamed Stream Stage’s key to `live` everywhere
+  (dock data-tool, pane-live/load-live, TOOLDEFS, TOOLS, CHAR_TOOLS, stHint,
+  and studio:ready/toolError posts in StreamStage.dc.html). Original Stage
+  untouched.
+
+- 2026-07-18 — **Brew 9: VRM import + VTuber preflight** (pp-v61).
+  • 9a VRM import — drop zone accepts .vrm (a .vrm IS a GLB, so GLTFLoader
+    reads it; item stored with ext:'glb', rig:'vrm', rigged:true).
+    peekVRM() in the shell parses the GLB JSON chunk headerlessly and reads
+    VRMC_vrm (1.0) or VRM (0.x): spec, name, humanoid bone count, expression
+    count — reported in the drop toast ("edit in Morph/Pose, re-export as
+    VRM"). Round-trip: import → edit → Export→VRM (Brew 6). NOTE: VRM
+    expressions are not yet surfaced as named entries on Morph's expression
+    board — morphs themselves appear as sliders since they're standard glTF
+    targets; board mapping is a follow-up.
+  • 9b VTuber preflight — checkGLB() now returns r.vtuber {arkit count, blink
+    pair, eyeLook presence, viseme count/5, head bone, tris, materials};
+    export dialog shows a ✅/🟡/🔴 row card when format=vrm, with a hint that
+    red face rows are fixed by Morph's ⚗ ARKit 52 and that spring bones are
+    a coming feature. Thresholds: arkit≥45 green/≥20 amber; tris ≤70k/≤150k;
+    materials ≤8/≤16.
+  Files: index.html, exporter.js, sw.js. Remaining: Brew 10 (spring bones,
+  own session) + KTX2 + tool-registry consolidation.
+
+- 2026-07-18 — **Brew 8: STREAM STAGE “Go Live”** (pp-v60). New tool (dock
+  “Live” 🎥, after Playground): `StreamStage.dc.html` on SCEngine directly —
+  no new engine file.
+  • Face drive: FaceCapture → morphTargetInfluences on every morph mesh;
+    head pose → head bone (65%) + neck (35%) via rest-relative rotate
+    (regex bone find: /head/ not /headtop|end/, /neck/). Calibrate + Head
+    amplitude (0-200%) + Gain (50-250%) sliders. TRACKING badge + selfie
+    preview (mirrored, bottom-right).
+  • Mic lipsync fallback: getUserMedia audio → AnalyserNode RMS → jawOpen/
+    mouthFunnel envelope — works with no camera.
+  • Auto-life: AutoLife layer merged UNDER capture weights (capture wins per
+    shape), toggle. Runs in the shared rAF tick with the mic envelope.
+  • Stage: backdrop chips — chroma green 0x00b140 / magenta / dark studio
+    (floor visible) / sky, via renderer clear color (background nulled, grid
+    hidden). Framing presets bust/half/full from modelCenter/modelRadius.
+  • Go live: ⧉ pop-out window (?popout=1, header hidden), 👁 hide-UI + H
+    hotkey — OBS window-captures the popout; chroma key removes green.
+    V1 caveat: popout doesn't inherit the character (no cross-window buffer
+    hand-off yet) — toast tells the user; FOLLOW-UP: opener rebroadcast.
+  • Shell wiring: dock/TOOLDEFS/TOOLS/pane/CHAR_TOOLS/stHint; sw CORE +=
+    StreamStage.dc.html → pp-v60. No-ARKit models get a hint pointing at
+    Morph's ARKit 52; mic + auto-life still work on any mouth/blink morphs.
+  Files: StreamStage.dc.html, index.html, sw.js.
+
+- 2026-07-18 — **Brew 7: capture upgrades** (pp-v59).
+  • 7a Head pose — face-capture.js now requests facialTransformationMatrixes,
+    decomposes to yaw/pitch/roll (selfie-mirrored, smoothed, headAmplitude
+    knob), passes as 2nd arg to onWeights. Bone driving lands with Stream
+    Stage (Brew 8) — Morph has no bone access.
+  • 7b Calibrate + gain — cap.calibrate(ms) averages neutral offsets
+    (subtracted per frame), per-group gain (brows/eyes/mouth) + master +
+    smoothing built into FaceCapture._process. Morph UI: ⊕ Calibrate button +
+    master Gain slider (50-250%).
+  • 7c Record-to-clip — start/stopRecording buffers {t, weights, headPose};
+    stopRecording returns lipsync-bake-shaped {tracks, pose, duration, fps}.
+    Morph UI: ⏺ Record take → saved to localStorage `pp-face-takes` (max 12).
+    FOLLOW-UP: Timeline/Showcase consume takes as AnimationClips.
+  • 7d AutoLife — new class in face-capture.js: sample(dt) → blink envelope
+    (3-7s), eased gaze drift, breathing sine. window.PPAutoLife. Wire-up into
+    Showcase/Playground/Stream Stage is Brew 8's first move.
+  Files: face-capture.js, Morph.dc.html, sw.js.
+
+- 2026-07-18 — **Brew 6: VRM exporter fixes** (pp-v58). NOTE: 6a (look*/
+  surprised presets) was ALREADY in vrm-export.js — audit finding was stale;
+  lookAt already flips to 'expression' when look* bind. Shipped:
+  • 6b PerfectSync — expressions.custom: one clip per ARKit morph present
+    (weight-1 binds, merged across meshes). Report gains customExpressions.
+  • 6c VRM 0.x — buildVRM0() serializer (extension "VRM": humanBones array,
+    blendShapeMaster groups w/ 0-100 weights + PRESET_0X name map, firstPerson
+    flags + lookAt curves, meta in 0.x dialect, empty secondaryAnimation).
+    exportCharacter passes opts.vrmVersion; export dialog shows VRM version
+    chips (1.0 modern / 0.x VSeeFace) when format=vrm (#exVrmBlock, injected
+    next to #exSkelBlock in renderExport). Toast reports version + PerfectSync
+    shape count.
+  • 6d firstPerson.meshAnnotations — meshes carrying face morphs →
+    thirdPersonOnly, others → both (both 1.0 and 0.x paths). Playground POV
+    head-hide skipped: Playground drives GLBs, not VRMs — no annotation to read.
+  Files: vrm-export.js, exporter.js, index.html, sw.js. Next: Brew 7 (capture).
+
+- 2026-07-18 — **Chapter IV audit written** (`PolyPotion Audit IV — Face.dc.html`).
+  Focused sweep of the face stack (morph-engine, face-capture, lipsync-engine,
+  vrm-export) against the VTuber test. Foundation judged right (ARKit-52
+  everywhere, on-device capture). 12 findings:
+  • Exporter (all in vrm-export.js): no look*/surprised presets + no eye bones
+    → dead eyes (S); no PerfectSync custom expressions despite authoring the 52
+    set (M); VRM 1.0 only, ecosystem needs 0.x (M); firstPerson.meshAnnotations
+    empty (S); no VRMC_springBone → frozen hair (L, own brew).
+  • Capture: head-pose flag disabled (outputFacialTransformationMatrixes:false)
+    — flip + drive neck (S); no record-to-clip (M, carried); no calibration/
+    gain (S); auto-life blink+idle layer (S, SPARK).
+  • Missing tool: **Stream Stage / “Go Live”** — capture + avatar + chroma
+    backdrop + pop-out window for OBS capture (L, the face-stack flagship);
+    VRM import (carried, now face-motivated); VTuber preflight report (S).
+  Out of scope: Live2D, VMC/OSC (no UDP in browsers).
+
+- 2026-07-18 — **Fifth brew, part 5: Playground fun layer** (pp-v57). On top of
+  part 4's controller: • **Potion hunt** — 8 glowing potion bottles (glass +
+  emissive liquid) scattered over ground and course tops, bob/spin, collected on
+  touch with a sparkle burst; timer starts on first movement, stops at 8/8 with
+  a confetti burst; best run persists (localStorage `pp.playgroundBest`).
+  • **Kickball** — physics ball (gravity, bounce, wall/solid reflection, rolls
+  with spin) kicked by running into it, kick speed scales with your speed.
+  • **Trampoline** — bouncy green pad (solid with `bounce` launch velocity, also
+  fires the jump clip). • **Boost pad** — orange floor ring that slingshots your
+  horizontal velocity (cooldown + particle trail). • **Particles** — pooled
+  Points system (260) for confetti / pickup sparkles / boost trail / landing
+  dust (fall speed threshold). • **HUD** — 🧪 n/8 + ⏱ timer chips while driving
+  (accent-lit when done), 📸 snapshot (inherited snapshotPNG → PNG download),
+  🧪 Reset course; best-run line in the World panel. Fun layer ticks even when
+  not driving (potions bob, ball settles) but only collects/kicks while driving.
+  Files: playground-engine.js, Playground.dc.html, sw.js.
+
+- 2026-07-18 — **Fifth brew, part 4: THE PLAYGROUND** (pp-v56) — the flagship toy,
+  oriented for the persona angle. New tool (dock “Play”, after Showcase):
+  `Playground.dc.html` + `studio3D_scripts/playground-engine.js`
+  (**PGEngine extends SCEngine** — loading, normalize, semantic retarget, IBL
+  and XR inherited; ~330 new lines).
+  • Drive: WASD/arrows/gamepad (stick + A jump + RT run), capsule physics
+    (gravity, jump, AABB course collision — crates, stairs, jump pads, pillars),
+    camera-relative movement, damped facing.
+  • Cameras: follow-cam (drag orbit + wheel zoom) and first-person POV (V key,
+    pointer lock); controls.target-sync so OrbitControls.update() cooperates
+    instead of fighting the follow cam.
+  • Persona: real mirror (Reflector) in the world; expression chips from morph
+    targets (listMorphs/setMorph); WebXR “step in” via inherited startXR.
+  • Moves: idle/walk/run/jump slots — auto-matched by name from the animation
+    library on first drive, or hand-picked per slot; retargeted via the
+    inherited pipeline then root-position tracks stripped (capsule owns
+    travel); crossfaded by speed state, walk/run timeScale synced to velocity;
+    jump is LoopOnce triggered on takeoff. Unrigged characters still drive
+    (slide) with a toast hint. “Flip facing” chip for -Z-facing models.
+  • Shell wiring: dock item, TOOLDEFS (palette), TOOLS, pane, CHAR_TOOLS (active
+    character follows in), stHint. sw CORE += Playground.dc.html,
+    playground-engine.js, showcase-engine.js (same-origin only — NOT the
+    vendoring path that broke the site before) → pp-v56.
+  NOT yet: props from library in the world, co-op. Audit III marked shipped.
+
+- 2026-07-18 — **Fifth brew, part 3: import parity** (pp-v55).
+  (1) **BVH mocap import**: retarget-engine._parse handles .bvh (BVHLoader →
+  skeleton+clip wrapped in a Group); Retarget source picker accepts .bvh; new
+  `studio:loadClipBuffer` message loads a clip buffer into the source slot;
+  shell drop zone routes .bvh → Retarget (openDroppedClip, pending-safe).
+  (2) **STL/PLY import**: accepted by drop zone + libFile/dropFile pickers;
+  parsed in showcase-engine.loadBuffer and rig engine E.loadFile (geometry →
+  Mesh + MeshStandardMaterial, computeVertexNormals if missing). Drop-zone
+  copy updated. NOTE: rig_scripts/engine.js has CRLF line endings —
+  str_replace fails there; edit via script.
+  Still open in Dialects: VRM import, KTX2 texture compression.
+  Files: index.html, sw.js, Retarget.dc.html, studio3D_scripts/retarget-engine.js,
+  studio3D_scripts/showcase-engine.js, rig_scripts/engine.js, Audit III.
+
+- 2026-07-18 — **Fifth brew, part 2: library at scale** (pp-v54). renderLib now
+  virtualises past 60 items (24 eager cards, IntersectionObserver placeholders
+  with 900px lookahead — thumbnails decode lazily as cards materialise);
+  "⌛ Recently opened" shelf (top 6) on the default browse view; new sorts
+  "Recently opened" / "Never opened first". Last-opened tracked per character
+  in localStorage `pp.opened` (capped at 800 entries), stamped in
+  setActiveChar so every open route counts. Audit III finding marked shipped.
+  Files: index.html, sw.js, PolyPotion Audit III.dc.html.
+
+- 2026-07-18 — **Fifth brew, part 1 shipped** (scoped per author feedback on the
+  Chapter III audit: touch/tablet DESCOPED — desktop-first by design; aggressive
+  precache/vendoring OFF THE TABLE — a past attempt broke the site; LibraryEdit
+  is the author's intentional private admin tool, leave unwired). Shipped:
+  (1) **Global error pulse** — theme.js (loaded by every tool) now posts
+  uncaught errors/rejections from tool iframes as `studio:toolError` (throttled
+  3/min per frame); the shell shows an error toast naming the tool with a
+  one-click "↻ Reload tool" (reviveFrame). One toast per tool per 20s.
+  (2) **Eviction is never a mystery** — idle-reap now toasts which tool was put
+  to sleep + warns unsaved work there is gone. The studio:suspend dirty-check
+  remains open (needs per-tool cooperation).
+  (3) **🎲 Surprise me roulette** — Library toolbar button + command-palette
+  entry: random character weighted toward never-rolled (localStorage
+  `pp.rouletteSeen`), random clip retargeted on if rigged, lands in Showcase;
+  respects NSFW gate + hidden items.
+  (4) **A11y slice** — global :focus-visible ring on all interactive chrome;
+  aria-labels on card rename/duplicate/remove buttons.
+  Audit III updated (descopes recorded, shipped badges). sw.js → pp-v53.
+  Files: theme.js, index.html, sw.js, PolyPotion Audit III.dc.html.
+
+- 2026-07-18 — **Chapter III audit written** (`PolyPotion Audit III.dc.html`).
+  Full-solution sweep; no engine rot found — findings are at the seams (see
+  section above). Consolidated I+II audit left as the shipped scoreboard.
+  Doc not yet added to sw CORE (itself one of the findings).
 
 - 2026-07-17 — **Fourth-brew item 3 shipped: mesh blobs moved to OPFS**
   (`index.html`). Heavy GLB payloads now live as files in the Origin Private

@@ -169,7 +169,7 @@
     </aside>
   </div>
 
-  <input type="file" id="rt-src-file" accept=".glb,.gltf,.fbx" style="display:none;">
+  <input type="file" id="rt-src-file" accept=".glb,.gltf,.fbx,.bvh" style="display:none;">
   <input type="file" id="rt-tgt-file" accept=".glb,.gltf,.fbx" style="display:none;">
   <div id="rt-toasts" style="position:fixed;bottom:16px;right:16px;z-index:300;display:flex;flex-direction:column;gap:8px;"></div>
 </div>
@@ -275,6 +275,7 @@ class Component extends DCLogic {
       const d = e.data; if (!d || !d.__studio) return;
       if (d.type === 'studio:loadCharUrl') this.loadVia('target', () => this._eng.loadUrl('target', d.url, d.ext, { chunked: d.chunked, chunks: d.chunks }), d.label || 'character');
       else if (d.type === 'studio:loadCharBuffer') this.loadVia('target', () => this._eng.loadBuffer('target', d.buffer, d.name), d.name || 'character');
+      else if (d.type === 'studio:loadClipBuffer') this.loadVia('source', () => this._eng.loadBuffer('source', d.buffer, d.name), d.name || 'clip');
     });
     setTimeout(() => this._post('studio:ready', { tool: 'retarget' }), 0);
   }

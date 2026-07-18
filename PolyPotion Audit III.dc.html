@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<script src="theme.js"></script>
+<style>
+  html{scroll-behavior:smooth;}
+  html,body{margin:0;padding:0;background:var(--bg);}
+  *{box-sizing:border-box;}
+  #ca ::-webkit-scrollbar{width:10px;height:10px;}
+  #ca ::-webkit-scrollbar-track{background:var(--gutter);}
+  #ca ::-webkit-scrollbar-thumb{background:var(--edge);border:2px solid var(--gutter);border-radius:6px;}
+  #ca section[id]{scroll-margin-top:22px;}
+  #ca a{color:inherit;}
+  #ca a:hover{color:var(--accent);}
+</style>
+</helmet>
+
+<div id="ca" style="display:flex;align-items:flex-start;min-height:100vh;width:100%;background:var(--bg);color:var(--text);font-family:var(--font-ui);font-size:14px;line-height:1.65;-webkit-font-smoothing:antialiased;">
+
+  <aside style="position:sticky;top:0;height:100vh;width:264px;flex:none;background:var(--panel);border-right:1px solid var(--seam);overflow-y:auto;padding:20px 14px 40px;">
+    <div style="display:flex;align-items:center;gap:9px;padding:0 6px 14px;">
+      <div style="width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--accent),var(--wood-dark));color:var(--on-accent);font-weight:700;font-size:15px;">⚗</div>
+      <div>
+        <div style="font-weight:700;letter-spacing:.05em;font-size:13px;">POLYPOTION</div>
+        <div style="font-family:var(--font-mono);font-size:9px;color:var(--muted);letter-spacing:.12em;">CHAPTER III · THE PLAYGROUND AUDIT</div>
+      </div>
+    </div>
+
+    <sc-for list="{{ nav }}" as="n" hint-placeholder-count="7">
+      <a href="{{ n.href }}" style="{{ n.style }}">
+        <span style="{{ n.dot }}"></span>
+        <span style="flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ n.label }}</span>
+        <span style="font-family:var(--font-mono);font-size:9.5px;color:var(--muted);">{{ n.count }}</span>
+      </a>
+    </sc-for>
+
+    <div style="margin-top:20px;padding:12px 10px;border-top:1px solid var(--seam);">
+      <div style="font-family:var(--font-mono);font-size:9.5px;letter-spacing:.12em;color:var(--muted);margin-bottom:9px;">WHAT EACH TAG MEANS</div>
+      <sc-for list="{{ legend }}" as="l" hint-placeholder-count="4">
+        <div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:9px;">
+          <span style="flex:none;width:52px;text-align:center;font-family:var(--font-mono);font-size:9px;font-weight:700;padding:3px 0;border-radius:5px;color:{{ l.color }};background:{{ l.bg }};border:1px solid {{ l.border }};">{{ l.tag }}</span>
+          <span style="font-size:11px;color:var(--text-2);line-height:1.45;">{{ l.label }}</span>
+        </div>
+      </sc-for>
+    </div>
+    <div style="margin-top:12px;padding:10px 8px;font-size:11px;line-height:1.6;color:var(--muted);border-top:1px solid var(--seam);">Chapter III audits the whole solution as it stands after four brews — code swept July 18. The consolidated I+II document stays the scoreboard for what already shipped; this chapter is everything found NOW, plus the fun the all-in-one promise still owes.</div>
+  </aside>
+
+  <main id="doc-main" style="flex:1;min-width:0;max-width:920px;padding:40px 56px 140px;">
+
+    <a href="index.html" style="display:inline-flex;align-items:center;gap:8px;font-size:12.5px;font-weight:700;color:var(--accent);text-decoration:none;margin-bottom:22px;padding:8px 14px;border:1px solid var(--seam);border-radius:8px;background:var(--panel);">← Back to Studio</a>
+
+    <header style="margin-bottom:16px;">
+      <div style="font-family:var(--font-mono);font-size:11px;letter-spacing:.14em;color:var(--accent);margin-bottom:10px;">CHAPTER III · FULL-SOLUTION SWEEP · JULY 18, 2026</div>
+      <h1 style="font-size:36px;font-weight:700;letter-spacing:-.015em;line-height:1.1;margin:0 0 14px;">The playground audit — reach everyone, then let them go wild</h1>
+      <p style="font-size:16px;color:var(--text-2);margin:0;max-width:680px;">Chapters I and II made the suite <b style="color:var(--text);">honest</b> (offline, safe, exportable) and <b style="color:var(--text);">fluent</b> (the formats the 3D world speaks). Four brews later the machine is sound — this sweep found no rot in the engines. What it found instead: the door is narrower than the room. The suite is mouse-only, its offline promise has holes at the edges, its library UI predates a shelf of <b style="color:var(--text);">hundreds of characters</b>, and — for an app meant to be <i>fun for anyone</i> — there is still no tool whose only job is joy. Chapter III is those four stories.</p>
+    </header>
+
+    <section style="margin:20px 0 8px;padding:18px 22px;border:1px solid var(--seam);border-radius:12px;background:var(--panel);display:flex;gap:0;">
+      <sc-for list="{{ score }}" as="sc" hint-placeholder-count="4">
+        <div style="{{ sc.style }}">
+          <div style="font-family:var(--font-mono);font-size:26px;font-weight:700;color:{{ sc.hue }};">{{ sc.n }}</div>
+          <div style="font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-top:2px;">{{ sc.label }}</div>
+        </div>
+      </sc-for>
+    </section>
+
+    <sc-for list="{{ sections }}" as="s" hint-placeholder-count="5">
+      <section id="{{ s.id }}" data-doc style="padding:38px 0 8px;border-top:1px solid var(--seam);margin-top:30px;">
+        <div style="display:flex;align-items:center;gap:13px;margin-bottom:8px;">
+          <div style="{{ s.glyphBox }}">{{ s.glyph }}</div>
+          <div>
+            <div style="font-family:var(--font-mono);font-size:10.5px;letter-spacing:.12em;color:{{ s.hue }};margin-bottom:2px;">{{ s.kicker }}</div>
+            <h2 style="font-size:23px;font-weight:700;margin:0;">{{ s.title }}</h2>
+          </div>
+        </div>
+        <p style="font-size:15px;color:var(--text-2);margin:0 0 20px;max-width:690px;">{{ s.intro }}</p>
+
+        <div style="display:flex;flex-direction:column;gap:13px;">
+          <sc-for list="{{ s.findings }}" as="f" hint-placeholder-count="4">
+            <div style="border:1px solid var(--seam);border-radius:11px;background:var(--panel);overflow:hidden;">
+              <div style="display:flex;align-items:flex-start;gap:13px;padding:15px 17px 6px;">
+                <span style="flex:none;margin-top:1px;width:56px;text-align:center;font-family:var(--font-mono);font-size:9px;font-weight:700;padding:4px 0;border-radius:6px;color:{{ f.color }};background:{{ f.bg }};border:1px solid {{ f.border }};">{{ f.tag }}</span>
+                <div style="flex:1;">
+                  <div style="font-weight:700;font-size:15px;color:var(--text);margin-bottom:5px;">{{ f.title }}</div>
+                  <div style="font-size:13.5px;color:var(--text-2);line-height:1.62;">{{ f.why }}</div>
+                </div>
+                <span style="flex:none;font-family:var(--font-mono);font-size:10px;color:var(--muted);padding:3px 9px;border:1px solid var(--edge);border-radius:20px;">{{ f.effort }}</span>
+              </div>
+              <div style="display:flex;gap:10px;padding:9px 17px 14px 86px;">
+                <span style="flex:none;font-family:var(--font-mono);font-size:9.5px;letter-spacing:.1em;color:{{ s.hue }};padding-top:2px;">DO →</span>
+                <div style="font-size:13px;color:var(--text);line-height:1.6;">{{ f.todo }}</div>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </section>
+    </sc-for>
+
+    <section id="small" data-doc style="padding:38px 0 8px;border-top:1px solid var(--seam);margin-top:30px;">
+      <h2 style="font-size:23px;font-weight:700;margin:0 0 8px;">The small stuff</h2>
+      <p style="color:var(--text-2);margin:0 0 16px;max-width:680px;">Noted in the sweep or carried from Chapter I+II — none blocks anything, each is an hour or two.</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;">
+        <sc-for list="{{ small }}" as="sm" hint-placeholder-count="8">
+          <div style="display:flex;gap:9px;align-items:flex-start;padding:9px 12px;border:1px solid var(--seam);border-radius:8px;background:var(--panel);">
+            <span style="flex:none;color:var(--muted);font-size:12px;margin-top:2px;">▢</span>
+            <span style="font-size:12.5px;color:var(--text-2);line-height:1.55;">{{ sm }}</span>
+          </div>
+        </sc-for>
+      </div>
+    </section>
+
+    <section style="padding:34px 0 0;border-top:1px solid var(--seam);margin-top:30px;">
+      <p style="color:var(--text-2);font-size:14px;line-height:1.7;max-width:690px;margin:0 0 10px;">The shape of a fifth brew falls out of the ordering above: <b style="color:var(--text);">fix the door first</b> (touch, fonts, precache — the reach items are small and compound), <b style="color:var(--text);">then let the shelf breathe</b> (registry + library at scale), <b style="color:var(--text);">then open the toy box</b> — the Playground is the strongest single bet in this document: it converts a pipeline into a place, and every character and clip you already have becomes its content on day one.</p>
+      <p style="color:var(--muted);font-size:12.5px;margin:14px 0 0;">Written July 18, 2026 from a full code sweep (shell, sw, engines, tool docs). Companion to <span style="font-family:var(--font-mono);">PolyPotion Audit.dc.html</span> (the I+II scoreboard) and <span style="font-family:var(--font-mono);">PROGRESS.md</span> (the implementation tracker — still the source of truth for wiring).</p>
+    </section>
+
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { activeId: 'reach' };
+
+  componentDidMount() {
+    this._io = new IntersectionObserver((entries) => {
+      entries.forEach(e => { if (e.isIntersecting) this.setState({ activeId: e.target.id }); });
+    }, { rootMargin: '-6% 0px -84% 0px', threshold: 0 });
+    setTimeout(() => {
+      document.querySelectorAll('#doc-main section[id]').forEach(s => this._io.observe(s));
+    }, 80);
+  }
+  componentWillUnmount() { if (this._io) this._io.disconnect(); }
+
+  hueFor(tag) {
+    if (tag === 'NOW') return 'var(--accent)';
+    if (tag === 'PRO') return 'var(--new)';
+    if (tag === 'SPARK') return 'var(--honey)';
+    if (tag === 'FIX') return 'var(--danger)';
+    return 'var(--good)';
+  }
+  tagStyle(tag) {
+    const h = this.hueFor(tag);
+    return {
+      color: h,
+      bg: 'color-mix(in srgb, ' + h + ' 14%, transparent)',
+      border: 'color-mix(in srgb, ' + h + ' 42%, transparent)',
+    };
+  }
+
+  sectionsData() {
+    return [
+      {
+        id: 'reach', glyph: '⌾', hue: 'var(--danger)', kicker: 'THE DOOR IS NARROWER THAN THE ROOM',
+        title: 'Reach: who can actually get in',
+        intro: 'The suite says "anyone can come and have fun" \u2014 but today "anyone" means "anyone with a three-button mouse, on a desktop, online for their first visit to each tool". These four widen the door, and three of them are small.',
+        findings: [
+          { tag: 'FIX', effort: 'L', title: 'Touch & tablet \u2014 DESCOPED (author call, July 18)', why: 'The suite is desktop-first by design \u2014 the author judges it too heavy for phones, and that\u2019s a fair call. Recorded so the finding isn\u2019t re-litigated every chapter. If it\u2019s ever revisited, the cheapest slice is tablet-only: OrbitControls already speaks touch, and stylus pressure already works.', todo: 'Nothing now. If revisited: touch layer in nav-scheme.js + one compact-dock breakpoint, Showcase/Pose/Sculpt first, phones explicitly out of scope.' },
+          { tag: 'FIX', effort: 'S', title: 'Fonts still stream from Google on every tool', why: 'Some 30 tool documents link fonts.googleapis.com. First offline open of a never-visited tool falls back to system fonts \u2014 and the "no tracking" badge quietly leaks every visitor\u2019s IP to Google on every load. Cheap to fix, doubles as brand integrity.', todo: 'Vendor Archivo + Spline Sans Mono as woff2 into fonts/, one shared @font-face stylesheet, swap the ~30 <link> tags, drop the Google hosts from sw.js CDN list. Fully aligned with the vendoring direction.' },
+          { tag: 'FIX', effort: 'S', title: 'Offline precache holes \u2014 tread carefully (a past attempt broke the site)', why: 'sw.js CORE precaches every tool HTML but only 3 of ~40 engines, and suggested_actions.js / secondary docs aren\u2019t listed \u2014 first offline open of a never-visited tool breaks. BUT: aggressive caching/vendoring was tried before and broke the site, so this is explicitly NOT a "precache everything" call.', todo: 'The safe slice only: an opt-in "\u2b07 Make everything offline" button that warms the existing runtime cache by fetching the file list once (no sw changes, no vendoring, trivially removable). Low priority; visited-tools-work-offline already covers the real use.' },
+          { tag: 'PRO', effort: 'S', title: 'Accessibility pass on the older chrome \u2014 started (pp-v53)', why: 'The dock is a real ARIA tablist, but older icon buttons were bare glyphs. First slice shipped: a global :focus-visible ring on every interactive control and aria-labels on the card tool buttons (rename / duplicate / remove).', todo: 'Remaining: aria-label the rest of the shell\u2019s icon controls, Escape/Tab focus behaviour on the modals (export, NSFW confirm, what\u2019s-new, tour).' },
+        ],
+      },
+      {
+        id: 'plumbing', glyph: '⚙', hue: 'var(--new)', kicker: 'TRUST AT SCALE — FOUND IN THE SWEEP',
+        title: 'Plumbing: what the code sweep turned up',
+        intro: 'No rot in the engines \u2014 the contracts (nav, symmetry, colour, jobs) held everywhere the sweep looked. What it found instead is drift at the seams: registration by hand in six places, a tool that fell out of the app entirely, silent failure modes, and a library UI about to meet its own success.',
+        findings: [
+          { tag: 'PRO', effort: 'M', title: 'One tool registry instead of six hand-edited lists', why: 'Adding a tool means editing the dock HTML, TOOLDEFS, FRAMES, CHAR_TOOLS, a pane div, a 30-branch else-if hint chain AND the sw precache \u2014 seven chances to drift per tool. The drift already happened: LibraryEdit fell out of everything (below).', todo: 'One TOOLS array \u2014 {key, file, label, icon, group, hint, charTool, shortcut} \u2014 that generates dock items, palette entries, frames, panes and hints at boot. CONTRIBUTING becomes "add one line". Keep sw.js\u2019s list generated by a 10-line build script or a lint check that diffs the two.' },
+          { tag: 'FIX', effort: 'S', title: 'LibraryEdit \u2014 RESOLVED: intentional (the author\u2019s private admin tool)', why: 'Flagged as orphaned in the sweep; the author confirms it\u2019s deliberately unwired \u2014 a curator tool for managing the library, not for users. Correct as-is.', todo: 'No action. Optional one-liner in ARCHITECTURE.md ("LibraryEdit \u2014 author\u2019s curation tool, intentionally not in the dock") so the next auditor doesn\u2019t flag it again.' },
+          { tag: 'FIX', effort: 'M', title: 'Frame eviction can silently eat unsaved tool state \u2014 half shipped', why: 'The WebGL budget evicts idle tool iframes \u2014 correct for contexts, but an evicted TexturePaint takes its unsaved layers and undo stack with it. The minimum fix shipped in pp-v53: idle-reap now toasts which tool was put to sleep and warns that unsaved work there is gone \u2014 the loss is never a mystery.', todo: 'The real fix stays open: post studio:suspend before evicting; a tool replying {dirty:true} is skipped (evict the next-least-recent) or snapshots its working buffer to the shell first.' },
+          { tag: 'PRO', effort: 'M', title: 'The Library was built for dozens; you have hundreds \u2014 \u2713 SHIPPED (pp-v54)', why: 'renderLib built a DOM card + decoded a thumbnail for every character on every render. Shipped: past 60 items the grid virtualises \u2014 below-the-fold cards are cheap placeholders that materialise near the viewport (thumbnails decode lazily too). Plus a "\u231b Recently opened" shelf on the default browse view and two new sorts: Recently opened / Never opened first (tracked per character in localStorage).', todo: 'Shipped. Still open: search over tags (not just names) once LibraryEdit\u2019s tagging matures.' },
+          { tag: 'PRO', effort: 'S', title: 'A visible pulse when a tool frame dies \u2014 \u2713 SHIPPED (pp-v53)', why: 'Engines failed to the console; a regular user just saw a dead pane. Now every tool frame reports uncaught errors/rejections through theme.js (which every tool already loads) \u2192 studio:toolError \u2192 shell toast naming the tool with a one-click "\u21bb Reload tool". Throttled per-tool so error loops can\u2019t spam.', todo: 'Shipped. Still open as a follow-up: a hidden diagnostics panel that copies version + tool + stack as a paste-ready bug report.' },
+          { tag: 'NOW', effort: 'S', title: 'Two live-origin verifications still owed', why: 'Draco encode (pp-v31) and OPFS persistence (pp-v52) both shipped guarded-and-fallback\u2019d but have never been proven on a real origin \u2014 the sandbox blocked both. Until then they are Schr\u00f6dinger features.', todo: 'On the deployed site: export a character with Draco (confirm size + reimport), then save \u2192 hard reload \u2192 confirm the library restores from OPFS. Flip the flags in PROGRESS.md either way.' },
+        ],
+      },
+      {
+        id: 'dialects', glyph: '⇄', hue: 'var(--good)', kicker: 'FORMATS — THE DOOR SWINGS ONE WAY',
+        title: 'Dialects: import parity',
+        intro: 'Chapter II taught the suite to speak OUT \u2014 VRM, Draco, atlases, LODs, VAT. But the drop zone still only accepts glb / gltf / fbx / obj. Four one-way doors, each with a real crowd standing outside.',
+        findings: [
+          { tag: 'PRO', effort: 'M', title: 'VRM import — you already speak it on the way out', why: 'VRM export shipped in brew one, but a VTuber \u2014 the single largest casual 3D-character community on earth \u2014 cannot bring their existing avatar IN. A .vrm is a GLB with extensions; the hard parts (humanoid bone map, ARKit expression names) are exactly what bone-map.js and the Morph board already know.', todo: 'Accept .vrm in the drop zone: parse VRMC_vrm / VRM0 humanoid into canon slots, surface expressions on the expression board. Instantly poseable, retargetable, dressable \u2014 and they re-export to VRM when done.' },
+          { tag: 'PRO', effort: 'M', title: 'BVH mocap import → Retarget', why: 'Decades of free motion capture (CMU\u2019s 2,500 clips, countless libraries) ship as .bvh \u2014 and three.js includes BVHLoader. The Retarget tool\u2019s auto bone-map was built for exactly this jump.', todo: 'Accept .bvh in the animations tab + as a Retarget source (BVHLoader \u2192 skeleton + clip \u2192 existing auto-map pipeline). Hundreds of characters \u00d7 thousands of free clips is a content explosion for zero asset work.' },
+          { tag: 'PRO', effort: 'S', title: 'STL & PLY in the drop zone \u2014 \u2713 SHIPPED (pp-v55)', why: '3D-print users arrive with STLs, scan users with PLYs \u2014 both used to bounce off the door. Shipped: .stl/.ply accepted in the drop zone + both file pickers, parsed in Showcase and the Rig engine (bare geometry wrapped in a standard material, normals computed).', todo: 'Shipped. Follow-up: nudge STL arrivals toward Mesh Doctor\u2019s weld (STL is unwelded by nature) via the suggested-actions hint.' },
+          { tag: 'PRO', effort: 'M', title: 'KTX2 texture compression on export', why: 'meshopt/Draco squeeze geometry, but textures \u2014 usually 80% of a character\u2019s bytes \u2014 still ship as raw PNG/JPEG. KTX2/BasisU is the glTF-native answer and stays compressed on the GPU.', todo: 'A "Compress textures (KTX2)" chip next to the geometry compression chips (WASM encoder, vendorable offline like the rest), toast reports before \u2192 after MB. Completes the game-ready export story.' },
+        ],
+      },
+      {
+        id: 'toybox', glyph: '✧', hue: 'var(--honey)', kicker: 'THE ALL-IN-ONE PROMISE — WHERE THE FUN LIVES',
+        title: 'The toy box: tools whose only job is joy',
+        intro: 'Every tool so far is a workbench \u2014 you come with a task. An all-in-one where anyone "goes wild" also needs toys: places where the hundreds of characters already on the shelf become the content, and clicking around IS the point. Ordered by bang-for-brew; the Playground is the flagship and a legitimate big bet.',
+        findings: [
+          { tag: 'SPARK', effort: 'L', title: 'The Playground \u2014 \u2713 SHIPPED v1 (pp-v56), persona edition', why: 'Nothing in the suite let you BE the character. Shipped as a full tool: WASD / arrows / gamepad capsule controller with jump physics over an obstacle course (crates, stairs, jump pads), follow-cam or first-person POV (V), a real mirror in the world for the persona check, expression chips from the model\u2019s morph targets, idle/walk/run/jump clip slots auto-matched from the animation library and retargeted through the Showcase pipeline (root motion stripped \u2014 the capsule owns travel), plus a WebXR "step in" button.', todo: 'Shipped. v2 ideas: props from the library as world objects, a re-roll of the course layout, co-op (the carried big bet \u2014 two personas, one playground).' },
+          { tag: 'SPARK', effort: 'M', title: 'Sprite Studio — 3D in, 2D game asset out', why: 'The giant crowd the suite doesn\u2019t serve yet: 2D game developers. Render any clip to a spritesheet (4/8 directions \u00d7 N frames, transparent PNG + JSON timing) with a pixel-art quantise toggle, and PolyPotion becomes the character pipeline for every GameMaker/Godot-2D dev \u2014 nothing free does this well.', todo: 'Offscreen orthographic renders per direction \u00d7 frame \u2192 packed sheet + JSON atlas; reuse the turntable capture path for GIF export; nearest-neighbour downscale + palette quantise for the pixel look.' },
+          { tag: 'SPARK', effort: 'M', title: 'Dress-up: bone sockets for props', why: 'Stage places characters side by side, but nothing attaches a sword to a hand or a hat to a head. Prop sockets turn hundreds of characters + every prop into a combinatorial dress-up economy \u2014 the most requested feature of every character tool ever.', todo: 'Attach any library item to a chosen bone with an offset gizmo (Pose\u2019s bone list + Stage\u2019s picking already exist), save sockets into the character record, and export merges them. Ship with hand/head/back sockets pre-named from bone-map slots.' },
+          { tag: 'SPARK', effort: 'M', title: 'Ragdoll switch in Physics', why: 'A rig plus a physics engine are both already there \u2014 a "go limp" button is one of the highest laughs-per-line features in 3D, and it\u2019s secretly a pose tool: freeze any ragdoll frame as a saved pose.', todo: 'Build a capsule chain from bone-map slots with cone limits, toggle in Physics, drag-to-fling with the existing grab, and "\u2295 capture frame" writing into pp-poses so Pose can use the results.' },
+          { tag: 'SPARK', effort: 'S', title: 'Photo Booth — the shareable still', why: 'Turntable capture exists, but there\u2019s no one-click GOOD picture: pose + lighting + backdrop + frame. That PNG is how the suite spreads \u2014 every share is an ad the project doesn\u2019t pay for.', todo: 'A preset shelf in Showcase: 3\u20134 light rigs, 6 backdrops, poses from pp-poses, an optional sticker frame + caption, transparent-PNG export. All composition, no new engine.' },
+          { tag: 'SPARK', effort: 'S', title: 'The roulette: a "Surprise me" button \u2014 \u2713 SHIPPED (pp-v53)', why: 'Hundreds of characters means most are never opened again. Shipped: a \ud83c\udfb2 button in the Library toolbar + command palette \u2014 random character weighted toward never-rolled ones (tracked in localStorage), a random clip retargeted onto it if it\u2019s rigged, lands in Showcase. Respects the NSFW gate and hidden items.', todo: 'Shipped. Nice next: "keep this combo \u2192 Stage", and a re-roll button inside Showcase itself.' },
+        ],
+      },
+      {
+        id: 'carried', glyph: '↻', hue: 'var(--accent)', kicker: 'STILL RIGHT FROM CHAPTERS I + II',
+        title: 'Carried forward',
+        intro: 'Open items from the consolidated audit that this sweep re-confirms \u2014 restated once, not redesigned.',
+        findings: [
+          { tag: 'PRO', effort: 'M', title: 'Community asset index', why: 'Still the right growth move, and stronger now: with LibraryEdit\u2019s manifest export it becomes "curate locally \u2192 publish a static JSON \u2192 anyone browses it in-app". Opt-in, static, no server \u2014 the privacy stance holds.', todo: 'A "Community" tab reading a static index on the project\u2019s GitHub Pages; LibraryEdit grows a "publish manifest" export.' },
+          { tag: 'SPARK', effort: 'L', title: 'Local-network live co-op (the last original big bet)', why: 'Two people on the same wi-fi around one character, WebRTC data channels, no server, no account. Note: the Playground above is the friendlier first big bet \u2014 co-op multiplies it later (two people, two characters, one playground\u2026).', todo: 'Peer session syncing camera, selection and the active GLB; start with live review. Sequence it after the Playground and they compound.' },
+          { tag: 'PRO', effort: 'XL', title: 'A shared mesh core (plan, don\u2019t rush)', why: 'Tool handoffs still copy whole GLBs between iframes; no shared undo/camera across tools. Right long-term call, still not urgent \u2014 OPFS took the storage pressure off.', todo: 'Write the design doc first: a shared worker owning the active scene, tools as views. Do not start it inside a brew.' },
+        ],
+      },
+    ];
+  }
+
+  smallData() {
+    return [
+      'Turn the 30-branch stHint else-if chain into data on the tool registry',
+      'Add the audit docs, RigGuide, LibraryEdit + legal pages to sw CORE (they\u2019re tiny)',
+      'Drop-zone copy says ".glb \u00b7 .fbx \u00b7 .obj" but the input also accepts .gltf \u2014 align the copy',
+      'Draco: test on live origin, then flip the PROGRESS flag (also listed above)',
+      'Rolling 2\u20133 snapshots per character instead of one overwritable record (carried)',
+      'GIF + transparent-background options for turntable capture (carried \u2014 folds into Photo Booth)',
+      'A visible per-tool history panel on top of the uniform undo (carried)',
+      'Pen tilt across the brush tools \u2014 pressure already works (carried)',
+      'Record webcam face-capture takes to an animation clip (carried)',
+      'Passport: play embedded animation clips in the viewer (carried)',
+      'Licence naming: source-available vs AGPL-3.0 precision (carried)',
+    ];
+  }
+
+  renderVals() {
+    const active = this.state.activeId;
+    const raw = this.sectionsData();
+
+    const sections = raw.map(s => Object.assign({}, s, {
+      glyphBox: 'width:40px;height:40px;border-radius:9px;flex:none;display:flex;align-items:center;justify-content:center;font-size:20px;'
+        + 'background:color-mix(in srgb, ' + s.hue + ' 15%, transparent);color:' + s.hue
+        + ';border:1px solid color-mix(in srgb, ' + s.hue + ' 38%, transparent);',
+      findings: s.findings.map(f => Object.assign({}, f, this.tagStyle(f.tag))),
+    }));
+
+    const labels = { reach: 'Reach', plumbing: 'Plumbing', dialects: 'Dialects', toybox: 'The toy box', carried: 'Carried forward', small: 'The small stuff' };
+    const countFor = (id) => {
+      if (id === 'small') return this.smallData().length;
+      const s = raw.find(x => x.id === id); return s ? s.findings.length : '';
+    };
+    const navIds = [...raw.map(s => s.id), 'small'];
+    const nav = navIds.map(id => ({
+      href: '#' + id, label: labels[id] || id, count: countFor(id),
+      style: 'display:flex;align-items:center;gap:10px;padding:7px 8px;border-radius:6px;font-size:12.5px;font-weight:' + (active === id ? '700' : '500')
+        + ';text-decoration:none;margin-bottom:1px;color:' + (active === id ? 'var(--text)' : 'var(--muted)')
+        + ';background:' + (active === id ? 'var(--accent-dim)' : 'transparent') + ';',
+      dot: 'width:7px;height:7px;border-radius:2px;flex:none;background:' + (active === id ? 'var(--accent)' : 'var(--edge)') + ';',
+    }));
+
+    const legend = [
+      { tag: 'NOW', label: 'Owed \u2014 a verification or commitment already made' },
+      { tag: 'FIX', label: 'A gap between the promise and what a user actually gets' },
+      { tag: 'PRO', label: 'An expected capability a serious user is surprised to miss' },
+      { tag: 'SPARK', label: 'A delight nobody expects \u2014 ship it and people evangelise' },
+    ].map(l => Object.assign(l, this.tagStyle(l.tag)));
+
+    const all = raw.flatMap(s => s.findings);
+    const cnt = t => all.filter(f => f.tag === t).length;
+    const cell = (i) => 'flex:1;text-align:center;' + (i ? 'border-left:1px solid var(--seam);' : '');
+    const score = [
+      { n: String(all.length), label: 'findings', hue: 'var(--text)' },
+      { n: String(cnt('FIX') + cnt('NOW')), label: 'gaps & debts', hue: 'var(--danger)' },
+      { n: String(cnt('SPARK')), label: 'sparks (fun)', hue: 'var(--honey)' },
+      { n: String(this.smallData().length), label: 'small follow-ups', hue: 'var(--muted)' },
+    ].map((s, i) => Object.assign(s, { style: cell(i) }));
+
+    return { nav, legend, score, sections, small: this.smallData() };
+  }
+}
+</script>
+</body>
+</html>
