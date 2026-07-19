@@ -1,6 +1,39 @@
 # PROGRESS.md — audit implementation tracker
 
-## NEXT SESSION — the face plan (Chapter IV), in order. Start at Brew 6.
+## NEXT SESSION — Chapter V repairs, in order (see `PolyPotion Audit V.dc.html`)
+
+Chapter V (2026-07-19) is a fresh full-solution sweep: shell, sw, manifest,
+docs, seams. Engines are healthy; the breaks are all at the shell/PWA layer.
+Fix in this order — items 1–3 are the CRIT/BUG tier, all in index.html/sw.js:
+
+- [x] **1. Un-nail the doors (CRIT, S)** — **SHIPPED pp-v66** — `setTool()`'s pane array in
+      index.html (~line 1054) omits `playground` and `live`: BOTH flagship
+      tools are unreachable (pane never shows, frame never mounts). Replace the
+      literal array with `Object.keys(TOOLS)`.
+- [x] **2. Fix offline (CRIT, S)** — **SHIPPED pp-v66 (CDN_HOSTS)** — sw.js `CDN_HOSTS` still lists esm.sh only;
+      the pp-v42 import-map migration moved three.js/manifold/MediaPipe to
+      cdn.jsdelivr.net, which the sw passes through UNCACHED → every 3D tool
+      dies offline. Add `cdn.jsdelivr.net` + `storage.googleapis.com`, bump
+      version. Durable fix: run vendor/fetch-vendor.py (step 2/2, needs network).
+- [x] **3. Shell undo ReferenceError (BUG, S)** — **SHIPPED pp-v66** — palette IIFE's Ctrl+Z/Y
+      handler references `activeTool`/`TOOLS` that live in the other IIFE;
+      throws on every press. Expose `Studio.activeTool` getter, use `S.TOOLS`.
+- [x] **4. Bugs (S each)** — **SHIPPED pp-v66 (all three)** — Animations-tab Import button does nothing (no
+      else-branch in #libFile handler; route clips → Retarget); library cards
+      inject `it.label`/tags via innerHTML (self-XSS — escape at card boundary);
+      Stream Stage popout handshake dangles (`stage:popout-ready` has no
+      listener — rebroadcast studio:loadCharBuffer from the embedded frame).
+- [ ] **5. Tool registry (M)** — one TOOL_REGISTRY generates dock/palette/
+      TOOLS/CHAR_TOOLS/panes/stHint (+ stamps sw CORE). Do BEFORE GUI phase 2.
+- [ ] **6. PWA honesty (S–M)** — real icons (manifest 404s block the install
+      prompt entirely; render the boot-splash flask to 192/512/maskable);
+      precache the missing ~28 engines + rig_scripts/* + exporter/chunk-loader/
+      pack/thumbnailer + legal/docs pages; PP_VERSION frozen at 0.9 → derive
+      from CACHE_VERSION so What's New fires again.
+- **USER tests owed (one live session)**: deploy `_headers` → Draco export →
+  OPFS persist → VSeeFace 0.x round-trip → popout+OBS → Playground pad feel.
+
+## PREVIOUS SESSION — the face plan (Chapter IV). SHIPPED in full (Brews 6–10).
 
 Plain-English context: “VTubing” = streaming as an animated character; the
 webcam moves the character’s face. Our characters export as .vrm avatars, but
@@ -278,6 +311,110 @@ Phase 2 ideas, in order of value:
    AND presets generate from one list.
 
 ## Log
+
+- 2026-07-19 — **Import-base sweep** (pp-v69). The StreamStage crash class
+  (dynamic import() resolving against the runtime script's base instead of
+  the document, doubling `studio3D_scripts/`) audited across all DCs:
+  • Broken (single path, no fallback): StreamStage (fixed pp-v68 hotfix via
+    _mod() helper), Retarget.dc.html, Playground.dc.html — both now anchor
+    with `new URL(p, location.href).href`.
+  • Safe by accident: most tools use try/catch double-path fallback; Morph
+    uses bare `./morph-engine.js` which resolves correctly against the
+    script base. Left as-is.
+  • Also pp-v68 hotfix: chip(true) text color #e6c3a3 → var(--accent)
+    (legibility on parchment themes).
+  Rule for new DCs: always anchor dynamic imports to location.href.
+  Files: Retarget.dc.html, Playground.dc.html, sw.js → pp-v69.
+
+- 2026-07-19 — **VTube "just works" + wing life** (pp-v68). Two brews for the
+  zero-knowledge streamer:
+  • **⚡ Go live — one click** (StreamStage): new primary button (shown when a
+    character is on stage and capture is off) chains camera → auto-calibrate
+    (1.2s neutral hold, toast-narrated) → mic lipsync → auto-life → hair sway
+    → wing life, with per-step failure tolerance (camera denial aborts with
+    the existing toast; mic denial is non-fatal). Empty state rewritten to a
+    two-step story with an "Open the Library →" button (studio:gotoLibrary,
+    handler already existed in the shell). The no-ARKit hint now has an
+    "Open Morph →" button (studio:gotoTool).
+  • **🪽 Wing life** (new studio3D_scripts/wing-flap.js + StreamStage toggle,
+    auto-detected when bones match /wing|pinion|feather/): procedural idle —
+    two slow sines with per-depth lag (tip trails shoulder) — plus a ~1.1s
+    burst envelope of 2–3 real flaps every 6–14s. Flap axis = character
+    forward converted to each bone's local space at rest, mirrored by root
+    world-X side; additive on rest pose so it composes with springs/capture.
+    reset() on toggle-off. Answers "my characters have wings, give them an
+    idle/flap loop" without touching the rig.
+  Files: StreamStage.dc.html, studio3D_scripts/wing-flap.js (new), sw.js →
+  pp-v68 (wing-flap.js added to CORE). Follow-ups: wing toggle in Showcase;
+  bake wing/idle loops to AnimationClips (ring 1 keyframe authoring); wing
+  BONE authoring for rigs without wing bones (needs Rig-side chain builder).
+
+- 2026-07-19 — **GUI phase 2, part 1: personas** (pp-v67). Intent-based
+  navigation without hiding anything:
+  • Dock "i'm here to…" strip (5 chips: sculpt ✺ / rig ⦿ / animate ⌗ /
+    vtube 🎥 / play ⛹) between Show and the groups. Clicking a persona folds
+    every group except its own (sculpt→create+shape+surface; vtube→rig+vtube,
+    Morph lives in rig; etc), tints its group headers (.persona-hot), persists
+    (cookie pp.persona, restored quiet on boot). Re-click = unfold everything.
+    Folded groups keep their visible headers — one click away, never hidden.
+  • Library "What are you brewing today?" card row (5 .pcard buttons above
+    the drop zone): sets the persona AND jumps to its primary tool (sculpt/
+    rig/timeline/live/playground).
+  • applyPersona() reuses the existing pp.dockcat.* cookies via
+    setGroupClosed(); revealDockTool still unfolds on demand for palette/
+    library routes into folded groups.
+  Files: index.html, sw.js → pp-v67. Remaining phase-2: registry-driven dock
+  ({group, personaPresets} per tool), first-run fork can now just call
+  applyPersona from the tour.
+
+- 2026-07-19 — **GUI phase 2, part 1 context** — see NEXT SESSION item 5
+  (registry) which should absorb PERSONAS when built.
+
+- 2026-07-19 — **Chapter V expanded: “the circus”** (three new sections in
+  `PolyPotion Audit V.dc.html`) — what “the tool everyone needs” still lacks,
+  all static-site compatible. Ring 1 (authorship): keyframe animation authoring
+  (Pose+Timeline+Curves composition — the biggest unlock), bundled CC0 motion
+  library, dress-up/bone sockets, face-from-photo → HumanGen, Sprite Studio.
+  Ring 2 (VTuber lane): hands/upper-body tracking in Stream Stage, transparent
+  OBS Browser-Source backdrop, Japanese i18n, per-platform preflight budgets
+  (VRChat/cluster/VSeeFace). Ring 3 (tool → place): per-character version
+  checkpoints in OPFS (brew history), batch recipes over the library,
+  shareable .potion JSON atoms, PR-driven static community shelf, quest-based
+  onboarding, a real landing page at polypotion.com. 15 findings.
+
+- 2026-07-19 — **Chapter V bug-fix pass** (pp-v66). All CRIT/BUG findings fixed:
+  • setTool() pane loop now derives from Object.keys(TOOLS) — Playground and
+    Stream Stage reachable again (the panes exist for every TOOLS key).
+  • sw.js CDN_HOSTS += cdn.jsdelivr.net + storage.googleapis.com (three.js/
+    manifold/MediaPipe now cached for offline); header comment corrected.
+    Vendoring step 2/2 remains the durable fix.
+  • Shell Ctrl+Z/Y: palette IIFE now uses S.activeTool()/S.TOOLS (new
+    Studio.activeTool getter) — no more ReferenceError.
+  • Animations-tab Import: else-branch routes .bvh/.fbx/.glb clips → Retarget
+    via studio:loadClipBuffer; .vrm/.bvh on the characters tab route through
+    openDroppedMesh; #libFile accept aligned with the drop zone.
+  • Library-card self-XSS: esc() helper; label/subtitle/tags/ext escaped in
+    charCard + animCard (ext also stripped to [a-z0-9] since it doubles as a
+    class name).
+  • Stream Stage popout: embedded frame stores the last character source and
+    answers stage:popout-ready by rebroadcasting studio:loadCharBuffer/Url —
+    the OBS pop-out now inherits the character; toast updated.
+  Registry consolidation (item 5) + PWA honesty (item 6) still open.
+  Files: index.html, StreamStage.dc.html, sw.js, PolyPotion Audit V.dc.html.
+
+- 2026-07-19 — **Chapter V audit written** (`PolyPotion Audit V.dc.html`).
+  Full-solution sweep of the seams (shell, sw, manifest, Handbook, contracts).
+  19 findings + a debt ledger. Headlines: setTool() pane list omits
+  playground/live (both flagships UNREACHABLE — CRIT); sw CDN_HOSTS never
+  updated for the pp-v42 jsDelivr migration (offline three.js broken — CRIT);
+  shell Ctrl+Z ReferenceError; Animations-tab import dead; innerHTML self-XSS
+  in library cards; Stream Stage popout handshake half-built; What's New frozen
+  at v0.9; Handbook covers 17/31 tools; manifest icons don't exist (install
+  prompt can never fire); CORE precache still misses most engines + all
+  rig_scripts. Horizon: GUI phase 2 presets (on the registry), face-takes →
+  Timeline, spring colliders, VRM-import expression board, KTX2, WebRTC co-op.
+  Repair order written into NEXT SESSION above. Doc not yet in sw CORE (itself
+  a finding).
 
 - 2026-07-19 — **GUI separation phase 1** (pp-v65). Dock regrouped: perform →
   vtube (MoCap, Lipsync, Live — Stream Stage moved in from the loose top);

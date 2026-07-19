@@ -194,7 +194,7 @@ class Component extends DCLogic {
   async boot() {
     try {
       const canvas = document.getElementById('pg-gl');
-      const mod = await import('./studio3D_scripts/playground-engine.js');
+      const mod = await import(new URL('./studio3D_scripts/playground-engine.js', location.href).href);   // anchor to the page, not the runtime script (Audit V import-base fix)
       const eng = new mod.PGEngine(canvas); this._eng = eng;
       eng.onStatus = (msg) => this.setState({ loading: !!msg, loadingMsg: msg || '' });
       eng.onChange = () => this.refresh();

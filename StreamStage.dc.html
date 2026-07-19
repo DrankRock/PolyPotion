@@ -54,8 +54,10 @@
           <div style="width:70px;height:70px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:30px;background:var(--accentDim);border:1px solid var(--accent-dim);color:var(--accent);">🎥</div>
           <div style="text-align:center;">
             <div style="font-size:16px;font-weight:700;margin-bottom:6px;">Go live as your character</div>
-            <div style="font-size:12.5px;color:var(--text2);max-width:460px;line-height:1.6;">Pick a character in the <b>Library</b>, turn on <b>Face capture</b>, choose a backdrop, and pop the stage into its own window — OBS window-captures it and you're streaming. Everything runs on this device; nothing is uploaded.</div>
+            <div style="font-size:12.5px;color:var(--text2);max-width:460px;line-height:1.6;">Two steps: pick a character, then hit <b>⚡ Go live</b> — camera, calibration, mic and idle life all switch on at once. Everything runs on this device; nothing is uploaded.</div>
           </div>
+          <button style="padding:12px 22px;border-radius:9px;font-size:13.5px;font-weight:700;cursor:pointer;background:var(--accent);border:1px solid var(--accent);color:var(--on-accent);" onClick="{{ goLibrary }}">📚 Open the Library →</button>
+          <div style="font-size:11px;color:var(--muted);">Hover your character's card there and send it to <b>Live</b>.</div>
         </div>
       </sc-if>
 
@@ -84,6 +86,10 @@
 
       <div style="padding:13px 14px;border-bottom:1px solid var(--seam);display:flex;flex-direction:column;gap:8px;">
         <div style="font-family:var(--font-mono);font-size:9.5px;letter-spacing:.14em;color:var(--muted);">DRIVE THE FACE</div>
+        <sc-if value="{{ showGoLive }}" hint-placeholder-val="{{ false }}">
+          <button style="{{ goliveBtn }}" onClick="{{ doGoLive }}">⚡ Go live — one click</button>
+          <div style="font-size:10px;color:var(--muted);line-height:1.5;">Camera + calibration + mic + blink &amp; sway, all at once. Just allow the camera and mic when asked, and hold a neutral face for a second.</div>
+        </sc-if>
         <button style="{{ camBtn }}" onClick="{{ camToggle }}">{{ camLabel }}</button>
         <sc-if value="{{ camOn }}" hint-placeholder-val="{{ false }}">
           <button style="{{ smallBtn }}" onClick="{{ doCalibrate }}">⊕ Calibrate neutral</button>
@@ -101,8 +107,12 @@
         <button style="{{ micBtn }}" onClick="{{ micToggle }}">{{ micLabel }}</button>
         <button style="{{ lifeBtn }}" onClick="{{ lifeToggle }}">{{ lifeLabel }}</button>
         <button style="{{ swayBtn }}" onClick="{{ swayToggle }}">{{ swayLabel }}</button>
+        <sc-if value="{{ hasWings }}" hint-placeholder-val="{{ false }}">
+          <button style="{{ wingBtn }}" onClick="{{ wingToggle }}">{{ wingLabel }}</button>
+        </sc-if>
         <sc-if value="{{ noFace }}" hint-placeholder-val="{{ false }}">
           <div style="font-size:10.5px;color:var(--muted);line-height:1.5;">This character has no ARKit face shapes — run <b>⚗ ARKit 52</b> in Morph first for full face drive. Mic lipsync + auto-life still work if it has any mouth/blink morphs.</div>
+          <button style="{{ smallBtn }}" onClick="{{ goMorph }}">⚗ Open Morph to add face shapes →</button>
         </sc-if>
       </div>
 
@@ -143,15 +153,20 @@ class Component extends DCLogic {
   state = {
     meshName: 'no talent yet', loading: false, loadingMsg: '', hasModel: false,
     camOn: false, micOn: false, life: true, hasFace: false, sway: false, swayCount: 0,
+    wing: false, hasWings: false, wingCount: 0,
     backdrop: 'green', framing: 'bust', headAmp: 100, gain: 100, uiHidden: false,
   };
 
   componentDidMount() { this.setupEmbed(); this.boot(); }
 
+  // dynamic import() here resolves against the runtime script's base, not the
+  // document — anchor module paths to the page URL explicitly.
+  _mod(p) { return import(new URL(p, location.href).href); }
+
   async boot() {
     try {
       const canvas = document.getElementById('st-gl');
-      const mod = await import('./studio3D_scripts/showcase-engine.js');
+      const mod = await this._mod('./studio3D_scripts/showcase-engine.js');
       const eng = new mod.SCEngine(canvas); this._eng = eng;
       eng.onStatus = (m) => this.setState({ loading: !!m, loadingMsg: m || '' });
       eng.onChange = () => this.refresh();
@@ -176,7 +191,7 @@ class Component extends DCLogic {
     const has = eng.hasModel && eng.hasModel();
     this._morphMeshes = [];
     this._head = null; this._neck = null;
-    let hasFace = false;
+    let hasFace = false, wings = 0;
     if (has && eng.model) {
       eng.model.traverse(o => {
         if (o.morphTargetDictionary) {
@@ -187,12 +202,15 @@ class Component extends DCLogic {
           const n = o.name.toLowerCase();
           if (!this._head && /head/.test(n) && !/headtop|end/.test(n)) this._head = { bone: o, rest: o.quaternion.clone() };
           if (!this._neck && /neck/.test(n)) this._neck = { bone: o, rest: o.quaternion.clone() };
+          if (/wing|pinion|feather/.test(n)) wings++;
         }
       });
     }
-    this.setState({ hasModel: has, hasFace, meshName: has ? eng.stats().name : 'no talent yet' });
+    this.setState({ hasModel: has, hasFace, hasWings: wings > 0, meshName: has ? eng.stats().name : 'no talent yet' });
     this._springs = null;
     if (this.state.sway && has) this.initSprings();
+    this._wings = null;
+    if (this.state.wing && has && wings) this.initWings();
     if (has) this.applyFraming(this.state.framing);
   }
 
@@ -214,10 +232,41 @@ class Component extends DCLogic {
     apply(this._neck, 0.35);
   }
 
+  async initWings() {
+    const eng = this._eng; if (!eng || !eng.model) return;
+    try {
+      const mod = this._wingMod || (this._wingMod = await this._mod('./studio3D_scripts/wing-flap.js'));
+      const THREE = await import('three');
+      this._wings = new mod.WingFlap(eng.model, THREE);
+      this.setState({ wingCount: this._wings.count });
+      if (!this._wings.count) this.toast('No wing bones found — flap looks for wing/pinion/feather-named chains');
+    } catch (e) { this.toast('Wing flap failed: ' + (e && e.message || e)); }
+  }
+
+  // one-click "just make it work": camera → calibrate → mic → auto-life →
+  // sway → wings, in order, with toasts narrating each grant it needs.
+  async goLive() {
+    if (!this.state.hasModel) {
+      this._post('studio:gotoLibrary', {});
+      this.toast('Pick a character first — sending you to the Library');
+      return;
+    }
+    if (!this.state.camOn) await this.camToggle();
+    if (!this.state.camOn) return;                          // camera denied/failed — camToggle already explained
+    if (!this.state.micOn) await this.micToggle();          // mic failure is non-fatal: face still drives the mouth
+    if (!this.state.life) { this.setState({ life: true }); }
+    this.ensureLife();
+    if (!this.state.sway) { this.setState({ sway: true }); if (!this._springs) this.initSprings(); }
+    if (this.state.hasWings && !this.state.wing) { this.setState({ wing: true }); if (!this._wings) this.initWings(); }
+    this.toast('Hold a neutral face for a second — calibrating…');
+    if (this._cap) { const n = await this._cap.calibrate(1200); this.toast(n ? 'Calibrated — you are live (locally)' : 'No face seen yet — press ⊕ Calibrate when you are in frame'); }
+    this.toast('Now: ⧉ Pop out the stage and point OBS Window Capture at it');
+  }
+
   async initSprings() {
     const eng = this._eng; if (!eng || !eng.model) return;
     try {
-      const mod = this._springMod || (this._springMod = await import('./studio3D_scripts/spring-bones.js'));
+      const mod = this._springMod || (this._springMod = await this._mod('./studio3D_scripts/spring-bones.js'));
       const THREE = await import('three');
       this._springs = new mod.SpringSim(eng.model, THREE);
       this.setState({ swayCount: this._springs.count });
@@ -228,6 +277,7 @@ class Component extends DCLogic {
   _tick() {
     const now = performance.now(); const dt = Math.min(0.05, (now - this._clock) / 1000); this._clock = now;
     if (!this.state.hasModel) return;
+    if (this.state.wing && this._wings) this._wings.step(dt);
     const merged = {};
     if (this.state.life && this._life) Object.assign(merged, this._life.sample(dt));
     if (this.state.micOn && this._micLevel != null) {
@@ -258,7 +308,7 @@ class Component extends DCLogic {
     if (!this.state.hasModel) { this.toast('Pick a character in the Library first'); return; }
     this.setState({ loading: true, loadingMsg: 'Loading the face model…' });
     try {
-      const mod = this._capMod || (this._capMod = await import('./studio3D_scripts/face-capture.js'));
+      const mod = this._capMod || (this._capMod = await this._mod('./studio3D_scripts/face-capture.js'));
       const cap = new mod.FaceCapture(); this._cap = cap;
       cap.onStatus = (m) => this.setState({ loadingMsg: m || '' });
       cap.gain.master = this.state.gain / 100;
@@ -299,7 +349,7 @@ class Component extends DCLogic {
 
   async ensureLife() {
     if (!this._lifeMod) {
-      this._lifeMod = await import('./studio3D_scripts/face-capture.js');
+      this._lifeMod = await this._mod('./studio3D_scripts/face-capture.js');
       this._life = new this._lifeMod.AutoLife();
     }
   }
@@ -342,7 +392,7 @@ class Component extends DCLogic {
     url.searchParams.set('popout', '1');
     const w = window.open(url.toString(), 'pp-stage', 'width=1280,height=720');
     if (!w) { this.toast('Pop-up blocked — allow pop-ups for this site'); return; }
-    this.toast('Stage popped out — pick the character again in its Library if it opens empty, then point OBS Window Capture at it');
+    this.toast('Stage popped out — your character follows it; point OBS Window Capture at the new window');
   }
 
   setupEmbed() {
@@ -353,8 +403,16 @@ class Component extends DCLogic {
     if (this._embedded || this._popout) { const hide = () => { const h = document.getElementById('st-header'); if (h && this._embedded) h.style.display = 'none'; }; hide(); setTimeout(hide, 60); setTimeout(hide, 300); }
     window.addEventListener('message', (e) => {
       const d = e.data; if (!d || !d.__studio) return;
-      if (d.type === 'studio:loadCharUrl') this.loadVia(() => this._eng.loadUrl(d.url, d.ext, { chunked: d.chunked, chunks: d.chunks }), d.label);
-      else if (d.type === 'studio:loadCharBuffer') this.loadVia(() => this._eng.loadBuffer(d.buffer, d.name, (d.name || '').split('.').pop()), d.name);
+      if (d.type === 'studio:loadCharUrl') { this._charSrc = { kind: 'url', url: d.url, ext: d.ext, label: d.label, chunked: d.chunked, chunks: d.chunks }; this.loadVia(() => this._eng.loadUrl(d.url, d.ext, { chunked: d.chunked, chunks: d.chunks }), d.label); }
+      else if (d.type === 'studio:loadCharBuffer') { try { this._charSrc = { kind: 'buf', buffer: d.buffer.slice(0), name: d.name }; } catch (err) { this._charSrc = null; } this.loadVia(() => this._eng.loadBuffer(d.buffer, d.name, (d.name || '').split('.').pop()), d.name); }
+      else if (d.type === 'stage:popout-ready' && e.source && e.source !== window) {
+        // the pop-out window asks its opener (this frame) for the character — rebroadcast it (Audit V fix)
+        const s = this._charSrc; if (!s) return;
+        try {
+          if (s.kind === 'buf') { const copy = s.buffer.slice(0); e.source.postMessage({ __studio: true, type: 'studio:loadCharBuffer', buffer: copy, name: s.name }, '*', [copy]); }
+          else e.source.postMessage({ __studio: true, type: 'studio:loadCharUrl', url: s.url, ext: s.ext, label: s.label, chunked: s.chunked, chunks: s.chunks }, '*');
+        } catch (err) {}
+      }
     });
     if (this._popout) {
       // popout window: ask the opener's stage frame for the character
@@ -386,7 +444,7 @@ class Component extends DCLogic {
     setTimeout(() => { el.style.transition = 'opacity .3s'; el.style.opacity = '0'; setTimeout(() => el.remove(), 300); }, 3200);
   }
 
-  chip(on) { return 'flex:1;font-size:11px;font-weight:600;padding:7px 10px;border-radius:6px;cursor:pointer;border:1px solid ' + (on ? 'var(--accent)' : 'var(--edge)') + ';background:' + (on ? 'var(--accent-dim)' : 'var(--panel-3)') + ';color:' + (on ? '#e6c3a3' : 'var(--text)') + ';'; }
+  chip(on) { return 'flex:1;font-size:11px;font-weight:600;padding:7px 10px;border-radius:6px;cursor:pointer;border:1px solid ' + (on ? 'var(--accent)' : 'var(--edge)') + ';background:' + (on ? 'var(--accent-dim)' : 'var(--panel-3)') + ';color:' + (on ? 'var(--accent)' : 'var(--text)') + ';'; }
 
   renderVals() {
     const st = this.state;
@@ -411,6 +469,20 @@ class Component extends DCLogic {
         if (on) { if (!this._springs) this.initSprings(); }
         else if (this._springs) this._springs.reset();
       },
+      hasWings: st.hasWings,
+      wingBtn: this.chip(st.wing),
+      wingLabel: st.wing ? ('✓ Wing life on' + (st.wingCount ? ' (' + st.wingCount + ' bones)' : '')) : '🪽 Wing life (idle + flaps)',
+      wingToggle: () => {
+        const on = !st.wing;
+        this.setState({ wing: on });
+        if (on) { if (!this._wings) this.initWings(); }
+        else if (this._wings) this._wings.reset();
+      },
+      showGoLive: st.hasModel && !st.camOn,
+      goliveBtn: 'padding:12px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;background:var(--accent);border:1px solid var(--accent);color:var(--on-accent);',
+      doGoLive: () => this.goLive(),
+      goLibrary: () => { this._post('studio:gotoLibrary', {}); },
+      goMorph: () => { this._post('studio:gotoTool', { tool: 'morph' }); },
       noFace: st.hasModel && !st.hasFace,
       doCalibrate: async () => { if (!this._cap) return; this.toast('Hold a neutral face…'); const n = await this._cap.calibrate(1000); this.toast(n ? 'Calibrated' : 'No face seen'); },
       headAmp: st.headAmp, headAmpLabel: st.headAmp + '%',

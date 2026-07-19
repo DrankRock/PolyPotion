@@ -104,6 +104,22 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
 .dock-cat .chev{font-size:8px;line-height:1;}
 .dock-group.closed .dock-cat{opacity:.82;}
 .dock-spacer{flex:1;}
+/* persona strip — focus the dock by intent; nothing hidden, groups just fold */
+.persona-strip{width:74px;flex:none;margin:6px 0 2px;padding:6px 5px 7px;border:2px solid var(--wood-dark);border-radius:11px;background:var(--cream);box-shadow:0 3px 0 rgba(107,74,43,.18);display:flex;flex-direction:column;align-items:center;gap:5px;}
+.persona-strip .p-lb{font-family:var(--font-mono);font-size:8px;font-weight:700;letter-spacing:.06em;color:var(--ink-soft);text-transform:lowercase;}
+.p-chips{display:flex;flex-wrap:wrap;justify-content:center;gap:4px;}
+.p-chip{width:20px;height:20px;border-radius:6px;border:2px solid var(--wood-dark);background:var(--cream-2);color:var(--ink-soft);font-size:10px;line-height:1;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;transition:transform .12s ease, background .12s;}
+.p-chip:hover{transform:translateY(-1px);color:var(--ink);}
+.p-chip.on{background:var(--clay);border-color:var(--wood-dark);color:#fff6e0;box-shadow:0 2px 0 rgba(107,74,43,.3);}
+.dock-group.persona-hot .dock-cat{border-color:var(--clay);color:var(--clay);}
+/* library persona cards */
+.persona-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(148px,1fr));gap:12px;margin:0 0 10px;}
+.pcard{display:flex;flex-direction:column;gap:6px;padding:13px 14px;border:3px solid var(--wood-dark);border-radius:14px;background:var(--cream-2);box-shadow:var(--hard);cursor:pointer;text-align:left;font-family:inherit;transition:transform .15s ease, box-shadow .15s ease, background .15s;}
+.pcard:hover{transform:translateY(-3px);box-shadow:var(--hard-lg);}
+.pcard.on{background:var(--active-dim);border-color:var(--clay);}
+.pcard .pi{font-size:20px;line-height:1;}
+.pcard .pn{font-family:var(--font-mono);font-size:13px;font-weight:700;color:var(--ink);}
+.pcard .pd{font-size:11px;line-height:1.45;color:var(--ink-soft);font-weight:600;}
 .dock-item.disabled{opacity:.34;cursor:not-allowed;}
 .dock-item:focus-visible{outline:3px solid var(--clay);outline-offset:2px;}
 .tbtn:focus-visible,.act:focus-visible,.cardDel:focus-visible,.cardRen:focus-visible,.cardDup:focus-visible{outline:3px solid var(--clay);outline-offset:2px;}
@@ -294,6 +310,16 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
     <nav class="dock" id="dock" role="tablist" aria-orientation="vertical" aria-label="Tools">
       <div class="dock-item" data-tool="library"><span class="ic">▤</span><span class="lb">Library</span></div>
       <div class="dock-item" data-tool="showcase" title="Showcase — view, spin & animate a finished character"><span class="ic">◈</span><span class="lb">Show</span></div>
+      <div class="persona-strip" id="personaStrip">
+        <div class="p-lb">i’m here to…</div>
+        <div class="p-chips">
+          <button class="p-chip" type="button" data-persona="sculpt" title="Sculpting — unfold the modelling, shape & surface groups (click again to unfold everything)" aria-label="Focus dock on sculpting">✺</button>
+          <button class="p-chip" type="button" data-persona="rig" title="Rigging — unfold the skeleton & skinning group" aria-label="Focus dock on rigging">⚿</button>
+          <button class="p-chip" type="button" data-persona="animate" title="Animating — unfold the motion group" aria-label="Focus dock on animating">⌗</button>
+          <button class="p-chip" type="button" data-persona="vtube" title="VTubing — unfold the face & go-live groups" aria-label="Focus dock on vtubing">🎥</button>
+          <button class="p-chip" type="button" data-persona="play" title="Playing — unfold the play group" aria-label="Focus dock on playing">⛹</button>
+        </div>
+      </div>
       <div class="dock-group" data-cat="create">
         <button class="dock-cat" type="button" aria-expanded="true"><span class="chev">▾</span>create</button>
         <div class="dock-group-items">
@@ -375,7 +401,7 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
             <div class="lib-tab" data-tab="animations">Animations</div>
           </div>
           <button class="tbtn ghost lib-import" id="libImport">⬇ Import file…</button>
-          <input type="file" id="libFile" accept=".fbx,.glb,.gltf,.obj,.stl,.ply" style="display:none;">
+          <input type="file" id="libFile" accept=".fbx,.glb,.gltf,.obj,.stl,.ply,.bvh,.vrm" style="display:none;">
           <div class="spacer" style="flex:1;"></div>
           <div id="storMeter" title="Browser storage used by your saved library" style="display:flex;align-items:center;gap:8px;font-family:var(--font-mono);font-size:11px;color:var(--ink-soft);"></div>
           <button class="tbtn ghost" id="btnBackup" title="Download a single .polypotion file with your whole library — your backup / to move machines">⬇ Backup all</button>
@@ -383,6 +409,14 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
           <input type="file" id="bkFile" accept=".polypotion,.zip" style="display:none;">
         </div>
         <div class="lib-scroll">
+          <div class="lib-section-label" style="margin-bottom:10px;">What are you brewing today? · <span style="opacity:.75;">picks the right tools up front — nothing gets hidden</span></div>
+          <div class="persona-row" id="personaCards">
+            <button class="pcard" type="button" data-persona="sculpt"><span class="pi">✺</span><span class="pn">Sculpting</span><span class="pd">Model &amp; refine — sculpt, retopo, paint, bake.</span></button>
+            <button class="pcard" type="button" data-persona="rig"><span class="pi">⚿</span><span class="pn">Rigging</span><span class="pd">Give it bones — auto-rig, weights, pose.</span></button>
+            <button class="pcard" type="button" data-persona="animate"><span class="pi">⌗</span><span class="pn">Animating</span><span class="pd">Make it move — clips, timeline, retarget, camera.</span></button>
+            <button class="pcard" type="button" data-persona="vtube"><span class="pi">🎥</span><span class="pn">VTubing</span><span class="pd">Be the avatar — face capture, lipsync, go live.</span></button>
+            <button class="pcard" type="button" data-persona="play"><span class="pi">⛹</span><span class="pn">Playing</span><span class="pd">Take the wheel — drive your character around.</span></button>
+          </div>
           <div class="dropzone" id="dropZone">
             <div class="dz-ic">⬇</div>
             <div>
@@ -827,13 +861,15 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
       // uniform undo/redo — forward to whichever tool is active (its own handler
       // catches this when focus is inside the iframe; this covers shell focus)
       if ((e.metaKey || e.ctrlKey) && (e.key === 'z' || e.key === 'Z')) {
-        if (activeTool && activeTool !== 'library' && TOOLS[activeTool] && TOOLS[activeTool].frame) {
-          S.post(activeTool, e.shiftKey ? 'studio:redo' : 'studio:undo', {}); e.preventDefault();
+        const at = S.activeTool && S.activeTool();
+        if (at && at !== 'library' && S.TOOLS[at] && S.TOOLS[at].frame) {
+          S.post(at, e.shiftKey ? 'studio:redo' : 'studio:undo', {}); e.preventDefault();
         }
         return;
       }
       if ((e.metaKey || e.ctrlKey) && (e.key === 'y' || e.key === 'Y')) {
-        if (activeTool && activeTool !== 'library' && TOOLS[activeTool] && TOOLS[activeTool].frame) { S.post(activeTool, 'studio:redo', {}); e.preventDefault(); }
+        const at = S.activeTool && S.activeTool();
+        if (at && at !== 'library' && S.TOOLS[at] && S.TOOLS[at].frame) { S.post(at, 'studio:redo', {}); e.preventDefault(); }
         return;
       }
       if (pal.style.display === 'flex' || typing) return;
@@ -1051,7 +1087,7 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
     $$('.dock-item').forEach(d => { const on = d.dataset.tool === tool; d.classList.toggle('active', on); d.setAttribute('aria-selected', on ? 'true' : 'false'); });
     if (window.revealDockTool) window.revealDockTool(tool);
     $('#lib').classList.toggle('show', tool === 'library');
-    ['showcase', 'rig', 'mocap', 'edit', 'motion', 'sculpt', 'hair', 'pose', 'physics', 'decimate', 'doctor', 'shaderlab', 'director', 'lipsync', 'timeline', 'retarget', 'retopo', 'recipe', 'bake', 'csg', 'uv', 'paint', 'weightpaint', 'morph', 'bakemaps', 'curves', 'vat', 'stage', 'humangen', 'hairstudio'].forEach(t => {
+    Object.keys(TOOLS).forEach(t => {   // derived from TOOLS so a new tool can never be forgotten (Audit V fix)
       const pane = $('#pane-' + t);
       const on = t === tool;
       pane.classList.toggle('show', on);
@@ -1544,6 +1580,8 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
     });
   }
 
+  // escape user-controlled strings (file names, labels, tags) before innerHTML — Audit V self-XSS fix
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   function cardEl(html) { const d = document.createElement('div'); d.className = 'asset'; d.innerHTML = html; return d; }
 
   function fmtBytes(b){ b = +b || 0; if (!b) return ''; return b >= 1048576 ? (b/1048576).toFixed(1)+' MB' : (b/1024).toFixed(0)+' KB'; }
@@ -1551,7 +1589,7 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
   function pfpCandidates(it){ const base = (it.path||'').split('/').pop().replace(/\.[^.]+$/,''); const id = it.id || base; const out = []; if (it.pfp) out.push(it.pfp); if (id) out.push('data/characters/pfp/'+id+'.png'); if (base && base !== id) out.push('data/characters/pfp/'+base+'.png'); return out; }
   function attachPfp(el, it){ const thumb = el.querySelector('.thumb'); if (!thumb) return; const cands = pfpCandidates(it); if (!cands.length) return; const img = document.createElement('img'); img.className = 'pfp'; img.alt = it.label || ''; let i = 0; const tryNext = () => { if (i >= cands.length) { img.remove(); return; } img.src = cands[i++]; }; img.onerror = tryNext; img.onload = () => { img.style.opacity = '1'; const g = thumb.querySelector('.gly'); if (g) g.style.display = 'none'; }; thumb.appendChild(img); tryNext(); }
   function charCard(it) {
-    const ext = (it.ext || 'fbx').toLowerCase();
+    const ext = (it.ext || 'fbx').toLowerCase().replace(/[^a-z0-9]/g, '');
     const rig = it.rig || (it.session ? 'autorig' : 'unknown');
     const el = cardEl(`
       <div class="thumb"><span class="gly">⦿</span>
@@ -1564,9 +1602,9 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
         ${it.session ? '<div class="cardTools" style="position:absolute;top:7px;right:7px;display:flex;gap:4px;"><button class="cardRen" title="Rename" aria-label="Rename character" style="width:22px;height:22px;border-radius:5px;border:1px solid var(--edge,#34322d);background:rgba(15,15,15,0.7);color:var(--text-2,#9b958a);font-size:11px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;">✎</button><button class="cardDup" title="Duplicate" aria-label="Duplicate character" style="width:22px;height:22px;border-radius:5px;border:1px solid var(--edge,#34322d);background:rgba(15,15,15,0.7);color:var(--text-2,#9b958a);font-size:11px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;">⧉</button><button class="cardDel" title="Remove from session" aria-label="Remove character from session" style="width:22px;height:22px;border-radius:5px;border:1px solid var(--edge,#34322d);background:rgba(15,15,15,0.7);color:var(--text-2,#9b958a);font-size:13px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;">×</button></div>' : ''}
       </div>
       <div class="meta">
-        <div class="nm">${it.label}</div>
-        <div class="dt">${it.session ? 'rigged this session' : cardSub(it)}</div>
-        ${(() => { const cs = [...new Set([...(it.categories || []), ...(it.tags || [])].map(String))]; return cs.length ? '<div class="tags">' + cs.map(x => '<span class="tag ' + x.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '">' + x + '</span>').join('') + '</div>' : ''; })()}
+        <div class="nm">${esc(it.label)}</div>
+        <div class="dt">${it.session ? 'rigged this session' : esc(cardSub(it))}</div>
+        ${(() => { const cs = [...new Set([...(it.categories || []), ...(it.tags || [])].map(String))]; return cs.length ? '<div class="tags">' + cs.map(x => '<span class="tag ' + x.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '">' + esc(x) + '</span>').join('') + '</div>' : ''; })()}
         <div class="acts" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;">
           <button class="act">⦿ Rig</button>
           <button class="act">⟁ Pose</button>
@@ -1607,14 +1645,14 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
   }
 
   function animCard(it) {
-    const ext = (it.ext || 'fbx').toLowerCase();
+    const ext = (it.ext || 'fbx').toLowerCase().replace(/[^a-z0-9]/g, '');
     const el = cardEl(`
       <div class="thumb"><span class="gly">⛷</span>
         <div class="badges"><span class="bdg ${ext}">${ext}</span></div>
       </div>
       <div class="meta">
-        <div class="nm">${it.label}</div>
-        <div class="dt">${it.frames ? it.frames + ' frames · ' + (it.fps || 30) + 'fps' : (it.path || '').replace('data/animations/', '')}</div>
+        <div class="nm">${esc(it.label)}</div>
+        <div class="dt">${it.frames ? it.frames + ' frames · ' + (it.fps || 30) + 'fps' : esc((it.path || '').replace('data/animations/', ''))}</div>
         <div class="acts">
           <button class="act warm">◈ Play on character</button>
           <button class="act accent">⛷ Use in MoCap</button>
@@ -1804,13 +1842,24 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
   $('#libFile').addEventListener('change', e => {
     const f = e.target.files[0]; if (!f) return;
     e.target.value = '';
+    const ext = (f.name.split('.').pop() || '').toLowerCase();
     if (libTab === 'characters') {
+      if (ext === 'vrm' || ext === 'bvh') { openDroppedMesh(f); return; }   // same routing as the drop zone
       // send to rig for rigging, or mocap if already rigged? default: open in Rig
       setTool('rig');
       const url = URL.createObjectURL(f);
       const send = () => post('rig', 'studio:loadUrl', { url, name: f.name });
       if (TOOLS.rig.ready) send(); else TOOLS.rig._pending = send;
       toast('Importing ' + f.name + ' into Rig…', 'info');
+    } else {
+      // animations tab: route the clip to Retarget as the motion source (Audit V fix — was a silent no-op)
+      if (!/^(bvh|fbx|glb|gltf)$/.test(ext)) { toast('Unsupported clip: .' + ext + ' — use .bvh, .fbx or .glb', 'warn'); return; }
+      f.arrayBuffer().then(buf => {
+        setTool('retarget');
+        const send = () => post('retarget', 'studio:loadClipBuffer', { buffer: buf, name: f.name });
+        if (TOOLS.retarget.ready) send(); else TOOLS.retarget._pending = send;
+        toast('Clip ' + f.name + ' → Retarget — load a target character and bake', 'info');
+      }).catch(() => toast('Could not read ' + f.name, 'error'));
     }
   });
 
@@ -1837,6 +1886,39 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
     }
   }
   window.revealDockTool = revealDockTool;
+
+  // ---------- personas: focus the dock by intent (nothing hidden — other groups just fold) ----------
+  const PERSONAS = {
+    sculpt:  { label: 'Sculpting', cats: ['create', 'shape', 'surface'], tool: 'sculpt' },
+    rig:     { label: 'Rigging',   cats: ['rig'], tool: 'rig' },
+    animate: { label: 'Animating', cats: ['animate'], tool: 'timeline' },
+    vtube:   { label: 'VTubing',   cats: ['rig', 'vtube'], tool: 'live' },   // Morph lives in the rig group
+    play:    { label: 'Playing',   cats: ['play'], tool: 'playground' },
+  };
+  let persona = '';
+  function setGroupClosed(grp, closed) {
+    grp.classList.toggle('closed', closed);
+    const h = grp.querySelector('.dock-cat');
+    if (h) { h.setAttribute('aria-expanded', closed ? 'false' : 'true'); const c = h.querySelector('.chev'); if (c) c.textContent = closed ? '\u25b8' : '\u25be'; }
+    ppCookie('pp.dockcat.' + grp.dataset.cat, closed ? '1' : '0');
+  }
+  function applyPersona(k, jump, quiet) {
+    persona = (persona === k && !jump) ? '' : (PERSONAS[k] ? k : '');   // re-click the active chip = unfold everything
+    ppCookie('pp.persona', persona);
+    const P = PERSONAS[persona];
+    $$('.dock-group').forEach(grp => {
+      const hot = !!(P && P.cats.indexOf(grp.dataset.cat) !== -1);
+      grp.classList.toggle('persona-hot', hot);
+      setGroupClosed(grp, P ? !hot : false);                            // no persona → everything open
+    });
+    $$('.p-chip').forEach(c => c.classList.toggle('on', c.dataset.persona === persona));
+    $$('#personaCards .pcard').forEach(c => c.classList.toggle('on', c.dataset.persona === persona));
+    if (P && jump) setTool(P.tool);
+    if (!quiet) toast(P ? ('Dock focused on ' + P.label + ' — every other group is still there, one click away') : 'Dock unfolded — all groups showing', 'info');
+  }
+  $$('.p-chip').forEach(c => c.addEventListener('click', () => applyPersona(c.dataset.persona)));
+  $$('#personaCards .pcard').forEach(c => c.addEventListener('click', () => applyPersona(c.dataset.persona, true)));
+  { const saved = ppCookie('pp.persona'); if (saved && PERSONAS[saved]) applyPersona(saved, false, true); }
 
   $$('.dock-item').forEach(d => {
     const tool = d.dataset.tool;
@@ -2320,7 +2402,7 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
   })();
 
   // expose for verification
-  window.Studio = { setTool, post, TOOLS, session, libData, toast, clearSavedSession, idbDeleteChar, resetStorage: idbNuke, playAnimOnActive, CTX, liveTools, evictFrame, enforceBudget, reviveFrame };
+  window.Studio = { setTool, post, TOOLS, session, libData, toast, clearSavedSession, idbDeleteChar, resetStorage: idbNuke, playAnimOnActive, CTX, liveTools, evictFrame, enforceBudget, reviveFrame, activeTool: () => activeTool };
 })();
 </script>
 </body>

@@ -6,13 +6,14 @@
        install, so the app opens with no network at all.
      • Same-origin assets (engines, rig scripts, data, icons) are cached
        cache-first and added to a runtime cache the first time they're used.
-     • Cross-origin deps (three.js from esm.sh, Google Fonts) use
+     • Cross-origin deps (three.js/manifold/MediaPipe from cdn.jsdelivr.net,
+       glTF-Transform from esm.sh, Google Fonts) use
        stale-while-revalidate — served instantly from cache, refreshed in the
        background. This is what lets the CDN-loaded three.js keep working on a
        plane. (True vendoring is still better; this is the client-side half.)
    Bump CACHE_VERSION whenever shell files change so clients pick them up.
    ============================================================ */
-const CACHE_VERSION = 'pp-v65';
+const CACHE_VERSION = 'pp-v69';
 const CORE_CACHE = CACHE_VERSION + '-core';
 const RUNTIME_CACHE = CACHE_VERSION + '-runtime';
 const CDN_CACHE = CACHE_VERSION + '-cdn';
@@ -55,6 +56,7 @@ const CORE = [
   'studio3D_scripts/spring-bones.js',
   'studio3D_scripts/passport-export.js',
   'studio3D_scripts/face-capture.js',
+  'studio3D_scripts/wing-flap.js',
   'studio3D_scripts/glb-optimize.js',
   'studio3D_scripts/atlas-merge.js',
   'studio3D_scripts/nav-scheme.js',
@@ -78,7 +80,11 @@ const CORE = [
   'ToolContract.dc.html',
 ];
 
-const CDN_HOSTS = ['esm.sh', 'fonts.googleapis.com', 'fonts.gstatic.com'];
+// NOTE: keep in sync with the import maps + engine imports. cdn.jsdelivr.net
+// carries three.js/addons/manifold/MediaPipe since the pp-v42 migration (its
+// absence here broke offline — Audit V); storage.googleapis.com serves the
+// MediaPipe model files.
+const CDN_HOSTS = ['cdn.jsdelivr.net', 'esm.sh', 'fonts.googleapis.com', 'fonts.gstatic.com', 'storage.googleapis.com'];
 
 // fetch that gives up after `ms` instead of hanging a tool forever on a
 // stalled connection — callers fall back to cache (or error) on abort.

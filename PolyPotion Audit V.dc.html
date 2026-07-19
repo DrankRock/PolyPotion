@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<script src="theme.js"></script>
+<style>
+  html{scroll-behavior:smooth;}
+  html,body{margin:0;padding:0;background:var(--bg);}
+  *{box-sizing:border-box;}
+  #fa ::-webkit-scrollbar{width:10px;height:10px;}
+  #fa ::-webkit-scrollbar-track{background:var(--gutter);}
+  #fa ::-webkit-scrollbar-thumb{background:var(--edge);border:2px solid var(--gutter);border-radius:6px;}
+  #fa section[id]{scroll-margin-top:22px;}
+  #fa a{color:inherit;}
+  #fa a:hover{color:var(--accent);}
+</style>
+</helmet>
+
+<div id="fa" style="display:flex;align-items:flex-start;min-height:100vh;width:100%;background:var(--bg);color:var(--text);font-family:var(--font-ui);font-size:14px;line-height:1.65;-webkit-font-smoothing:antialiased;">
+
+  <aside style="position:sticky;top:0;height:100vh;width:264px;flex:none;background:var(--panel);border-right:1px solid var(--seam);overflow-y:auto;padding:20px 14px 40px;">
+    <div style="display:flex;align-items:center;gap:9px;padding:0 6px 14px;">
+      <div style="width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--accent),var(--wood-dark));color:var(--on-accent);font-weight:700;font-size:15px;">⚗</div>
+      <div>
+        <div style="font-weight:700;letter-spacing:.05em;font-size:13px;">POLYPOTION</div>
+        <div style="font-family:var(--font-mono);font-size:9px;color:var(--muted);letter-spacing:.12em;">CHAPTER V · THE FULL-SOLUTION AUDIT</div>
+      </div>
+    </div>
+
+    <sc-for list="{{ nav }}" as="n" hint-placeholder-count="6">
+      <a href="{{ n.href }}" style="{{ n.style }}">
+        <span style="{{ n.dot }}"></span>
+        <span style="flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ n.label }}</span>
+        <span style="font-family:var(--font-mono);font-size:9.5px;color:var(--muted);">{{ n.count }}</span>
+      </a>
+    </sc-for>
+
+    <div style="margin-top:20px;padding:12px 10px;border-top:1px solid var(--seam);">
+      <div style="font-family:var(--font-mono);font-size:9.5px;letter-spacing:.12em;color:var(--muted);margin-bottom:9px;">WHAT EACH TAG MEANS</div>
+      <sc-for list="{{ legend }}" as="l" hint-placeholder-count="6">
+        <div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:9px;">
+          <span style="flex:none;width:52px;text-align:center;font-family:var(--font-mono);font-size:9px;font-weight:700;padding:3px 0;border-radius:5px;color:{{ l.color }};background:{{ l.bg }};border:1px solid {{ l.border }};">{{ l.tag }}</span>
+          <span style="font-size:11px;color:var(--text-2);line-height:1.45;">{{ l.label }}</span>
+        </div>
+      </sc-for>
+    </div>
+    <div style="margin-top:12px;padding:10px 8px;font-size:11px;line-height:1.6;color:var(--muted);border-top:1px solid var(--seam);">Chapter V is a fresh whole-solution sweep — shell, service worker, manifests, docs, and every seam between them — written July 19, 2026, the day the face plan closed. The engines are healthy; this chapter is about the doors, the promises on the tin, and the lists nobody owns.</div>
+  </aside>
+
+  <main id="fa-main" style="flex:1;min-width:0;max-width:920px;padding:40px 56px 140px;">
+
+    <a href="index.html" style="display:inline-flex;align-items:center;gap:8px;font-size:12.5px;font-weight:700;color:var(--accent);text-decoration:none;margin-bottom:22px;padding:8px 14px;border:1px solid var(--seam);border-radius:8px;background:var(--panel);">← Back to Studio</a>
+
+    <header style="margin-bottom:16px;">
+      <div style="font-family:var(--font-mono);font-size:11px;letter-spacing:.14em;color:var(--accent);margin-bottom:10px;">CHAPTER V · FULL-SOLUTION SWEEP · JULY 19, 2026</div>
+      <h1 style="font-size:36px;font-weight:700;letter-spacing:-.015em;line-height:1.1;margin:0 0 14px;">The shelf is stocked — and two doors are nailed shut</h1>
+      <p style="font-size:16px;color:var(--text-2);margin:0;max-width:690px;">Thirty-one tools, shared contracts for navigation, symmetry, colour and jobs, a finished VTuber pipeline. The craft holds. But this sweep found that the two flagship toys — <b style="color:var(--text);">Playground and Stream Stage — are currently unreachable</b> from the shell, that <b style="color:var(--text);">offline has been silently broken since the CDN migration</b>, and that the app still introduces itself with a year-old What's New. None of it is engine rot. All of it is the cost of six hand-maintained tool lists — now seven, and the seventh bit.</p>
+    </header>
+
+    <section style="margin:20px 0 8px;padding:18px 22px;border:1px solid var(--seam);border-radius:12px;background:var(--panel);display:flex;gap:0;">
+      <sc-for list="{{ score }}" as="sc" hint-placeholder-count="4">
+        <div style="{{ sc.style }}">
+          <div style="font-family:var(--font-mono);font-size:26px;font-weight:700;color:{{ sc.hue }};">{{ sc.n }}</div>
+          <div style="font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-top:2px;">{{ sc.label }}</div>
+        </div>
+      </sc-for>
+    </section>
+
+    <sc-for list="{{ sections }}" as="s" hint-placeholder-count="6">
+      <section id="{{ s.id }}" data-doc style="padding:38px 0 8px;border-top:1px solid var(--seam);margin-top:30px;">
+        <div style="display:flex;align-items:center;gap:13px;margin-bottom:8px;">
+          <div style="{{ s.glyphBox }}">{{ s.glyph }}</div>
+          <div>
+            <div style="font-family:var(--font-mono);font-size:10.5px;letter-spacing:.12em;color:{{ s.hue }};margin-bottom:2px;">{{ s.kicker }}</div>
+            <h2 style="font-size:23px;font-weight:700;margin:0;">{{ s.title }}</h2>
+          </div>
+        </div>
+        <p style="font-size:15px;color:var(--text-2);margin:0 0 20px;max-width:690px;">{{ s.intro }}</p>
+
+        <div style="display:flex;flex-direction:column;gap:13px;">
+          <sc-for list="{{ s.findings }}" as="f" hint-placeholder-count="4">
+            <div style="border:1px solid var(--seam);border-radius:11px;background:var(--panel);overflow:hidden;">
+              <div style="display:flex;align-items:flex-start;gap:13px;padding:15px 17px 6px;">
+                <span style="flex:none;margin-top:1px;width:56px;text-align:center;font-family:var(--font-mono);font-size:9px;font-weight:700;padding:4px 0;border-radius:6px;color:{{ f.color }};background:{{ f.bg }};border:1px solid {{ f.border }};">{{ f.tag }}</span>
+                <div style="flex:1;">
+                  <div style="font-weight:700;font-size:15px;color:var(--text);margin-bottom:5px;">{{ f.title }}</div>
+                  <div style="font-size:13.5px;color:var(--text-2);line-height:1.62;">{{ f.why }}</div>
+                </div>
+                <span style="flex:none;font-family:var(--font-mono);font-size:10px;color:var(--muted);padding:3px 9px;border:1px solid var(--edge);border-radius:20px;">{{ f.effort }}</span>
+              </div>
+              <div style="display:flex;gap:10px;padding:9px 17px 14px 86px;">
+                <span style="flex:none;font-family:var(--font-mono);font-size:9.5px;letter-spacing:.1em;color:{{ s.hue }};padding-top:2px;">DO →</span>
+                <div style="font-size:13px;color:var(--text);line-height:1.6;">{{ f.todo }}</div>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </section>
+    </sc-for>
+
+    <section style="padding:34px 0 0;border-top:1px solid var(--seam);margin-top:30px;">
+      <p style="color:var(--text-2);font-size:14px;line-height:1.7;max-width:690px;margin:0 0 10px;"><b style="color:var(--text);">The ordering writes itself.</b> First the two nailed-shut doors — both are one-line list fixes and they resurrect the flagships. Then the registry consolidation, because it makes this entire class of bug impossible and it's the foundation the planned workspace presets already assume. Then make the offline promise honest: CDN hosts in the service worker, the engine precache, real icons. Everything in the horizon section is optional; everything above it is the difference between what the README claims and what a new user gets. <b style="color:var(--text);">And then the circus:</b> the three rings below the horizon are the ambition ladder — ring one makes PolyPotion a place where things are BORN (keyframe authoring, bundled motion, dress-up, face-from-photo, sprites), ring two takes the VTuber lane outright (hands, true-alpha overlays, Japanese), ring three turns a tool into a place (version history, batch work, sharable .potion atoms, a community shelf, quests, a front door). None of it needs a server. All of it composes from engines already shipped — which is the whole review in one sentence: the hard parts are done, the circus is assembly.</p>
+      <p style="color:var(--muted);font-size:12.5px;margin:14px 0 0;">Written July 19, 2026 from a fresh sweep of index.html, sw.js, _headers, manifest.webmanifest, Handbook, StreamStage, and the shared-contract consumers. Companion to PROGRESS.md (source of truth for shipped-vs-pending) and the Chapter I–IV audits. Constraint honoured throughout: PolyPotion stays a static site — every recommendation is client-side, no backend, no build step required to run.</p>
+    </section>
+
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { activeId: 'standing' };
+
+  componentDidMount() {
+    this._io = new IntersectionObserver((entries) => {
+      entries.forEach(e => { if (e.isIntersecting) this.setState({ activeId: e.target.id }); });
+    }, { rootMargin: '-6% 0px -84% 0px', threshold: 0 });
+    setTimeout(() => {
+      document.querySelectorAll('#fa-main section[id]').forEach(s => this._io.observe(s));
+    }, 80);
+  }
+  componentWillUnmount() { if (this._io) this._io.disconnect(); }
+
+  hueFor(tag) {
+    if (tag === 'GOOD') return 'var(--good)';
+    if (tag === 'PRO') return 'var(--new)';
+    if (tag === 'SPARK') return 'var(--honey)';
+    if (tag === 'NOTE') return 'var(--muted)';
+    return 'var(--danger)';   // CRIT / BUG / FIX
+  }
+  tagStyle(tag) {
+    const h = this.hueFor(tag);
+    return {
+      color: h,
+      bg: 'color-mix(in srgb, ' + h + ' 14%, transparent)',
+      border: 'color-mix(in srgb, ' + h + ' 42%, transparent)',
+    };
+  }
+
+  sectionsData() {
+    return [
+      {
+        id: 'standing', glyph: '✓', hue: 'var(--good)', kicker: 'CREDIT WHERE DUE — WHAT THE SWEEP CONFIRMED HEALTHY',
+        title: 'The engines are fine. Really.',
+        intro: 'This sweep deliberately re-read the seams, not the solvers \u2014 Chapters I\u2013IV already verified the engines and the July 19 VTuber-brews pass re-verified the face stack line by line. What stands is worth recording before the bad news.',
+        findings: [
+          { tag: 'GOOD', effort: '\u2014', title: 'The shared contracts held through five brews of churn', why: 'nav-scheme (one mouse map), symmetry-map (one mirror tolerance), color-space (one colour policy), job.js (one cancel contract on every long op), bone-map (one humanoid dictionary). New tools since \u2014 VAT, Stage, Playground, Stream Stage \u2014 all consumed them instead of forking them. That\u2019s the sign the contracts are real, not aspirational.', todo: 'Keep. The registry consolidation below is the same idea applied to the shell itself.' },
+          { tag: 'GOOD', effort: '\u2014', title: 'The privacy stance survives everything shipped', why: 'Webcam face capture, mic lipsync, mocap, OPFS meshes, IndexedDB library \u2014 every byte stays on-device; the only network traffic is CDN code and fonts. The status bar\u2019s \u201cnothing uploaded\u201d is still literally true after 65 versions.', todo: 'Keep. When co-op (WebRTC) eventually lands, document that it\u2019s peer-to-peer so the claim stays intact.' },
+          { tag: 'GOOD', effort: '\u2014', title: 'Storage is grown-up now', why: 'GLBs in OPFS with a light IDB manifest, legacy-record migration, durable-storage opt-in, quota meter, one-file .polypotion backup/restore, library virtualisation past 60 cards. This is the unglamorous plumbing most browser tools never finish.', todo: 'Keep. One owed item: OPFS still needs its confirmation on a real origin (sandbox blocked it) \u2014 see the debt ledger.' },
+        ],
+      },
+      {
+        id: 'doors', glyph: '⛔', hue: 'var(--danger)', kicker: 'BROKEN DOORS — FOUND IN THIS SWEEP, USERS HIT THESE TODAY',
+        title: 'Three shell breaks, all invisible in the code that works',
+        intro: 'All three live in index.html. None throw on load. Two of them mean the features PROGRESS.md celebrates as shipped flagships cannot currently be opened at all.',
+        findings: [
+          { tag: 'CRIT', effort: 'S', title: '\u2713 FIXED pp-v66 \u2014 Playground and Stream Stage are unreachable \u2014 setTool() forgot them', why: 'setTool()\u2019s pane-switching array (index.html \u2248line 1054) lists 30 tools \u2014 but not \u201cplayground\u201d and not \u201clive\u201d. Click Play or Live in the dock (or the palette): every listed pane is hidden, the two panes never get .show, ensureFrame() is never called \u2014 the stage goes blank. The panes, TOOLS entries, CHAR_TOOLS entries, TOOLDEFS entries and dock items all exist; only this seventh hand-copied list was missed. The two headline toys of the last two brews are dead on arrival.', todo: 'Immediate fix: replace the literal array with Object.keys(TOOLS) (the panes exist for every key). Then treat this as the final proof for the registry consolidation below \u2014 a list that must be edited seven times per tool WILL be edited six times.' },
+          { tag: 'CRIT', effort: 'S', title: '\u2713 FIXED pp-v66 \u2014 Offline has been broken since the CDN migration \u2014 sw.js never caches jsDelivr', why: 'pp-v42 moved every three.js import from esm.sh to an import map pointing at cdn.jsdelivr.net. sw.js\u2019s CDN_HOSTS still reads [esm.sh, fonts.googleapis.com, fonts.gstatic.com] \u2014 its own header comment still says \u201cthree.js from esm.sh\u201d. Cross-origin requests to hosts not in that list are passed through untouched, so three.js, every addon, manifold-3d and MediaPipe are NEVER cached. Result: the PWA installs, the shell opens offline\u2026 and every single 3D workspace fails to boot. The \u201copen it on a plane\u201d promise in What\u2019s New has been false for three days of versions.', todo: 'Add cdn.jsdelivr.net and storage.googleapis.com (MediaPipe models) to CDN_HOSTS and bump CACHE_VERSION \u2014 a two-line fix. The durable fix is vendoring step 2/2: vendor/fetch-vendor.py already exists and was never run on a networked machine.' },
+          { tag: 'BUG', effort: 'S', title: '\u2713 FIXED pp-v66 \u2014 Shell-focus undo/redo throws a ReferenceError', why: 'The command-palette IIFE\u2019s keydown handler forwards Ctrl+Z / Ctrl+Y using \u201cactiveTool\u201d and \u201cTOOLS\u201d \u2014 but both are private to the SECOND script block; window.Studio exposes TOOLS but nothing exposes activeTool. Every Ctrl+Z pressed while shell chrome has focus throws (silently, in console) and the forward never happens. It has plausibly never worked; nobody noticed because tools catch their own keys when focused.', todo: 'Expose a getter (Studio.activeTool) or move the handler into the second block; use S.TOOLS. One-minute fix, and the console stops lying about being clean.' },
+        ],
+      },
+      {
+        id: 'offline', glyph: '✈', hue: 'var(--new)', kicker: 'THE PROMISE ON THE TIN — OFFLINE & INSTALLABLE',
+        title: 'The PWA story: half-cached, un-iconed',
+        intro: 'README badges, the What\u2019s New card and the install button all sell \u201cworks fully offline, installs like an app\u201d. Beyond the jsDelivr hole above, the pieces that make that claim true are each about 60% present.',
+        findings: [
+          { tag: 'FIX', effort: 'M', title: 'CORE precache covers every tool page and a third of their engines', why: 'sw.js precaches all 31 tool HTMLs but only ~17 of the 45 studio3D_scripts files. Missing: exporter.js (the Export dialog), chunk-loader, thumbnailer, pack.js (backup/restore), morph/sculpt/pose/physics/uv/texture/lipsync/timeline/director/\u2026 engines, and ALL of rig_scripts/* \u2014 AutoRig.html is precached but the app.js/engine.js/skin-worker it loads are not. So \u201copen any tool with zero network\u201d only holds for tools you already opened online; a fresh offline visit to Sculpt or Rig dies. (Chapter III carried this; the descope fear was about vendoring THREE, not same-origin files \u2014 playground-engine and showcase-engine were safely added to CORE in pp-v56, proving the pattern.)', todo: 'Enumerate same-origin engines into CORE \u2014 ideally generated: a 20-line node script that globs studio3D_scripts/*.js + rig_scripts/*.js into a JSON array pasted into sw.js at release time. Keep /data/ excluded as today.' },
+          { tag: 'FIX', effort: 'S', title: 'The manifest points at icons that don\u2019t exist \u2014 so the install button can\u2019t appear', why: 'manifest.webmanifest declares icons/icon-192.png, icon-512.png and icon-maskable-512.png; index.html adds an apple-touch-icon and og:image social-card.png. None of these files exist \u2014 there is no icons/ folder. Chrome requires a valid 192px+ icon before it fires beforeinstallprompt, so the ⤓ Install button never shows; a manually-installed app gets the letter \u201cP\u201d on a grey disc; every social share renders a broken card. The README says \u201cIcon will come later \u2014 I have a vision\u201d, but the manifest is writing cheques today.', todo: 'Ship a placeholder now (the boot-splash potion flask rendered to 192/512/maskable PNGs \u2014 it\u2019s already the de-facto logo), swap when the vision lands. Add the files to CORE.' },
+          { tag: 'PRO', effort: 'S', title: 'The legal and help pages 404 offline', why: 'The status bar links Privacy, Terms, Notices, and the Handbook links RigGuide; the audit chapters aren\u2019t precached either. Offline (or on the plane the marketing mentions), the footer of a privacy-first app throws \u201cyou\u2019re offline\u201d for its own privacy policy.', todo: 'Add Privacy.html, Terms.html, Notices.html, RigGuide.html and the audit .dc.html files to CORE \u2014 they\u2019re a few KB each.' },
+          { tag: 'PRO', effort: 'S', title: 'Fonts still stream from Google (carried)', why: 'Every tool links two Google font families. The sw caches font CSS/woff2 per-file after first use, so a never-opened-online tool renders fallback fonts offline \u2014 and every online session pings Google, a wart on the no-tracking badge.', todo: 'Self-host the ~30 woff2 files (documented in Chapter III; it\u2019s the same \u201cfiles into a folder + find-replace\u201d shape as the vendor step, and unlike three.js it has no module-graph risk).' },
+        ],
+      },
+      {
+        id: 'seams', glyph: '🧵', hue: 'var(--accent)', kicker: 'SEAMS — HAND-MAINTAINED TRUTH DRIFTING APART',
+        title: 'The shell\u2019s lists, the app\u2019s story, and who they forgot',
+        intro: 'A tool exists in seven places in index.html, plus sw.js, plus the Handbook. Nothing owns the set, so every list has drifted independently. These are the drifts the sweep caught \u2014 including two real bugs.',
+        findings: [
+          { tag: 'FIX', effort: 'M', title: 'One tool registry \u2014 no longer a nicety, now the proven fix (carried, escalated)', why: 'Per tool today: dock item, TOOLDEFS, TOOLS, CHAR_TOOLS, setTool\u2019s pane array, the stHint else-if chain, the sw CORE list \u2014 and the Handbook\u2019s own copy. The playground/live break in this chapter is exactly the failure mode Chapter III predicted. The planned workspace presets (GUI phase 2) want {group, personaPresets} per tool \u2014 which only makes sense on a registry.', todo: 'One TOOL_REGISTRY array (key, src, label, icon, group, hint, charTool, paletteKey, personas). Dock, palette, TOOLS, CHAR_TOOLS, panes and stHint all generate from it; sw CORE can be stamped from it at release. Do it BEFORE GUI phase 2, as PROGRESS already plans.' },
+          { tag: 'BUG', effort: 'S', title: '\u2713 FIXED pp-v66 \u2014 The Animations tab\u2019s Import button silently does nothing', why: 'libFile\u2019s change handler is \u201cif (libTab === characters) { \u2026open in Rig\u2026 }\u201d \u2014 there is no else. On the Animations tab, \u201c⬇ Import file\u2026\u201d opens the picker, you choose a clip, and nothing happens, no toast. Its accept list also omits .bvh and .vrm, which the drop zone happily takes \u2014 the button and the drop zone disagree about what the app eats.', todo: 'Animations branch: route .bvh/.fbx/.glb clips to Retarget via the existing studio:loadClipBuffer path (openDroppedClip already does this for drops). Align both accept lists with the drop zone\u2019s.' },
+          { tag: 'BUG', effort: 'S', title: '\u2713 FIXED pp-v66 \u2014 Library cards inject file names as raw HTML \u2014 self-XSS in the shell', why: 'charCard/animCard build cards with template-literal innerHTML: ${it.label}, tags, badges. Drop a file named &lt;img src=x onerror=alert(1)&gt;.glb (or rename a character to that) and the markup executes \u2014 in the SHELL frame, which owns IndexedDB, OPFS and the message bridge. Same for a malicious .polypotion bundle\u2019s manifest labels, which is a genuinely foreign input.', todo: 'Escape label/tag/path text at the card boundary (one esc() helper, or build the text nodes with textContent). The toast/status paths already use textContent \u2014 finish the job where innerHTML renders user strings.' },
+          { tag: 'BUG', effort: 'S', title: '\u2713 FIXED pp-v66 \u2014 Stream Stage\u2019s pop-out handshake is half-built \u2014 the OBS window is always empty', why: 'The popout posts {type:\u201dstage:popout-ready\u201d} to window.opener\u2026 and nothing anywhere listens for that type \u2014 the embedded frame\u2019s message handler only knows studio:loadCharUrl/Buffer. So the flagship\u2019s \u201cgo live\u201d window opens character-less every time; the V1 caveat toast is papering over a dangling wire. For the tool\u2019s entire purpose (OBS window-capture), the popout IS the product.', todo: 'In the embedded frame: on stage:popout-ready from a window it opened, re-post studio:loadCharBuffer with a fresh copy of the current GLB (it holds the buffer) plus current backdrop/framing state. ~15 lines, closes the loop.' },
+          { tag: 'FIX', effort: 'S', title: 'What\u2019s New is frozen at v0.9 \u2014 the app never tells anyone what shipped', why: 'PP_VERSION has been \u201c0.9\u201d since the first brew; the auto-open fires only when the stored version differs, so it has never fired. The card\u2019s five bullets predate retarget, VAT, Stage, Playground, the whole VTube stack and spring bones \u2014 roughly forty shipped versions of silence. The welcome tour likewise ends at \u201cExport anywhere\u201d, unaware the suite became a VTuber studio.', todo: 'Derive the user-facing version from sw.js\u2019s CACHE_VERSION (pp-v65 \u2192 \u201cv0.65\u201d or a mapped semver), regenerate the bullets per brew (PROGRESS.md\u2019s log is already the changelog \u2014 copy the top entries), and add a vtube/play step to the tour. Cheap, and it\u2019s the only marketing surface the app has.' },
+          { tag: 'PRO', effort: 'M', title: 'The Handbook documents 17 of 31 tools \u2014 and describes a dock that no longer exists', why: 'Missing entirely: Showcase, Morph, Weight Paint, UV Unwrap, Paint, Bake Maps, Curves, Boolean, Hair Extract, Hair Studio, HumanGen, Retarget, VAT, Stage, Playground, Stream Stage \u2014 i.e. the entire face/VTube story a newcomer most needs explained. Its \u201cRECENTLY BREWED\u201d list and dock description still say \u201cperform\u201d group (renamed to vtube/play in pp-v65).', todo: 'Add the 16 missing entries in the existing card format (what/basics/controls/advanced \u2014 the VTube trio deserves the richest ones) and refresh the intro/dock copy. Consider generating the Handbook\u2019s nav from the same tool registry.' },
+          { tag: 'PRO', effort: 'S', title: 'The command palette and cheat sheet are the last unthemed chrome', why: 'Three theme passes tokenised 38 tools \u2014 but \u2318K and \u201c?\u201d still render a hardcoded #1a1815 dark panel with #e0e0e0 text in ALL five themes, styled with \u2018Archivo\u2019 and \u2018Spline Sans Mono\u2019\u2026 fonts index.html never loads (it loads Pixelify Sans + Nunito), so they silently fall back anyway. On the parchment themes it\u2019s a jarring black slab.', todo: 'Swap the palette/cheat inline colours to the same var(--cream-2)/var(--wood-dark)/var(--font-mono) vocabulary the rest of the shell uses. Pure find-replace.' },
+          { tag: 'PRO', effort: 'S', title: 'Two \u201cshared contracts\u201d have exactly one participant', why: 'pp-face-takes: Morph records face takes into localStorage \u2014 nothing reads them; the toast points at a \u201cshelf\u201d no tool renders. pp-expressions: documented as shared with Lipsync/Pose since Chapter I \u2014 only morph-engine reads it. Recorded so the docs stop over-promising and the follow-ups stay visible.', todo: 'Either close the loops (takes \u2192 Timeline/Showcase as AnimationClips \u2014 see horizon; expression board read by Lipsync\u2019s viseme picker and Pose\u2019s face tab) or trim the claims in code comments/toasts until they\u2019re true.' },
+        ],
+      },
+      {
+        id: 'debt', glyph: '⏳', hue: 'var(--honey)', kicker: 'THE DEBT LEDGER — SHIPPED BUT NEVER WITNESSED',
+        title: 'Verify before trusting',
+        intro: 'Things marked done that no human has watched work on a real origin. Not findings against the code \u2014 findings against the confidence. One session with the deployed site clears the whole list.',
+        findings: [
+          { tag: 'NOTE', effort: '\u2014', title: 'The standing verification list, consolidated', why: 'Draco export (wired pp-v31, explicitly UNVERIFIED \u2014 test before trusting; meshopt is the verified fallback). OPFS persistence (API sequence harness-tested; the sandbox blocked the real thing). Stream Stage \u2192 OBS end-to-end (popout + chroma key + H hotkey \u2014 blocked on the popout bug above anyway). VSeeFace round-trip of a 0.x export with PerfectSync + springs. Playground feel on a real gamepad (pp-v57). _headers actually deployed \u2014 the CSP unsafe-eval fix only exists as a file in the repo until the host serves it; without it every DC tool renders template-only.', todo: 'One live session, in this order: deploy _headers \u2192 hard-reload \u2192 Draco export \u2192 OPFS save/reload \u2192 VSeeFace round-trip \u2192 OBS capture \u2192 Playground lap. Log results in PROGRESS.md and flip these from owed to witnessed.' },
+        ],
+      },
+      {
+        id: 'horizon', glyph: '🌄', hue: 'var(--good)', kicker: 'THE HORIZON — GENUINELY MISSING, STILL A STATIC SITE',
+        title: 'What to brew next (after the doors open)',
+        intro: 'Nothing here contradicts the constraint: every item runs client-side off static hosting. Ordered by how much they compound with what already shipped.',
+        findings: [
+          { tag: 'SPARK', effort: 'M', title: 'Workspace presets + the onboarding fork (GUI phase 2, planned)', why: 'Thirty-one tools is five different five-tool apps wearing one dock. The plan is already written: persona chips (Sculptor / Rigger / Animator / VTuber / Player) batch the existing dock-collapse cookies, set the Library\u2019s default open-target, and a first-run \u201cwhat are you here for?\u201d applies one. It\u2019s the highest-leverage UX item on the books \u2014 and it depends on the registry.', todo: 'Registry first, then presets as {personaPresets} data on it, then the first-run dialog. Per PROGRESS: ~1h once the registry exists.' },
+          { tag: 'PRO', effort: 'M', title: 'Close the capture loop: face takes \u2192 real clips', why: 'Record-take exists (Brew 7c) and its output is already shaped like lipsync\u2019s bake. Until Timeline/Showcase consume takes as AnimationClips, the feature is a dead-end buffer \u2014 the one VTuber-plan promise still hanging.', todo: 'A \u201cTakes\u201d shelf in Timeline reading pp-face-takes \u2192 NumberKeyframeTracks on morphTargetInfluences + head-bone quaternions \u2014 the lipsync bake path verbatim. Delete-and-rename on the shelf while there.' },
+          { tag: 'PRO', effort: 'M', title: 'Spring bones, chapter two: colliders and per-chain tuning', why: 'Brew 10 ships chains with global stiffness and no colliders \u2014 long hair sails through the chest, and one stiffness fits neither ahoge nor cape. Both dialects support sphere colliders and per-spring params; the preview sim already steps per-chain.', todo: 'Auto-place 3\u20134 colliders from the humanoid map (head sphere, chest capsule as two spheres), write them in both dialects, add a per-chain stiffness/gravity row to the Stream Stage sway panel. Also: run the sway preview in Showcase, not just Live.' },
+          { tag: 'PRO', effort: 'S', title: 'VRM import should populate the expression board', why: 'Imported VRMs keep their morphs (they\u2019re standard glTF targets) but their named expressions \u2014 the semantic layer a VRoid refugee actually wants to edit \u2014 vanish. The importer already parses the extension for the drop toast; it just doesn\u2019t hand the map to Morph.', todo: 'peekVRM \u2192 expression map (preset + custom \u2192 morph binds) \u2192 seed pp-expressions entries scoped to the character on first open in Morph. Round-trip becomes genuinely lossless for the face layer.' },
+          { tag: 'PRO', effort: 'S', title: 'KTX2 texture compression on export (carried from Chapter III)', why: 'Draco/meshopt shrink geometry; textures \u2014 usually the bigger half of a character \u2014 still export as PNG/JPEG. KHR_texture_basisu is the ecosystem answer and the encoder (BasisU WASM) runs fine client-side.', todo: 'A \u201cTextures: keep / KTX2\u201d chip next to the compression row, using the same glTF-Transform path as glb-optimize. Verify VRM-consumer support and exclude it there if patchy.' },
+          { tag: 'SPARK', effort: 'L', title: 'Local co-op \u2014 the last big bet on the board', why: 'Two people, two machines, one stage: one drives the character in Playground while the other sculpts expressions live, or two avatars share a Stream Stage. WebRTC DataChannels carry the existing postMessage vocabulary peer-to-peer; a static site can signal via copy-paste offer/answer or a QR code \u2014 no server, privacy stance intact.', todo: 'Scope as its own brew, per house rule (one big bet per brew). V1: manual-signal DataChannel + rebroadcast of studio:loadCharBuffer and a 30Hz pose/weights stream into a second Stage actor.' },
+        ],
+      },
+      {
+        id: 'ring1', glyph: '✍', hue: 'var(--accent)', kicker: 'THE CIRCUS, RING ONE — CREATE FROM ZERO, NOT JUST ADAPT',
+        title: 'The missing ring: authorship',
+        intro: 'Everything shipped so far EDITS — retarget someone else’s clip, sculpt someone else’s mesh, capture your own face. The tools everyone needs are the ones that make something from nothing. Each of these turns a visitor into a resident.',
+        findings: [
+          { tag: 'SPARK', effort: 'L', title: 'Keyframe animation authoring — the suite cannot make a clip from nothing', why: 'Retarget, trim, blend, bake, capture — every animation path starts from an EXISTING clip or a webcam. There is no pose → keyframe → interpolate loop, which is the single feature separating “useful companion” from “the tool”. And the parts already exist: Pose has IK/pins/saved poses, Timeline has tracks and baking, Curves has easing and onion skins.', todo: 'An “Animate” mode: capture Pose snapshots as keys on a Timeline track, slerp between them with Curves-editable easing, ghost the previous/next key (Curves already onion-skins), loop + mirror tools. Like Stream Stage, this is a composition brew over three shipped engines — the biggest single unlock on this list.' },
+          { tag: 'PRO', effort: 'M', title: 'Ship batteries: a bundled CC0 motion library', why: 'Mixamo — the reason most hobbyists can animate at all — is login-walled, unmaintained, and rumoured mortal. A character suite with zero clips in the box asks every newcomer to go find motion elsewhere. The chunked data/animations pipeline already exists and the author already ships a heavy asset library.', todo: 'Curate 30–50 CC0 clips (CMU conversions, Quaternius packs): idle / walk / run / jump / sit / gestures / dances, tagged by category. Offer the “starter moves” shelf automatically when a rigged character has no clips.' },
+          { tag: 'PRO', effort: 'L', title: 'Dress-up: outfits, props and bone sockets (carried from the toy box)', why: 'The library’s clothing/accessory/weapon tags exist — but nothing can WEAR anything. Attach-sword-to-hand and put-hat-on-head is the most-asked-for feature class in every character tool’s forum, and it’s what makes a library of hundreds of props worth owning.', todo: 'A “Dress” mode (in Stage or its own tool): snap a prop to a bone socket (hand/head/back/hip) with offset gizmo; for tight clothing, transfer skin weights from the body under it (the skin-wrap projection is a known, contained algorithm). Save outfits as overlay GLBs that re-apply per character.' },
+          { tag: 'SPARK', effort: 'M', title: 'Face-from-photo: drop a selfie, get your HumanGen likeness', why: 'The suite already runs MediaPipe face landmarking (Morph’s guided ARKit) and already generates parametric humans (HumanGen). Nobody has connected them: photo → landmark proportions → HumanGen sliders. On-device, so the privacy story survives — which is exactly why a browser tool can win this feature.', todo: 'V1: front photo → FaceLandmarker → eye spacing / jaw width / nose length / face aspect mapped to the existing HumanGen head params + skin tone sampled from cheeks. No texture projection yet — proportions alone sell it.' },
+          { tag: 'PRO', effort: 'M', title: 'Sprite Studio — the 2D-developer door (carried)', why: '2D game developers outnumber 3D ones, and they buy character tools to RENDER, not rig: spritesheets, 8-direction turnarounds, GIFs. Every ingredient (renderer, clips, retarget, Director’s frame capture) is shipped; the output format is the only missing piece.', todo: 'New tool on the Showcase renderer: orthographic camera, N-direction turntable × clip frames → packed spritesheet PNG + JSON atlas, GIF/APNG export, optional pixel mode (nearest-neighbour downscale + palette quantize). Instantly indexes PolyPotion into a second community.' },
+        ],
+      },
+      {
+        id: 'ring2', glyph: '📡', hue: 'var(--new)', kicker: 'RING TWO — OWN THE VTUBER LANE OUTRIGHT',
+        title: 'From “works with VSeeFace” to “why do I need VSeeFace?”',
+        intro: 'Brews 6–10 made PolyPotion a legitimate avatar FACTORY. The lane is winnable end-to-end: the incumbents are Windows-only, install-heavy, and English-second. A browser tab that does capture + avatar + overlay is a category of one.',
+        findings: [
+          { tag: 'SPARK', effort: 'L', title: 'Hands and upper body in Stream Stage', why: 'Webcam hand-tracking is a PAID add-on in the incumbent stack (LeapMotion hardware, iPhone apps). MoCap already runs MediaPipe hand/pose landmarkers in this codebase — the models are on the shelf. Finger wiggles + shoulder lean is the most visible upgrade a VTuber can show their chat.', todo: 'Opt-in “Hands” toggle in Stream Stage: HandLandmarker → finger curl per joint → hand bones; PoseLandmarker → shoulder sway + lean on spine/chest. Alternate detector frames to hold 30fps; auto-life covers the gaps as designed.' },
+          { tag: 'PRO', effort: 'S', title: 'Transparent backdrop — the avatar as a true OBS overlay', why: 'Chroma key works but eats hair edges and glow. OBS’s Browser Source composites real alpha: a popout with a transparent WebGL clear colour needs NO keying at all — and the popout already exists. This one chip makes the output visibly cleaner than most native tools.', todo: 'Add a “transparent” chip to the backdrop row (renderer alpha:true, clearColor alpha 0, body background transparent in popout mode) + a hint: add the popout URL as an OBS Browser Source. Document the character handoff (already fixed in pp-v66).' },
+          { tag: 'PRO', effort: 'M', title: 'Japanese first, then i18n', why: 'VTubing’s centre of gravity is Japanese; VRoid and VSeeFace are JP-first ecosystems. An English-only tool is invisible to half its natural audience. A static site localises with JSON string tables — no infrastructure.', todo: 'Extract shell strings to a dictionary, ship ja.json first (the vtube surfaces before anything else), language picker in the status bar. Tool panels migrate incrementally — imperfect coverage beats absence.' },
+          { tag: 'PRO', effort: 'S', title: 'Per-platform conformance budgets in the preflight', why: 'The VTuber check validates physiology; creators’ real question is “will VRChat rank this Good?”, “will cluster accept it?”, “will it melt VSeeFace?”. Each platform publishes hard budgets (tris, materials, bones, texture MB) — pure lookup tables.', todo: 'Platform preset chips on the preflight card (VRChat PC/Quest · cluster · VSeeFace · Warudo) swapping the thresholds; red rows keep linking to the fixing tool (Decimate, atlas, Bake Maps).' },
+        ],
+      },
+      {
+        id: 'ring3', glyph: '🎪', hue: 'var(--honey)', kicker: 'RING THREE — FROM TOOL TO PLACE',
+        title: 'Why people stay: safety, scale, and other people',
+        intro: 'Tools get visits; places get residents. Every item here is deliberately backend-free — files, static manifests and peer-to-peer are enough to build the town square.',
+        findings: [
+          { tag: 'SPARK', effort: 'M', title: 'Brew history — version checkpoints per character', why: 'Every save overwrites. One bad decimate or over-enthusiastic sculpt session and the character’s yesterday is gone — the single scariest property of the suite for serious work. OPFS has the room and already holds the payloads.', todo: 'Ring buffer of checkpoints per character in OPFS (write on every routed-back save, keep ~10 + pinned), a small history strip on the library card: preview, restore, fork-as-copy. Quietly the biggest trust feature on this list.' },
+          { tag: 'PRO', effort: 'S', title: 'Batch recipes across the library', why: 'Recipe’s headless GLB-in/GLB-out contract runs on exactly one character at a time — while the author’s own library holds hundreds. “Decimate + atlas + rename bones, for these 40” is agency work today.', todo: 'Multi-select in the Library → “Apply recipe…”: iterate selections through recipe-engine under one JobController (progress + cancel exist), results land as new versions (pairs with brew history).' },
+          { tag: 'PRO', effort: 'S', title: 'Shareable .potion atoms — recipes, shaders, expressions, poses', why: 'Four localStorage stores (recipes, shader graphs, pp-expressions, pp-poses) are pure JSON and completely trapped in one browser profile. Communities form around small sharable artifacts long before they form around big ones.', todo: 'Export/import per store: one .potion JSON envelope {type, name, payload, version}; drop zone accepts it and routes by type. Costs an afternoon, creates the file format the community trades in.' },
+          { tag: 'PRO', effort: 'M', title: 'A community shelf — no backend required', why: 'Sharing today means “send a file”. A public repo where pull requests add passports + thumbnails, built by CI into a static manifest on Pages, gives the app a read-only “Community” tab — discovery without servers, moderation via review, licences enforced at PR time.', todo: 'Separate repo (polypotion-shelf): PR template requires licence + NSFW flag; CI stamps manifest.json + thumbs. App side: a Community tab fetching that manifest, reusing the NSFW gate and card grid; download → imports as a session character.' },
+          { tag: 'SPARK', effort: 'S', title: 'Quests — onboarding that plays like the product', why: 'The tour TELLS; nobody remembers telling. The shell already observes every meaningful act as studio:* messages (loaded, bound, saveChar, riggedGLB) — a quest system is a checklist keyed to events that already fire. And “brew your first potion” fits the brand absurdly well.', todo: 'Quest definitions (“First Brew”: generate → rig → pose → export; “Going Live”: ARKit set → calibrate → popout), a potion-bottle progress chip in the status bar, confetti on completion (Playground’s particle pool). Replaces the tour’s last two steps.' },
+          { tag: 'PRO', effort: 'S', title: 'The front door: polypotion.com is a redirect to nothing', why: 'The README links a website “in development”; there is no landing page, no demo footage, no SEO surface — for a product whose every feature is visually demoable. The suite can brew its own marketing: Director renders video, Passport makes self-contained live demos.', todo: 'One static landing page: a 30-second Director-rendered hero loop, three embedded passports as live “try it” demos, the install button, GitHub + licence links. App lives at /studio; the root sells it.' },
+        ],
+      },
+    ];
+  }
+
+  renderVals() {
+    const active = this.state.activeId;
+    const raw = this.sectionsData();
+
+    const sections = raw.map(s => Object.assign({}, s, {
+      glyphBox: 'width:40px;height:40px;border-radius:9px;flex:none;display:flex;align-items:center;justify-content:center;font-size:20px;'
+        + 'background:color-mix(in srgb, ' + s.hue + ' 15%, transparent);color:' + s.hue
+        + ';border:1px solid color-mix(in srgb, ' + s.hue + ' 38%, transparent);',
+      findings: s.findings.map(f => Object.assign({}, f, this.tagStyle(f.tag))),
+    }));
+
+    const labels = { standing: 'What held', doors: 'Broken doors', offline: 'Offline & install', seams: 'Seams & drift', debt: 'The debt ledger', horizon: 'The horizon', ring1: 'Ring 1 · Author', ring2: 'Ring 2 · VTuber lane', ring3: 'Ring 3 · A place' };
+    const nav = raw.map(s => ({
+      href: '#' + s.id, label: labels[s.id] || s.id, count: s.findings.length,
+      style: 'display:flex;align-items:center;gap:10px;padding:7px 8px;border-radius:6px;font-size:12.5px;font-weight:' + (active === s.id ? '700' : '500')
+        + ';text-decoration:none;margin-bottom:1px;color:' + (active === s.id ? 'var(--text)' : 'var(--muted)')
+        + ';background:' + (active === s.id ? 'var(--accent-dim)' : 'transparent') + ';',
+      dot: 'width:7px;height:7px;border-radius:2px;flex:none;background:' + (active === s.id ? 'var(--accent)' : 'var(--edge)') + ';',
+    }));
+
+    const legend = [
+      { tag: 'GOOD', label: 'Already right \u2014 recorded so it doesn\u2019t get broken' },
+      { tag: 'CRIT', label: 'Shipped feature is unreachable or dead right now' },
+      { tag: 'BUG', label: 'Wrong behaviour a user can hit today' },
+      { tag: 'FIX', label: 'A stated promise the code doesn\u2019t keep' },
+      { tag: 'PRO', label: 'Expected by anyone serious \u2014 surprising to miss' },
+      { tag: 'SPARK', label: 'The delight \u2014 compounds everything shipped' },
+    ].map(l => Object.assign(l, this.tagStyle(l.tag)));
+
+    const all = raw.flatMap(s => s.findings).filter(f => f.tag !== 'GOOD' && f.tag !== 'NOTE');
+    const cnt = t => all.filter(f => f.tag === t).length;
+    const cell = (i) => 'flex:1;text-align:center;' + (i ? 'border-left:1px solid var(--seam);' : '');
+    const score = [
+      { n: String(all.length), label: 'findings', hue: 'var(--text)' },
+      { n: String(cnt('CRIT')), label: 'doors nailed shut', hue: 'var(--danger)' },
+      { n: String(cnt('BUG')), label: 'live bugs', hue: 'var(--danger)' },
+      { n: '1', label: 'registry to end them all', hue: 'var(--honey)' },
+    ].map((s, i) => Object.assign(s, { style: cell(i) }));
+
+    return { nav, legend, score, sections };
+  }
+}
+</script>
+</body>
+</html>
