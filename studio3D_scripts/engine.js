@@ -427,7 +427,7 @@ function serializeJoint(j) {
     pos: [j.marker.position.x, j.marker.position.y, j.marker.position.z], placed: j._moved || false };
 }
 
-E.autoFit = function () { joints.forEach(j => j.marker.position.copy(home2world(j.home))); updateBoneLines(); };
+E.autoFit = function () { joints.forEach(j => { if (j.group === 'fingers') j._moved = false; j.marker.position.copy(home2world(j.home)); }); updateBoneLines(); };
 E.resetPoses = E.autoFit;
 
 E.setGroupEnabled = function (groupId, on) {
@@ -463,7 +463,29 @@ function activeParent(j) {
   return p || null;
 }
 
+// Fingers default to a compact fan right next to the wrist — nobody wants to
+// hunt for 20 tiny joints splayed across the mesh. Any finger the user hasn't
+// touched (_moved false) re-anchors to its side's wrist every frame, so it
+// follows the wrist as that's dragged; once moved, it keeps its place.
+const FINGER_COLLAPSE = 0.26;   // fraction of the natural fan kept, so joints stay pickable
+function reflowFingers() {
+  if (!joints.length) return;
+  const H = (bbox.max.y - bbox.min.y) || (modelR * 2);
+  joints.forEach(j => {
+    if (j.group !== 'fingers' || j._moved) return;
+    const wrist = jointMap.get(j.id.endsWith('_L') ? 'Wrist_L' : 'Wrist_R');
+    if (!wrist) return;
+    const w = wrist.marker.position;
+    j.marker.position.set(
+      w.x + (j.home[0] - wrist.home[0]) * H * FINGER_COLLAPSE,
+      w.y + (j.home[1] - wrist.home[1]) * H * FINGER_COLLAPSE,
+      w.z + (j.home[2] - wrist.home[2]) * H * FINGER_COLLAPSE
+    );
+  });
+}
+
 function updateBoneLines() {
+  reflowFingers();
   const pts = [];
   const useFocus = focusMode !== 'all' || zoneActive;
   (useFocus ? activeJoints() : enabledJoints()).forEach(j => {
@@ -529,6 +551,28 @@ E.mirrorSide = function (from) {
     const p = j.marker.position;
     twin.marker.position.set(modelC.x * 2 - p.x, p.y, p.z);
     twin._moved = true; count++;
+  });
+  updateBoneLines();
+  if (onSelectCb && selJoint) onSelectCb(serializeJoint(selJoint));
+  return count;
+};
+
+// ---- swap L ↔ R: exchange every _R joint's placement with its _L twin, IN PLACE ----
+// Keeps every joint exactly where it sits, but the position you gave the RIGHT
+// half now belongs to the LEFT bones and vice versa. Fixes a rig placed with the
+// L/R sides inverted (e.g. mesh was facing you). Positions are swapped verbatim —
+// no mirroring across X — so nothing moves except which side owns which spot.
+E.swapSides = function () {
+  let count = 0;
+  joints.forEach(j => {
+    if (!j.id.endsWith('_R')) return;              // iterate R only so each pair swaps once
+    const twin = jointMap.get(j.id.slice(0, -2) + '_L');
+    if (!twin) return;
+    const a = j.marker.position, b = twin.marker.position;
+    const tx = a.x, ty = a.y, tz = a.z;
+    a.set(b.x, b.y, b.z);
+    b.set(tx, ty, tz);
+    j._moved = true; twin._moved = true; count++;
   });
   updateBoneLines();
   if (onSelectCb && selJoint) onSelectCb(serializeJoint(selJoint));

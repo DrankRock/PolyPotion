@@ -169,6 +169,10 @@ $('#btnMirrorLR').addEventListener('click', () => {
   const c = E.mirrorSide('L');
   toast(c ? `Mirrored ${c} joints L → R` : 'No side joints to mirror', c ? 'success' : 'warn');
 });
+$('#btnSwapSides').addEventListener('click', () => {
+  const c = E.swapSides();
+  toast(c ? `Swapped L ↔ R — ${c} joint pair(s) traded places` : 'No paired side joints to swap', c ? 'success' : 'warn');
+});
 $('#btnCenterAll').addEventListener('click', () => {
   const c = E.centerAll();
   toast(c ? `Auto-centered ${c} joint(s) inside the mesh` : 'Nothing moved — joints may already be centered or too far outside the mesh', c ? 'success' : 'warn');
