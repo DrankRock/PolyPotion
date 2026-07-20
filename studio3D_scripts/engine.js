@@ -354,6 +354,35 @@ function frameAll() {
 }
 E.frame = frameAll;
 
+// ---- orient the mesh: spin it about its vertical axis so its true front lines
+// up with the FRONT view label. This is THE fix for "arms point backward / mesh
+// is 180° off": Mixamo clips assume the character faces the tool's front (+Z),
+// so if your mesh was authored facing another way, every limb bends the wrong
+// direction. Bakes the rotation straight into the geometry (normals too) so the
+// whole downstream pipeline — placement, bind, retarget — sees the corrected
+// facing. Placed joints spin with the mesh; un-placed ones re-home. deg = CCW
+// about +Y (90 = turn left, -90 = right, 180 = about-face).
+E.orientModel = function (deg) {
+  if (!modelGroup || !modelMeshes.length) return;
+  const rad = deg * Math.PI / 180, cs = Math.cos(rad), sn = Math.sin(rad);
+  const cx = modelC.x, cz = modelC.z;
+  const rotXZ = (x, z) => [cx + (x - cx) * cs + (z - cz) * sn, cz - (x - cx) * sn + (z - cz) * cs];
+  modelMeshes.forEach(m => {
+    const g = m.geometry, pos = g.getAttribute('position');
+    for (let i = 0; i < pos.count; i++) { const r = rotXZ(pos.getX(i), pos.getZ(i)); pos.setX(i, r[0]); pos.setZ(i, r[1]); }
+    pos.needsUpdate = true;
+    const nrm = g.getAttribute('normal');
+    if (nrm) { for (let i = 0; i < nrm.count; i++) { const x = nrm.getX(i), z = nrm.getZ(i); nrm.setX(i, x * cs + z * sn); nrm.setZ(i, -x * sn + z * cs); } nrm.needsUpdate = true; }
+    g.computeBoundingBox(); g.computeBoundingSphere();
+  });
+  recomputeBounds();
+  joints.forEach(j => {
+    if (j._moved) { const p = j.marker.position; const r = rotXZ(p.x, p.z); p.x = r[0]; p.z = r[1]; }
+    else j.marker.position.copy(home2world(j.home));
+  });
+  frameAll(); refreshMarkerColors(); updateBoneLines();
+};
+
 // flip an ortho view to its opposite (front↔back, side R↔L, top↔bottom)
 E.flipView = function (name) {
   const o = orthos[name]; if (!o) return 1;

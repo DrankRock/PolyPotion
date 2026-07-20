@@ -131,6 +131,15 @@ $('#btnAutoFit').addEventListener('click', () => { E.autoFit(); markPlacedReset(
 $('#btnReset').addEventListener('click', () => { E.resetPoses(); markPlacedReset(); });
 function markPlacedReset() { joints = joints.map(j => ({ ...j, placed: false })); renderGroups(); }
 
+function turnMesh(deg, label) {
+  if (bound) { toast('Click “← Back to placing joints” first, then set the facing.', 'warn'); return; }
+  E.orientModel(deg);
+  toast(`Turned mesh ${label}. Re-check it faces the FRONT label, then bind.`, 'success');
+}
+$('#btnTurnL').addEventListener('click', () => turnMesh(90, 'left 90°'));
+$('#btnTurnR').addEventListener('click', () => turnMesh(-90, 'right 90°'));
+$('#btnTurn180').addEventListener('click', () => turnMesh(180, '180°'));
+
 // ============================================================
 // SELECTION
 // ============================================================

@@ -320,6 +320,11 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;heigh
             <button class="btn ghost sm" id="btnAutoFit">⤢ Fit to mesh</button>
             <button class="btn ghost sm" id="btnReset">↺ Reset poses</button>
           </div>
+          <div class="field" style="margin-top:10px;">
+            <label>Mesh facing <span style="color:var(--muted-2);text-transform:none;letter-spacing:0;">— spin it to face the FRONT label</span></label>
+            <div class="btn-row"><button class="btn ghost sm" id="btnTurnL" title="Rotate the whole mesh 90° counter-clockwise (viewed from above)">⟲ Turn left</button><button class="btn ghost sm" id="btnTurn180" title="Turn the mesh 180° — use when it faces away / animations play back-to-front">⟳ 180°</button><button class="btn ghost sm" id="btnTurnR" title="Rotate the whole mesh 90° clockwise (viewed from above)">Turn right ⟳</button></div>
+            <div class="note" style="margin-top:5px;">If your character faces away, arms bend backward, or a Mixamo clip plays back-to-front, spin the mesh here until it faces the <b>FRONT</b> label. Placed joints turn with it. Do this <b>before</b> binding.</div>
+          </div>
           <label id="aposeRow" style="display:flex;align-items:center;gap:7px;margin-top:7px;font-size:11px;color:var(--muted);cursor:pointer;user-select:none;" title="Turn on if the character's arms hang at ~45deg (A-pose). Fit to mesh then drops the arm joints onto the arms instead of straight out.">
             <input type="checkbox" id="chkApose" style="accent-color:#ff5a1f;width:14px;height:14px;cursor:pointer;flex:none;">
             <span>Arms hang in <b style="color:var(--text)">A-pose</b> — drop arm joints to fit</span>
