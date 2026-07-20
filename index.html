@@ -24,7 +24,8 @@
 <meta name="twitter:image" content="social-card.png">
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#9c6b3f">
-<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="icon" type="image/svg+xml" href="icons/icon.svg">
+<link rel="apple-touch-icon" href="icons/icon.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;500;600;700&family=Nunito:ital,wght@0,400;0,600;0,700;0,800;1,600&display=swap" rel="stylesheet">
@@ -755,7 +756,11 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
       S && S.toast && S.toast('Theme: ' + window.StudioTheme.get(), 'info'); }
 
     // ---- COMMAND REGISTRY ----
-    const TOOLDEFS = [
+    // TOOLDEFS/COMMANDS derive from TOOL_REGISTRY (defined in the studio
+    // script below; both load before any interaction — resolved lazily).
+    const TOOLDEFS = { get list() { return [{ k:'library', label:'Library', icon:'▤', key:'0' },
+      ...((window.TOOL_REGISTRY || []).map(t => ({ k:t.k, label:t.pal || t.label, icon:t.icon, key:t.key || '' })))]; } };
+    const __unusedOldDefs = [
       { k:'library', label:'Library', icon:'▤', key:'0' },
       { k:'showcase', label:'Showcase', icon:'◈', key:'9' },
       { k:'playground', label:'Playground — be your character (WASD · gamepad · first-person · VR)', icon:'⛹', key:'' },
@@ -787,9 +792,9 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
       { k:'humangen', label:'HumanGen — generate a base human', icon:'☺', key:'' },
       { k:'hairstudio', label:'Hair Studio', icon:'〰', key:'' },
     ];
-    const COMMANDS = [
+    const COMMANDS = { get list() { return [
       { id:'fun:roulette', title:'🎲 Surprise me — random character + random clip', hint:'🎲', run:() => surpriseMe() },
-      ...TOOLDEFS.map(t => ({ id:'go:'+t.k, title:'Go to ' + t.label, hint:t.icon + '  ·  ' + t.key, run:() => S.setTool(t.k) })),
+      ...TOOLDEFS.list.map(t => ({ id:'go:'+t.k, title:'Go to ' + t.label, hint:t.icon + '  ·  ' + t.key, run:() => S.setTool(t.k) })),
       { id:'physics:cloth', title:'Physics — Drop a cloth', hint:'≋', run:() => { S.setTool('physics'); setTimeout(()=>physicsPost('studio:cmd',{cmd:'cloth'}),120); } },
       { id:'physics:flag', title:'Physics — Flag in wind', hint:'🏳', run:() => { S.setTool('physics'); setTimeout(()=>physicsPost('studio:cmd',{cmd:'flag'}),120); } },
       { id:'physics:drape', title:'Physics — Drape over sphere (WASM collision)', hint:'☂', run:() => { S.setTool('physics'); setTimeout(()=>physicsPost('studio:cmd',{cmd:'drape'}),120); } },
@@ -803,15 +808,15 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
       { id:'tour', title:'Show the welcome tour again', hint:'⚗', run:() => window.__ppTour && window.__ppTour() },
       { id:'whatsnew', title:'What\u2019s new in this version', hint:'✦', run:() => $('#btnVersion') && $('#btnVersion').click() },
       { id:'cheat', title:'Show keyboard shortcuts', hint:'?', run:() => openCheat() },
-    ];
+    ]; } };
 
     // ---- PALETTE UI ----
     const pal = $('#cmdk'), input = $('#cmdkIn'), list = $('#cmdkList');
-    let filtered = COMMANDS.slice(), sel = 0;
+    let filtered = COMMANDS.list, sel = 0;
     function fuzzy(q) {
       q = q.trim().toLowerCase();
-      if (!q) return COMMANDS.slice();
-      return COMMANDS.filter(c => c.title.toLowerCase().includes(q) || c.id.includes(q))
+      if (!q) return COMMANDS.list;
+      return COMMANDS.list.filter(c => c.title.toLowerCase().includes(q) || c.id.includes(q))
         .sort((a,b) => a.title.toLowerCase().indexOf(q) - b.title.toLowerCase().indexOf(q));
     }
     function render() {
@@ -828,7 +833,7 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
       });
       if (!filtered.length) list.innerHTML = '<div style="padding:18px;color:#5a574f;font-size:12.5px;text-align:center;">No matches</div>';
     }
-    function openPal() { pal.style.display = 'flex'; input.value = ''; filtered = COMMANDS.slice(); sel = 0; render(); setTimeout(()=>input.focus(),0); }
+    function openPal() { pal.style.display = 'flex'; input.value = ''; filtered = COMMANDS.list; sel = 0; render(); setTimeout(()=>input.focus(),0); }
     function closePal() { pal.style.display = 'none'; }
     function exec() { const c = filtered[sel]; closePal(); if (c) c.run(); }
     input.addEventListener('input', () => { filtered = fuzzy(input.value); sel = 0; render(); });
@@ -876,7 +881,7 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
       if (e.key === 'Escape') { closeCheat(); return; }
       if (e.key === '?') { cheat.style.display === 'flex' ? closeCheat() : openCheat(); return; }
       if (e.key === 't' || e.key === 'T') { cycleTheme(); return; }
-      if (e.key >= '0' && e.key <= '9') { const d = TOOLDEFS.find(t => t.key === e.key); if (d) S.setTool(d.k); return; }
+      if (e.key >= '0' && e.key <= '9') { const d = TOOLDEFS.list.find(t => t.key === e.key); if (d) S.setTool(d.k); return; }
       if (e.key === ' ') { S.post('physics','studio:cmd',{cmd:'toggleSim'}); e.preventDefault(); return; }
       if (e.key === 'f' || e.key === 'F') { S.post('physics','studio:cmd',{cmd:'flick'}); return; }
     });
@@ -893,40 +898,49 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
   const $ = s => document.querySelector(s);
   const $$ = s => [...document.querySelectorAll(s)];
 
-  const TOOLS = {
-    showcase:{ src: 'Showcase.dc.html?embed=1', frame: null, ready: false, label: 'Showcase' },
-    playground:{ src: 'Playground.dc.html?embed=1', frame: null, ready: false, label: 'Playground' },
-    live:{ src: 'StreamStage.dc.html?embed=1', frame: null, ready: false, label: 'Stream Stage' },
-    rig:   { src: 'AutoRig.html?embed=1', frame: null, ready: false, label: 'Rig' },
-    mocap: { src: 'MoCap.dc.html?embed=1', frame: null, ready: false, label: 'MoCap' },
-    edit:  { src: 'MeshEdit.dc.html?embed=1', frame: null, ready: false, label: 'Edit' },
-    motion:{ src: 'Motion.dc.html?embed=1', frame: null, ready: false, label: 'Motion' },
-    sculpt:{ src: 'Sculpt.dc.html?embed=1', frame: null, ready: false, label: 'Sculpt' },
-    hair:  { src: 'HairExtract.dc.html?embed=1', frame: null, ready: false, label: 'Hair' },
-    pose:  { src: 'Pose.dc.html?embed=1', frame: null, ready: false, label: 'Pose' },
-    physics:{ src: 'Physics.dc.html?embed=1', frame: null, ready: false, label: 'Physics' },
-    decimate:{ src: 'Decimate.dc.html?embed=1', frame: null, ready: false, label: 'Decimate' },
-    vat:  { src: 'VAT.dc.html?embed=1', frame: null, ready: false, label: 'VAT Bake' },
-    stage:{ src: 'Stage.dc.html?embed=1', frame: null, ready: false, label: 'Stage' },
-    doctor:{ src: 'MeshDoctor.dc.html?embed=1', frame: null, ready: false, label: 'Mesh Doctor' },
-    shaderlab:{ src: 'ShaderLab.dc.html?embed=1', frame: null, ready: false, label: 'Shader Lab' },
-    director:{ src: 'Director.dc.html?embed=1', frame: null, ready: false, label: 'Director' },
-    lipsync:{ src: 'Lipsync.dc.html?embed=1', frame: null, ready: false, label: 'Lipsync' },
-    timeline:{ src: 'Timeline.dc.html?embed=1', frame: null, ready: false, label: 'Timeline' },
-    retarget:{ src: 'Retarget.dc.html?embed=1', frame: null, ready: false, label: 'Retarget' },
-    retopo:{ src: 'Retopo.dc.html?embed=1', frame: null, ready: false, label: 'Retopo' },
-    recipe:{ src: 'Recipe.dc.html?embed=1', frame: null, ready: false, label: 'Recipe' },
-    bake:  { src: 'Bake.dc.html?embed=1', frame: null, ready: false, label: 'Bake' },
-    csg:   { src: 'Boolean.dc.html?embed=1', frame: null, ready: false, label: 'Boolean' },
-    uv:    { src: 'UVUnwrap.dc.html?embed=1', frame: null, ready: false, label: 'UV Unwrap' },
-    paint: { src: 'TexturePaint.dc.html?embed=1', frame: null, ready: false, label: 'Paint' },
-    weightpaint: { src: 'WeightPaint.dc.html?embed=1', frame: null, ready: false, label: 'Weight Paint' },
-    morph: { src: 'Morph.dc.html?embed=1', frame: null, ready: false, label: 'Morph' },
-    bakemaps: { src: 'BakeMaps.dc.html?embed=1', frame: null, ready: false, label: 'Bake Maps' },
-    curves: { src: 'Curves.dc.html?embed=1', frame: null, ready: false, label: 'Curves' },
-    humangen: { src: 'HumanGen.dc.html?embed=1', frame: null, ready: false, label: 'HumanGen' },
-    hairstudio: { src: 'HairStudio.dc.html?embed=1', frame: null, ready: false, label: 'Hair Studio' },
-  };
+  const TOOLS = {};
+  // ============ TOOL_REGISTRY — THE single source of truth (Audit V item 5) ============
+  // Every per-tool list in the shell derives from this array:
+  //   TOOLS (frame manager), CHAR_TOOLS (char follows you), TOOLDEFS (palette +
+  //   number keys), setTool's pane loop (already Object.keys(TOOLS)).
+  // Adding a tool = add ONE row here + a dock item + a pane div (+ sw CORE).
+  //   char:1 → the active character is delivered on entry.
+  //   key   → global number-key shortcut. pal → richer palette label.
+  window.TOOL_REGISTRY = [
+    { k:'showcase',   file:'Showcase.dc.html',    label:'Showcase',    icon:'◈', key:'9', char:1 },
+    { k:'playground', file:'Playground.dc.html',  label:'Playground',  icon:'⛹', char:1, pal:'Playground — be your character (WASD · gamepad · first-person · VR)' },
+    { k:'live',       file:'StreamStage.dc.html', label:'Stream Stage',icon:'🎥', char:1, pal:'Stream Stage — go live for OBS (face capture · chroma · pop-out)' },
+    { k:'rig',        file:'AutoRig.html',        label:'Rig',         icon:'⦿', key:'1' },
+    { k:'mocap',      file:'MoCap.dc.html',       label:'MoCap',       icon:'⛷', key:'2', char:1 },
+    { k:'motion',     file:'Motion.dc.html',      label:'Motion',      icon:'⌗', key:'3' },
+    { k:'edit',       file:'MeshEdit.dc.html',    label:'Edit',        icon:'✎', key:'4', char:1 },
+    { k:'sculpt',     file:'Sculpt.dc.html',      label:'Sculpt',      icon:'✺', key:'5', char:1 },
+    { k:'hair',       file:'HairExtract.dc.html', label:'Hair',        icon:'〰', char:1 },
+    { k:'pose',       file:'Pose.dc.html',        label:'Pose',        icon:'⟁', key:'6', char:1 },
+    { k:'physics',    file:'Physics.dc.html',     label:'Physics',     icon:'≈', key:'7', char:1 },
+    { k:'bake',       file:'Bake.dc.html',        label:'Bake',        icon:'☀', key:'8', char:1 },
+    { k:'decimate',   file:'Decimate.dc.html',    label:'Decimate',    icon:'◧', char:1 },
+    { k:'vat',        file:'VAT.dc.html',         label:'VAT Bake',    icon:'⧈', char:1, pal:'VAT Bake — bake a clip into a texture for zero-cost GPU replay' },
+    { k:'stage',      file:'Stage.dc.html',       label:'Stage',       icon:'⊞', char:1, pal:'Stage — assemble a multi-character scene, export as one glTF' },
+    { k:'doctor',     file:'MeshDoctor.dc.html',  label:'Mesh Doctor', icon:'✚', char:1, pal:'Mesh Doctor — audit & auto-fix topology' },
+    { k:'shaderlab',  file:'ShaderLab.dc.html',   label:'Shader Lab',  icon:'◈', char:1, pal:'Shader Lab — node-graph shader editor' },
+    { k:'director',   file:'Director.dc.html',    label:'Director',    icon:'🎬', char:1, pal:'Director — camera sequencer + video render-out' },
+    { k:'lipsync',    file:'Lipsync.dc.html',     label:'Lipsync',     icon:'👄', char:1, pal:'Lipsync — audio → talking character' },
+    { k:'timeline',   file:'Timeline.dc.html',    label:'Timeline',    icon:'≡', char:1, pal:'Timeline — blend clips into one performance (NLA)' },
+    { k:'retarget',   file:'Retarget.dc.html',    label:'Retarget',    icon:'⇄', char:1, pal:'Retarget — put any clip on any humanoid' },
+    { k:'retopo',     file:'Retopo.dc.html',      label:'Retopo',      icon:'▱', char:1, pal:'Retopo — draw clean quads over any mesh' },
+    { k:'recipe',     file:'Recipe.dc.html',      label:'Recipe',      icon:'⧉', char:1, pal:'Recipe — non-destructive pipeline graph' },
+    { k:'csg',        file:'Boolean.dc.html',     label:'Boolean',     icon:'⊖', char:1 },
+    { k:'uv',         file:'UVUnwrap.dc.html',    label:'UV Unwrap',   icon:'⬚', char:1 },
+    { k:'paint',      file:'TexturePaint.dc.html',label:'Paint',       icon:'▧', char:1 },
+    { k:'weightpaint',file:'WeightPaint.dc.html', label:'Weight Paint',icon:'✋', char:1 },
+    { k:'morph',      file:'Morph.dc.html',       label:'Morph',       icon:'◕', char:1 },
+    { k:'bakemaps',   file:'BakeMaps.dc.html',    label:'Bake Maps',   icon:'☰', char:1 },
+    { k:'curves',     file:'Curves.dc.html',      label:'Curves',      icon:'∿', char:1 },
+    { k:'humangen',   file:'HumanGen.dc.html',    label:'HumanGen',    icon:'☺', pal:'HumanGen — generate a base human' },
+    { k:'hairstudio', file:'HairStudio.dc.html',  label:'Hair Studio', icon:'〰' },
+  ];
+  TOOL_REGISTRY.forEach(t => { TOOLS[t.k] = { src: t.file + '?embed=1', frame: null, ready: false, label: t.label }; });
   let activeTool = 'library';
   let session = { characters: [], animations: [] };  // rigged-this-session
   let libData = { characters: [], animations: [] };
@@ -938,7 +952,7 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
   function saveLibPrefs(){ ppCookie('pp.libFilters', [...libFilters].join(',')); ppCookie('pp.libSort', libSort); ppCookie('pp.libNsfw', libNsfw ? '1' : '0'); }
   let libSearchQ = '';          // library name search
   let activeChar = null;        // shared character state — { it, deliveredTo:Set } follows you across tools
-  const CHAR_TOOLS = ['showcase', 'playground', 'live', 'mocap', 'pose', 'edit', 'sculpt', 'physics', 'decimate', 'doctor', 'shaderlab', 'director', 'lipsync', 'timeline', 'retarget', 'retopo', 'recipe', 'bake', 'hair', 'csg', 'uv', 'paint', 'weightpaint', 'morph', 'bakemaps', 'curves', 'vat', 'stage'];
+  const CHAR_TOOLS = TOOL_REGISTRY.filter(t => t.char).map(t => t.k);   // derived (Audit V item 5)
   let lastLoadedName = '';
 
   // ---------- toasts ----------
@@ -1947,13 +1961,20 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
   { const s = $('#libSearch'); if (s) s.addEventListener('input', e => { libSearchQ = e.target.value || ''; renderLib(); }); }
 
   // ---------- version / what's new ----------
-  const PP_VERSION = '0.9';
+  // Derived from the sw cache version (single source of truth) — Audit V fix
+  // for the “frozen at 0.9” finding. Falls back to 0.9 if the sw is absent.
+  let PP_VERSION = '0.9';
+  fetch('sw.js').then(r => r.text()).then(t => {
+    const m = t.match(/CACHE_VERSION\s*=\s*'pp-v(\d+)'/);
+    if (m) { PP_VERSION = '0.' + m[1]; const v = $('.brand .ver'); if (v) v.textContent = 'v' + PP_VERSION + ' · nothing is uploaded';
+      try { const seen = localStorage.getItem('pp.seenVersion'); if (seen && seen !== PP_VERSION) setTimeout(openWhatsNew, 900); } catch (e) {} }
+  }).catch(() => {});
   const WHATS_NEW = [
-    ['Universal Export', 'One dialog exports the active character to glTF / FBX / OBJ / STL / USDZ with up-axis + unit-scale presets for Blender, Unity, Unreal, Godot and 3D print.'],
-    ['Five new craft tools', 'Weight Paint (hand-paint skin influence), Bake Maps (normal / AO / curvature high\u2192low), Morph (blendshape editor), Curves (F-curve editor + onion skinning), and HDRI lighting in Showcase.'],
-    ['Runs fully offline', 'Installable as an app, precached by a service worker \u2014 open it on a plane. Durable storage keeps your library from being evicted, with one-click backup of everything.'],
-    ['Kinder on your GPU', 'Idle 3D workspaces are released automatically so long sessions don\u2019t exhaust WebGL contexts; a lost context now rebuilds instead of going black.'],
-    ['Build your own tool', 'The Tool Contract documents the whole message protocol with a copy-paste \u201cHello Tool\u201d template \u2014 add a module without reading the source.'],
+    ['⚡ Go live in one click', 'Stream Stage now chains webcam face capture, calibration, mic lipsync, blink/gaze life, hair sway and wing flaps behind a single button — pick a character, press Go live, allow the camera.'],
+    ['🪶 Wing life', 'Characters with wing bones get a procedural idle sway plus a proper flap burst every few seconds — no animation authoring needed, composes with everything else.'],
+    ['🎭 VTuber pipeline', 'Guided ARKit-52 face shapes in Morph, VRM 1.0 / 0.x export with spring bones, per-app presets for VSeeFace, Warudo and cluster, and a preflight check before you export.'],
+    ['🧭 “I’m here to…” personas', 'Tell the dock whether you’re sculpting, rigging, animating, vtubing or playing — it folds to your discipline without hiding anything. Also as cards in the Library.'],
+    ['🎮 Playground & Stage', 'Drive your character with WASD or a gamepad in a physics playground, or block out multi-character scenes with props and cameras in Stage.'],
   ];
   function renderWhatsNew() {
     const body = $('#wnBody'); if (!body) return; body.innerHTML = '';
@@ -1971,8 +1992,7 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
   { const b = $('#btnVersion'); if (b) b.addEventListener('click', openWhatsNew); }
   { const c = $('#wnClose'); if (c) c.addEventListener('click', closeWhatsNew); }
   { const m = $('#whatsNew'); if (m) m.addEventListener('click', e => { if (e.target === m) closeWhatsNew(); }); }
-  // auto-open once per new version for returning users (never on a fresh first run)
-  try { const seen = localStorage.getItem('pp.seenVersion'); if (seen && seen !== PP_VERSION) setTimeout(openWhatsNew, 900); } catch (e) {}
+  // auto-open per new version happens after the sw version fetch resolves (above)
 
   // ---------- first-brew guided tour ----------
   const TOUR = [
@@ -1980,6 +2000,7 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
     ['☺', '1 · Get a character', 'Start with nothing: open <b>HumanGen</b> to generate a base character, or drag your own <span style="font-family:var(--font-mono);">.glb / .fbx / .obj</span> anywhere onto the Library. Samples work too.'],
     ['⦿', '2 · Rig &amp; pose it', 'Send a mesh to <b>Rig</b> to auto-build a skeleton, fix any joint by hand in <b>Weight Paint</b>, then drag it into a pose in <b>Pose</b> (or describe one with Text-to-Pose).'],
     ['⤒', '3 · Export anywhere', 'Hit <b>Export</b> in the top bar for glTF / FBX / OBJ / STL / USDZ with the right up-axis for Blender, Unity, Unreal or Godot. Your character always follows you between tools.'],
+    ['🎥', '4 · Or become it', 'Give it a face in <b>Morph</b> (guided ARKit shapes), then open <b>Live</b> and press <b>⚡ Go live</b> — your webcam drives the face, your mic drives the mouth, and OBS captures the popped-out stage.'],
   ];
   let tourI = 0;
   function renderTour() {

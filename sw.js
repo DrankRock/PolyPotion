@@ -13,7 +13,7 @@
        plane. (True vendoring is still better; this is the client-side half.)
    Bump CACHE_VERSION whenever shell files change so clients pick them up.
    ============================================================ */
-const CACHE_VERSION = 'pp-v69';
+const CACHE_VERSION = 'pp-v77';
 const CORE_CACHE = CACHE_VERSION + '-core';
 const RUNTIME_CACHE = CACHE_VERSION + '-runtime';
 const CDN_CACHE = CACHE_VERSION + '-cdn';
@@ -25,6 +25,8 @@ const CORE = [
   'theme.js',
   'support.js',
   'manifest.webmanifest',
+  'icons/icon.svg',
+  'icons/icon-maskable.svg',
   // tools
   'AutoRig.html',
   'Showcase.dc.html',
@@ -78,6 +80,65 @@ const CORE = [
   'Curves.dc.html',
   'Handbook.dc.html',
   'ToolContract.dc.html',
+  'LibraryEdit.dc.html',
+  'Privacy.html',
+  'Terms.html',
+  'Notices.html',
+  'RigGuide.html',
+  'PolyPotion Audit V.dc.html',
+  'PolyPotion Audit VI - Sculpt.dc.html',
+  // every remaining same-origin engine/worker/helper — “open any tool with
+  // zero network” now actually holds (Audit V: CORE covered ~1/3 of engines)
+  'studio3D_scripts/ao-engine.js',
+  'studio3D_scripts/app.js',
+  'studio3D_scripts/bakemaps-engine.js',
+  'studio3D_scripts/chunk-loader.js',
+  'studio3D_scripts/csg-engine.js',
+  'studio3D_scripts/curve-engine.js',
+  'studio3D_scripts/decimate-engine.js',
+  'studio3D_scripts/director-engine.js',
+  'studio3D_scripts/doctor-engine.js',
+  'studio3D_scripts/edit-session.js',
+  'studio3D_scripts/engine.js',
+  'studio3D_scripts/exporter.js',
+  'studio3D_scripts/fbx-export.js',
+  'studio3D_scripts/human-body.js',
+  'studio3D_scripts/lipsync-engine.js',
+  'studio3D_scripts/mc-engine.js',
+  'studio3D_scripts/mesh-engine.js',
+  'studio3D_scripts/morph-engine.js',
+  'studio3D_scripts/motion-engine.js',
+  'studio3D_scripts/pack.js',
+  'studio3D_scripts/physics-engine.js',
+  'studio3D_scripts/pose-engine.js',
+  'studio3D_scripts/pose-library.js',
+  'studio3D_scripts/presets.js',
+  'studio3D_scripts/qem.js',
+  'studio3D_scripts/recipe-engine.js',
+  'studio3D_scripts/remesh.js',
+  'studio3D_scripts/retopo-engine.js',
+  'studio3D_scripts/sculpt-engine.js',
+  'studio3D_scripts/shader-glue.js',
+  'studio3D_scripts/shader-lib.js',
+  'studio3D_scripts/shaderlab-engine.js',
+  'studio3D_scripts/skin-worker.js',
+  'studio3D_scripts/support.js',
+  'studio3D_scripts/template.js',
+  'studio3D_scripts/texture-engine.js',
+  'studio3D_scripts/thumbnailer.js',
+  'studio3D_scripts/timeline-engine.js',
+  'studio3D_scripts/uv-engine.js',
+  'studio3D_scripts/uv-worker.js',
+  'studio3D_scripts/wasm-mesh.js',
+  'studio3D_scripts/wasm-physics.js',
+  'studio3D_scripts/weightpaint-engine.js',
+  // AutoRig's own module set (AutoRig.html was precached; its code was not)
+  'rig_scripts/app.js',
+  'rig_scripts/engine.js',
+  'rig_scripts/fbx-export.js',
+  'rig_scripts/presets.js',
+  'rig_scripts/skin-worker.js',
+  'rig_scripts/template.js',
 ];
 
 // NOTE: keep in sync with the import maps + engine imports. cdn.jsdelivr.net

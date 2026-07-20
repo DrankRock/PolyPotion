@@ -2,6 +2,17 @@
 
 ## NEXT SESSION — Chapter V repairs, in order (see `PolyPotion Audit V.dc.html`)
 
+### QUEUED FIRST: Sculpt "new Blender" pass (user ask 2026-07-20) — full spec in todos
+Engine (sculpt-engine.js): crease/clay-strips/scrape/snake-hook/layer brushes;
+REDO stack; falloff curves; pressure→radius. Local detail: dyntopo-lite
+(edge-split under brush), mask blur/grow/shrink, Y/Z symmetry. UI: brush
+hotkeys, matcaps, reference-image overlay, before/after. Then a sculpt-focused
+audit chapter — known finds already: undo history WIPED on subdivide
+(_rebuildFromUnique does _undo=[]), export drops UVs/materials (texture loss on
+roundtrip!), O(n) dab gather needs spatial hash past ~200k tris, remesh.js
+exists but unwired, displacement→normal-map bake via BakeMaps is the killer
+missing feature.
+
 Chapter V (2026-07-19) is a fresh full-solution sweep: shell, sw, manifest,
 docs, seams. Engines are healthy; the breaks are all at the shell/PWA layer.
 Fix in this order — items 1–3 are the CRIT/BUG tier, all in index.html/sw.js:
@@ -25,7 +36,9 @@ Fix in this order — items 1–3 are the CRIT/BUG tier, all in index.html/sw.js
       listener — rebroadcast studio:loadCharBuffer from the embedded frame).
 - [ ] **5. Tool registry (M)** — one TOOL_REGISTRY generates dock/palette/
       TOOLS/CHAR_TOOLS/panes/stHint (+ stamps sw CORE). Do BEFORE GUI phase 2.
-- [ ] **6. PWA honesty (S–M)** — real icons (manifest 404s block the install
+- [x] **6. PWA honesty (S–M)** — **SHIPPED pp-v70–71 (icons SVG, What's New
+      unfrozen, tour step 4, full engine+docs precache; PNG icons/social card
+      still owed — canvas sandbox down)** — real icons (manifest 404s block the install
       prompt entirely; render the boot-splash flask to 192/512/maskable);
       precache the missing ~28 engines + rig_scripts/* + exporter/chunk-loader/
       pack/thumbnailer + legal/docs pages; PP_VERSION frozen at 0.9 → derive
@@ -311,6 +324,89 @@ Phase 2 ideas, in order of value:
    AND presets generate from one list.
 
 ## Log
+
+- 2026-07-20 — **Sculpt export keeps textures** (pp-v77, Audit VI CRIT fix).
+  _ingest now captures per-corner UVs + the source material; exportGLB, when
+  topology is unchanged, exports non-indexed with those UVs + a clone of the
+  original material (maps intact), so generate→texture→sculpt→save no longer
+  guts the character. If a subdivide/dyntopo/relax changed topology the UVs
+  can't align — it falls back to grey AND toasts loudly ('re-bake/re-texture'),
+  plus a multi-material warning. _topoChanged flag drives it. Remaining Audit VI:
+  normal-map bake, remesh wiring, spatial hash, pressure→radius, checkpoints.
+  Files: sculpt-engine.js, Sculpt.dc.html, sw.js → pp-v77.
+
+- 2026-07-20 — **Sculpt audit written** (`PolyPotion Audit VI - Sculpt.dc.html`,
+  pp-v76). Post-pass sweep of sculpt-engine.js + Sculpt.dc.html. 3 GOOD (redo +
+  topology-undo fix + brush/mask/symmetry set — all shipped this session), then
+  the open finds: CRIT — export drops UVs/materials/textures (exportGLB builds a
+  bare grey material, weld discards UV seams → save silently guts a textured
+  character; the headline generate→texture→sculpt→export flow loses work); weld
+  tolerance fixed q=4000 not scale-relative; export normals always smoothed.
+  Horizon: normal-map bake of sculpt detail → low-poly via BakeMaps (the killer
+  feature; before/after snapshot already IS the low-poly), remesh.js wired as
+  dyntopo's clean-density partner, spatial hash for the O(n) dab loop,
+  pressure→radius + falloff curves, OPFS checkpoints. VR + layers parked. Repair
+  order: fix export first, then bake. Added to sw CORE. Files: Audit VI, sw.js v76.
+
+- 2026-07-20 — **Sculpt "new Blender" pass A+B+C** (pp-v73/74). Engine
+  (sculpt-engine.js) + Sculpt.dc.html. A: +4 brushes (crease, clay strips,
+  scrape, snake hook with per-step re-anchor), full REDO stack (Ctrl+Shift+Z /
+  Ctrl+Y), Blender-style brush hotkeys (D/I/S/G/P/F/M/C/L/V/K via onBrushKey),
+  studio:redo wired, and rebuild no longer silently wipes history — keeps one
+  restorePreRebuild() point. B: mask blur/grow/shrink over the adjacency graph,
+  multi-axis symmetry (X/Y/Z picker, _mirror() generalizes the old -P.x).
+  C: material presets (clay/wax/shiny/matte via setShading), before/after
+  toggle (captures _origPos at load), tri-budget warning + "Send to Decimate"
+  handoff over 150k tris. Fixed a header-overflow regression (brush toolbar
+  now flex-shrinks + scrolls; status chip stays on-canvas). Both files
+  normalized CRLF→LF (they were mixed — caused several failed edits).
+  STILL OPEN: dyntopo-lite (auto edge-split under brush — todo 19) and the
+  Sculpt audit chapter (todo 15: export drops UVs/materials, O(n) dab gather
+  perf cliff ~200k, no displacement→normal-map bake, remesh.js unwired).
+
+- 2026-07-20 — **TOOL_REGISTRY** (pp-v72, Audit V item 5). One source of truth:
+  window.TOOL_REGISTRY [{k, file, label, icon, key, char, pal}] in index.html
+  (above TOOLS). Derived from it: TOOLS (forEach → src/frame/ready/label),
+  CHAR_TOOLS (filter t.char), TOOLDEFS + COMMANDS in the palette IIFE (lazy
+  getters — registry lives in the later script block, so both resolve
+  window.TOOL_REGISTRY at call time, not parse time; number-key handler uses
+  TOOLDEFS.list). setTool's pane loop was already Object.keys(TOOLS) (pp-v66).
+  Old TOOLDEFS array left as dead __unusedOldDefs (palette block; harmless,
+  remove next pass). Palette gained Decimate/Boolean/Hair entries for free.
+  Adding a tool now = 1 registry row + dock item + pane div + sw CORE.
+  NOT yet registry-driven: dock DOM (static HTML), stHint chain, sw CORE,
+  Handbook, PERSONAS cats. Files: index.html, sw.js → pp-v72.
+
+- 2026-07-20 — **PWA honesty, part 2: full precache** (pp-v71). CORE now
+  lists ALL same-origin code: +43 studio3D_scripts engines/workers/helpers
+  (exporter, pack, chunk-loader, thumbnailer, every *-engine.js, both
+  workers, wasm shims), all 6 rig_scripts modules (AutoRig.html was cached
+  but its code wasn't), LibraryEdit.dc.html, legal/docs pages (Privacy,
+  Terms, Notices, RigGuide) and Audit V. “Fresh offline visit to any tool”
+  now holds; /data/ stays runtime-cached only. Presets folder
+  (studio3D_scripts/presets/) intentionally excluded — lazy data.
+  Files: sw.js → pp-v71, PROGRESS.md. Audit V item 6: done except PNG
+  icon/social-card renders (canvas sandbox outage 2026-07-20).
+
+- 2026-07-20 — **PWA honesty, part 1** (pp-v70). Audit V item 6, partial:
+  • **Icons exist now** — icons/icon.svg (rounded flask on wood gradient,
+    potion fill + bubbles + sparkle) and icon-maskable.svg (safe-zone padded).
+    Manifest rewritten to SVG icons (Chrome accepts SVG for install prompt);
+    favicon + apple-touch-icon links point at icon.svg. PNG renders still
+    owed (run_script canvas sandbox timed out 3×, even on a 64px probe —
+    retry another session; social-card.png og:image also still missing).
+  • **What's New unfrozen** — PP_VERSION now derived from sw.js's
+    CACHE_VERSION at runtime (fetch + regex, falls back to 0.9); the brand
+    badge shows the live version; auto-open once per new version works again.
+    Bullets rewritten for the current suite (Go live, wing life, VTuber
+    pipeline, personas, Playground/Stage). Old duplicated-array remnant
+    removed (was a syntax hazard from a partial edit — file is clean).
+  • **Tour step 4 "Or become it"** — Morph → Live → Go live → OBS, so the
+    tour finally knows the suite is a VTuber studio.
+  • icons + manifest added to sw CORE.
+  Files: index.html, manifest.webmanifest, icons/*.svg (new), sw.js → pp-v70.
+  Remaining from item 6: engine precache enumeration (~28 files), legal/docs
+  pages in CORE, PNG icon renders.
 
 - 2026-07-19 — **Import-base sweep** (pp-v69). The StreamStage crash class
   (dynamic import() resolving against the runtime script's base instead of

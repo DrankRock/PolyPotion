@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<script src="theme.js"></script>
+<style>
+  html{scroll-behavior:smooth;}
+  html,body{margin:0;padding:0;background:var(--bg);}
+  *{box-sizing:border-box;}
+  #fa ::-webkit-scrollbar{width:10px;height:10px;}
+  #fa ::-webkit-scrollbar-track{background:var(--gutter);}
+  #fa ::-webkit-scrollbar-thumb{background:var(--edge);border:2px solid var(--gutter);border-radius:6px;}
+  #fa section[id]{scroll-margin-top:22px;}
+  #fa a{color:inherit;}
+  #fa a:hover{color:var(--accent);}
+</style>
+</helmet>
+
+<div id="fa" style="display:flex;align-items:flex-start;min-height:100vh;width:100%;background:var(--bg);color:var(--text);font-family:var(--font-ui);font-size:14px;line-height:1.65;-webkit-font-smoothing:antialiased;">
+
+  <aside style="position:sticky;top:0;height:100vh;width:264px;flex:none;background:var(--panel);border-right:1px solid var(--seam);overflow-y:auto;padding:20px 14px 40px;">
+    <div style="display:flex;align-items:center;gap:9px;padding:0 6px 14px;">
+      <div style="width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--accent),var(--wood-dark));color:var(--on-accent);font-weight:700;font-size:15px;">✺</div>
+      <div>
+        <div style="font-weight:700;letter-spacing:.05em;font-size:13px;">POLYPOTION</div>
+        <div style="font-family:var(--font-mono);font-size:9px;color:var(--muted);letter-spacing:.12em;">CHAPTER VI · THE SCULPT AUDIT</div>
+      </div>
+    </div>
+
+    <sc-for list="{{ nav }}" as="n" hint-placeholder-count="5">
+      <a href="{{ n.href }}" style="{{ n.style }}">
+        <span style="{{ n.dot }}"></span>
+        <span style="flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ n.label }}</span>
+        <span style="font-family:var(--font-mono);font-size:9.5px;color:var(--muted);">{{ n.count }}</span>
+      </a>
+    </sc-for>
+
+    <div style="margin-top:20px;padding:12px 10px;border-top:1px solid var(--seam);">
+      <div style="font-family:var(--font-mono);font-size:9.5px;letter-spacing:.12em;color:var(--muted);margin-bottom:9px;">TAGS</div>
+      <sc-for list="{{ legend }}" as="l" hint-placeholder-count="5">
+        <div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:9px;">
+          <span style="flex:none;width:52px;text-align:center;font-family:var(--font-mono);font-size:9px;font-weight:700;padding:3px 0;border-radius:5px;color:{{ l.color }};background:{{ l.bg }};border:1px solid {{ l.border }};">{{ l.tag }}</span>
+          <span style="font-size:11px;color:var(--text-2);line-height:1.45;">{{ l.label }}</span>
+        </div>
+      </sc-for>
+    </div>
+    <div style="margin-top:12px;padding:10px 8px;font-size:11px;line-height:1.6;color:var(--muted);border-top:1px solid var(--seam);">Written after the "new Blender" sculpt pass (pp-v73→75). The pass fixed the two data-loss bugs and shipped ten features; this chapter records what the tool still can't do that a serious sculptor expects, and the two features that would make it genuinely covetable.</div>
+  </aside>
+
+  <main id="fa-main" style="flex:1;min-width:0;max-width:920px;padding:40px 56px 140px;">
+
+    <a href="index.html" style="display:inline-flex;align-items:center;gap:8px;font-size:12.5px;font-weight:700;color:var(--accent);text-decoration:none;margin-bottom:22px;padding:8px 14px;border:1px solid var(--seam);border-radius:8px;background:var(--panel);">← Back to Studio</a>
+
+    <header style="margin-bottom:16px;">
+      <div style="font-family:var(--font-mono);font-size:11px;letter-spacing:.14em;color:var(--accent);margin-bottom:10px;">CHAPTER VI · SCULPT · JULY 20, 2026</div>
+      <h1 style="font-size:36px;font-weight:700;letter-spacing:-.015em;line-height:1.1;margin:0 0 14px;">The brushes feel like Blender. The round-trip doesn't yet.</h1>
+      <p style="font-size:16px;color:var(--text-2);margin:0;max-width:690px;">The sculpt pass turned a five-brush toy into a fourteen-brush surface tool with dyntopo, masks, symmetry axes, redo and material preview. As a place to <i>push clay</i> it now holds its own. But a sculptor's mesh doesn't live in a vacuum — it arrives textured and rigged, and it has to leave the same way. That's where the tool still quietly breaks: <b style="color:var(--text);">saving a sculpt discards the character's UVs, materials and textures</b>, and the one feature that would make browser-sculpting genuinely worth doing — <b style="color:var(--text);">baking the detail down to a normal map</b> — isn't wired, even though the tool it needs is already in the suite.</p>
+    </header>
+
+    <section style="margin:20px 0 8px;padding:18px 22px;border:1px solid var(--seam);border-radius:12px;background:var(--panel);display:flex;gap:0;">
+      <sc-for list="{{ score }}" as="sc" hint-placeholder-count="4">
+        <div style="{{ sc.style }}">
+          <div style="font-family:var(--font-mono);font-size:26px;font-weight:700;color:{{ sc.hue }};">{{ sc.n }}</div>
+          <div style="font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-top:2px;">{{ sc.label }}</div>
+        </div>
+      </sc-for>
+    </section>
+
+    <sc-for list="{{ sections }}" as="s" hint-placeholder-count="4">
+      <section id="{{ s.id }}" data-doc style="padding:38px 0 8px;border-top:1px solid var(--seam);margin-top:30px;">
+        <div style="display:flex;align-items:center;gap:13px;margin-bottom:8px;">
+          <div style="{{ s.glyphBox }}">{{ s.glyph }}</div>
+          <div>
+            <div style="font-family:var(--font-mono);font-size:10.5px;letter-spacing:.12em;color:{{ s.hue }};margin-bottom:2px;">{{ s.kicker }}</div>
+            <h2 style="font-size:23px;font-weight:700;margin:0;">{{ s.title }}</h2>
+          </div>
+        </div>
+        <p style="font-size:15px;color:var(--text-2);margin:0 0 20px;max-width:690px;">{{ s.intro }}</p>
+
+        <div style="display:flex;flex-direction:column;gap:13px;">
+          <sc-for list="{{ s.findings }}" as="f" hint-placeholder-count="3">
+            <div style="border:1px solid var(--seam);border-radius:11px;background:var(--panel);overflow:hidden;">
+              <div style="display:flex;align-items:flex-start;gap:13px;padding:15px 17px 6px;">
+                <span style="flex:none;margin-top:1px;width:56px;text-align:center;font-family:var(--font-mono);font-size:9px;font-weight:700;padding:4px 0;border-radius:6px;color:{{ f.color }};background:{{ f.bg }};border:1px solid {{ f.border }};">{{ f.tag }}</span>
+                <div style="flex:1;">
+                  <div style="font-weight:700;font-size:15px;color:var(--text);margin-bottom:5px;">{{ f.title }}</div>
+                  <div style="font-size:13.5px;color:var(--text-2);line-height:1.62;">{{ f.why }}</div>
+                </div>
+                <span style="flex:none;font-family:var(--font-mono);font-size:10px;color:var(--muted);padding:3px 9px;border:1px solid var(--edge);border-radius:20px;">{{ f.effort }}</span>
+              </div>
+              <div style="display:flex;gap:10px;padding:9px 17px 14px 86px;">
+                <span style="flex:none;font-family:var(--font-mono);font-size:9.5px;letter-spacing:.1em;color:{{ s.hue }};padding-top:2px;">DO →</span>
+                <div style="font-size:13px;color:var(--text);line-height:1.6;">{{ f.todo }}</div>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </section>
+    </sc-for>
+
+    <section style="padding:34px 0 0;border-top:1px solid var(--seam);margin-top:30px;">
+      <p style="color:var(--text-2);font-size:14px;line-height:1.7;max-width:690px;margin:0 0 10px;"><b style="color:var(--text);">The order is obvious.</b> Fix the export first — a sculpt tool that destroys the character's textures on save is worse than no tool, because the damage is silent. Then wire the normal-map bake: it's the reason to sculpt in a browser at all, and BakeMaps already does the hard part. Everything after that is refinement — a spatial hash so dyntopo can run past 200k without stutter, a remesh option to clean the density dyntopo creates, pressure→radius, and the checkpoint/autosave that ties sculpt into the wider brew-history idea. None of it needs a server; all of it composes with tools already shipped.</p>
+      <p style="color:var(--muted);font-size:12.5px;margin:14px 0 0;">Companion to the Chapter V full-solution audit. Source: sculpt-engine.js + Sculpt.dc.html as of pp-v75. Constraint held: PolyPotion stays a static, client-side site.</p>
+    </section>
+
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { activeId: 'shipped' };
+
+  componentDidMount() {
+    this._io = new IntersectionObserver((entries) => {
+      entries.forEach(e => { if (e.isIntersecting) this.setState({ activeId: e.target.id }); });
+    }, { rootMargin: '-6% 0px -84% 0px', threshold: 0 });
+    setTimeout(() => { document.querySelectorAll('#fa-main section[id]').forEach(s => this._io.observe(s)); }, 80);
+  }
+  componentWillUnmount() { if (this._io) this._io.disconnect(); }
+
+  hueFor(tag) {
+    if (tag === 'GOOD') return 'var(--good)';
+    if (tag === 'PRO') return 'var(--new)';
+    if (tag === 'SPARK') return 'var(--honey)';
+    if (tag === 'NOTE') return 'var(--muted)';
+    return 'var(--danger)';
+  }
+  tagStyle(tag) {
+    const h = this.hueFor(tag);
+    return { color: h, bg: 'color-mix(in srgb, ' + h + ' 14%, transparent)', border: 'color-mix(in srgb, ' + h + ' 42%, transparent)' };
+  }
+
+  sectionsData() {
+    return [
+      {
+        id: 'shipped', glyph: '✓', hue: 'var(--good)', kicker: 'WHAT THE PASS SHIPPED — RECORDED SO IT STAYS FIXED',
+        title: 'Fourteen brushes, and the two data-loss bugs are gone',
+        intro: 'The "new Blender" pass (pp-v73\u201375) was both features and repairs. Before listing what\u2019s still missing, here\u2019s what now works \u2014 including two silent bugs this very audit flagged and the pass then closed.',
+        findings: [
+          { tag: 'GOOD', effort: '\u2014', title: 'Redo exists, and topology ops no longer eat your history', why: 'Ctrl+Shift+Z / Ctrl+Y walk a real redo stack. And subdivide/relax/dyntopo used to run this._undo = [] \u2014 silently discarding every prior stroke the moment you added resolution. They now keep one restore point (restorePreRebuild) that Ctrl+Z reaches. Those were the two scariest correctness bugs in the tool.', todo: 'Keep. The single-restore-point on topology change is a deliberate limit of buffer-based undo \u2014 the real fix is the checkpoint system below.' },
+          { tag: 'GOOD', effort: '\u2014', title: 'The brush set is now competitive', why: 'Draw, Inflate, Smooth, Grab, Pinch, Flatten, Mask \u2014 plus Crease (sharp valleys), Clay Strips (layered volume), Scrape (plane-cut peaks) and Snake Hook (pull tubes of geometry). Blender-style single-key hotkeys (D/I/S/G/P/F/M/C/L/V/K), Shift-to-smooth and Alt-to-invert on every brush. This is the vocabulary people actually sculpt with.', todo: 'Keep. Consider a radial/pie menu on a held key later, but the toolbar + hotkeys cover it.' },
+          { tag: 'GOOD', effort: '\u2014', title: 'Masks, symmetry and preview grew up', why: 'Mask blur / grow / shrink over the adjacency graph; symmetry on any of X / Y / Z; material presets (clay / wax / shiny / matte) to read form under different light; a before/after toggle against the original import; and a tri-budget warning that hands off to Decimate past 150k. Dyntopo adds detail under the brush without subdividing the whole mesh.', todo: 'Keep. Dyntopo\u2019s density is uneven by design \u2014 pair it with the remesh option below.' },
+        ],
+      },
+      {
+        id: 'roundtrip', glyph: '⚠', hue: 'var(--danger)', kicker: 'CORRECTNESS — THE MESH HAS TO LEAVE THE WAY IT CAME',
+        title: 'Saving a sculpt quietly guts the character',
+        intro: 'Sculpt welds the model into one editable surface to brush it \u2014 necessary, and fine in isolation. The damage is on the way out: what leaves Sculpt is not what came in, and nothing warns you.',
+        findings: [
+          { tag: 'CRIT', effort: 'M', title: '✓ FIXED pp-v77 — Export drops UVs, materials and every texture', why: 'exportGLB() builds a bare MeshStandardMaterial(0xcfcfcf) over position + welded index, with computeVertexNormals() and no UV attribute at all. Sculpt a character that arrived with a face texture, skin material and UV layout, hit "Save sculpt to Library", and what lands is a grey untextured blob \u2014 the weld already discarded the UV seams (welding by position merges UV-split corners). For the suite\u2019s headline flow (generate \u2192 texture \u2192 sculpt \u2192 export) this silently destroys work.', todo: 'Preserve a UV attribute through the weld (keep per-corner UVs; only merge position for adjacency), carry the original material/textures onto the export mesh, and if UVs can\u2019t survive a topology change, warn loudly ("sculpting changed topology \u2014 re-bake textures") instead of shipping grey.' },
+          { tag: 'PRO', effort: 'S', title: 'The weld tolerance is a fixed number, not scale-relative', why: 'q = 4000 hard-codes the position quantisation for welding corners into unique verts. A tiny model (a ring, a coin) under-welds into cracks; a huge one (a terrain tile) over-welds distinct verts together. symmetry-map.js already computes a scale-relative tolerance \u2014 the weld doesn\u2019t borrow it.', todo: 'Derive the weld epsilon from the model\u2019s bounding radius (the same basis symmetry-map uses), so the tool behaves at any import scale.' },
+          { tag: 'PRO', effort: 'S', title: 'Export normals are always smoothed \u2014 hard edges are lost', why: 'exportGLB() calls computeVertexNormals(), so a sculpt with intentional hard facets (Scrape planes, mechanical forms) exports fully smooth-shaded. There\u2019s no way to keep the flat-shaded look the viewport shows.', todo: 'Offer a "hard / smooth / auto (angle)" normal option on export, defaulting to auto with a ~40\u00b0 split \u2014 the sculpt already has the geometry for it.' },
+        ],
+      },
+      {
+        id: 'killer', glyph: '★', hue: 'var(--honey)', kicker: 'THE HORIZON — WHY SCULPT IN A BROWSER AT ALL',
+        title: 'The two features that make it covetable',
+        intro: 'Everything above keeps the tool honest. These make it a reason to open PolyPotion instead of Blender \u2014 and both are compositions over engines already in the suite.',
+        findings: [
+          { tag: 'SPARK', effort: 'M', title: 'Bake the sculpt detail down to a normal map (the killer feature)', why: 'The entire point of high-poly sculpting in a game pipeline is to bake that detail onto the low-poly original as a normal map, so real-time engines get the look at a fraction of the cost. BakeMaps already bakes normal / AO / curvature high\u2192low. Sculpt holds both meshes in hand (the before/after snapshot IS the low-poly original) but never offers the bake. This is the difference between a fun toy and a tool people put in their pipeline.', todo: 'A "Bake detail \u2192 normal map" action: hand the original (_origPos / _origCorner) as low-poly and the current surface as high-poly to bakemaps-engine, drop the resulting normal map onto the low-poly, save that. The projection is exactly what BakeMaps already does.' },
+          { tag: 'PRO', effort: 'M', title: 'Remesh — the clean-density partner to dyntopo', why: 'Dyntopo adds triangles unevenly under the brush; after a session the mesh is a patchwork of densities that\u2019s miserable to rig or UV. remesh.js exists in the codebase and is never surfaced in Sculpt. A voxel/uniform remesh gives you back an even, watertight surface to keep sculpting or hand off.', todo: 'A "Remesh" button (uniform target edge length) using remesh.js, mask-aware if cheap; pairs with dyntopo as build-detail-then-clean, and feeds Retopo/UV downstream.' },
+          { tag: 'PRO', effort: 'M', title: 'A spatial hash so dense sculpts stay smooth', why: '_dab and _beginGrab scan all nUnique vertices on every pointer-move to find the ones under the brush \u2014 O(n) per dab. It\u2019s fine at 50k, it stutters past ~200k, and dyntopo now makes hitting 200k easy. A uniform grid / hash keyed on position turns each dab into a small local lookup.', todo: 'Bucket verts into a coarse grid (cell ~ max brush radius) rebuilt on topology change; _dab queries the ~9\u201327 cells around the brush instead of the whole array.' },
+          { tag: 'PRO', effort: 'S', title: 'Pressure drives strength but not size; no per-brush curve', why: 'A pen\u2019s pressure scales strength (good) but never radius, and there\u2019s no falloff-curve choice \u2014 every brush uses one smoothstep. Real sculpting leans on pressure\u2192size and per-brush tips (sharp pinch vs soft clay).', todo: 'Add a pressure\u2192radius toggle and a 3-way falloff (smooth / sharp / constant) per brush; the dab already has the pressure value and the falloff is a one-line swap.' },
+          { tag: 'SPARK', effort: 'M', title: 'Checkpoints — a sculpt you can\u2019t lose', why: 'A long sculpt lives entirely in volatile buffers with a 24-step undo and one topology restore point. Close the tab, or run one bad relax past the undo window, and it\u2019s gone. This is the sculpt-scoped face of the suite-wide brew-history idea (Chapter V, ring 3).', todo: 'Periodic + manual checkpoints of {vpos, mask, corner} into OPFS keyed to the character; a small history strip to restore or fork. Also unlocks unlimited undo by paging old strokes to disk.' },
+          { tag: 'NOTE', effort: 'L', title: 'No VR sculpt, no layers — noted, not urgent', why: 'Two directions a mature sculpt tool eventually wants: WebXR two-controller sculpting (the suite already targets VR in Playground) and non-destructive sculpt layers (blendable passes of displacement). Both are large and neither blocks the pipeline today.', todo: 'Park until the pipeline gaps above are closed; revisit VR alongside the Playground XR work so they share the WebXR session plumbing.' },
+        ],
+      },
+    ];
+  }
+
+  renderVals() {
+    const active = this.state.activeId;
+    const raw = this.sectionsData();
+    const sections = raw.map(s => Object.assign({}, s, {
+      glyphBox: 'width:40px;height:40px;border-radius:9px;flex:none;display:flex;align-items:center;justify-content:center;font-size:20px;'
+        + 'background:color-mix(in srgb, ' + s.hue + ' 15%, transparent);color:' + s.hue
+        + ';border:1px solid color-mix(in srgb, ' + s.hue + ' 38%, transparent);',
+      findings: s.findings.map(f => Object.assign({}, f, this.tagStyle(f.tag))),
+    }));
+
+    const labels = { shipped: 'What shipped', roundtrip: 'Round-trip gaps', killer: 'The horizon' };
+    const nav = raw.map(s => ({
+      href: '#' + s.id, label: labels[s.id] || s.id, count: s.findings.length,
+      style: 'display:flex;align-items:center;gap:10px;padding:7px 8px;border-radius:6px;font-size:12.5px;font-weight:' + (active === s.id ? '700' : '500')
+        + ';text-decoration:none;margin-bottom:1px;color:' + (active === s.id ? 'var(--text)' : 'var(--muted)')
+        + ';background:' + (active === s.id ? 'var(--accent-dim)' : 'transparent') + ';',
+      dot: 'width:7px;height:7px;border-radius:2px;flex:none;background:' + (active === s.id ? 'var(--accent)' : 'var(--edge)') + ';',
+    }));
+
+    const legend = [
+      { tag: 'GOOD', label: 'Now right — recorded so it stays fixed' },
+      { tag: 'CRIT', label: 'Silent data loss a user hits today' },
+      { tag: 'PRO', label: 'Expected by any serious sculptor' },
+      { tag: 'SPARK', label: 'The reason to sculpt here at all' },
+      { tag: 'NOTE', label: 'Noted for later — not blocking' },
+    ].map(l => Object.assign(l, this.tagStyle(l.tag)));
+
+    const all = raw.flatMap(s => s.findings);
+    const cnt = t => all.filter(f => f.tag === t).length;
+    const cell = (i) => 'flex:1;text-align:center;' + (i ? 'border-left:1px solid var(--seam);' : '');
+    const score = [
+      { n: String(cnt('GOOD')), label: 'shipped this pass', hue: 'var(--good)' },
+      { n: String(cnt('CRIT')), label: 'silent data loss', hue: 'var(--danger)' },
+      { n: String(cnt('PRO')), label: 'expected gaps', hue: 'var(--new)' },
+      { n: String(cnt('SPARK')), label: 'covetable features', hue: 'var(--honey)' },
+    ].map((s, i) => Object.assign(s, { style: cell(i) }));
+
+    return { nav, legend, score, sections };
+  }
+}
+</script>
+</body>
+</html>

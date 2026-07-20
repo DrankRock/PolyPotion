@@ -85,6 +85,10 @@ export class SCEngine {
     this.radiusFrac = 0.13;      // fraction of model radius
     this.strength = 0.5;
     this.symmetry = true;
+    this.symAxis = 'x';        // 'x' | 'y' | 'z'
+    this.dyntopo = false;
+    this.detail = 0.4;
+    this._strokeRefined = false; this._lastRefine = null;
     this.invert = false;
     this.wire = false;
     this.turntable = false;
@@ -94,7 +98,7 @@ export class SCEngine {
     this._fbx = new FBXLoader(); this._gltf = new GLTFLoader(); this._obj = new OBJLoader();
     this._ray = new THREE.Raycaster(); this._ndc = new THREE.Vector2();
     this._painting = false; this._normalsDirty = false; this._posDirty = false;
-    this._undo = []; this._grab = null; this._shift = false;
+    this._undo = []; this._redo = []; this._grab = null; this._shift = false;
     this._wireMesh = null;
 
     // brush cursor ring
@@ -153,10 +157,19 @@ export class SCEngine {
     this._status('Baking surface…');
     const chunks = [];
     const gbox = new THREE.Box3();
+    // remember the source look so a sculpt can leave textured the way it arrived
+    this._srcMaterial = null; this._multiMat = false;
     for (const m of srcs) {
+      const mat = Array.isArray(m.material) ? m.material[0] : m.material;
+      if (mat) { if (!this._srcMaterial) this._srcMaterial = mat; else if (this._srcMaterial !== mat) this._multiMat = true; }
       let g = m.geometry; if (g.index) g = g.toNonIndexed(); g = g.clone();
       const pg = new THREE.BufferGeometry();
       pg.setAttribute('position', g.attributes.position.clone());
+      const n = g.attributes.position.count;
+      const uvSrc = g.attributes.uv;
+      const uv = new Float32Array(n * 2);
+      if (uvSrc) uv.set(uvSrc.array.subarray(0, n * 2));
+      pg.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
       pg.applyMatrix4(m.matrixWorld);
       pg.computeBoundingBox(); gbox.union(pg.boundingBox);
       chunks.push(pg);
@@ -170,8 +183,9 @@ export class SCEngine {
 
     // 3. concat all corners
     let total = 0; chunks.forEach(c => total += c.attributes.position.count);
-    const flat = new Float32Array(total * 3); let o = 0;
-    for (const c of chunks) { c.applyMatrix4(normM); const p = c.attributes.position; flat.set(p.array.subarray(0, p.count * 3), o); o += p.count * 3; c.dispose(); }
+    const flat = new Float32Array(total * 3); const uvFlat = new Float32Array(total * 2); let o = 0, uo = 0;
+    for (const c of chunks) { c.applyMatrix4(normM); const p = c.attributes.position; flat.set(p.array.subarray(0, p.count * 3), o); o += p.count * 3; const u = c.attributes.uv; if (u) { uvFlat.set(u.array.subarray(0, p.count * 2), uo); } uo += p.count * 2; c.dispose(); }
+    this._uvCorner = uvFlat;   // aligned to render corners; valid until topology changes
 
     this._status('Welding ' + (total).toLocaleString() + ' verts…');
     this._build(flat, total, name);
@@ -182,6 +196,7 @@ export class SCEngine {
   // ---- weld corners -> unique verts, build adjacency + mirror + render mesh ----
   _build(flat, nCorner, name) {
     this._disposeMesh();
+    this._topoChanged = false;
     this.modelName = (name || 'model').replace(/\.(glb|gltf|fbx|obj)$/i, '');
     this.nCorner = nCorner;
 
@@ -241,7 +256,8 @@ export class SCEngine {
     this._writePositions();
     this._writeColors();
     this._frame();
-    this._undo = [];
+    this._undo = []; this._redo = [];
+    this._origPos = this.vpos.slice(0); this._origCorner = this.corner.slice(0, this.nCorner); this._showOrig = false;
     this._changed();
   }
 
@@ -309,7 +325,7 @@ export class SCEngine {
       e.preventDefault();
       this._painting = true; this.controls.enableRotate = false;
       this._snapshot();
-      if (this.brush === 'grab') this._beginGrab(hit);
+      if (this.brush === 'grab' || this.brush === 'snake') this._beginGrab(hit);
       else this._applyBrush(hit.point, e.altKey);
     });
     window.addEventListener('pointerup', () => {
@@ -320,8 +336,18 @@ export class SCEngine {
   _bindKeys() {
     window.addEventListener('keydown', e => {
       if (e.key === 'Shift') this._shift = true;
-      if ((e.ctrlKey || e.metaKey) && (e.key === 'z' || e.key === 'Z')) { e.preventDefault(); this.undo(); }
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'z' || e.key === 'Z')) { e.preventDefault(); if (e.shiftKey) this.redo(); else this.undo(); }
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || e.key === 'Y')) { e.preventDefault(); this.redo(); }
       if (e.key === '[') this.setRadiusFrac(this.radiusFrac - 0.02);
+      // Blender-style brush hotkeys — the UI subscribes via onBrushKey
+      if (!e.ctrlKey && !e.metaKey && !e.altKey && !e.repeat && this.onBrushKey) {
+        const tag = document.activeElement && document.activeElement.tagName;
+        if (tag !== 'INPUT' && tag !== 'TEXTAREA' && tag !== 'SELECT') {
+          const map = { d: 'draw', i: 'inflate', s: 'smooth', g: 'grab', p: 'pinch', f: 'flatten', m: 'mask', c: 'crease', l: 'clay', v: 'scrape', k: 'snake' };
+          const b = map[e.key.toLowerCase()];
+          if (b) this.onBrushKey(b);
+        }
+      }
       if (e.key === ']') this.setRadiusFrac(this.radiusFrac + 0.02);
     });
     window.addEventListener('keyup', e => { if (e.key === 'Shift') this._shift = false; });
@@ -350,11 +376,23 @@ export class SCEngine {
   _effInvert() { return this.invert; }
 
   _snapshot() {
+    this._strokeRefined = false; this._lastRefine = null;
     this._undo.push({ vpos: this.vpos.slice(0), mask: this.mask.slice(0) });
     if (this._undo.length > 24) this._undo.shift();
+    this._redo = [];
   }
   undo() {
+    if (this._strokeRefined) { this._strokeRefined = false; return this.restorePreRebuild(); }
     const s = this._undo.pop(); if (!s) return false;
+    this._redo.push({ vpos: this.vpos.slice(0), mask: this.mask.slice(0) });
+    this.vpos.set(s.vpos); this.mask.set(s.mask);
+    this._recomputeNormals(); this._writePositions(); this._writeColors(); this._changed();
+    return true;
+  }
+
+  redo() {
+    const s = this._redo.pop(); if (!s) return false;
+    this._undo.push({ vpos: this.vpos.slice(0), mask: this.mask.slice(0) });
     this.vpos.set(s.vpos); this.mask.set(s.mask);
     this._recomputeNormals(); this._writePositions(); this._writeColors(); this._changed();
     return true;
@@ -362,16 +400,22 @@ export class SCEngine {
 
   _strokeMove(e) {
     const hit = this._pick(); this._updateCursor();
-    if (this.brush === 'grab') { if (this._grab) this._moveGrab(); return; }
+    if (this.brush === 'grab' || this.brush === 'snake') { if (this._grab) this._moveGrab(); return; }
     if (hit) this._applyBrush(hit.point, e.altKey);
   }
 
   // core deform — one dab at world point P
   _applyBrush(P, alt) {
     const eff = (this._shift && this.brush !== 'mask') ? 'smooth' : this.brush;
+    if (this.dyntopo && eff !== 'mask' && this.brush !== 'grab' && this.brush !== 'snake') {
+      const rr = this.worldRadius();
+      if (!this._lastRefine || this._lastRefine.distanceTo(P) > rr * this.detail * 0.7) {
+        if (this._refineRegion(P)) { this._strokeRefined = true; this._lastRefine = P.clone(); }
+      }
+    }
     const invert = (alt ? !this.invert : this.invert);
     this._dab(P, eff, invert, 1);
-    if (this.symmetry) this._dab(V(-P.x, P.y, P.z), eff, invert, -1);
+    if (this.symmetry) this._dab(this._mirror(P), eff, invert, -1);
     this._posDirty = true; this._normalsDirty = true;
   }
 
@@ -396,6 +440,48 @@ export class SCEngine {
       return;
     }
 
+    if (type === 'crease') {
+      // pinch toward centre + push down along averaged normal — sharp valleys
+      let cnx = 0, cny = 0, cnz = 0;
+      for (let k = 0; k < idx.length; k++) { const i = idx[k], w = wts[k]; cnx += vn[i * 3] * w; cny += vn[i * 3 + 1] * w; cnz += vn[i * 3 + 2] * w; }
+      const cnl = Math.hypot(cnx, cny, cnz) || 1; cnx /= cnl; cny /= cnl; cnz /= cnl;
+      const push = r * 0.1 * str * (invert ? 1 : -1);
+      for (let k = 0; k < idx.length; k++) {
+        const i = idx[k]; const w = wts[k] * str * (1 - msk[i]); if (w <= 0) continue;
+        vp[i * 3] += (P.x - vp[i * 3]) * w * 0.5 + cnx * push * wts[k];
+        vp[i * 3 + 1] += (P.y - vp[i * 3 + 1]) * w * 0.5 + cny * push * wts[k];
+        vp[i * 3 + 2] += (P.z - vp[i * 3 + 2]) * w * 0.5 + cnz * push * wts[k];
+      }
+      return;
+    }
+    if (type === 'clay' || type === 'scrape') {
+      // shared plane fit: weighted centroid + normal over the brush region
+      let px = 0, py = 0, pz = 0, pnx = 0, pny = 0, pnz = 0, ws = 0;
+      for (let k = 0; k < idx.length; k++) { const i = idx[k], w = wts[k]; px += vp[i * 3] * w; py += vp[i * 3 + 1] * w; pz += vp[i * 3 + 2] * w; pnx += vn[i * 3] * w; pny += vn[i * 3 + 1] * w; pnz += vn[i * 3 + 2] * w; ws += w; }
+      px /= ws; py /= ws; pz /= ws; const pnl = Math.hypot(pnx, pny, pnz) || 1; pnx /= pnl; pny /= pnl; pnz /= pnl;
+      if (type === 'clay') {
+        // clay strips: fill toward a plane offset ABOVE the surface — builds
+        // volume in flat layers instead of blobs (the Blender clay feel)
+        const off = r * 0.15 * (invert ? -1 : 1);
+        px += pnx * off; py += pny * off; pz += pnz * off;
+        const flip = invert ? -1 : 1;
+        for (let k = 0; k < idx.length; k++) {
+          const i = idx[k]; const w = wts[k] * str * 0.7 * (1 - msk[i]); if (w <= 0) continue;
+          const dot = (vp[i * 3] - px) * pnx + (vp[i * 3 + 1] - py) * pny + (vp[i * 3 + 2] - pz) * pnz;
+          if (dot * flip > 0) continue;               // fill up to the plane, never past it
+          vp[i * 3] -= pnx * dot * w; vp[i * 3 + 1] -= pny * dot * w; vp[i * 3 + 2] -= pnz * dot * w;
+        }
+      } else {
+        // scrape: flatten that ONLY cuts peaks down to the plane (never lifts)
+        for (let k = 0; k < idx.length; k++) {
+          const i = idx[k]; const w = wts[k] * str * (1 - msk[i]); if (w <= 0) continue;
+          const dot = (vp[i * 3] - px) * pnx + (vp[i * 3 + 1] - py) * pny + (vp[i * 3 + 2] - pz) * pnz;
+          if (dot <= 0) continue;                     // valley — leave it
+          vp[i * 3] -= pnx * dot * w; vp[i * 3 + 1] -= pny * dot * w; vp[i * 3 + 2] -= pnz * dot * w;
+        }
+      }
+      return;
+    }
     const sign = invert ? -1 : 1;
     if (type === 'smooth') {
       const adj = this.adj;
@@ -460,7 +546,7 @@ export class SCEngine {
     // mirror set
     let midx = null, mwts = null;
     if (this.symmetry) {
-      const MP = V(-P.x, P.y, P.z); midx = []; mwts = [];
+      const MP = this._mirror(P); midx = []; mwts = [];
       for (let i = 0; i < this.nUnique; i++) {
         const dx = this.vpos[i * 3] - MP.x, dy = this.vpos[i * 3 + 1] - MP.y, dz = this.vpos[i * 3 + 2] - MP.z;
         const d2 = dx * dx + dy * dy + dz * dz; if (d2 > r2) continue;
@@ -480,6 +566,19 @@ export class SCEngine {
     for (let k = 0; k < g.idx.length; k++) { const i = g.idx[k], w = g.wts[k]; vp[i * 3] += d.x * w; vp[i * 3 + 1] += d.y * w; vp[i * 3 + 2] += d.z * w; }
     if (g.midx) for (let k = 0; k < g.midx.length; k++) { const i = g.midx[k], w = g.mwts[k]; vp[i * 3] += -d.x * w; vp[i * 3 + 1] += d.y * w; vp[i * 3 + 2] += d.z * w; }
     g.last.copy(hitP);
+    // snake hook: re-anchor plane + region to the cursor each step so the
+    // stroke drags matter along its whole path instead of one fixed blob
+    if (this.brush === 'snake') {
+      g.plane.setFromNormalAndCoplanarPoint(this.camera.getWorldDirection(new THREE.Vector3()), hitP);
+      const r = this.worldRadius(), r2 = r * r;
+      const idx = [], wts = [];
+      for (let i = 0; i < this.nUnique; i++) {
+        const dx = vp[i * 3] - hitP.x, dy = vp[i * 3 + 1] - hitP.y, dz = vp[i * 3 + 2] - hitP.z;
+        const d2 = dx * dx + dy * dy + dz * dz; if (d2 > r2) continue;
+        const t = 1 - Math.sqrt(d2) / r; idx.push(i); wts.push(t * t * (3 - 2 * t) * (1 - this.mask[i]));
+      }
+      g.idx = idx; g.wts = wts; g.midx = null; g.mwts = null;
+    }
     this._posDirty = true; this._normalsDirty = true;
   }
 
@@ -509,7 +608,10 @@ export class SCEngine {
     return this.stats();
   }
   // rebuild adjacency/mirror/render from explicit unique verts + corner list
-  _rebuildFromUnique(vpos, mask, corner) {
+  _rebuildFromUnique(vpos, mask, corner, keepPre) {
+    this._topoChanged = true;   // welded corners renumbered — original UVs no longer align
+    // topology changed — keep ONE restore point (pre-op surface), not silence
+    if (!keepPre) this._preRebuild = { vpos: this.vpos.slice(0), mask: this.mask.slice(0), corner: this.corner.slice(0, this.nCorner) };
     const nUnique = vpos.length / 3, nCorner = corner.length;
     this.vpos = vpos; this.mask = mask; this.corner = corner;
     this.vnrm = new Float32Array(nUnique * 3); this.nUnique = nUnique; this.nCorner = nCorner;
@@ -527,7 +629,15 @@ export class SCEngine {
     this._geo = geo; this.mesh.geometry = geo;
     this._recomputeNormals(); this._writePositions(); this._writeColors();
     if (this._wireMesh) this._refreshWire();
-    this._undo = [];
+    this._undo = []; this._redo = [];
+  }
+
+  restorePreRebuild() {
+    const p = this._preRebuild; if (!p) return false;
+    this._preRebuild = null;
+    this._rebuildFromUnique(p.vpos, p.mask, p.corner);
+    this._changed();
+    return true;
   }
 
   // ---------------------------------------------------------- WASM SUBDIVIDE / RELAX
@@ -641,6 +751,102 @@ export class SCEngine {
   }
 
   // ---------------------------------------------------------- TOOL SETTERS
+  _mirror(P) {
+    if (this.symAxis === 'y') return V(P.x, -P.y, P.z);
+    if (this.symAxis === 'z') return V(P.x, P.y, -P.z);
+    return V(-P.x, P.y, P.z);
+  }
+  setSymAxis(a) { this.symAxis = (a === 'y' || a === 'z') ? a : 'x'; }
+  // mask editing: blur / grow / shrink over the vertex adjacency graph
+  blurMask(passes) {
+    if (!this.mask) return; const n = this.nUnique, adj = this.adj;
+    for (let p = 0; p < (passes || 2); p++) {
+      const out = new Float32Array(n);
+      for (let i = 0; i < n; i++) { const nb = adj[i]; let a = this.mask[i], c = 1; for (let j = 0; j < nb.length; j++) { a += this.mask[nb[j]]; c++; } out[i] = a / c; }
+      this.mask.set(out);
+    }
+    this._writeColors(); this._changed();
+  }
+  growMask(shrink) {
+    if (!this.mask) return; const n = this.nUnique, adj = this.adj;
+    const out = new Float32Array(n);
+    for (let i = 0; i < n; i++) {
+      let v = this.mask[i]; const nb = adj[i];
+      for (let j = 0; j < nb.length; j++) { const m = this.mask[nb[j]]; v = shrink ? Math.min(v, m) : Math.max(v, m); }
+      out[i] = v;
+    }
+    this.mask.set(out); this._writeColors(); this._changed();
+  }
+  setDyntopo(on) { this.dyntopo = !!on; }
+  setDetail(frac) { this.detail = Math.max(0.12, Math.min(0.9, frac)); }
+  // Adaptive local refinement: split in-brush faces whose edges exceed the
+  // target length, with red/green closure on neighbours so no cracks form.
+  _refineRegion(P) {
+    if (!this.mesh) return false;
+    const nF = this.nCorner / 3; if (nF > 220000) return false;
+    const r = this.worldRadius(), r2 = r * r;
+    const detail = Math.max(0.004, this.detail * r), detail2 = detail * detail;
+    const vp = this.vpos, corner = this.corner, n = this.nUnique;
+    const ekey = (a, b) => a < b ? a * n + b : b * n + a;
+    const el2 = (u, w) => { const dx = vp[u*3]-vp[w*3], dy = vp[u*3+1]-vp[w*3+1], dz = vp[u*3+2]-vp[w*3+2]; return dx*dx+dy*dy+dz*dz; };
+    const splitE = new Map(); let any = false;
+    for (let f = 0; f < nF; f++) {
+      const a = corner[3*f], b = corner[3*f+1], c = corner[3*f+2];
+      let inr = false;
+      const vs = [a, b, c];
+      for (let j = 0; j < 3; j++) { const v = vs[j]; const dx = vp[v*3]-P.x, dy = vp[v*3+1]-P.y, dz = vp[v*3+2]-P.z; if (dx*dx+dy*dy+dz*dz <= r2) { inr = true; break; } }
+      if (!inr) continue;
+      const pr = [[a,b],[b,c],[c,a]];
+      for (let j = 0; j < 3; j++) { const u = pr[j][0], w = pr[j][1]; if (el2(u, w) > detail2) { splitE.set(ekey(u, w), { u, w }); any = true; } }
+    }
+    if (!any) return false;
+    const newPos = Array.from(vp.subarray(0, n * 3));
+    const newMask = Array.from(this.mask.subarray(0, n));
+    for (const e of splitE.values()) { e.mid = newPos.length / 3; newPos.push((vp[e.u*3]+vp[e.w*3])/2, (vp[e.u*3+1]+vp[e.w*3+1])/2, (vp[e.u*3+2]+vp[e.w*3+2])/2); newMask.push((this.mask[e.u]+this.mask[e.w])/2); }
+    const midOf = (u, w) => { const e = splitE.get(ekey(u, w)); return e ? e.mid : -1; };
+    const out = []; const push = function() { for (let i = 0; i < arguments.length; i++) out.push(arguments[i]); };
+    for (let f = 0; f < nF; f++) {
+      const a = corner[3*f], b = corner[3*f+1], c = corner[3*f+2];
+      const ab = midOf(a, b), bc = midOf(b, c), ca = midOf(c, a);
+      const k = (ab>=0?1:0) + (bc>=0?1:0) + (ca>=0?1:0);
+      if (k === 0) { push(a, b, c); }
+      else if (k === 3) { push(a, ab, ca, ab, b, bc, ca, bc, c, ab, bc, ca); }
+      else if (k === 1) {
+        if (ab >= 0) push(a, ab, c, ab, b, c);
+        else if (bc >= 0) push(a, b, bc, a, bc, c);
+        else push(a, b, ca, b, c, ca);
+      } else {
+        if (ab >= 0 && bc >= 0) push(b, bc, ab, ab, bc, c, ab, c, a);
+        else if (bc >= 0 && ca >= 0) push(c, ca, bc, bc, ca, a, bc, a, b);
+        else push(a, ab, ca, ca, ab, b, ca, b, c);
+      }
+    }
+    this._rebuildFromUnique(new Float32Array(newPos), new Float32Array(newMask), Int32Array.from(out), true);
+    return true;
+  }
+  setShading(p) {
+    if (!this.mesh) return; const m = this.mesh.material;
+    const P = {
+      clay:  { roughness: 0.62, metalness: 0.0,  emissive: 0x000000, ei: 0 },
+      wax:   { roughness: 0.34, metalness: 0.0,  emissive: 0x2a0f0a, ei: 0.35 },
+      shiny: { roughness: 0.16, metalness: 0.12, emissive: 0x000000, ei: 0 },
+      matte: { roughness: 0.95, metalness: 0.0,  emissive: 0x000000, ei: 0 },
+    }[p] || null; if (!P) return;
+    m.roughness = P.roughness; m.metalness = P.metalness;
+    m.emissive = new THREE.Color(P.emissive); m.emissiveIntensity = P.ei; m.needsUpdate = true;
+    this.shading = p;
+  }
+  toggleOriginal(on) {
+    if (!this._origPos || !this.mesh) return false;
+    this._showOrig = on == null ? !this._showOrig : !!on;
+    const p = this._geo.attributes.position.array, src = this._showOrig ? this._origPos : this.vpos, corner = this._showOrig ? this._origCorner : this.corner;
+    // before/after only differs when topology is unchanged; if corner counts match, swap positions live
+    if (this._showOrig && this._origCorner.length === this.nCorner) {
+      for (let i = 0; i < this.nCorner; i++) { const vi = this._origCorner[i] * 3, o = i * 3; p[o] = this._origPos[vi]; p[o+1] = this._origPos[vi+1]; p[o+2] = this._origPos[vi+2]; }
+      this._geo.attributes.position.needsUpdate = true; this._recomputeNormals();
+    } else { this._writePositions(); this._recomputeNormals(); }
+    return this._showOrig;
+  }
   setBrush(b) { this.brush = b; }
   setRadiusFrac(v) { this.radiusFrac = Math.max(0.02, Math.min(0.6, v)); }
   setStrength(v) { this.strength = Math.max(0, Math.min(1, v)); }
@@ -689,10 +895,26 @@ export class SCEngine {
     if (!this.mesh) throw new Error('Nothing to export — load a model first');
     const { GLTFExporter } = await import('three/addons/exporters/GLTFExporter.js');
     const g = new THREE.BufferGeometry();
-    g.setAttribute('position', new THREE.Float32BufferAttribute(this.vpos.slice(0, this.nUnique * 3), 3));
-    g.setIndex(new THREE.BufferAttribute(Uint32Array.from(this.corner.subarray(0, this.nCorner)), 1));
-    g.computeVertexNormals();
-    const mesh = new THREE.Mesh(g, new THREE.MeshStandardMaterial({ color: 0xcfcfcf, roughness: 0.85 }));
+    const keepUV = !this._topoChanged && this._uvCorner && this._uvCorner.length === this.nCorner * 2;
+    let material;
+    if (keepUV) {
+      // topology intact — export non-indexed so original per-corner UVs ride along,
+      // and reuse the source material (textures/maps) so the character stays dressed
+      const pos = new Float32Array(this.nCorner * 3);
+      for (let i = 0; i < this.nCorner; i++) { const vi = this.corner[i] * 3, oo = i * 3; pos[oo] = this.vpos[vi]; pos[oo+1] = this.vpos[vi+1]; pos[oo+2] = this.vpos[vi+2]; }
+      g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+      g.setAttribute('uv', new THREE.Float32BufferAttribute(this._uvCorner.slice(0, this.nCorner * 2), 2));
+      g.computeVertexNormals();
+      material = this._srcMaterial ? this._srcMaterial.clone() : new THREE.MeshStandardMaterial({ color: 0xcfcfcf, roughness: 0.85 });
+      this._lastExportDegraded = this._multiMat ? 'multimat' : false;
+    } else {
+      g.setAttribute('position', new THREE.Float32BufferAttribute(this.vpos.slice(0, this.nUnique * 3), 3));
+      g.setIndex(new THREE.BufferAttribute(Uint32Array.from(this.corner.subarray(0, this.nCorner)), 1));
+      g.computeVertexNormals();
+      material = new THREE.MeshStandardMaterial({ color: 0xcfcfcf, roughness: 0.85 });
+      this._lastExportDegraded = this._uvCorner ? 'topo' : 'nouv';   // topo change dropped UVs, or model never had them
+    }
+    const mesh = new THREE.Mesh(g, material);
     mesh.name = (this.modelName || 'model') + '_sculpt';
     const scene = new THREE.Scene(); scene.add(mesh);
     const glb = await new Promise((res, rej) => new GLTFExporter().parse(scene, res, rej, { binary: true }));

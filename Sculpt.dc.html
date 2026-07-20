@@ -37,7 +37,7 @@
 <div id="sc-root" style=" display:flex;flex-direction:column;height:100vh;width:100%;overflow:hidden;background:var(--gutter);color:var(--text);font-family:var(--font-ui);font-size:13px;-webkit-font-smoothing:antialiased;user-select:none;">
 
   <!-- TOP BAR -->
-  <header style="height:46px;flex:none;display:flex;align-items:center;gap:18px;padding:0 14px;background:var(--header);border-bottom:1px solid var(--seam);">
+  <header style="height:46px;flex:none;display:flex;align-items:center;gap:12px;padding:0 14px;background:var(--header);border-bottom:1px solid var(--seam);">
     <div style="display:flex;align-items:center;gap:9px;">
       <div style="width:26px;height:26px;border-radius:5px;display:flex;align-items:center;justify-content:center;background:var(--accent);color:var(--on-accent);font-weight:700;font-size:15px;box-shadow:0 1px 2px rgba(0,0,0,.4),0 0 0 1px rgba(255,255,255,.08) inset;">✺</div>
       <div>
@@ -45,13 +45,14 @@
         <div style="font-family:var(--font-mono);font-size:10px;color:var(--muted);letter-spacing:.1em;margin-top:1px;">DRAW · GRAB · SMOOTH · MASK · LOCAL</div>
       </div>
     </div>
-    <div style="display:flex;align-items:center;gap:3px;background:var(--panel);border:1px solid var(--seam);border-radius:7px;padding:3px;">
+    <div style="display:flex;align-items:center;gap:3px;background:var(--panel);border:1px solid var(--seam);border-radius:7px;padding:3px;min-width:0;flex:0 1 auto;overflow-x:auto;">
       <sc-for list="{{ brushes }}" as="b" hint-placeholder-count="7">
-        <button style="{{ b.style }}" title="{{ b.tip }}" onClick="{{ b.onClick }}">{{ b.label }}</button>
+      <button style="{{ b.style }}" title="{{ b.tip }}" onClick="{{ b.onClick }}">{{ b.label }}</button>
       </sc-for>
     </div>
     <div style="flex:1;"></div>
     <button style="display:inline-flex;align-items:center;gap:7px;height:30px;padding:0 12px;border-radius:6px;font-size:11.5px;font-weight:600;background:var(--panel3);border:1px solid var(--edge);color:var(--text);cursor:pointer;" title="Undo last stroke (Ctrl/Cmd-Z)" onClick="{{ undo }}">↶ Undo</button>
+    <button style="display:inline-flex;align-items:center;gap:7px;height:30px;padding:0 12px;border-radius:6px;font-size:11.5px;font-weight:600;background:var(--panel3);border:1px solid var(--edge);color:var(--text);cursor:pointer;" title="Redo (Ctrl/Cmd-Shift-Z or Ctrl-Y)" onClick="{{ redo }}">↷ Redo</button>
     <button style="display:inline-flex;align-items:center;gap:7px;height:30px;padding:0 13px;border-radius:6px;font-size:11.5px;font-weight:600;background:var(--panel3);border:1px solid var(--edge);color:var(--text);cursor:pointer;" onClick="{{ pickFile }}">⬇ Import model…</button>
     <div style="display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--text2);padding:4px 10px;background:var(--panel);border:1px solid var(--seam);border-radius:5px;">
       <span style="width:7px;height:7px;border-radius:50%;flex:none;background:{{ dotColor }};"></span>
@@ -77,9 +78,17 @@
         <input type="range" min="2" max="100" value="{{ strengthSlide }}" onInput="{{ onStrength }}" style="width:100%;margin-bottom:16px;">
 
         <div style="display:flex;gap:8px;margin-bottom:8px;">
-          <button style="{{ symStyle }}" title="Mirror every stroke across the X axis" onClick="{{ toggleSym }}">⇄ Symmetry</button>
+          <button style="{{ symStyle }}" title="Mirror every stroke across the symmetry axis" onClick="{{ toggleSym }}">⇄ Symmetry</button>
           <button style="{{ invStyle }}" title="Carve in instead of out (or hold Alt)" onClick="{{ toggleInv }}">⊖ Invert</button>
         </div>
+        <sc-if value="{{ symmetry }}" hint-placeholder-val="{{ true }}">
+          <div style="display:flex;align-items:center;gap:3px;background:var(--panel-3);border:1px solid var(--seam);border-radius:6px;padding:3px;margin-bottom:8px;">
+            <span style="font-size:10px;color:var(--muted);padding:0 6px;">axis</span>
+            <sc-for list="{{ axes }}" as="a" hint-placeholder-count="3">
+              <button style="{{ a.style }}" title="{{ a.tip }}" onClick="{{ a.onClick }}">{{ a.label }}</button>
+            </sc-for>
+          </div>
+        </sc-if>
         <div style="font-size:10px;line-height:1.5;color:var(--muted);">Hold <b style="color:var(--text2);">Shift</b> to smooth · <b style="color:var(--text2);">Alt</b> to invert · <b style="color:var(--text2);">[ ]</b> resize brush</div>
       </div>
 
@@ -95,7 +104,23 @@
             <button style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:9px;border-radius:6px;font-size:11.5px;font-weight:600;background:var(--panel3);border:1px solid var(--edge);color:var(--text);cursor:pointer;" title="Linear midpoint split — more triangles, same shape" onClick="{{ subdivide }}">⊞ Split ×4</button>
             <button style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:9px;border-radius:6px;font-size:11.5px;font-weight:600;background:var(--panel3);border:1px solid var(--edge);color:var(--text);cursor:pointer;" title="Taubin relax — global smoothing that doesn't shrink the mesh (masked verts held)" onClick="{{ relax }}">∿ Relax</button>
           </div>
+          <div style="margin-top:10px;padding:10px;border-radius:7px;background:var(--panel-3);border:1px solid {{ dynBorder }};">
+            <button style="{{ dynStyle }}" onClick="{{ toggleDyn }}">◈ Dyntopo {{ dynState }}</button>
+            <div style="font-size:10px;line-height:1.5;color:var(--muted);margin:8px 0 0;">Adds triangles <b>under the brush as you sculpt</b>, so you can pull fine detail out of a coarse mesh without subdividing the whole thing.</div>
+            <sc-if value="{{ dyntopo }}" hint-placeholder-val="{{ false }}">
+              <label style="display:block;font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:11px 0 6px;">Detail <span style="float:right;font-family:var(--font-mono);color:var(--text2);">{{ detailLabel }}</span></label>
+              <input type="range" min="12" max="90" value="{{ detailSlide }}" onInput="{{ onDetail }}" style="width:100%;">
+            </sc-if>
+          </div>
           <div style="display:flex;justify-content:space-between;font-size:10.5px;padding:8px 2px 0;color:var(--muted);"><span>Vertices</span><span style="font-family:var(--font-mono);color:var(--text2);">{{ vertLabel }}</span></div>
+          <div style="margin-top:11px;">
+            <label style="display:block;font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:7px;">Material</label>
+            <div style="display:flex;gap:3px;background:var(--panel-3);border:1px solid var(--seam);border-radius:6px;padding:3px;">
+              <sc-for list="{{ shades }}" as="sh" hint-placeholder-count="4">
+                <button style="{{ sh.style }}" title="{{ sh.tip }}" onClick="{{ sh.onClick }}">{{ sh.label }}</button>
+              </sc-for>
+            </div>
+          </div>
         </div>
       </div>
     </aside>
@@ -132,6 +157,7 @@
         </sc-for>
       </div>
       <div style="position:absolute;right:10px;top:10px;display:flex;gap:6px;">
+        <button style="{{ origChip }}" title="Hold to compare with the original import" onClick="{{ toggleOrig }}">◐ Before/After</button>
         <button style="{{ wireChip }}" onClick="{{ toggleWire }}">▦ Wire</button>
         <button style="{{ spinChip }}" onClick="{{ toggleSpin }}">↻ Turntable</button>
       </div>
@@ -152,6 +178,11 @@
             <button style="flex:1;padding:8px;border-radius:6px;font-size:11px;font-weight:600;background:var(--panel3);border:1px solid var(--edge);color:var(--text);cursor:pointer;" onClick="{{ invertMask }}">⇆ Invert</button>
             <button style="flex:1;padding:8px;border-radius:6px;font-size:11px;font-weight:600;background:transparent;border:1px solid var(--edge);color:var(--text2);cursor:pointer;" onClick="{{ clearMask }}">Clear mask</button>
           </div>
+          <div style="display:flex;gap:7px;margin-top:7px;">
+            <button style="flex:1;padding:8px;border-radius:6px;font-size:11px;font-weight:600;background:var(--panel3);border:1px solid var(--edge);color:var(--text);cursor:pointer;" title="Soften the mask edge so deforms fade in gradually" onClick="{{ blurMask }}">∿ Blur</button>
+            <button style="flex:1;padding:8px;border-radius:6px;font-size:11px;font-weight:600;background:var(--panel3);border:1px solid var(--edge);color:var(--text);cursor:pointer;" title="Expand the masked region by one ring" onClick="{{ growMask }}">＋ Grow</button>
+            <button style="flex:1;padding:8px;border-radius:6px;font-size:11px;font-weight:600;background:var(--panel3);border:1px solid var(--edge);color:var(--text);cursor:pointer;" title="Contract the masked region by one ring" onClick="{{ shrinkMask }}">－ Shrink</button>
+          </div>
         </div>
       </div>
 
@@ -163,6 +194,10 @@
           <sc-for list="{{ stats }}" as="s" hint-placeholder-count="4">
             <div style="display:flex;justify-content:space-between;font-size:11px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.03);"><span style="color:var(--muted);">{{ s.k }}</span><span style="font-family:var(--font-mono);color:var(--text);">{{ s.v }}</span></div>
           </sc-for>
+          <sc-if value="{{ overBudget }}" hint-placeholder-val="{{ false }}">
+            <div style="margin-top:10px;display:flex;gap:9px;padding:9px 11px;border-radius:7px;font-size:10.5px;line-height:1.5;background:rgba(207,140,60,.12);border:1px solid rgba(207,140,60,.4);color:#e8b980;"><span style="flex:none;">⚠</span><span>{{ triLabel }} tris is heavy for real-time. <b>Bake the detail to a normal map</b> and <b>Decimate</b> before export.</span></div>
+            <button style="margin-top:8px;display:flex;align-items:center;justify-content:center;gap:7px;padding:8px;border-radius:6px;font-size:11.5px;font-weight:600;background:var(--panel3);border:1px solid var(--edge);color:var(--text);width:100%;cursor:pointer;" onClick="{{ gotoDecimate }}">◧ Send to Decimate →</button>
+          </sc-if>
         </div>
       </div>
 
@@ -200,8 +235,8 @@ class Component extends DCLogic {
 
   state = {
     brush: 'draw', meshName: 'no model', loading: false, loadingMsg: '',
-    hasModel: false, radius: 13, strength: 50, symmetry: true, invert: false,
-    wire: false, spin: false, verts: 0, tris: 0, masked: 0,
+    hasModel: false, radius: 13, strength: 50, symmetry: true, symAxis: 'x', invert: false,
+    wire: false, spin: false, shading: 'clay', showOrig: false, dyntopo: false, detail: 40, verts: 0, tris: 0, masked: 0,
   };
 
   componentDidMount() { this.setupEmbed(); this.boot(); this.setupDrop(); }
@@ -213,6 +248,7 @@ class Component extends DCLogic {
       const eng = new mod.SCEngine(canvas); this._eng = eng;
       eng.onStatus = (msg) => this.setState({ loading: !!msg, loadingMsg: msg || '' });
       eng.onChange = () => this.refresh();
+      eng.onBrushKey = (b) => this.setBrush(b);
       if (this._pending) { const p = this._pending; this._pending = null; p(); }
     } catch (e) {
       this.toast('Engine failed: ' + (e && e.message || e));
@@ -249,7 +285,7 @@ class Component extends DCLogic {
     window.addEventListener('message', (e) => {
       const d = e.data; if (!d || !d.__studio) return;
       if (d.type === 'studio:undo') { if (this._eng) this._eng.undo(); return; }
-      if (d.type === 'studio:redo') return;
+      if (d.type === 'studio:redo') { if (this._eng) this._eng.redo(); return; }
       if (d.type === 'studio:loadCharUrl') this.loadVia(() => this._eng.loadUrl(d.url, d.ext, { chunked: d.chunked, chunks: d.chunks }), d.label || 'character');
       else if (d.type === 'studio:loadCharBuffer') this.loadVia(() => this._eng.loadBuffer(d.buffer, d.name, (d.name || '').split('.').pop()), d.name || 'rig');
     });
@@ -264,7 +300,7 @@ class Component extends DCLogic {
     setTimeout(() => { el.style.transition = 'opacity .3s'; el.style.opacity = '0'; setTimeout(() => el.remove(), 300); }, 2800);
   }
 
-  seg(on) { return 'font-size:11px;font-weight:600;padding:6px 10px;border-radius:5px;cursor:pointer;border:none;background:' + (on ? 'var(--panel-3)' : 'transparent') + ';color:' + (on ? 'var(--text)' : 'var(--text-2)') + ';box-shadow:' + (on ? '0 1px 2px rgba(0,0,0,.3)' : 'none') + ';'; }
+  seg(on) { return 'flex:none;white-space:nowrap;font-size:11px;font-weight:600;padding:6px 10px;border-radius:5px;cursor:pointer;border:none;background:' + (on ? 'var(--panel-3)' : 'transparent') + ';color:' + (on ? 'var(--text)' : 'var(--text-2)') + ';box-shadow:' + (on ? '0 1px 2px rgba(0,0,0,.3)' : 'none') + ';'; }
   chip(on, color) { color = color || 'var(--accent)'; return 'font-family:var(--font-mono);font-size:10px;padding:5px 10px;border-radius:5px;cursor:pointer;background:rgba(15,15,15,.6);border:1px solid ' + (on ? color : 'var(--edge)') + ';color:' + (on ? '#aee3ea' : 'var(--text-2)') + ';'; }
   pill(on) { return 'flex:1;padding:8px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid ' + (on ? 'var(--accent)' : 'var(--edge)') + ';background:' + (on ? 'var(--accent-dim)' : 'var(--panel-3)') + ';color:' + (on ? '#aee3ea' : 'var(--text)') + ';'; }
 
@@ -289,6 +325,9 @@ class Component extends DCLogic {
         setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
         this.toast('Exported ' + a.download);
       }
+      const deg = eng._lastExportDegraded;
+      if (deg === 'topo') this.toast('⚠ Topology changed (subdivide/dyntopo) — original UVs & textures could not be carried over. Re-bake or re-texture this mesh.');
+      else if (deg === 'multimat') this.toast('⚠ Model had multiple materials — exported with the first only.');
       this.setState({ loading: false });
     } catch (err) { this.setState({ loading: false }); this.toast('Export failed: ' + (err && err.message || err)); }
   }
@@ -301,6 +340,10 @@ class Component extends DCLogic {
       { key: 'smooth', label: '∿ Smooth', tip: 'Relax the surface toward its neighbour average', name: 'Smooth', hint: 'Relaxes bumps toward the neighbour average — your cleanup tool. You can reach it from any brush by holding Shift.' },
       { key: 'grab', label: '✊ Grab', tip: 'Drag a soft region of the surface through space', name: 'Grab', hint: 'Click and drag to pull a whole soft region with the cursor through the view plane. Reshape a silhouette, pull a nose, sweep a hip.' },
       { key: 'pinch', label: '⊳ Pinch', tip: 'Pull verts toward the brush centre', name: 'Pinch', hint: 'Pulls verts toward the brush centre to sharpen ridges and define seams and creases. Pairs well with Draw + Smooth.' },
+      { key: 'crease', label: '⋁ Crease', tip: 'Cut a sharp valley (pinch + push in)  ·  C', name: 'Crease', hint: 'Pinches verts together and pushes them inward at once for sharp folds, lips, panel seams and cloth creases. Alt raises a sharp ridge instead.' },
+      { key: 'clay', label: '◗ Clay', tip: 'Build volume in flat layers  ·  L', name: 'Clay Strips', hint: 'Fills toward a plane held just above the surface, adding volume in even layers instead of round blobs. The workhorse for blocking in muscle and mass. Alt scoops.' },
+      { key: 'scrape', label: '⌫ Scrape', tip: 'Shave peaks down to a flat plane  ·  V', name: 'Scrape', hint: 'Cuts only the high points down onto the average plane, leaving valleys untouched. Flatten planes, define hard facets, clean lumps off a form.' },
+      { key: 'snake', label: '⟿ Snake', tip: 'Drag a tube of surface along the stroke  ·  K', name: 'Snake Hook', hint: 'Grabs the surface and re-anchors to the cursor every step, pulling a tube of geometry along your whole stroke. Horns, tails, hair locks, tentacles, noses.' },
       { key: 'flatten', label: '▭ Flatten', tip: 'Push verts onto the average brush plane', name: 'Flatten', hint: 'Pushes the surface onto the average plane under the brush — flatten a cheek, plane down a facet, settle lumps.' },
       { key: 'mask', label: '⊘ Mask', tip: 'Paint a protected region', name: 'Mask', hint: 'Paint a protected region (shown blue). Masked verts ignore every deform brush. Alt erases the mask; use the panel to invert or clear it.' },
     ];
@@ -320,12 +363,15 @@ class Component extends DCLogic {
       pickFile: () => document.getElementById('sc-file').click(),
       loadSample: () => this.pickSampleFlow(),
       undo: () => { const ok = eng && eng.undo(); this.toast(ok ? 'Reverted last stroke' : 'Nothing to undo'); },
+      redo: () => { const ok = eng && eng.redo(); this.toast(ok ? 'Redid stroke' : 'Nothing to redo'); },
       // sliders
       radiusSlide: st.radius, radiusLabel: st.radius + '%',
       onRadius: (e) => { const v = +e.target.value; this.setState({ radius: v }); if (eng) eng.setRadiusFrac(v / 100); },
       strengthSlide: st.strength, strengthLabel: st.strength + '%',
       onStrength: (e) => { const v = +e.target.value; this.setState({ strength: v }); if (eng) eng.setStrength(v / 100); },
       symStyle: this.pill(st.symmetry), invStyle: this.pill(st.invert),
+      symmetry: st.symmetry,
+      axes: ['x', 'y', 'z'].map(a => ({ label: a.toUpperCase(), tip: 'Mirror across ' + a.toUpperCase(), style: this.seg(st.symAxis === a), onClick: () => { this.setState({ symAxis: a }); if (eng) eng.setSymAxis(a); } })),
       toggleSym: () => { const v = !st.symmetry; this.setState({ symmetry: v }); if (eng) eng.setSymmetry(v); },
       toggleInv: () => { const v = !st.invert; this.setState({ invert: v }); if (eng) eng.setInvert(v); },
       // resolution
@@ -336,10 +382,25 @@ class Component extends DCLogic {
       // view chips
       wireChip: this.chip(st.wire), toggleWire: () => { const v = !st.wire; this.setState({ wire: v }); if (eng) eng.setWire(v); },
       spinChip: this.chip(st.spin), toggleSpin: () => { const v = !st.spin; this.setState({ spin: v }); if (eng) eng.setTurntable(v); },
+      origChip: this.chip(st.showOrig, '#e8b980'),
+      toggleOrig: () => { if (!eng || !st.hasModel) return; const v = eng.toggleOriginal(); this.setState({ showOrig: v }); this.toast(v ? 'Showing original import' : 'Showing your sculpt'); },
+      shades: [['clay', '◐ Clay', 'Neutral matte clay'], ['wax', '◑ Wax', 'Warm translucent wax'], ['shiny', '◉ Shiny', 'Glossy — reads high-frequency form'], ['matte', '○ Matte', 'Flat — no specular glare']].map(([k, label, tip]) => ({ label, tip, style: this.seg(st.shading === k), onClick: () => { this.setState({ shading: k }); if (eng) eng.setShading(k); } })),
+      overBudget: st.tris > 150000,
+      gotoDecimate: () => { if (this._post) this._post('studio:gotoTool', { tool: 'decimate' }); },
+      dyntopo: st.dyntopo,
+      dynState: st.dyntopo ? 'on' : 'off',
+      dynBorder: st.dyntopo ? 'var(--accent-dim)' : 'var(--seam)',
+      dynStyle: 'width:100%;padding:8px;border-radius:6px;font-size:11.5px;font-weight:700;cursor:pointer;border:1px solid ' + (st.dyntopo ? 'var(--accent)' : 'var(--edge)') + ';background:' + (st.dyntopo ? 'var(--accent-dim)' : 'var(--panel3)') + ';color:' + (st.dyntopo ? '#aee3ea' : 'var(--text)') + ';',
+      toggleDyn: () => { const v = !st.dyntopo; this.setState({ dyntopo: v }); if (eng) eng.setDyntopo(v); this.toast(v ? 'Dyntopo on — detail follows the brush' : 'Dyntopo off'); },
+      detailSlide: st.detail, detailLabel: st.detail + '%',
+      onDetail: (e) => { const v = +e.target.value; this.setState({ detail: v }); if (eng) eng.setDetail(v / 100); },
       // mask
       maskLabel: st.masked > 0 ? (fmt(st.masked) + ' verts') : 'none',
       invertMask: () => { if (eng) { eng.invertMask(); this.refresh(); this.toast('Mask inverted'); } },
       clearMask: () => { if (eng) { eng.clearMask(); this.refresh(); this.toast('Mask cleared'); } },
+      blurMask: () => { if (eng) { eng.blurMask(2); this.refresh(); this.toast('Mask edge softened'); } },
+      growMask: () => { if (eng) { eng.growMask(false); this.refresh(); this.toast('Mask grown'); } },
+      shrinkMask: () => { if (eng) { eng.growMask(true); this.refresh(); this.toast('Mask shrunk'); } },
       // hand off
       embedded: !!this._embedded,
       doSave: () => this.exportFlow(true),
