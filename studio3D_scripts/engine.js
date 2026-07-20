@@ -237,7 +237,9 @@ E.loadFile = async function (file) {
     const g = mesh.geometry;
     g.translate(-c.x, -c.y, -c.z);
     g.scale(s, s, s);
-    g.computeBoundingBox(); g.computeVertexNormals();
+    g.computeBoundingBox();
+    smoothNormals(g);                                  // welded smooth normals (kills the faceted look under animation)
+    if (mesh.material) { mesh.material.flatShading = false; mesh.material.needsUpdate = true; }
   }
   scene.add(modelGroup);
   recomputeBounds();
@@ -246,8 +248,46 @@ E.loadFile = async function (file) {
   return { name: file.name, tris: Math.round(tris), verts, meshes: modelMeshes.length, ext };
 };
 
-function recomputeBounds() {
-  bbox.setFromObject(modelGroup.visible ? modelGroup : rigGroup || modelGroup);
+// Smooth (weld) vertex normals by POSITION — averages the face normals of every
+// triangle touching each unique point, then writes that back to all verts at that
+// point. FBX/OBJ arrive as triangle soup, so three's computeVertexNormals leaves
+// hard per-face facets that look like rough cubes/triangles once the mesh skins
+// and deforms. Welding by position (not by vertex index) smooths across seams
+// while leaving topology and UVs untouched.
+function smoothNormals(g) {
+  const pos = g.getAttribute('position'); if (!pos) return;
+  const idx = g.index;
+  const n = pos.count;
+  const Q = 1e4;
+  const key = i => Math.round(pos.getX(i) * Q) + '_' + Math.round(pos.getY(i) * Q) + '_' + Math.round(pos.getZ(i) * Q);
+  const vi = i => idx ? idx.getX(i) : i;
+  const triCount = idx ? idx.count / 3 : n / 3;
+  const A = new THREE.Vector3(), B = new THREE.Vector3(), C = new THREE.Vector3(), cb = new THREE.Vector3(), ab = new THREE.Vector3();
+  const byPos = new Map();   // quantized position → accumulated (area-weighted) normal
+  for (let t = 0; t < triCount; t++) {
+    const ia = vi(t * 3), ib = vi(t * 3 + 1), ic = vi(t * 3 + 2);
+    A.set(pos.getX(ia), pos.getY(ia), pos.getZ(ia));
+    B.set(pos.getX(ib), pos.getY(ib), pos.getZ(ib));
+    C.set(pos.getX(ic), pos.getY(ic), pos.getZ(ic));
+    cb.subVectors(C, B); ab.subVectors(A, B); cb.cross(ab);   // face normal, length ∝ area
+    for (const ii of [ia, ib, ic]) {
+      const k = key(ii); let v = byPos.get(k);
+      if (!v) { v = new THREE.Vector3(); byPos.set(k, v); }
+      v.add(cb);
+    }
+  }
+  let nrm = g.getAttribute('normal');
+  if (!nrm || nrm.count !== n) { nrm = new THREE.BufferAttribute(new Float32Array(n * 3), 3); g.setAttribute('normal', nrm); }
+  const tmp = new THREE.Vector3();
+  for (let i = 0; i < n; i++) {
+    const v = byPos.get(key(i));
+    if (v && v.lengthSq() > 1e-20) { tmp.copy(v).normalize(); nrm.setXYZ(i, tmp.x, tmp.y, tmp.z); }
+    else nrm.setXYZ(i, 0, 1, 0);
+  }
+  nrm.needsUpdate = true;
+}
+
+function recomputeBounds() {  bbox.setFromObject(modelGroup.visible ? modelGroup : rigGroup || modelGroup);
   if (bbox.isEmpty() && rigGroup) bbox.setFromObject(rigGroup);
   bbox.getBoundingSphere(bsphere);
   modelR = bsphere.radius || 1; modelC.copy(bsphere.center);

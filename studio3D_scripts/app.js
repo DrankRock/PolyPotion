@@ -219,8 +219,7 @@ $('#bulkSlide').addEventListener('input', e => $('#bulkVal').textContent = ((+e.
 
 $('#btnBind').addEventListener('click', () => {
   if (!E.canBind()) { toast('Enable at least the spine + legs first', 'warn'); return; }
-  if (quality === 'hq') showModal('#hqModal');
-  else runBind('fast');
+  runBind(quality);
 });
 $('#hqCancel').addEventListener('click', () => { hideModal('#hqModal'); runBind('fast'); });
 $('#hqProceed').addEventListener('click', () => { hideModal('#hqModal'); runBind('hq'); });
