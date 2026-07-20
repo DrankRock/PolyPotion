@@ -39,6 +39,8 @@ export class EditSession {
     this.mesh.position.set(0, 0, 0);
 
     this.selMode = 'vert';           // vert | edge | face
+    this.wireMode = 'tri';           // 'tri' shows every triangle edge; 'quad' hides coplanar diagonals
+    this._quadDiag = null;           // Set<edgeIndex> of hidden diagonals (lazy)
     this.sel = new Set();            // selected welded-vertex indices
     this.transform = null;           // active modal transform
     this.axis = null;                // 'x'|'y'|'z' lock during transform
@@ -87,7 +89,34 @@ export class EditSession {
     // vertex → incident faces (for extrude / normals)
     this.vert2faces = this.verts.map(() => []);
     this.faces.forEach((f, fi) => f.v.forEach(vi => this.vert2faces[vi].push(fi)));
+    this._quadDiag = null;   // topology changed — recompute quad pairing on next draw
   }
+
+  // ------------------------------------------------ QUAD VIEW
+  _faceNormal(fi) {
+    const f = this.faces[fi], a = this.verts[f.v[0]].p, b = this.verts[f.v[1]].p, c = this.verts[f.v[2]].p;
+    return new THREE.Vector3().subVectors(b, a).cross(new THREE.Vector3().subVectors(c, a)).normalize();
+  }
+  // Greedily pair coplanar triangles across their shared edge; that shared edge
+  // is the quad's hidden diagonal. Each triangle is used at most once, so the
+  // view reads as quads wherever the surface is flat and triangles elsewhere.
+  _computeQuads() {
+    const cand = [];
+    for (let ei = 0; ei < this.edges.length; ei++) {
+      const e = this.edges[ei]; if (e.faces.length !== 2) continue;
+      const n0 = this._faceNormal(e.faces[0]), n1 = this._faceNormal(e.faces[1]);
+      const dot = n0.dot(n1);
+      if (dot > 0.94) cand.push({ ei, f0: e.faces[0], f1: e.faces[1], dot });   // within ~20°
+    }
+    cand.sort((a, b) => b.dot - a.dot);
+    const used = new Set(), diag = new Set();
+    for (const c of cand) { if (used.has(c.f0) || used.has(c.f1)) continue; used.add(c.f0); used.add(c.f1); diag.add(c.ei); }
+    this._quadDiag = diag;
+    this._quadCount = diag.size;
+    this._triLeft = this.faces.length - diag.size * 2;
+  }
+  setWireMode(m) { this.wireMode = (m === 'quad') ? 'quad' : 'tri'; this._refreshOverlays(); }
+  quadStats() { if (!this._quadDiag) this._computeQuads(); return { quads: this._quadCount, tris: this._triLeft }; }
 
   stats() { return { verts: this.verts.length, edges: this.edges.length, faces: this.faces.length, sel: this.selCount() }; }
   selCount() {
@@ -146,13 +175,18 @@ export class EditSession {
     }
     pp.needsUpdate = true; pc.needsUpdate = true;
     this.points.visible = this.selMode === 'vert' || this.selMode === 'edge';
-    // wire
-    const wp = this.wire.geometry.attributes.position;
+    // wire (tri = every edge; quad = skip coplanar diagonals)
+    if (this.wireMode === 'quad' && !this._quadDiag) this._computeQuads();
+    const diag = this.wireMode === 'quad' ? this._quadDiag : null;
+    let ne = 0; for (let i = 0; i < this.edges.length; i++) if (!diag || !diag.has(i)) ne++;
+    const warr = new Float32Array(ne * 6); let wo = 0;
     for (let i = 0; i < this.edges.length; i++) {
+      if (diag && diag.has(i)) continue;
       const e = this.edges[i], a = this.verts[e.a].p, b = this.verts[e.b].p;
-      wp.setXYZ(i * 2, a.x, a.y, a.z); wp.setXYZ(i * 2 + 1, b.x, b.y, b.z);
+      warr.set([a.x, a.y, a.z, b.x, b.y, b.z], wo); wo += 6;
     }
-    wp.needsUpdate = true;
+    this.wire.geometry.setAttribute('position', new THREE.Float32BufferAttribute(warr, 3));
+    this.wire.geometry.attributes.position.needsUpdate = true;
     // selected edges
     const se = this._selectedEdges();
     const sarr = new Float32Array(se.length * 6);
@@ -192,6 +226,21 @@ export class EditSession {
     const add = new Set(this.sel);
     this.sel.forEach(vi => this.vert2faces[vi].forEach(fi => this.faces[fi].v.forEach(x => add.add(x))));
     this.sel = add; this._refreshOverlays();
+  }
+  // shrink: drop any selected vert that touches an unselected vert (via an edge)
+  shrink() {
+    if (!this._vertNbr) { this._vertNbr = this.verts.map(() => new Set()); this.edges.forEach(e => { this._vertNbr[e.a].add(e.b); this._vertNbr[e.b].add(e.a); }); }
+    const keep = new Set();
+    this.sel.forEach(vi => { let interior = true; this._vertNbr[vi].forEach(n => { if (!this.sel.has(n)) interior = false; }); if (interior) keep.add(vi); });
+    this.sel = keep; this._refreshOverlays();
+  }
+  // select linked: flood-fill the whole connected island(s) touching the selection
+  selectLinked() {
+    if (!this._vertNbr) { this._vertNbr = this.verts.map(() => new Set()); this.edges.forEach(e => { this._vertNbr[e.a].add(e.b); this._vertNbr[e.b].add(e.a); }); }
+    if (this.sel.size === 0) { this.selectAll(); return; }
+    const stack = [...this.sel], seen = new Set(this.sel);
+    while (stack.length) { const vi = stack.pop(); this._vertNbr[vi].forEach(n => { if (!seen.has(n)) { seen.add(n); stack.push(n); } }); }
+    this.sel = seen; this._refreshOverlays();
   }
 
   _project(p) {

@@ -1,6 +1,68 @@
 # PROGRESS.md — audit implementation tracker
 
-## NEXT SESSION — Chapter V repairs, in order (see `PolyPotion Audit V.dc.html`)
+## NEXT SESSION — the "Model" workspace: merge Sculpt + Edit (user ask 2026-07-20)
+
+**Why:** they're split because their data models genuinely conflict — Sculpt
+welds all verts into one continuous clay surface and treats topology as
+disposable (constant re-weld/rebuild, per-corner identity destroyed); Edit
+keeps discrete triangles/edges/verts as selectable elements (selection sets,
+tris/quads pairing, UVs all depend on that identity Sculpt throws away). Same
+boundary Blender draws between Sculpt Mode and Edit Mode. The real defect isn't
+the split — it's that switching tools makes you re-pick the character. Fix =
+one workspace, two modes, ONE shared mesh, live handoff.
+
+### Target design
+- **New tool `model` (Model.dc.html)** replacing the separate Sculpt + Edit dock
+  entries with a single entry that hosts both as tabs. Keep `sculpt`/`edit`
+  registry rows working as deep-links (open Model on that tab) for back-comEdit,
+  palette, and existing studio:gotoTool routes.
+- **Shared mesh owner.** Model.dc.html owns the loaded GLB + THREE scene/camera
+  once. Sculpt and Edit become *interaction controllers* over the same mesh,
+  not two engines that each load their own copy. Refactor sculpt-engine.js and
+  mesh-engine.js/edit-session.js to accept an injected {scene, camera, renderer,
+  mesh} instead of building their own (both already take an engine/element ref —
+  formalize a SharedMesh handle).
+- **The hard part — representation bridge (this is the whole job):**
+  - Sculpt→Edit: when entering Edit, (re)derive the element graph
+    (edit-session._build) from the current sculpted positions. Cheap; already
+    exists — just point it at the shared buffer.
+  - Edit→Sculpt: when entering Sculpt, re-weld the (possibly retopo'd/extruded)
+    mesh into sculpt's unique-vert + corner arrays (sculpt _ingest/_build).
+    Also cheap; already exists.
+  - **Dirty-tracking + one undo stack.** Today each tool has its own undo. Unify
+    into a single history on the SharedMesh: snapshot {positions, corner/index,
+    (UV, mask)} at each op regardless of which mode made it. Topology changes
+    invalidate the other mode's caches (Edit's _vertNbr/_quadDiag, Sculpt's
+    adjacency/mirror) — wire cache-bust on the shared "topologyChanged" signal.
+  - **UV/material preservation across the bridge.** Sculpt's weld drops UV seams
+    (Audit VI CRIT, mitigated at export pp-v77). In a live Sculpt⇄Edit loop this
+    bites harder — moving to Edit after a sculpt topology change and back must
+    not silently regrade UVs. Carry the source material + a "UVs valid?" flag on
+    SharedMesh; warn once when a topology op invalidates them.
+- **UI:** Model workspace = shared viewport + a mode switch (Sculpt | Edit) in
+  the header; each mode swaps its own side panel (the current Sculpt brush panel
+  / Edit select+topology panel, lifted mostly as-is). Turntable/wire/matcap view
+  chrome is shared. Persona map: `sculpt` persona → Model on Sculpt tab.
+- **Registry/Handbook/sw:** one `model` entry (+ deep-link aliases), Handbook
+  entry documenting the two modes, sw CORE keeps both engines.
+
+### Sequencing (own session)
+1. SharedMesh handle + refactor both engines to accept injected scene/mesh
+   (no behaviour change; Sculpt.dc.html + MeshEdit.dc.html still work).
+2. Model.dc.html shell: shared viewport, mode tabs, panel swap, deep-links.
+3. The bridge: enter-Edit derive graph, enter-Sculpt re-weld, unified undo,
+   cache-bust signal, UV-valid flag + one-time warn.
+4. Retire Sculpt/Edit dock entries → aliases; persona + Handbook + registry.
+5. Verify the full loop: sculpt → Edit (extrude/clean) → sculpt (detail) →
+   export still textured. This is the acceptance test.
+
+**Risk:** the bridge's re-weld/derive round-trip must be lossless enough that
+repeated mode-switching doesn't drift positions or explode tri count. Prototype
+that round-trip FIRST (step 3 before polishing 2's UI).
+
+---
+
+## EARLIER QUEUE — Chapter V repairs, in order (see `PolyPotion Audit V.dc.html`)
 
 ### QUEUED FIRST: Sculpt "new Blender" pass (user ask 2026-07-20) — full spec in todos
 Engine (sculpt-engine.js): crease/clay-strips/scrape/snake-hook/layer brushes;
@@ -324,6 +386,22 @@ Phase 2 ideas, in order of value:
    AND presets generate from one list.
 
 ## Log
+
+- 2026-07-20 — **MeshEdit Blender parity** (pp-v78, user ask). edit-session.js
+  + mesh-engine.js + MeshEdit.dc.html. Adds the "see/grow/apply like Blender"
+  loop the user wanted on top of the existing vert/edge/face + grow/extrude:
+  • **Tris/Quads view toggle** — greedily pairs coplanar triangles (within ~20°)
+    across their shared edge and hides that diagonal, so flat regions read as
+    quads; shows live quad+tri counts. Display-only (geometry stays triangles).
+  • **Shrink** selection (inverse of Grow — drops verts touching any unselected
+    neighbour) and **Select Linked** (flood-fill the whole connected island;
+    empty selection → select all). Both on the select row + hotkeys L / ⇧G / ⇧H
+    (guarded the plain-G grab so ⇧G no longer triggers a move).
+  Engine passthroughs editShrink/editSelectLinked/editSetWireMode/editQuadStats.
+  Vert-neighbour + quad-pairing caches invalidate on any topology rebuild.
+  Files: edit-session.js, mesh-engine.js, MeshEdit.dc.html, sw.js → pp-v78.
+  Follow-ups: true edge-loop select (needs the quad pairing → walk opposite
+  edges), tris→quads as a real geometry op (not just view), bevel/inset.
 
 - 2026-07-20 — **Sculpt export keeps textures** (pp-v77, Audit VI CRIT fix).
   _ingest now captures per-corner UVs + the source material; exportGLB, when

@@ -247,13 +247,21 @@
               <div style="display:flex;flex-direction:column;align-items:center;gap:3px;background:var(--panel-3);border:1px solid var(--seam);border-radius:6px;padding:7px 4px;"><span style="font-family:var(--font-mono);font-size:13px;font-weight:600;color:var(--text);">{{ eEdges }}</span><span style="font-size:8px;letter-spacing:.14em;color:var(--muted);">EDGES</span></div>
               <div style="display:flex;flex-direction:column;align-items:center;gap:3px;background:var(--panel-3);border:1px solid var(--seam);border-radius:6px;padding:7px 4px;"><span style="font-family:var(--font-mono);font-size:13px;font-weight:600;color:var(--text);">{{ eFaces }}</span><span style="font-size:8px;letter-spacing:.14em;color:var(--muted);">FACES</span></div>
             </div>
-            <div style="display:flex;gap:5px;margin-bottom:12px;">
+            <div style="display:flex;gap:5px;margin-bottom:8px;">
               <button style="flex:1;font-size:10px;padding:6px 3px;border-radius:5px;cursor:pointer;background:var(--panel3);border:1px solid var(--edge);color:var(--text2);" onClick="{{ editSelectAll }}">All</button>
               <button style="flex:1;font-size:10px;padding:6px 3px;border-radius:5px;cursor:pointer;background:var(--panel3);border:1px solid var(--edge);color:var(--text2);" onClick="{{ editSelectNone }}">None</button>
               <button style="flex:1;font-size:10px;padding:6px 3px;border-radius:5px;cursor:pointer;background:var(--panel3);border:1px solid var(--edge);color:var(--text2);" onClick="{{ editInvert }}">Invert</button>
-              <button style="flex:1;font-size:10px;padding:6px 3px;border-radius:5px;cursor:pointer;background:var(--panel3);border:1px solid var(--edge);color:var(--text2);" onClick="{{ editGrow }}">Grow</button>
             </div>
-
+            <div style="display:flex;gap:5px;margin-bottom:12px;">
+              <button style="flex:1;font-size:10px;padding:6px 3px;border-radius:5px;cursor:pointer;background:var(--panel3);border:1px solid var(--edge);color:var(--text2);" title="Add the next ring of neighbours (Shift+G)" onClick="{{ editGrow }}">Grow +</button>
+              <button style="flex:1;font-size:10px;padding:6px 3px;border-radius:5px;cursor:pointer;background:var(--panel3);border:1px solid var(--edge);color:var(--text2);" title="Pull the selection edge inward one ring (Shift+H)" onClick="{{ editShrink }}">Shrink –</button>
+              <button style="flex:1;font-size:10px;padding:6px 3px;border-radius:5px;cursor:pointer;background:var(--panel3);border:1px solid var(--edge);color:var(--text2);" title="Select the whole connected piece touching the selection (L)" onClick="{{ editSelectLinked }}">Linked</button>
+            </div>
+            <label style="display:block;font-size:10.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:7px;">View mesh as</label>
+            <div style="display:flex;align-items:center;gap:3px;background:var(--panel-3);border:1px solid var(--seam);border-radius:6px;padding:3px;margin-bottom:12px;">
+              <sc-for list="{{ wireChips }}" as="w" hint-placeholder-count="2"><button style="{{ w.style }}" title="{{ w.tip }}" onClick="{{ w.onClick }}">{{ w.label }}</button></sc-for>
+              <span style="margin-left:auto;font-family:var(--font-mono);font-size:10px;color:var(--muted);padding:0 8px;white-space:nowrap;">{{ quadLabel }}</span>
+            </div>
             <label style="display:block;font-size:10.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:7px;">Step size</label>
             <div style="display:flex;gap:5px;margin-bottom:13px;">
               <sc-for list="{{ editStepChips }}" as="c" hint-placeholder-count="3"><button style="{{ c.style }}" onClick="{{ c.onClick }}">{{ c.label }}</button></sc-for>
@@ -292,7 +300,7 @@
             </div>
           </div>
         </div>
-        <div style="padding:12px;"><div style="display:flex;gap:9px;padding:9px 11px;border-radius:7px;font-size:11px;line-height:1.5;background:var(--activeDim);border:1px solid rgba(255,79,0,.28);color:#ffd2bb;"><span style="flex:none;">⌨</span><span><span class="me-kbd">1</span><span class="me-kbd">2</span><span class="me-kbd">3</span> vert·edge·face · <span class="me-kbd">G</span> grab <span class="me-kbd">R</span> rotate <span class="me-kbd">S</span> scale · lock <span class="me-kbd">X</span><span class="me-kbd">Y</span><span class="me-kbd">Z</span> · <span class="me-kbd">E</span> extrude · <span class="me-kbd">A</span> all · <span class="me-kbd">Del</span> delete · drag empty = box-select.</span></div></div>
+        <div style="padding:12px;"><div style="display:flex;gap:9px;padding:9px 11px;border-radius:7px;font-size:11px;line-height:1.5;background:var(--activeDim);border:1px solid rgba(255,79,0,.28);color:#ffd2bb;"><span style="flex:none;">⌨</span><span><span class="me-kbd">1</span><span class="me-kbd">2</span><span class="me-kbd">3</span> vert·edge·face · <span class="me-kbd">G</span> grab <span class="me-kbd">R</span> rotate <span class="me-kbd">S</span> scale · lock <span class="me-kbd">X</span><span class="me-kbd">Y</span><span class="me-kbd">Z</span> · <span class="me-kbd">E</span> extrude · <span class="me-kbd">A</span> all <span class="me-kbd">L</span> linked <span class="me-kbd">⇧G</span> grow <span class="me-kbd">⇧H</span> shrink · <span class="me-kbd">Del</span> delete · drag empty = box-select.</span></div></div>
       </sc-if>
 
       <!-- PAINT MODE -->
@@ -402,7 +410,7 @@ class Component extends DCLogic {
     cutInfo: null, cutT: 50, cutAxis: 'y',
     wind: 40, grav: 100, stiff: 85,
     remeshRes: 96, remeshSmooth: 3,
-    editStats: null, editSelMode: 'vert', editStep: 'med',
+    editStats: null, editSelMode: 'vert', editStep: 'med', wireMode: 'tri', quadInfo: null,
   };
 
   componentDidMount() { this.setupEmbed(); this.boot(); this.setupDrop(); }
@@ -575,6 +583,14 @@ class Component extends DCLogic {
       editSelectNone: () => eng && eng.editSelectNone(),
       editInvert: () => eng && eng.editInvert(),
       editGrow: () => eng && eng.editGrow(),
+      editShrink: () => eng && eng.editShrink(),
+      editSelectLinked: () => { if (eng) { eng.editSelectLinked(); this.toast('Selected linked piece'); } },
+      wireChips: [['tri', '△ Triangles', 'Show every real triangle edge'], ['quad', '□ Quads', 'Hide coplanar diagonals so flat areas read as quads (display only)']].map(([m, label, tip]) => ({
+        label, tip,
+        style: 'flex:none;font-size:10.5px;font-weight:600;padding:6px 11px;border-radius:5px;cursor:pointer;border:none;background:' + (st.wireMode === m ? 'var(--active)' : 'transparent') + ';color:' + (st.wireMode === m ? 'var(--on-accent)' : 'var(--text2)') + ';',
+        onClick: () => { this.setState({ wireMode: m }); if (eng) { eng.editSetWireMode(m); this.setState({ quadInfo: eng.editQuadStats() }); } },
+      })),
+      quadLabel: st.wireMode === 'quad' ? ((st.quadInfo ? st.quadInfo.quads.toLocaleString() : '0') + ' quads' + (st.quadInfo && st.quadInfo.tris ? ' + ' + st.quadInfo.tris.toLocaleString() + ' tris' : '')) : '',
       editExtrude: () => { if(eng){ eng.editExtrude(); this.toast('Extruded selected faces'); } },
       editSubdivide: () => { if(eng){ eng.editSubdivide(); this.toast('Subdivided'); } },
       editMerge: () => { if(eng){ eng.editMerge(); this.toast('Merged to center'); } },

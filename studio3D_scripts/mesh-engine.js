@@ -327,11 +327,14 @@ export class MEEngine {
         if (e.key === 'Escape') { this.edit.cancelTransform(); this._modalActive = false; e.preventDefault(); return; }
         return;
       }
-      if (k === 'g') { this._modalActive = this.edit.beginTransform('grab', this._lastPx, this._lastPy); e.preventDefault(); }
+      if (k === 'g' && !e.shiftKey) { this._modalActive = this.edit.beginTransform('grab', this._lastPx, this._lastPy); e.preventDefault(); }
       else if (k === 'r') { this._modalActive = this.edit.beginTransform('rotate', this._lastPx, this._lastPy); e.preventDefault(); }
       else if (k === 's') { this._modalActive = this.edit.beginTransform('scale', this._lastPx, this._lastPy); e.preventDefault(); }
       else if (k === 'e') { this.edit.extrudeFaces(); e.preventDefault(); }
       else if (k === 'a') { this.edit.selectAll(); e.preventDefault(); }
+      else if (k === 'l') { this.edit.selectLinked(); this._emitEdit(this.edit.stats()); e.preventDefault(); }
+      else if (k === 'g' && e.shiftKey) { this.edit.grow(); this._emitEdit(this.edit.stats()); e.preventDefault(); }
+      else if (k === 'h' && e.shiftKey) { this.edit.shrink(); this._emitEdit(this.edit.stats()); e.preventDefault(); }
       else if (e.key === 'Delete') { this.editDelete(); e.preventDefault(); }
       else if (k === '1') { this.edit.setSelMode('vert'); this._emitEdit(this.edit.stats()); e.preventDefault(); }
       else if (k === '2') { this.edit.setSelMode('edge'); this._emitEdit(this.edit.stats()); e.preventDefault(); }
@@ -647,6 +650,10 @@ export class MEEngine {
   editSelectNone() { if (this.edit) this.edit.selectNone(); }
   editInvert() { if (this.edit) this.edit.invert(); }
   editGrow() { if (this.edit) this.edit.grow(); }
+  editShrink() { if (this.edit) this.edit.shrink(); }
+  editSelectLinked() { if (this.edit) this.edit.selectLinked(); }
+  editSetWireMode(m) { if (this.edit) this.edit.setWireMode(m); }
+  editQuadStats() { return this.edit ? this.edit.quadStats() : { quads: 0, tris: 0 }; }
   editNudge(axis, amt) { if (this.edit) this.edit.nudge(axis, amt); }
   editRotate(axis, deg) { if (this.edit) this.edit.rotateStep(axis, deg); }
   editScale(f) { if (this.edit) this.edit.scaleStep(f); }
