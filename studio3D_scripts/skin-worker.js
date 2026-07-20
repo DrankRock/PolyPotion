@@ -31,6 +31,7 @@ function run(d) {
   const RES = d.res | 0;
   const falloff = d.falloff;           // 0..1 → exponent
   const B = bones.length;
+  const bulk = Math.max(1, d.bulk || 1); // >1 → thick bones own more of their own volume
 
   // ---------- 1. grid setup ----------
   let minX = Infinity, minY = Infinity, minZ = Infinity, maxX = -Infinity, maxY = -Infinity, maxZ = -Infinity;
@@ -208,6 +209,9 @@ function run(d) {
     for (let b = 0; b < B; b++) { if (cnt[b] > 3) { rad[b] /= cnt[b]; avg += rad[b]; nn++; } else rad[b] = 0; }
     avg = nn ? avg / nn : vs * 2;
     for (let b = 0; b < B; b++) { if (!(rad[b] > vs * 0.5)) rad[b] = Math.max(vs, avg); }
+    // bulk boost: raise each radius (relative to the mean) to a power so a thick
+    // muscle's influence widens super-linearly and skinnier neighbours stop stealing its verts
+    if (bulk > 1) for (let b = 0; b < B; b++) rad[b] = Math.pow(rad[b] / avg, bulk) * avg;
   }
   post({ type: 'progress', phase: 'bone thickness map', frac: 0.79 });
   // ---------- 6. assign weights per vertex ----------

@@ -171,7 +171,20 @@ $('#btnMirrorLR').addEventListener('click', () => {
 });
 $('#btnSwapSides').addEventListener('click', () => {
   const c = E.swapSides();
-  toast(c ? `Swapped L ↔ R — ${c} joint pair(s) traded places` : 'No paired side joints to swap', c ? 'success' : 'warn');
+  if (!c) { toast('No paired side joints to swap', 'warn'); return; }
+  if (bound) {
+    E.editJoints();
+    bound = false;
+    $('#btnEditJoints').style.display = 'none';
+    $('#bindStat').textContent = '';
+    $('#animReport').innerHTML = '';
+    openSec('secAnim', false); openSec('secExport', false);
+    setStep(2);
+    $('#btnBind').disabled = !E.canBind();
+    toast(`Swapped L ↔ R (${c} pairs). Rig reopened for placement — hit Compute Skeleton + Skin again to apply.`, 'success');
+  } else {
+    toast(`Swapped L ↔ R — ${c} pair(s). Orange (right) & blue (left) markers traded identity; positions unchanged.`, 'success');
+  }
 });
 $('#btnCenterAll').addEventListener('click', () => {
   const c = E.centerAll();
@@ -193,6 +206,7 @@ $('#qualitySeg').addEventListener('click', e => {
 });
 $('#resSlide').addEventListener('input', e => $('#resVal').textContent = e.target.value + '³');
 $('#falloffSlide').addEventListener('input', e => $('#falloffVal').textContent = ((+e.target.value) / 100).toFixed(2));
+$('#bulkSlide').addEventListener('input', e => $('#bulkVal').textContent = ((+e.target.value) / 100).toFixed(2));
 
 $('#btnBind').addEventListener('click', () => {
   if (!E.canBind()) { toast('Enable at least the spine + legs first', 'warn'); return; }
@@ -243,6 +257,7 @@ $('#presetSel').addEventListener('change', e => {
 async function runBind(q) {
   const res = +$('#resSlide').value;
   const falloff = (+$('#falloffSlide').value) / 100;
+  const bulk = (+$('#bulkSlide').value) / 100;
   setStep(3);
   showLoading(q === 'hq' ? 'Computing high-quality skin' : 'Binding skeleton',
     q === 'hq' ? 'voxel-geodesic — heavy crunch' : 'distance weights');
@@ -258,7 +273,7 @@ async function runBind(q) {
     setCancel(() => job.cancel());
     let stat;
     try {
-      stat = await E.bind({ quality: q, res, falloff, job });
+      stat = await E.bind({ quality: q, res, falloff, bulk, job });
       job.settle();
     } finally { clearCancel(); }
     const secs = ((performance.now() - t0) / 1000).toFixed(1);

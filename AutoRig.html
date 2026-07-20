@@ -323,7 +323,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;heigh
           <label id="aposeRow" style="display:flex;align-items:center;gap:7px;margin-top:7px;font-size:11px;color:var(--muted);cursor:pointer;user-select:none;" title="Turn on if the character's arms hang at ~45deg (A-pose). Fit to mesh then drops the arm joints onto the arms instead of straight out.">
             <input type="checkbox" id="chkApose" style="accent-color:#ff5a1f;width:14px;height:14px;cursor:pointer;flex:none;">
             <span>Arms hang in <b style="color:var(--text)">A-pose</b> — drop arm joints to fit</span>
-          </label><div class="btn-row" style="margin-top:7px;"><button class="btn ghost sm" id="btnMirrorRL" title="Place the RIGHT half carefully, then stamp it onto the left">⇋ Mirror R → L</button><button class="btn ghost sm" id="btnMirrorLR" title="Place the LEFT half carefully, then stamp it onto the right">⇋ Mirror L → R</button></div><button class="btn ghost sm" id="btnSwapSides" style="width:100%;margin-top:7px;" title="Swap left ↔ right in place: every joint stays exactly where it is, but the spots you gave the right side now belong to the left bones and vice versa. Fixes a rig placed with L/R inverted.">⇄ Swap L ↔ R (keep in place)</button><button class="btn ghost sm" id="btnCenterAll" style="width:100%;margin-top:7px;" title="Snap every joint to the middle of the mesh volume around it (keeps its height)">◎ Auto-center all joints in mesh</button><a href="RigGuide.html" target="_blank" class="note" style="display:block;margin-top:10px;color:#ffd2bb;text-decoration:none;border:1px solid rgba(255,79,0,0.28);background:rgba(255,79,0,0.09);border-radius:7px;padding:8px 11px;">✦ Not sure where joints go? <b>Open the placement guide →</b></a>
+          </label><div class="note" style="margin-top:8px;display:flex;align-items:center;gap:14px;"><span style="display:flex;align-items:center;gap:5px;"><span style="width:9px;height:9px;border-radius:50%;background:#e4633a;display:inline-block;flex:none;"></span>Right side</span><span style="display:flex;align-items:center;gap:5px;"><span style="width:9px;height:9px;border-radius:50%;background:#3a93e4;display:inline-block;flex:none;"></span>Left side</span></div><div class="btn-row" style="margin-top:7px;"><button class="btn ghost sm" id="btnMirrorRL" title="Place the RIGHT half carefully, then stamp it onto the left">⇋ Mirror R → L</button><button class="btn ghost sm" id="btnMirrorLR" title="Place the LEFT half carefully, then stamp it onto the right">⇋ Mirror L → R</button></div><button class="btn ghost sm" id="btnSwapSides" style="width:100%;margin-top:7px;" title="Relabels sides in place: the orange (right) dots become left and the blue (left) become right, without moving any dot. Fixes a rig placed with L/R inverted (e.g. mesh was facing you). The dots stay put — only their side identity flips — so re-bind to apply it.">⇄ Swap L ↔ R (fix inverted sides)</button><button class="btn ghost sm" id="btnCenterAll" style="width:100%;margin-top:7px;" title="Snap every joint to the middle of the mesh volume around it (keeps its height)">◎ Auto-center all joints in mesh</button><a href="RigGuide.html" target="_blank" class="note" style="display:block;margin-top:10px;color:#ffd2bb;text-decoration:none;border:1px solid rgba(255,79,0,0.28);background:rgba(255,79,0,0.09);border-radius:7px;padding:8px 11px;">✦ Not sure where joints go? <b>Open the placement guide →</b></a>
         </div>
       </div>
     </aside>
@@ -444,6 +444,14 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;heigh
                 <input type="range" id="falloffSlide" min="0" max="100" value="55">
                 <span class="slider-val mono" id="falloffVal">0.55</span>
               </div>
+            </div>
+            <div class="field">
+              <label>Muscle bulk <span style="color:var(--muted-2);text-transform:none;letter-spacing:0;">— how much thick limbs own their own mass</span></label>
+              <div class="slider-row">
+                <input type="range" id="bulkSlide" min="100" max="190" value="100">
+                <span class="slider-val mono" id="bulkVal">1.00</span>
+              </div>
+              <div class="note" style="margin-top:6px;">Crank this up for bulky/muscular monsters: a thick bicep or huge thigh keeps the verts ballooning around it instead of a skinnier neighbouring bone stealing them. Works in both modes.</div>
             </div>
             <button class="btn go" id="btnBind" disabled>⟐ Compute Skeleton + Skin</button>
             <button class="btn ghost sm" id="btnEditJoints" style="width:100%;margin-top:8px;display:none;">← Back to placing joints</button>

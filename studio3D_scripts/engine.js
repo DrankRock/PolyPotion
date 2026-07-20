@@ -501,10 +501,13 @@ function updateBoneLines() {
 function refreshMarkerColors() {
   joints.forEach(j => {
     const sel = j === selJoint;
-    let c = 0xc8ccd2;
-    if (j.group === 'fingers') c = 0x43b6c4;
-    else if (j.group === 'face') c = 0xd6a743;
-    if (sel) c = 0xe08534;
+    // colour by SIDE so left/right placement is obvious at a glance — the #1
+    // thing that goes wrong when rigging a mesh that faces you.
+    let c;
+    if (j.shortSide === 'R') c = 0xe4633a;        // RIGHT side — warm orange
+    else if (j.shortSide === 'L') c = 0x3a93e4;   // LEFT side — cool blue
+    else c = 0xc8ccd2;                            // centre / spine — neutral
+    if (sel) c = 0xffd23a;                        // selected — bright yellow
     j.marker.material.color.setHex(c);
     j.marker.material.opacity = sel ? 1 : 0.92;
     const small = (j.group === 'fingers' || j.group === 'face') ? 0.66 : 1;
@@ -878,12 +881,12 @@ E.bind = async function (opts) {
     weights = await bindHQ(meshData, segs, opts, onP);
     if (!weights) { // worker fell back
       onP('fast fallback', 0.9);
-      weights = meshData.map(md => fastWeights(md.positions, segs, opts.falloff));
+      weights = meshData.map(md => fastWeights(md.positions, segs, opts.falloff, opts.bulk));
     }
   } else {
     onP('computing distance weights', 0.3);
     await new Promise(r => setTimeout(r, 30));
-    weights = meshData.map(md => fastWeights(md.positions, segs, opts.falloff));
+    weights = meshData.map(md => fastWeights(md.positions, segs, opts.falloff, opts.bulk));
     onP('binding', 0.85);
   }
   ckpt();   // a cancel during the solve abandons the result before we build the rig
@@ -947,11 +950,12 @@ E.isBound = () => !!rigGroup;
 // own bone axis. Pass 2 ranks bones by distance NORMALIZED by that radius —
 // a bicep vert 8cm from a thick upper-arm bone stays owned by it instead of
 // being grabbed (and crushed) by a skinny neighbouring bone.
-function fastWeights(positions, segs, falloff) {
+function fastWeights(positions, segs, falloff, bulk) {
   const n = positions.length / 3;
   const skinIndex = new Uint16Array(n * 4);
   const skinWeight = new Float32Array(n * 4);
   const exponent = 2.6 + (falloff || 0.5) * 4.0;   // sharper → less bleed
+  const bulkP = Math.max(1, bulk || 1);            // >1 → thick bones own more of their mass
   const cutoffK = 1.65;                             // ignore bones much farther than the nearest
   const B = segs.length;
 
@@ -972,6 +976,9 @@ function fastWeights(positions, segs, falloff) {
   for (let b = 0; b < B; b++) { if (rCnt[b] > 3) { rad[b] = rSum[b] / rCnt[b]; rAvg += rad[b]; rN++; } }
   rAvg = rN ? rAvg / rN : 0.05;
   for (let b = 0; b < B; b++) { if (!(rad[b] > 1e-6)) rad[b] = rAvg; }
+  // bulk boost: raise each radius to a power so thick bones' influence widens super-linearly
+  const radN = new Float32Array(B);
+  for (let b = 0; b < B; b++) radN[b] = Math.pow(rad[b] / rAvg, bulkP) * rAvg;
 
   // ---- pass 2: weights on radius-normalized distances ----
   for (let v = 0; v < n; v++) {
@@ -979,7 +986,7 @@ function fastWeights(positions, segs, falloff) {
     let i0 = 0, i1 = 0, i2 = 0, i3 = 0, d0 = Infinity, d1 = Infinity, d2 = Infinity, d3 = Infinity;
     for (let b = 0; b < B; b++) {
       const s = segs[b], h = s.head, t = s.tail;
-      const d = distPtSeg(x, y, z, h[0], h[1], h[2], t[0], t[1], t[2]) / rad[b];
+      const d = distPtSeg(x, y, z, h[0], h[1], h[2], t[0], t[1], t[2]) / radN[b];
       if (d < d0) { d3 = d2; i3 = i2; d2 = d1; i2 = i1; d1 = d0; i1 = i0; d0 = d; i0 = b; }
       else if (d < d1) { d3 = d2; i3 = i2; d2 = d1; i2 = i1; d1 = d; i1 = b; }
       else if (d < d2) { d3 = d2; i3 = i2; d2 = d; i2 = b; }
@@ -1045,7 +1052,7 @@ function bindHQ(meshData, segs, opts, onP) {
     };
     worker.onerror = err => { worker.terminate(); reject(new Error(err.message || 'worker failed')); };
     const transfer = [tris.buffer, ...meshes.map(m => m.positions.buffer)];
-    worker.postMessage({ type: 'bind', tris, meshes, bones: segs, res: opts.res || 56, falloff: opts.falloff }, transfer);
+    worker.postMessage({ type: 'bind', tris, meshes, bones: segs, res: opts.res || 56, falloff: opts.falloff, bulk: opts.bulk || 1 }, transfer);
   });
 }
 
