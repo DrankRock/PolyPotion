@@ -582,9 +582,25 @@ window.RigDemo = async function (clip, q) {
     return { buffer: buf, name: (name || (loadedName.replace(/\.[^.]+$/, '') || 'rigged')) + '_rigged.glb' };
   }
 
+  // ---- Multi Rig batch hooks ----
+  async function loadFromBuffer(buffer, name) { await handleFile(new File([buffer], name || 'model.glb'), false); }
+  async function loadFromFile(file) { await handleFile(file, false); }
+  function captureRig() { return E.getJointLayout(); }
+  function applyRig(layout) {
+    if (!layout) return 0;
+    const n = E.applyJointLayout(layout);
+    joints = E.serializeAll();               // refresh outliner "placed" dots
+    renderGroups();
+    return n;
+  }
+
   window.AutoRigEmbed = {
     loadFromUrl,
+    loadFromBuffer,
+    loadFromFile,
     getRiggedGLB,
+    captureRig,
+    applyRig,
     isBound: () => !!(E.isBound && E.isBound()),
   };
   window.__studioEmit = post;

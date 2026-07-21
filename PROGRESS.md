@@ -1,5 +1,60 @@
 # PROGRESS.md — audit implementation tracker
 
+## MULTI RIG — audit (2026-07-22, user ask: full audit + what to add)
+
+New tool `multirig` (MultiRig.dc.html): a batch wrapper that HOSTS AutoRig.html in
+an iframe and carries the joint placement from one character to the next. Rig ·
+test · save (download) · next. Entry points: dock (rig group, "Multi"), palette,
+and Library "⛓ Rig selection" (multi-pick cards → pre-filled batch). Files:
+MultiRig.dc.html (new), rig_scripts/engine.js (+getJointLayout/applyJointLayout/
+serializeAll), rig_scripts/app.js (AutoRigEmbed +loadFromBuffer/loadFromFile/
+captureRig/applyRig), index.html (registry/dock/pane/library feed/mrFetch/
+mrPreload/Rig-selection picker), sw.js → pp-v81.
+
+### Shipped this pass (correctness fixes)
+- [x] Carry as **per-axis bbox fractions** (feet-center origin), not absolute
+      world coords — robust to modest width/height/depth differences, not just
+      height. (engine _bboxFrame + frac capture/apply; absolute still read for
+      back-compat.)
+- [x] **Re-entrancy lock** (`_busy`) around start/save/next/saveNext/jumpTo so
+      rapid clicks can’t interleave two loads/exports.
+- [x] **removeFromQueue idx fix** — removing an item before the current one now
+      shifts idx so the header/current pointer stays on the loaded mesh; the
+      active item’s ✕ is blocked (Save/next or jump first) to avoid mesh/label
+      desync.
+- [x] captureCurrent **always** stores the last placement (apply still gated by
+      the carry toggle).
+- [x] Completion toast summarises saved/total.
+
+### OPEN — recommended next (in value order)
+- [ ] **Persist the batch** (queue + idx + captured layout + carry) to
+      localStorage/OPFS. The frame is WebGL-heavy; the shell evicts idle frames,
+      which today wipes an in-progress batch. Biggest robustness gap.
+- [ ] **Stale `bound` badge**: AutoRig emits studio:bound on bind but nothing on
+      "Back to placing joints" (unbind). Add a studio:unbound emit in AutoRig
+      editJoints() → clear it.
+- [ ] **Batch settings lock** in MultiRig (skinning Fast/HQ + res, preset,
+      A-pose, facing, test clip): set once, applied to every character. Today
+      they persist in the iframe by luck (module vars); the HQ modal also
+      re-appears each bind.
+- [ ] **Auto-test clip**: on each load auto-play a chosen clip so "test" is one
+      glance (new embed hook driving AutoRig’s clip buttons).
+- [ ] **Finish screen**: completion panel + "re-download all as .zip" + "add all
+      to Library" (→ MoCap/Showcase/Stage).
+- [ ] **Save options**: format choice (GLB/FBX/glTF) and "also add to Library /
+      send to MoCap"; optional **auto-save** (bind → download → next) for
+      near-identical bodies.
+- [ ] **Skip** action (distinct from remove); **reorder** (drag) + clear-all;
+      multi-select add.
+- [ ] **Keyboard**: N = save & next, S = save, [ ] = prev/next.
+- [ ] **Carry confidence**: per-joint delta vs auto-fit after applyRig, so
+      outliers are obvious; offer per-character "auto-fit instead".
+- [ ] **Buffer cache** by id so jumping back doesn’t re-fetch/re-chunk.
+- [ ] **Load-fail UX**: inline retry/skip instead of AutoRig’s dropzone showing
+      through.
+- [ ] **Deep integrations**: batch → Retarget / Decimate-LOD / VRM export.
+
+
 ## NEXT SESSION — the "Model" workspace: merge Sculpt + Edit (user ask 2026-07-20)
 
 **Why:** they're split because their data models genuinely conflict — Sculpt
@@ -386,6 +441,16 @@ Phase 2 ideas, in order of value:
    AND presets generate from one list.
 
 ## Log
+
+- 2026-07-22 — **Multi Rig audit + hardening** (pp-v81 tool). Full audit at the
+  top of this file. Shipped fixes: fraction-based (per-axis bbox) rig carry so it
+  survives width/height/depth differences; re-entrancy lock on all async actions;
+  removeFromQueue idx shift + active-item delete guard; capture-always; completion
+  summary toast. Open backlog recorded up top — headline items: persist batch
+  across frame eviction, unbind event for the bound badge, batch-settings lock,
+  auto-test clip, finish screen (re-download-all / add-to-Library), save-format +
+  auto-save, skip/reorder, batch→Retarget/Decimate/VRM. Files: MultiRig.dc.html,
+  rig_scripts/engine.js, rig_scripts/app.js.
 
 - 2026-07-20 — **MeshEdit Blender parity** (pp-v78, user ask). edit-session.js
   + mesh-engine.js + MeshEdit.dc.html. Adds the "see/grow/apply like Blender"

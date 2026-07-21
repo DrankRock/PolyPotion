@@ -355,6 +355,7 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
         <button class="dock-cat" type="button" aria-expanded="true"><span class="chev">▾</span>rig</button>
         <div class="dock-group-items">
           <div class="dock-item" data-tool="rig"><span class="ic">⦿</span><span class="lb">Rig</span></div>
+          <div class="dock-item" data-tool="multirig" title="Multi Rig — rig a whole batch of similar-bodied characters, carrying each rig forward to the next: rig · test · save · next"><span class="ic">⛓</span><span class="lb">Multi</span></div>
           <div class="dock-item" data-tool="weightpaint" title="Weight Paint — hand-paint skin influence per bone"><span class="ic">✋</span><span class="lb">Weight</span></div>
           <div class="dock-item" data-tool="pose" title="Pose rig — IK / FK joint handles"><span class="ic">⟁</span><span class="lb">Pose</span></div>
           <div class="dock-item" data-tool="morph" title="Morph — blendshape / expression editor"><span class="ic">◕</span><span class="lb">Morph</span></div>
@@ -511,6 +512,10 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
       <!-- Rig tool -->
       <div class="tool-pane" id="pane-rig">
         <div class="tool-loading" id="load-rig"><div class="ring"></div><div>Loading Rig workspace…</div></div>
+      </div>
+      <!-- Multi Rig tool -->
+      <div class="tool-pane" id="pane-multirig">
+        <div class="tool-loading" id="load-multirig"><div class="ring"></div><div>Loading Multi Rig workspace…</div></div>
       </div>
 
       <!-- MoCap tool -->
@@ -911,6 +916,7 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
     { k:'playground', file:'Playground.dc.html',  label:'Playground',  icon:'⛹', char:1, pal:'Playground — be your character (WASD · gamepad · first-person · VR)' },
     { k:'live',       file:'StreamStage.dc.html', label:'Stream Stage',icon:'🎥', char:1, pal:'Stream Stage — go live for OBS (face capture · chroma · pop-out)' },
     { k:'rig',        file:'AutoRig.html',        label:'Rig',         icon:'⦿', key:'1' },
+    { k:'multirig',   file:'MultiRig.dc.html',    label:'Multi Rig',   icon:'⛓', pal:'Multi Rig — rig a batch of similar bodies, carrying the rig forward (rig · test · save · next)' },
     { k:'mocap',      file:'MoCap.dc.html',       label:'MoCap',       icon:'⛷', key:'2', char:1 },
     { k:'motion',     file:'Motion.dc.html',      label:'Motion',      icon:'⌗', key:'3' },
     { k:'edit',       file:'MeshEdit.dc.html',    label:'Edit',        icon:'✎', key:'4', char:1 },
@@ -951,6 +957,7 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
   let libNsfw = ppCookie('pp.libNsfw') === '1';          // NSFW visible? off by default
   function saveLibPrefs(){ ppCookie('pp.libFilters', [...libFilters].join(',')); ppCookie('pp.libSort', libSort); ppCookie('pp.libNsfw', libNsfw ? '1' : '0'); }
   let libSearchQ = '';          // library name search
+  let libSelectMode = false; const libSelected = new Set();   // Library "Rig selection" batch picker
   let activeChar = null;        // shared character state — { it, deliveredTo:Set } follows you across tools
   const CHAR_TOOLS = TOOL_REGISTRY.filter(t => t.char).map(t => t.k);   // derived (Audit V item 5)
   let lastLoadedName = '';
@@ -1139,6 +1146,7 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
     else if (tool === 'bakemaps') $('#stHint').textContent = 'Bake normal / AO / curvature from a high-res sculpt onto the low-poly UVs — download the maps, on-device';
     else if (tool === 'curves') $('#stHint').textContent = 'Hand-edit the F-curves, trim the loop, and onion-skin the arc — motion editing, on-device';
     else if (tool === 'vat') $('#stHint').textContent = 'Bake an animation clip into a texture — a two-line shader then replays it with no skeleton, for crowds & cheap facial playback, on-device';
+    else if (tool === 'multirig') $('#stHint').textContent = 'Rig a batch of similar bodies — rig one, test a clip, save (it downloads), then Next carries the rig onto the next character';
     else if (tool === 'stage') $('#stHint').textContent = 'Drop several characters & props onto one stage, place each and give it its own pose or clip, then export the whole scene as one glTF';
     else if (tool === 'doctor') $('#stHint').textContent = 'Audit the mesh — manifoldness, winding, degenerates, UVs, scale — then fix it in one click';
     else if (tool === 'shaderlab') $('#stHint').textContent = 'Wire nodes into shaders — preview live on your character, publish to Showcase\u2019s shelf';
@@ -1476,6 +1484,7 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
     rb.style.cssText = 'font-size:11px;padding:4px 10px;';
     rb.addEventListener('click', surpriseMe);
     bar.appendChild(rb);
+    if (libTab === 'characters') { const selb = document.createElement('button'); selb.className = 'tbtn ghost'; selb.textContent = '⛓ Rig selection'; selb.title = 'Select several similar-bodied characters and batch-rig them in Multi Rig'; selb.style.cssText = 'font-size:11px;padding:4px 10px;'; selb.addEventListener('click', enterSelectMode); bar.appendChild(selb); }
     const sl = document.createElement('span'); sl.className = 'tlabel'; sl.textContent = 'Sort:'; bar.appendChild(sl);
     const sel = document.createElement('select'); sel.className = 'lib-sort';
     [['name','Name  A → Z'],['name-desc','Name  Z → A'],['newest','Newest first'],['oldest','Oldest first'],['recent','Recently opened'],['never','Never opened first'],['largest','Largest'],['smallest','Smallest']].forEach(([v, l]) => { const o = document.createElement('option'); o.value = v; o.textContent = l; if (v === libSort) o.selected = true; sel.appendChild(o); });
@@ -1654,6 +1663,7 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
     const thumbEl = el.querySelector('.thumb'); if (thumbEl) thumbEl.style.cursor = 'pointer';
     const nmEl = el.querySelector('.nm'); if (nmEl) nmEl.style.cursor = 'pointer';
     el.addEventListener('click', (e) => { if (e.target.closest('.acts') || e.target.closest('.cardTools')) return; openInShowcase(it); });
+    if (libSelectMode) applySelectMode(el, it);
     if (it.session && !it.pfp) genThumb(it);
     return el;
   }
@@ -1734,6 +1744,42 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
     const send = () => post('mocap', 'studio:setVideoUrl', { url: it.path, label: it.label, ext: it.ext, chunked: it.chunked, chunks: it.chunks });
     if (TOOLS.mocap.ready) send(); else TOOLS.mocap._pending = send;
     toast('Using ' + it.label + ' as MoCap source…', 'info');
+  }
+
+  // ---------- Library "Rig selection": pick several characters → Multi Rig ----------
+  function enterSelectMode() { if (libTab !== 'characters') { libTab = 'characters'; $$('#libTabs .lib-tab').forEach(x => x.classList.toggle('on', x.dataset.tab === 'characters')); } libSelectMode = true; libSelected.clear(); renderLib(); showSelBar(); toast('Pick characters with a similar body, then Rig selection', 'info'); }
+  function exitSelectMode() { libSelectMode = false; libSelected.clear(); const b = $('#libSelBar'); if (b) b.remove(); renderLib(); }
+  function applySelectMode(el, it) {
+    const key = it.path || it.label; const on = libSelected.has(key);
+    const box = document.createElement('div');
+    box.style.cssText = 'position:absolute;top:7px;left:7px;z-index:6;width:24px;height:24px;border-radius:6px;border:2px solid var(--wood-dark,#3a2a1a);background:' + (on ? '#c2562f' : 'rgba(255,246,224,.92)') + ';color:#fff6e0;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;box-shadow:0 2px 6px rgba(0,0,0,.3);';
+    box.textContent = on ? '\u2713' : '';
+    const thumb = el.querySelector('.thumb'); (thumb || el).appendChild(box);
+    if (on) el.style.outline = '3px solid #c2562f';
+    el.style.cursor = 'pointer';
+    el.addEventListener('click', (e) => { e.stopImmediatePropagation(); e.preventDefault(); const k = it.path || it.label; if (libSelected.has(k)) { libSelected.delete(k); box.style.background = 'rgba(255,246,224,.92)'; box.textContent = ''; el.style.outline = ''; } else { libSelected.add(k); box.style.background = '#c2562f'; box.textContent = '\u2713'; el.style.outline = '3px solid #c2562f'; } updateSelBar(); }, true);
+  }
+  function showSelBar() {
+    let bar = $('#libSelBar');
+    if (!bar) { bar = document.createElement('div'); bar.id = 'libSelBar'; bar.style.cssText = 'position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:540;display:flex;align-items:center;gap:12px;padding:10px 14px;background:var(--cream-2,#f3e6c9);border:4px solid var(--wood-dark,#3a2a1a);border-radius:16px;box-shadow:var(--hard-lg,0 8px 0 rgba(0,0,0,.25));';
+      bar.innerHTML = '<span id="libSelCount" style="font-family:var(--font-mono);font-size:12px;font-weight:700;color:var(--ink,#2d1e12);">0 selected</span><button class="tbtn ghost" id="libSelCancel" style="font-size:11px;">Cancel</button><button class="tbtn primary" id="libSelGo" style="font-size:11px;background:#c2562f;border-color:var(--wood-dark,#3a2a1a);color:#fff6e0;">\u26d3 Rig selection \u2192</button>';
+      document.body.appendChild(bar);
+      $('#libSelCancel').addEventListener('click', exitSelectMode);
+      $('#libSelGo').addEventListener('click', rigSelection);
+    }
+    updateSelBar();
+  }
+  function updateSelBar() { const c = $('#libSelCount'); if (c) c.textContent = libSelected.size + ' selected'; const go = $('#libSelGo'); if (go) { go.disabled = libSelected.size < 1; go.style.opacity = libSelected.size < 1 ? '.5' : '1'; } }
+  function rigSelection() {
+    const all = [...session.characters, ...libData.characters];
+    const chosen = all.filter(it => libSelected.has(it.path || it.label));
+    if (!chosen.length) { toast('Select at least one character', 'warn'); return; }
+    const characters = chosen.map((it, i) => ({ id: it.path || ('lib' + i), label: it.label || 'character', path: it.path, ext: it.ext || 'glb', chunked: it.chunked, chunks: it.chunks, session: !!it.session }));
+    const b = $('#libSelBar'); if (b) b.remove(); libSelectMode = false; libSelected.clear();
+    setTool('multirig');
+    const send = () => post('multirig', 'studio:mrPreload', { characters });
+    if (TOOLS.multirig.ready) send(); else TOOLS.multirig._pending = send;
+    toast('Sent ' + characters.length + ' character' + (characters.length > 1 ? 's' : '') + ' to Multi Rig', 'success');
   }
 
   // ---------- the roulette: a "Surprise me" button ----------
@@ -2279,7 +2325,7 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
       const t = d.tool; if (TOOLS[t]) { TOOLS[t].ready = true; const ld = $('#load-' + t); if (ld) ld.style.display = 'none';
         if (TOOLS[t]._pending) { TOOLS[t]._pending(); TOOLS[t]._pending = null; }
         if (t === 'showcase') post('showcase', 'studio:animLibrary', { animations: [...session.animations, ...libData.animations] });
-        if (t === 'stage') post('stage', 'studio:library', { characters: [...session.characters, ...libData.characters].map((it, i) => ({ id: it.path || ('lib' + i), label: it.label || 'character', path: it.path, ext: it.ext || 'glb', chunked: it.chunked, chunks: it.chunks, session: !!it.session, thumb: it.thumb || null })) }); }
+        if (t === 'stage' || t === 'multirig') post(t, 'studio:library', { characters: [...session.characters, ...libData.characters].map((it, i) => ({ id: it.path || ('lib' + i), label: it.label || 'character', path: it.path, ext: it.ext || 'glb', chunked: it.chunked, chunks: it.chunks, session: !!it.session, thumb: it.thumb || null })) }); }
     }
     else if (d.type === 'studio:riggedGLB') {
       // received baked GLB from rig → add to session library, hand to mocap
@@ -2343,6 +2389,19 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
         else { const { fetchAssetBuffer } = await import('./studio3D_scripts/chunk-loader.js'); buf = await fetchAssetBuffer(it.path, { chunked: it.chunked, chunks: it.chunks }); }
         post('stage', 'studio:stageAdd', { buffer: buf, name: (it.label || 'character') + '.' + (it.ext || 'glb'), id: d.id }, [buf]);
       } catch (err) { post('stage', 'studio:error', { tool: 'stage', message: 'Load failed: ' + (err && err.message || err) }); }
+    }
+    else if (d.type === 'studio:mrFetch') {
+      // Multi Rig asks for a specific library character by descriptor; fetch its
+      // buffer and hand it back so the batch rigger can load it.
+      const all = [...session.characters, ...libData.characters];
+      const it = all.find(x => (x.path || '') === d.id) || all.find(x => (x.label || '') === d.label);
+      if (!it) { post('multirig', 'studio:error', { tool: 'multirig', message: 'Character not found: ' + (d.label || d.id) }); return; }
+      try {
+        let buf;
+        if (it.session && it._buffer) buf = it._buffer.slice(0);
+        else { const { fetchAssetBuffer } = await import('./studio3D_scripts/chunk-loader.js'); buf = await fetchAssetBuffer(it.path, { chunked: it.chunked, chunks: it.chunks }); }
+        post('multirig', 'studio:mrAdd', { buffer: buf, name: (it.label || 'character') + '.' + (it.ext || 'glb'), id: d.id }, [buf]);
+      } catch (err) { post('multirig', 'studio:error', { tool: 'multirig', message: 'Load failed: ' + (err && err.message || err) }); }
     }
     else if (d.type === 'studio:goTool') {
       if (TOOLS[d.tool] || d.tool === 'library') setTool(d.tool);

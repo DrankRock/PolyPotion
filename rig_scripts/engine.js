@@ -1145,6 +1145,46 @@ E.exportGLTF = async function (binary) {
   return { blob: new Blob([JSON.stringify(result)], { type: 'model/gltf+json' }), ext: 'gltf' };
 };
 
+// ============================================================
+// JOINT LAYOUT CAPTURE / APPLY  (Multi Rig — carry a rig across similar bodies)
+// Every mesh is centered + normalized to the same height on load, so world
+// marker positions from one character transfer almost 1:1 onto the next when
+// the bodies are alike. Capture the placement, re-apply it after the next mesh
+// loads, then the user only nudges what differs.
+// ============================================================
+function _bboxFrame() {
+  const size = bbox.getSize(new THREE.Vector3());
+  return {
+    ox: modelC.x, oy: bbox.min.y, oz: modelC.z,
+    sx: Math.abs(size.x) > 1e-6 ? size.x : 1,
+    sy: Math.abs(size.y) > 1e-6 ? size.y : 1,
+    sz: Math.abs(size.z) > 1e-6 ? size.z : 1,
+  };
+}
+// Capture placement as per-axis fractions of the mesh bbox (origin = feet-center),
+// so re-applying onto a body of slightly different width/height/depth still lands
+// the joints in the right relative spot. Absolute {positions} still read for back-compat.
+E.getJointLayout = function () {
+  const f = _bboxFrame(); const frac = {};
+  joints.forEach(j => { const p = j.marker.position;
+    frac[j.id] = [(p.x - f.ox) / f.sx, (p.y - f.oy) / f.sy, (p.z - f.oz) / f.sz]; });
+  return { frac, groupsOn: { ...groupsOn } };
+};
+E.applyJointLayout = function (layout) {
+  if (!layout) return 0;
+  const src = layout.frac || null, abs = layout.positions || null;
+  const f = _bboxFrame();
+  let n = 0;
+  joints.forEach(j => {
+    if (src && src[j.id]) { const q = src[j.id]; j.marker.position.set(f.ox + q[0] * f.sx, f.oy + q[1] * f.sy, f.oz + q[2] * f.sz); j._moved = true; n++; }
+    else if (abs && abs[j.id]) { const p = abs[j.id]; j.marker.position.set(p[0], p[1], p[2]); j._moved = true; n++; }
+  });
+  applyGroupVisibility(); updateBoneLines();
+  if (selJoint && onSelectCb) onSelectCb(serializeJoint(selJoint));
+  return n;
+};
+E.serializeAll = () => joints.map(serializeJoint);
+
 window.RigEngine = E;
 window.THREE_R = THREE;
 E.debug = () => ({

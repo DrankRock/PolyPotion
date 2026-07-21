@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./studio3D_scripts/support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Spline+Sans+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="theme.js"></script>
+<style>
+  html,body{margin:0;padding:0;height:100%;background:var(--gutter);}
+  *{box-sizing:border-box;}
+  @keyframes mr-tin{from{transform:translateX(120%);opacity:0;}to{transform:translateX(0);opacity:1;}}
+  @keyframes mr-spin{to{transform:rotate(360deg);}}
+  #mr-root ::-webkit-scrollbar{width:10px;height:10px;}
+  #mr-root ::-webkit-scrollbar-track{background:var(--gutter);}
+  #mr-root ::-webkit-scrollbar-thumb{background:var(--panel-3);border:2px solid var(--gutter);border-radius:6px;}
+  a{color:var(--accent);} a:hover{color:var(--accent-dim);}
+</style>
+</helmet>
+
+<div id="mr-root" style="display:flex;flex-direction:column;height:100vh;width:100%;overflow:hidden;background:var(--gutter);color:var(--text);font-family:var(--font-ui);font-size:13px;-webkit-font-smoothing:antialiased;user-select:none;">
+
+  <!-- TOP BAR -->
+  <header style="height:46px;flex:none;display:flex;align-items:center;gap:14px;padding:0 14px;background:var(--header);border-bottom:1px solid var(--seam);">
+    <div style="display:flex;align-items:center;gap:9px;">
+      <div style="width:26px;height:26px;border-radius:5px;display:flex;align-items:center;justify-content:center;background:var(--accent);color:var(--on-accent);font-weight:700;font-size:14px;box-shadow:0 1px 2px rgba(0,0,0,.4),0 0 0 1px rgba(255,255,255,.08) inset;">⛓</div>
+      <div>
+        <div style="font-weight:700;letter-spacing:.04em;font-size:14px;">MULTI RIG</div>
+        <div style="font-family:var(--font-mono);font-size:10px;color:var(--muted);letter-spacing:.1em;margin-top:1px;">BATCH · CARRY THE RIG FORWARD · LOCAL</div>
+      </div>
+    </div>
+    <div style="flex:1;"></div>
+    <sc-if value="{{ started }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex;align-items:center;gap:9px;font-size:11.5px;color:var(--text-2);padding:4px 11px;background:var(--panel);border:1px solid var(--seam);border-radius:5px;">
+        <span style="font-family:var(--font-mono);color:var(--accent);">{{ posLabel }}</span>
+        <span style="color:var(--muted);">·</span>
+        <span style="white-space:nowrap;max-width:220px;overflow:hidden;text-overflow:ellipsis;">{{ curName }}</span>
+      </div>
+    </sc-if>
+    <div style="display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--text-2);padding:4px 10px;background:var(--panel);border:1px solid var(--seam);border-radius:5px;">
+      <span style="width:7px;height:7px;border-radius:50%;flex:none;background:{{ dotColor }};"></span>
+      <span style="font-family:var(--font-mono);">{{ savedLabel }}</span>
+    </div>
+  </header>
+
+  <div style="flex:1;display:flex;min-height:0;">
+
+    <!-- LEFT : the batch queue -->
+    <sc-if value="{{ railClosed }}" hint-placeholder-val="{{ false }}">
+      <button title="Show batch queue" style="flex:none;width:26px;background:var(--panel);border:none;border-right:1px solid var(--seam);color:var(--text-2);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;" onClick="{{ toggleRail }}">›</button>
+    </sc-if>
+    <sc-if value="{{ railOpen }}" hint-placeholder-val="{{ true }}">
+    <aside style="width:290px;flex:none;background:var(--panel);border-right:1px solid var(--seam);display:flex;flex-direction:column;min-height:0;">
+
+      <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--header);border-bottom:1px solid var(--seam);flex:none;">
+        <span style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text-2);">Batch queue</span>
+        <span style="margin-left:auto;font-family:var(--font-mono);font-size:10px;color:var(--accent);background:var(--panel);padding:1px 8px;border-radius:9px;border:1px solid var(--seam);">{{ queueCount }}</span>
+        <button title="Hide the queue — more room to rig" style="width:22px;height:22px;flex:none;border-radius:5px;border:1px solid var(--edge);background:var(--panel-3);color:var(--text-2);cursor:pointer;font-size:13px;" onClick="{{ toggleRail }}">‹</button>
+      </div>
+
+      <div style="flex:1;overflow-y:auto;min-height:0;display:flex;flex-direction:column;">
+        <!-- queue list -->
+        <div style="padding:9px 12px;display:flex;flex-direction:column;gap:6px;border-bottom:1px solid var(--seam);">
+          <sc-for list="{{ queue }}" as="q" hint-placeholder-count="3">
+            <div style="{{ q.cardStyle }}">
+              <span style="flex:none;width:18px;text-align:center;{{ q.markStyle }}">{{ q.mark }}</span>
+              <button style="flex:1;text-align:left;background:none;border:none;color:inherit;cursor:pointer;font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0;" onClick="{{ q.onJump }}" title="Load this one">{{ q.label }}</button>
+              <button title="Remove from batch" style="width:22px;height:22px;flex:none;border-radius:5px;border:1px solid var(--edge);background:var(--panel-3);color:var(--text-2);cursor:pointer;font-size:11px;" onClick="{{ q.onDel }}">✕</button>
+            </div>
+          </sc-for>
+          <sc-if value="{{ queueEmpty }}" hint-placeholder-val="{{ true }}">
+            <div style="font-size:11.5px;color:var(--muted);line-height:1.5;padding:4px 2px;">Pick the characters you want to rig below. Choose ones with a <b>similar body</b> — the rig you place on the first carries onto the rest.</div>
+          </sc-if>
+        </div>
+
+        <!-- add from library -->
+        <div style="border-bottom:1px solid var(--seam);">
+          <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--header);border-bottom:1px solid var(--seam);">
+            <span style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text-2);">Add from Library</span>
+            <span style="margin-left:auto;font-family:var(--font-mono);font-size:10px;color:var(--muted);">{{ libCountLabel }}</span>
+          </div>
+          <div style="padding:9px 12px;">
+            <sc-if value="{{ hasLib }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;flex-direction:column;gap:5px;max-height:230px;overflow-y:auto;">
+                <sc-for list="{{ libChars }}" as="l" hint-placeholder-count="4">
+                  <button style="display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:6px;cursor:pointer;font-size:12px;border:1px solid var(--edge);background:var(--panel-3);color:var(--text);text-align:left;" onClick="{{ l.onAdd }}" disabled="{{ l.inQueue }}">
+                    <span style="color:{{ l.plusColor }};flex:none;">{{ l.plus }}</span>
+                    <span style="flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ l.label }}</span>
+                  </button>
+                </sc-for>
+              </div>
+              <button style="margin-top:8px;width:100%;padding:7px;border-radius:6px;font-size:11px;font-weight:600;background:transparent;border:1px solid var(--edge);color:var(--text-2);cursor:pointer;" onClick="{{ addAll }}">＋ Add all listed</button>
+            </sc-if>
+            <sc-if value="{{ noLib }}" hint-placeholder-val="{{ true }}">
+              <div style="font-size:11px;color:var(--muted);line-height:1.5;">Your Library is empty. Generate a base human in <b>HumanGen</b> or import characters, then they'll appear here.</div>
+            </sc-if>
+            <button style="margin-top:8px;width:100%;padding:8px;border-radius:6px;font-size:11.5px;font-weight:600;background:var(--panel-3);border:1px solid var(--edge);color:var(--text);cursor:pointer;" onClick="{{ pickFiles }}">⬇ …or import files (.glb / .fbx / .obj)</button>
+          </div>
+        </div>
+
+        <div style="padding:12px;">
+          <div style="display:flex;gap:9px;padding:9px 11px;border-radius:7px;font-size:11px;line-height:1.5;background:var(--accent-dim);border:1px solid rgba(255,127,60,.28);color:var(--text-2);"><span style="flex:none;color:var(--accent);">✦</span><span>Rig the first character properly. From then on, each <b>Next</b> loads the following one <b>with that rig already placed</b> — just fix what differs, test, save, and move on.</span></div>
+        </div>
+      </div>
+
+      <!-- carry toggle -->
+      <label style="flex:none;display:flex;align-items:center;gap:8px;padding:10px 12px;border-top:1px solid var(--seam);background:var(--header);cursor:pointer;font-size:11.5px;color:var(--text-2);">
+        <input type="checkbox" checked="{{ carry }}" onChange="{{ onCarry }}" style="accent-color:var(--accent);width:14px;height:14px;flex:none;cursor:pointer;">
+        <span>Carry the placed rig onto the next character</span>
+      </label>
+    </aside>
+    </sc-if>
+
+    <!-- CENTER : the rigger + action bar -->
+    <div style="flex:1;position:relative;min-width:0;min-height:0;display:flex;flex-direction:column;background:var(--gutter);">
+
+      <div style="flex:1;position:relative;min-height:0;">
+        <iframe id="mr-frame" src="AutoRig.html?embed=1" title="Auto-rigger" style="position:absolute;inset:0;width:100%;height:100%;border:none;display:block;"></iframe>
+
+        <!-- pre-start overlay -->
+        <sc-if value="{{ showStart }}" hint-placeholder-val="{{ true }}">
+          <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;background:rgba(18,18,18,.92);padding:30px;text-align:center;">
+            <div style="width:72px;height:72px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:32px;background:var(--accent-dim);border:1px solid rgba(255,127,60,.3);color:var(--accent);">⛓</div>
+            <div>
+              <div style="font-size:17px;font-weight:700;margin-bottom:8px;">Rig a batch, one after another</div>
+              <div style="font-size:12.5px;color:var(--text-2);max-width:460px;line-height:1.65;">Add characters with a <b>similar body</b> to the queue on the left. Then <b>Start</b>: rig the first, test it with a clip, save it (it downloads), and hit <b>Next</b> — the following character loads with your rig already in place, so you only tweak what changed.</div>
+            </div>
+            <button style="padding:12px 26px;border-radius:8px;font-size:13.5px;font-weight:700;background:var(--accent);border:1px solid var(--accent);color:var(--on-accent);cursor:pointer;box-shadow:0 2px 14px rgba(255,127,60,.32);" onClick="{{ start }}" disabled="{{ startDisabled }}">{{ startLabel }}</button>
+          </div>
+        </sc-if>
+
+        <!-- loading overlay -->
+        <sc-if value="{{ loading }}" hint-placeholder-val="{{ false }}">
+          <div style="position:absolute;left:50%;top:14px;transform:translateX(-50%);display:flex;align-items:center;gap:10px;background:rgba(18,18,18,.92);border:1px solid var(--edge);border-radius:8px;padding:8px 15px;color:var(--text-2);font-size:12px;z-index:5;">
+            <div style="width:16px;height:16px;border:2px solid var(--panel-3);border-top-color:var(--accent);border-radius:50%;animation:mr-spin .9s linear infinite;"></div>{{ loadingMsg }}
+          </div>
+        </sc-if>
+      </div>
+
+      <!-- ACTION BAR -->
+      <sc-if value="{{ started }}" hint-placeholder-val="{{ false }}">
+        <div style="flex:none;display:flex;align-items:center;gap:12px;padding:11px 16px;background:var(--header);border-top:1px solid var(--seam);">
+          <div style="display:flex;flex-direction:column;gap:2px;min-width:0;">
+            <span style="font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);">Now rigging · {{ posLabel }}</span>
+            <span style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:280px;">{{ curName }} {{ boundBadge }}</span>
+          </div>
+          <div style="flex:1;"></div>
+          <button style="display:inline-flex;align-items:center;gap:7px;padding:10px 16px;border-radius:7px;font-size:12.5px;font-weight:600;background:var(--panel-3);border:1px solid var(--edge);color:var(--text);cursor:pointer;" onClick="{{ save }}">⬇ Save rig</button>
+          <button style="display:inline-flex;align-items:center;gap:7px;padding:10px 22px;border-radius:7px;font-size:13px;font-weight:700;background:var(--accent);border:1px solid var(--accent);color:var(--on-accent);cursor:pointer;box-shadow:0 2px 12px rgba(255,127,60,.3);" onClick="{{ saveNext }}">{{ nextLabel }}</button>
+        </div>
+      </sc-if>
+    </div>
+  </div>
+
+  <input type="file" id="mr-file" accept=".glb,.gltf,.fbx,.obj" multiple style="display:none;">
+  <div id="mr-toasts" style="position:fixed;bottom:16px;right:16px;z-index:400;display:flex;flex-direction:column;gap:8px;"></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = {
+    libChars: [], queue: [], idx: -1, started: false,
+    rigReady: false, bound: false, carry: true, railOpen: true,
+    loading: false, loadingMsg: '',
+  };
+
+  componentDidMount() {
+    this.setupEmbed();
+    // bridge: the AutoRig iframe posts to us (its parent). Distinguish its
+    // messages from the shell's by tool/type.
+    window.addEventListener('message', (e) => {
+      const d = e.data; if (!d || !d.__studio) return;
+      const frame = document.getElementById('mr-frame');
+      const fromRig = frame && e.source === frame.contentWindow;
+      if (fromRig) {
+        if (d.type === 'studio:ready' && d.tool === 'rig') this.setState({ rigReady: true });
+        else if (d.type === 'studio:bound') this.setState({ bound: true });
+        else if (d.type === 'studio:error') this.toast('Rigger: ' + (d.message || 'error'));
+        return;
+      }
+      // from the shell
+      if (d.type === 'studio:library') this.setState({ libChars: d.characters || [] });
+      else if (d.type === 'studio:mrPreload') this.preload(d.characters || []);
+      else if (d.type === 'studio:mrAdd') { if (this._pend) { this._pend.resolve({ buffer: d.buffer, name: d.name }); this._pend = null; } }
+      else if (d.type === 'studio:error') { if (this._pend) { this._pend.reject(new Error(d.message || 'fetch failed')); this._pend = null; } else this.toast(d.message || 'error'); }
+    });
+    const inp = document.getElementById('mr-file');
+    if (inp) inp.addEventListener('change', e => { this.addFiles(e.target.files); e.target.value = ''; });
+  }
+
+  // ---- iframe API access (same-origin) ----
+  api() { const f = document.getElementById('mr-frame'); const w = f && f.contentWindow; return (w && w.AutoRigEmbed) || null; }
+
+  // ---- queue building ----
+  addFromLibrary(l) {
+    if (this.state.queue.some(q => q.key === l.id)) return;
+    const q = { key: l.id, id: l.id, label: l.label, path: l.path, ext: l.ext, chunked: l.chunked, chunks: l.chunks, session: l.session, status: 'pending', file: null };
+    this.setState({ queue: [...this.state.queue, q] });
+  }
+  addAll() { this.state.libChars.forEach(l => this.addFromLibrary(l)); }
+  preload(chars) {
+    const existing = new Set(this.state.queue.map(q => q.key));
+    const add = (chars || []).filter(l => l && !existing.has(l.id)).map(l => ({ key: l.id, id: l.id, label: l.label, path: l.path, ext: l.ext, chunked: l.chunked, chunks: l.chunks, session: l.session, status: 'pending', file: null }));
+    if (add.length) { this.setState({ queue: [...this.state.queue, ...add] }); this.toast('Loaded ' + add.length + ' character' + (add.length > 1 ? 's' : '') + ' into the batch — press Start'); }
+  }
+  addFiles(files) {
+    const add = [];
+    for (const f of files) {
+      const key = 'file:' + f.name + ':' + f.size;
+      if (this.state.queue.some(q => q.key === key)) continue;
+      add.push({ key, id: key, label: f.name.replace(/\.[^.]+$/, ''), ext: (f.name.split('.').pop() || 'glb').toLowerCase(), status: 'pending', file: f });
+    }
+    if (add.length) { this.setState({ queue: [...this.state.queue, ...add] }); this.toast('Added ' + add.length + ' file' + (add.length > 1 ? 's' : '') + ' to the batch'); }
+  }
+  removeFromQueue(key) {
+    const i = this.state.queue.findIndex(q => q.key === key);
+    if (i < 0) return;
+    const queue = this.state.queue.filter(q => q.key !== key);
+    let idx = this.state.idx;
+    if (i < idx) idx -= 1;                                  // items before current shift left
+    if (idx > queue.length - 1) idx = queue.length - 1;     // clamp
+    this.setState({ queue, idx });
+  }
+
+  // ---- buffer fetch ----
+  fetchBuffer(item) {
+    if (item.file) return item.file.arrayBuffer().then(buffer => ({ buffer, name: item.file.name }));
+    if (!this._post) return Promise.reject(new Error('Open Multi Rig inside the studio to pull from the Library'));
+    return new Promise((resolve, reject) => {
+      this._pend = { resolve, reject };
+      this._post('studio:mrFetch', { id: item.id, label: item.label });
+      setTimeout(() => { if (this._pend) { this._pend.reject(new Error('Library fetch timed out')); this._pend = null; } }, 20000);
+    });
+  }
+
+  // ---- workflow ----
+  async start() {
+    if (this._busy) return;
+    if (!this.state.queue.length) { this.toast('Add characters to the batch first'); return; }
+    if (!this.api()) { this.toast('Rig workspace still loading — try again in a moment'); return; }
+    this._busy = true;
+    try { this.setState({ started: true }); await this.loadIndex(0, false); }
+    finally { this._busy = false; }
+  }
+
+  async loadIndex(i, applyLayout) {
+    const item = this.state.queue[i]; if (!item) return;
+    const api = this.api(); if (!api) { this.toast('Rig workspace not ready'); return; }
+    this.setState({ loading: true, loadingMsg: 'Loading ' + item.label + '…', idx: i, bound: false });
+    try {
+      const { buffer, name } = await this.fetchBuffer(item);
+      await api.loadFromBuffer(buffer, name || (item.label + '.' + (item.ext || 'glb')));
+      let carried = 0;
+      if (applyLayout && this._layout) carried = api.applyRig(this._layout) || 0;
+      this.setState({ loading: false });
+      if (carried) this.toast('Rig carried onto ' + item.label + ' (' + carried + ' joints) — tweak, test, then Save');
+      else this.toast('Loaded ' + item.label + ' — place the joints, then Compute Skeleton + Skin');
+    } catch (e) {
+      this.setState({ loading: false });
+      this.toast('Load failed: ' + (e && e.message || e));
+    }
+  }
+
+  captureCurrent() {
+    const api = this.api(); if (!api) return;              // always remember the last placement (apply is gated by the carry toggle)
+    try { const L = api.captureRig(); if (L && (L.frac || L.positions)) this._layout = L; } catch (e) {}
+  }
+
+  async save() { if (this._busy) return false; this._busy = true; try { return await this._saveImpl(); } finally { this._busy = false; } }
+  async _saveImpl() {
+    const api = this.api(); if (!api) return false;
+    if (!api.isBound()) { this.toast('Bind the rig first (Compute Skeleton + Skin), then Save'); return false; }
+    const item = this.state.queue[this.state.idx];
+    this.setState({ loading: true, loadingMsg: 'Baking ' + (item ? item.label : 'rig') + '…' });
+    try {
+      const out = await api.getRiggedGLB(item ? item.label : 'character');
+      const blob = new Blob([out.buffer], { type: 'model/gltf-binary' });
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = out.name;
+      document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 800);
+      const queue = this.state.queue.slice();
+      if (queue[this.state.idx]) queue[this.state.idx] = { ...queue[this.state.idx], status: 'done' };
+      this.setState({ loading: false, queue });
+      this.toast('Saved ' + out.name);
+      return true;
+    } catch (e) { this.setState({ loading: false }); this.toast('Save failed: ' + (e && e.message || e)); return false; }
+  }
+
+  async next() { if (this._busy) return; this._busy = true; try { return await this._nextImpl(); } finally { this._busy = false; } }
+  async _nextImpl() {
+    this.captureCurrent();
+    const i = this.state.idx + 1;
+    if (i >= this.state.queue.length) {
+      const done = this.state.queue.filter(q => q.status === 'done').length;
+      this.toast('Batch complete — ' + done + ' / ' + this.state.queue.length + ' saved. Add more to keep going.');
+      return;
+    }
+    await this.loadIndex(i, this.state.carry);
+  }
+
+  async saveNext() {
+    if (this._busy) return;
+    this._busy = true;
+    try {
+      const item = this.state.queue[this.state.idx];
+      if (item && item.status !== 'done' && this.api() && !this.api().isBound()) {
+        this.toast('Nothing bound yet — moving on without saving this one');
+      } else {
+        await this._saveImpl();
+      }
+      await this._nextImpl();
+    } finally { this._busy = false; }
+  }
+
+  async jumpTo(i) {
+    if (this._busy || !this.state.started || i === this.state.idx) return;
+    this._busy = true;
+    try { this.captureCurrent(); await this.loadIndex(i, this.state.carry); }
+    finally { this._busy = false; }
+  }
+
+  setupEmbed() {
+    const params = new URLSearchParams(location.search);
+    this._embedded = params.get('embed') === '1' || window.parent !== window;
+    this._post = (type, payload, transfer) => { try { window.parent && window.parent.postMessage(Object.assign({ __studio: true, type }, payload || {}), '*', transfer || []); } catch (e) {} };
+    if (this._embedded) { const hide = () => { const h = document.querySelector('#mr-root > header'); if (h && h.firstElementChild) h.firstElementChild.style.display = 'none'; }; hide(); setTimeout(hide, 60); setTimeout(hide, 300); }
+    setTimeout(() => this._post('studio:ready', { tool: 'multirig' }), 0);
+  }
+
+  toast(msg) {
+    const wrap = document.getElementById('mr-toasts'); if (!wrap) return;
+    const el = document.createElement('div');
+    el.style.cssText = 'padding:11px 15px;border-radius:7px;font-size:12px;background:var(--panel-3);border:1px solid var(--edge);border-left:3px solid var(--accent);box-shadow:0 8px 24px rgba(0,0,0,.45);max-width:360px;color:var(--text);animation:mr-tin .25s cubic-bezier(.2,1,.3,1);';
+    el.textContent = msg; wrap.appendChild(el);
+    setTimeout(() => { el.style.transition = 'opacity .3s'; el.style.opacity = '0'; setTimeout(() => el.remove(), 300); }, 3400);
+  }
+
+  qCardStyle(active, done) {
+    const border = active ? 'var(--accent)' : (done ? 'var(--good)' : 'var(--edge)');
+    const bg = active ? 'rgba(255,127,60,.14)' : 'var(--panel-3)';
+    return 'display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:7px;border:1px solid ' + border + ';background:' + bg + ';color:var(--text);';
+  }
+
+  renderVals() {
+    const st = this.state;
+    const done = st.queue.filter(q => q.status === 'done').length;
+    const inQueue = new Set(st.queue.map(q => q.key));
+    const queue = st.queue.map((q, i) => {
+      const active = i === st.idx && st.started;
+      const isDone = q.status === 'done';
+      return {
+        label: q.label,
+        cardStyle: this.qCardStyle(active, isDone),
+        mark: isDone ? '✓' : (active ? '▶' : String(i + 1)),
+        markStyle: 'color:' + (isDone ? 'var(--good)' : (active ? 'var(--accent)' : 'var(--muted)')) + ';font-family:var(--font-mono);font-size:11px;font-weight:700;',
+        onJump: () => this.jumpTo(i),
+        onDel: () => active ? this.toast('This one is loaded — Save & next, or jump elsewhere first') : this.removeFromQueue(q.key),
+      };
+    });
+    const libChars = st.libChars.map(l => {
+      const inQ = inQueue.has(l.id);
+      return { label: l.label, inQueue: inQ, plus: inQ ? '✓' : '＋', plusColor: inQ ? 'var(--good)' : 'var(--accent)', onAdd: () => this.addFromLibrary(l) };
+    });
+    const cur = st.queue[st.idx];
+
+    return {
+      started: st.started,
+      queue, queueEmpty: st.queue.length === 0,
+      queueCount: st.queue.length ? (st.queue.length + ' char' + (st.queue.length > 1 ? 's' : '')) : 'empty',
+      libChars, hasLib: libChars.length > 0, noLib: libChars.length === 0,
+      libCountLabel: libChars.length ? (libChars.length + ' available') : '',
+      carry: st.carry, onCarry: (e) => this.setState({ carry: !!e.target.checked }),
+      railOpen: st.railOpen, railClosed: !st.railOpen, toggleRail: () => this.setState({ railOpen: !st.railOpen }),
+      addAll: () => this.addAll(),
+      pickFiles: () => document.getElementById('mr-file').click(),
+      showStart: !st.started,
+      startDisabled: st.queue.length === 0,
+      startLabel: st.queue.length ? ('Start rigging ' + st.queue.length + ' character' + (st.queue.length > 1 ? 's' : '') + ' →') : 'Add characters to begin',
+      start: () => this.start(),
+      loading: st.loading, loadingMsg: st.loadingMsg,
+      posLabel: st.started ? ((st.idx + 1) + ' / ' + st.queue.length) : '—',
+      curName: cur ? cur.label : '—',
+      boundBadge: st.bound ? '· rigged ✓' : '',
+      savedLabel: done + ' / ' + (st.queue.length || 0) + ' saved',
+      dotColor: done && done === st.queue.length ? 'var(--good)' : (st.started ? 'var(--accent)' : 'var(--muted)'),
+      nextLabel: (st.idx + 1 >= st.queue.length) ? 'Save · finish' : 'Save & next →',
+      save: () => this.save(),
+      saveNext: () => this.saveNext(),
+    };
+  }
+}
+</script>
+</body>
+</html>
