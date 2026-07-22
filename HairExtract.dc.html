@@ -609,7 +609,7 @@ class Component extends DCLogic {
       const grp = new this.T.Group(); grp.add(mesh.clone());
       new GLTFExporter().parse(grp, (buf) => {
         const blob = new Blob([buf], { type: 'model/gltf-binary' });
-        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = fname; a.click(); URL.revokeObjectURL(a.href);
+        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = fname; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 4000);
         this.setState({ [key]: false });
       }, (e) => { console.error(e); this.setState({ [key]: false }); }, { binary: true });
     } catch (e) { console.error(e); this.setState({ [key]: false }); }
@@ -624,7 +624,7 @@ class Component extends DCLogic {
         const grp = new this.T.Group(); grp.add(this.bodyMesh.clone()); grp.add(this.hairMesh.clone());
         new GLTFExporter().parse(grp, (buf) => {
           const blob = new Blob([buf], { type: 'model/gltf-binary' });
-          const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'model_split.glb'; a.click(); URL.revokeObjectURL(a.href);
+          const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'model_split.glb'; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 4000);
           this.setState({ exportingFull: false });
         }, (e) => { console.error(e); this.setState({ exportingFull: false }); }, { binary: true });
       } catch (e) { console.error(e); this.setState({ exportingFull: false }); }

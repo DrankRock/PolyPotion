@@ -1088,7 +1088,7 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
     f.className = 'tool-frame';
     f.src = T.src;
     f.allow = 'camera; microphone; xr-spatial-tracking';
-    f.addEventListener('load', () => attachCtxWatch(tool, f));
+    f.addEventListener('load', () => { attachCtxWatch(tool, f); installDownloadBridge(f); });
     pane.appendChild(f);
     T.frame = f; T.mountedAt = Date.now();
     ctxKeep(tool);
@@ -1096,6 +1096,38 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
     updateCtxMeter();
     return f;
   }
+  // ---------- download bridge (Audit fix: iframe-initiated downloads are blocked) ----------
+  // Every tool builds a blob and clicks an <a download> inside its OWN iframe.
+  // Browsers refuse downloads initiated from a subframe, so the file silently
+  // never lands even though the tool toasts "Exported …". We catch that click
+  // in the tool document (from here, the top frame) and re-issue the download
+  // from the top document, where it is allowed.
+  function shellDownload(blob, name) {
+    try {
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob); a.download = name || 'download';
+      document.body.appendChild(a); a.click();
+      setTimeout(() => { try { URL.revokeObjectURL(a.href); } catch (e) {} a.remove(); }, 4000);
+    } catch (e) { console.error('shellDownload', e); }
+  }
+  function installDownloadBridge(f) {
+    let doc, win;
+    try { doc = f.contentDocument; win = f.contentWindow; } catch (e) { return; }
+    if (!doc || !win || doc.__ppDlBridge) return;
+    doc.__ppDlBridge = true;
+    doc.addEventListener('click', function (e) {
+      let a = e.target;
+      while (a && a !== doc && !(a.tagName === 'A' && a.hasAttribute('download'))) a = a.parentNode;
+      if (!a || a === doc || !a.href) return;
+      if (!/^blob:|^data:/i.test(a.href)) return;   // leave real links / navigations alone
+      e.preventDefault(); e.stopImmediatePropagation();
+      const name = a.getAttribute('download') || (a.download) || 'download';
+      const href = a.href;
+      win.fetch(href).then(r => r.blob()).then(b => shellDownload(b, name))
+        .catch(() => { const a2 = document.createElement('a'); a2.href = href; a2.download = name; document.body.appendChild(a2); a2.click(); setTimeout(() => a2.remove(), 4000); });
+    }, true);
+  }
+
   function post(tool, type, payload, transfer) {
     const T = TOOLS[tool]; if (!T || !T.frame) return;
     T.frame.contentWindow.postMessage(Object.assign({ __studio: true, type }, payload || {}), '*', transfer || []);

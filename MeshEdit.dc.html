@@ -58,6 +58,7 @@
       </sc-for>
     </div>
     <div style="flex:1;"></div>
+    <sc-if value="{{ hasModel }}" hint-placeholder-val="{{ false }}"><button style="display:inline-flex;align-items:center;gap:7px;height:30px;padding:0 14px;border-radius:6px;font-size:11.5px;font-weight:700;background:var(--active);border:1px solid var(--active);color:var(--on-accent);cursor:pointer;" onClick="{{ doExport }}">⬆ Export .glb</button></sc-if>
     <button style="display:inline-flex;align-items:center;gap:7px;height:30px;padding:0 13px;border-radius:6px;font-size:11.5px;font-weight:600;background:var(--panel3);border:1px solid var(--edge);color:var(--text);cursor:pointer;" onClick="{{ pickFile }}">⬇ Import model…</button>
     <div style="display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--text2);padding:4px 10px;background:var(--panel);border:1px solid var(--seam);border-radius:5px;">
       <span style="width:7px;height:7px;border-radius:50%;flex:none;background:{{ dotColor }};"></span>
@@ -467,6 +468,24 @@ class Component extends DCLogic {
     setTimeout(() => this._post('studio:ready', { tool: 'edit' }), 0);
   }
 
+  async doExport() {
+    const eng = this._eng;
+    if (!eng || !eng.hasModel()) { this.toast('Load a mesh first'); return; }
+    this.setState({ loading: true, loadingMsg: 'Packing GLB…' });
+    try {
+      const r = await eng.exportGLB();
+      const buf = r instanceof ArrayBuffer ? r : r.buffer || r;
+      const blob = new Blob([buf], { type: 'model/gltf-binary' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = (eng.stats().name || 'mesh').replace(/\.\w+$/, '') + '_edited.glb';
+      document.body.appendChild(a); a.click();
+      setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 4000);
+      this.setState({ loading: false });
+      this.toast('Exported ' + a.download);
+    } catch (e) { this.setState({ loading: false }); this.toast('Export failed: ' + (e && e.message || e)); }
+  }
+
   toast(msg) {
     const wrap = document.getElementById('me-toasts'); if (!wrap) return;
     const el = document.createElement('div');
@@ -537,6 +556,7 @@ class Component extends DCLogic {
       modeBadge: st.hasModel ? modeLabel : 'IMPORT A MESH',
       vpHint: st.mode === 'paint' ? 'drag paints · alt erases · scroll zoom' : st.mode === 'cut' ? 'click element → slice' : st.mode === 'move' ? 'drag a piece to reposition · empty space orbits' : st.mode === 'remesh' ? 'set resolution, then Fuse — orbit/zoom as normal' : st.mode === 'verts' ? 'drag box-selects · G/R/S transform · lock axis with X/Y/Z' : 'click select · shift add · drag orbit',
       pickFile: () => document.getElementById('me-file').click(),
+      doExport: () => this.doExport(),
       loadSample: () => this.pickSampleFlow(),
       selectAll: () => eng && eng.selectAll(),
       frameSel: () => eng && eng.frameSelected(),

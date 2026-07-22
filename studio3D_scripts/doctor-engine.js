@@ -587,6 +587,8 @@ export class DoctorEngine {
 
   // ---------------------------------------------------------- EXPORT
   exportGLB() {
+    if (this.xray) this.setXray(false);           // never bake the see-through preview into the file
+    this._eachMat(m => { if (m.userData && m.userData.__dr !== undefined) { m.transparent = m.userData.__dr.t; m.opacity = m.userData.__dr.o; m.depthWrite = m.userData.__dr.dw; delete m.userData.__dr; } });
     const exp = new GLTFExporter();
     const opts = { binary: true, animations: this.animations || [] };
     return new Promise((res, rej) => exp.parse(this.modelRoot, (r) => res(r), (e) => rej(e), opts));

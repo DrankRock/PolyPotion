@@ -381,7 +381,8 @@ class Component extends DCLogic {
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
       a.download = 'human_tpose.glb';
-      a.click(); URL.revokeObjectURL(a.href);
+      document.body.appendChild(a); a.click();
+      setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 4000);
       this.setState({ exporting: false });
     } catch (e) { console.error(e); this.setState({ exporting: false }); }
   };

@@ -442,6 +442,31 @@ Phase 2 ideas, in order of value:
 
 ## Log
 
+- 2026-07-22 — **EXPORT/DOWNLOAD BUGFIX (pp-v82)**. User: "none of the download
+  works … says exported X.glb but doesn’t" across Decimate/LOD/OBJ, Boolean,
+  MeshDoctor, HumanGen, etc. Root cause: every tool builds a blob and clicks an
+  <a download> INSIDE its own iframe; browsers block subframe-initiated downloads,
+  so the file never lands though the toast fires. FIX: shell installs a capturing
+  download bridge on each tool iframe (installDownloadBridge in index.html) that
+  intercepts blob:/data: <a download> clicks and re-issues them from the TOP
+  document (shellDownload). Verified end-to-end (synthetic iframe: in-frame click
+  → top-frame download). Also fixed 3 tools whose anchor was never attached to
+  the DOM (click didn’t bubble to the bridge) + revoked synchronously: HumanGen,
+  HairStudio, HairExtract — now appendChild + delayed revoke.
+  Also this pass:
+  • MeshDoctor exported a see-through model — the X-ray VIEW mode (opacity 0.3,
+    depthWrite off) was baked into the GLB. exportGLB() now disables x-ray and
+    restores each material’s original transparent/opacity/depthWrite first.
+  • MeshEdit had NO export at all — added engine.exportGLB() (bakes every element
+    + explode offset into one group, drops selection-highlight emissive) and an
+    “⬆ Export .glb” button in the header.
+  Files: index.html, HumanGen/HairStudio/HairExtract.dc.html, MeshEdit.dc.html,
+  studio3D_scripts/mesh-engine.js, studio3D_scripts/doctor-engine.js, sw.js.
+  STILL OPEN (reported, not yet done): plane CUT in MeshEdit leaves open holes —
+  no cap/fill of the new boundary (user wants edges added where it cut). Needs a
+  boundary-loop triangulation (fan/earcut) after applyCut; sizeable, deferred.
+
+
 - 2026-07-22 — **Multi Rig audit + hardening** (pp-v81 tool). Full audit at the
   top of this file. Shipped fixes: fraction-based (per-axis bbox) rig carry so it
   survives width/height/depth differences; re-entrancy lock on all async actions;

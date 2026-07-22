@@ -217,6 +217,33 @@ export class MEEngine {
   }
   hasModel() { return this.elements.length > 0; }
 
+  // Bake every element (with its explode/transform offset) into one group and
+  // write a GLB. Fresh materials drop the selection-highlight emissive so the
+  // export looks like the mesh, not the editor.
+  async exportGLB() {
+    if (!this.elements.length) throw new Error('No mesh to export');
+    const { GLTFExporter } = await import('three/addons/exporters/GLTFExporter.js');
+    const grp = new THREE.Group();
+    for (const e of this.elements) {
+      if (!e.mesh || !e.mesh.geometry) continue;
+      e.mesh.updateMatrix();
+      const geo = e.mesh.geometry.clone();
+      geo.applyMatrix4(e.mesh.matrix);
+      const src = Array.isArray(e.mesh.material) ? e.mesh.material[0] : e.mesh.material;
+      const mat = new THREE.MeshStandardMaterial({
+        color: (src && src.color) ? src.color.getHex() : 0xcccccc,
+        roughness: src ? src.roughness : 0.74,
+        metalness: src ? src.metalness : 0.04,
+        side: THREE.DoubleSide,
+      });
+      const m = new THREE.Mesh(geo, mat); m.name = e.label || e.id;
+      grp.add(m);
+    }
+    if (!grp.children.length) throw new Error('No mesh to export');
+    const exp = new GLTFExporter();
+    return await new Promise((res, rej) => exp.parse(grp, (r) => res(r), (er) => rej(er), { binary: true }));
+  }
+
   // ---------------------------------------------------------- COLORS / HIGHLIGHT
   _applyColors() {
     for (const e of this.elements) {

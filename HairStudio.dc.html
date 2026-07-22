@@ -525,7 +525,7 @@ class Component extends DCLogic {
         const blob = new Blob([buf], { type: 'model/gltf-binary' });
         const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
         a.download = 'hair_' + this.STYLES[this.state.style].name.toLowerCase().replace(/ /g, '') + '.glb';
-        a.click(); URL.revokeObjectURL(a.href); this.setState({ exporting: false });
+        document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 4000); this.setState({ exporting: false });
       }, (err) => { console.error(err); this.setState({ exporting: false }); }, { binary: true });
     } catch (e) { console.error(e); this.setState({ exporting: false }); }
   };
