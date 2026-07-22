@@ -188,6 +188,37 @@ export class DEEngine {
     return { buffer: buf, rungs };
   }
 
+  // Separate LOD files for the Library: one GLB per rung named <name>_<pct>.glb.
+  // pcts: array of percentages (e.g. [100,60,30,12]); 100 is forced in.
+  async makeLODFiles(pcts, job) {
+    if (!this.origPos) throw new Error('Load a model first');
+    let list = (pcts && pcts.length ? pcts.slice() : [100, 60, 30, 12]).map(p => Math.max(1, Math.min(100, Math.round(p))));
+    if (!list.includes(100)) list.unshift(100);
+    list = [...new Set(list)].sort((a, b) => b - a);
+    const { GLTFExporter } = await import('three/addons/exporters/GLTFExporter.js');
+    const baseName = (this.modelName || 'character');
+    const files = [];
+    for (const pct of list) {
+      if (job) job.checkpoint();
+      this._status('LOD ' + pct + '%…');
+      await new Promise(r => setTimeout(r, 20));
+      let position, normal, tris;
+      if (pct >= 100) { position = this.origPos; normal = null; tris = this.origTris; }
+      else { const out = await decimateMesh(this.origPos, pct / 100, { onStatus: m => this._status(m), job }); if (!out) continue; position = out.position; normal = out.normal; tris = out.stats.outTris; }
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.BufferAttribute(position.slice(0), 3));
+      if (normal) geo.setAttribute('normal', new THREE.BufferAttribute(normal.slice(0), 3)); else geo.computeVertexNormals();
+      const mesh = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ name: baseName + '_mat' }));
+      mesh.name = baseName;
+      const grp = new THREE.Group(); grp.name = baseName; grp.add(mesh);
+      const buf = await new Promise((res, rej) => new GLTFExporter().parse(grp, res, rej, { binary: true }));
+      geo.dispose(); mesh.material.dispose();
+      files.push({ pct, name: baseName + '_' + pct + '.glb', buffer: buf, tris: Math.round(tris) });
+    }
+    this._status('');
+    return { baseName, files };
+  }
+
   resetMesh() {
     if (!this.origPos) return null;
     this._setGeometry(this.origPos, null);

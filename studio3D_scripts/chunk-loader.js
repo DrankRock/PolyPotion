@@ -97,6 +97,35 @@ export async function fetchAssetBuffer(url, opts) {
   return loadChunked(url, opts.chunks);
 }
 
+// ============================================================
+// LOD support. A character manifest entry may carry an optional `lods` array:
+//   "lods": [ { "pct":100, "path":"…_100.glb", "chunked?":…, "chunks?":… },
+//             { "pct":50,  "path":"…_50.glb" }, { "pct":10, "path":"…_10.glb" } ]
+// pct = percent of the ORIGINAL triangle count. Sorted high→low here.
+// The runtime picks a rung by a desired pct (see lod-switch.js) and fetches
+// it through the same chunk-aware path as any other asset.
+// ============================================================
+export function lodRungs(entry) {
+  if (!entry || !Array.isArray(entry.lods) || !entry.lods.length) return null;
+  return entry.lods
+    .map(l => ({ pct: +l.pct || 0, path: l.path, chunked: l.chunked, chunks: l.chunks, tris: l.tris }))
+    .filter(l => l.pct > 0 && l.path)
+    .sort((a, b) => b.pct - a.pct);
+}
+// Pick the rung whose pct is the smallest one >= wanted (so we never render
+// coarser than asked); fall back to the coarsest available.
+export function pickRung(rungs, wantedPct) {
+  if (!rungs || !rungs.length) return null;
+  const w = Math.max(0, Math.min(100, +wantedPct || 0));
+  let chosen = null;
+  for (const r of rungs) { if (r.pct >= w) chosen = r; }   // rungs are high→low
+  return chosen || rungs[rungs.length - 1];
+}
+export async function fetchLODBuffer(rung) {
+  if (!rung || !rung.path) throw new Error('No LOD rung');
+  return fetchAssetBuffer(rung.path, { chunked: rung.chunked, chunks: rung.chunks });
+}
+
 // Convenience for the AutoRig app, which wants a Blob/File.
 export async function fetchAssetBlob(url, opts) {
   const buf = await fetchAssetBuffer(url, opts);
@@ -104,7 +133,7 @@ export async function fetchAssetBlob(url, opts) {
 }
 
 if (typeof window !== 'undefined') {
-  window.StudioAssets = Object.assign(window.StudioAssets || {}, { fetchAssetBuffer, fetchAssetBlob });
+  window.StudioAssets = Object.assign(window.StudioAssets || {}, { fetchAssetBuffer, fetchAssetBlob, lodRungs, pickRung, fetchLODBuffer });
 }
 
 export default fetchAssetBuffer;

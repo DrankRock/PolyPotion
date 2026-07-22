@@ -1650,7 +1650,7 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
       <div class="thumb"><span class="gly">⦿</span>
         <div class="badges">
           <span class="bdg ${ext}">${ext}</span>
-          ${it.session ? '<span class="bdg session">session</span>' : ''}${it.chunked === 'true' || it.chunked === true ? '<span class="bdg chunked" title="stored as chunks">chunked</span>' : ''}${it.rigged === 'true' ? '<span class="bdg mixamo">rigged</span>' : (it.rigged === 'false' ? '<span class="bdg unrig">unrigged</span>' : '')}
+          ${it.session ? '<span class="bdg session">session</span>' : ''}${it.chunked === 'true' || it.chunked === true ? '<span class="bdg chunked" title="stored as chunks">chunked</span>' : ''}${(it.lods && it.lods.length) ? '<span class="bdg lod" title="' + it.lods.length + ' LOD rungs: ' + it.lods.map(l=>l.pct+'%').join(' \u00b7 ') + '" style="background:#5a76b8;color:#fff;">LOD ' + it.lods.length + '</span>' : ''}${it.rigged === 'true' ? '<span class="bdg mixamo">rigged</span>' : (it.rigged === 'false' ? '<span class="bdg unrig">unrigged</span>' : '')}
           ${rig === 'mixamo' ? '<span class="bdg mixamo">mixamo</span>' : (rig === 'autorig' ? '<span class="bdg autorig">autorig</span>' : '')}
           ${it.restored ? '<span class="bdg autorig" title="restored from a previous session">saved</span>' : ''}
         </div>
@@ -1737,7 +1737,7 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
       const copy = it._buffer.slice(0);
       send = () => { post(tool, 'studio:loadCharBuffer', { buffer: copy, name: (it.label || 'character') + '.' + (it.ext || 'glb') }, [copy]); sendLib(); };
     } else {
-      send = () => { post(tool, 'studio:loadCharUrl', { url: it.path, label: it.label, ext: it.ext, chunked: it.chunked, chunks: it.chunks }); sendLib(); };
+      send = () => { post(tool, 'studio:loadCharUrl', { url: it.path, label: it.label, ext: it.ext, chunked: it.chunked, chunks: it.chunks, lods: it.lods }); sendLib(); };
     }
     if (TOOLS[tool].ready) send(); else TOOLS[tool]._pending = send;
     if (!quiet) toast('Opening ' + it.label + ' in ' + (TOOLS[tool] ? TOOLS[tool].label : tool) + '…', 'info');
@@ -2416,6 +2416,7 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
       const it = all.find(x => (x.path || '') === d.id) || all.find(x => (x.label || '') === d.label);
       if (!it) { post('stage', 'studio:error', { tool: 'stage', message: 'Character not found: ' + (d.label || d.id) }); return; }
       try {
+        if (it.lods && it.lods.length && !(it.session && it._buffer)) { post('stage', 'studio:loadCharUrl', { url: it.path, ext: it.ext || 'glb', chunked: it.chunked, chunks: it.chunks, label: it.label, lods: it.lods }); return; }
         let buf;
         if (it.session && it._buffer) buf = it._buffer.slice(0);
         else { const { fetchAssetBuffer } = await import('./studio3D_scripts/chunk-loader.js'); buf = await fetchAssetBuffer(it.path, { chunked: it.chunked, chunks: it.chunks }); }

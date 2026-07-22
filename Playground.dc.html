@@ -225,7 +225,31 @@ class Component extends DCLogic {
     });
   }
 
+  _lodDispose() { if (this._lod) { try { this._lod.dispose(); } catch (e) {} this._lod = null; } }
+  async _loadUrlLOD(d) {
+    this._lodDispose();
+    const usable = (d.lods || []).filter(r => r && r.path && +r.pct > 0);
+    const plain = () => this.loadVia(() => this._eng.loadUrl(d.url, d.ext, { chunked: d.chunked, chunks: d.chunks }), d.label || 'character');
+    if (usable.length < 2) return plain();
+    try { await import('./studio3D_scripts/lod-switch.js'); await import('./studio3D_scripts/lod-runtime.js'); } catch (e) {}
+    if (!window.LODRuntime) return plain();
+    this._lodDispose();
+    this.setState({ loading: true, loadingMsg: 'Loading ' + (d.label || 'character') + '…' });
+    this._lod = window.LODRuntime.attach({
+      lods: usable, ext: d.ext, mount: '#pg-root', storageKey: 'pp-lod:' + (d.url || d.label || 'char'),
+      load: async (rung, first) => {
+        try {
+          const r = await this._eng.loadUrl(rung.path, rung.ext || d.ext, { chunked: rung.chunked, chunks: rung.chunks });
+          this.refresh();
+          if (first) { this.setState({ loading: false, pickSlot: '' }); this.toast('Persona ready · LOD ' + rung.pct + '%'); }
+          else { this.toast('\u2193 Auto LOD ' + rung.pct + '% \u2014 easing viewport load'); }
+        } catch (e) { if (first) this.setState({ loading: false }); this.toast('LOD load failed: ' + (e && e.message || e)); }
+      },
+    });
+  }
+
   async loadVia(fn, label) {
+    this._lodDispose && this._lodDispose();
     if (!this._eng) { this._pending = () => this.loadVia(fn, label); return; }
     this.setState({ loading: true, loadingMsg: 'Loading ' + (label || 'character') + '…' });
     try {
@@ -317,7 +341,7 @@ class Component extends DCLogic {
     if (this._embedded) { const hide = () => { const h = document.querySelector('#pg-root > header'); if (h) h.style.display = 'none'; }; hide(); setTimeout(hide, 60); setTimeout(hide, 300); }
     window.addEventListener('message', (e) => {
       const d = e.data; if (!d || !d.__studio) return;
-      if (d.type === 'studio:loadCharUrl') this.loadVia(() => this._eng.loadUrl(d.url, d.ext, { chunked: d.chunked, chunks: d.chunks }), d.label || 'character');
+      if (d.type === 'studio:loadCharUrl') this._loadUrlLOD(d);
       else if (d.type === 'studio:loadCharBuffer') this.loadVia(() => this._eng.loadBuffer(d.buffer, d.name, (d.name || '').split('.').pop()), d.name || 'mesh');
       else if (d.type === 'studio:animLibrary') this.setState({ libAnims: d.animations || [] });
     });

@@ -131,8 +131,22 @@
         <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--header);border-bottom:1px solid var(--seam);"><span style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);">Export</span></div>
         <div style="padding:11px 12px;display:flex;flex-direction:column;gap:8px;">
           <button style="display:flex;align-items:center;justify-content:center;gap:7px;padding:9px;border-radius:6px;font-size:12px;font-weight:600;background:var(--panel3);border:1px solid var(--edge);color:var(--text);width:100%;cursor:pointer;" onClick="{{ doExport }}">⬇ Download .obj</button>
-          <button style="display:flex;align-items:center;justify-content:center;gap:7px;padding:9px;border-radius:6px;font-size:12px;font-weight:600;background:var(--accentDim);border:1px solid var(--accent-dim);color:#c9cdf6;width:100%;cursor:pointer;" onClick="{{ doLODs }}">▣ Make LODs (.glb)</button>
-          <div style="font-size:10px;color:var(--muted);line-height:1.5;">LODs: decimates the <b>original</b> at 100 / 60 / 30 / 12% and packs one GLB with meshes named <span style="font-family:var(--font-mono);">_LOD0–3</span> — the convention Unity's LOD Group and Unreal auto-detect.</div>
+          <div style="margin-top:2px;display:flex;align-items:center;justify-content:space-between;">
+            <span style="font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--text2);">LOD rungs · % of triangles</span>
+            <button style="font-size:10px;padding:2px 7px;border-radius:5px;background:var(--panel3);border:1px solid var(--edge);color:var(--muted);cursor:pointer;" onClick="{{ resetRungs }}" title="Reset to 100 / 60 / 30 / 12">↺</button>
+          </div>
+          <div style="display:flex;flex-wrap:wrap;gap:5px;">
+            <sc-for list="{{ rungChips }}" as="r" hint-placeholder-count="4">
+              <span style="display:inline-flex;align-items:center;gap:5px;font-family:var(--font-mono);font-size:10.5px;padding:4px 6px 4px 9px;border-radius:6px;background:var(--panel3);border:1px solid {{ r.border }};color:var(--text);">{{ r.label }}<button style="width:15px;height:15px;line-height:1;border-radius:4px;border:none;background:transparent;color:{{ r.xColor }};cursor:{{ r.xCursor }};font-size:12px;" onClick="{{ r.onDel }}" title="{{ r.xTip }}">×</button></span>
+            </sc-for>
+          </div>
+          <div style="display:flex;gap:6px;">
+            <input type="number" min="1" max="100" placeholder="add %…" value="{{ rungInput }}" onInput="{{ onRungInput }}" onKeyDown="{{ onRungKey }}" style="flex:1;min-width:0;font-family:var(--font-mono);font-size:11px;padding:6px 8px;border-radius:6px;background:var(--panel3);border:1px solid var(--edge);color:var(--text);">
+            <button style="padding:6px 11px;border-radius:6px;font-size:11px;font-weight:600;background:var(--panel3);border:1px solid var(--edge);color:var(--text);cursor:pointer;" onClick="{{ addRung }}">＋ Add</button>
+          </div>
+          <button style="display:flex;align-items:center;justify-content:center;gap:7px;padding:9px;border-radius:6px;font-size:12px;font-weight:700;background:var(--accentDim);border:1px solid var(--accent-dim);color:#c9cdf6;width:100%;cursor:pointer;" onClick="{{ doLODFiles }}">⛃ Export LOD set for Library</button>
+          <button style="display:flex;align-items:center;justify-content:center;gap:7px;padding:8px;border-radius:6px;font-size:11px;font-weight:600;background:var(--panel3);border:1px solid var(--edge);color:var(--text);width:100%;cursor:pointer;" onClick="{{ doLODs }}">▣ …or one packed GLB (Unity/Unreal)</button>
+          <div style="font-size:10px;color:var(--muted);line-height:1.5;"><b>Library set</b>: one file per rung named <span style="font-family:var(--font-mono);">name_100 · name_60 …</span> plus a <span style="font-family:var(--font-mono);">manifest snippet</span> — drop into <span style="font-family:var(--font-mono);">data/characters</span>, run <span style="font-family:var(--font-mono);">chunker.py</span>, and the app auto-switches rungs when it lags. 100% is always included.</div>
         </div>
       </div>
 
@@ -161,6 +175,7 @@ class Component extends DCLogic {
   state = {
     meshName: 'no model', loading: false, loadingMsg: '', canCancel: false,
     hasModel: false, origTris: 0, curTris: 0, target: 50, wire: false,
+    rungsPct: [100, 60, 30, 12], rungInput: '',
   };
 
   _makeJob(msg) {
@@ -221,7 +236,7 @@ class Component extends DCLogic {
     if (!eng.makeLODs) { this.toast('Engine update pending — reload the app (old version cached)'); return; }
     const job = this._makeJob('Building LODs…');
     try {
-      const r = await eng.makeLODs(undefined, job);
+      const r = await eng.makeLODs(this.state.rungsPct.map(p => p / 100), job);
       job.settle();
       const blob = new Blob([r.buffer], { type: 'model/gltf-binary' });
       const a = document.createElement('a');
@@ -232,6 +247,52 @@ class Component extends DCLogic {
       this.toast('LOD chain: ' + r.rungs.map(x => 'LOD' + x.lod + ' ' + x.tris.toLocaleString()).join(' · '));
     } catch (e) {
       if (JobController.isCancel(e)) this.toast('LODs cancelled.');
+      else this.toast(String(e && e.message || e));
+    } finally { this._endJob(); }
+  }
+
+  addRungPct(pct) {
+    pct = Math.max(1, Math.min(100, Math.round(+pct || 0)));
+    if (!pct) return;
+    const set = new Set(this.state.rungsPct); set.add(pct);
+    this.setState({ rungsPct: [...set].sort((a, b) => b - a), rungInput: '' });
+  }
+  delRungPct(pct) {
+    if (pct === 100) { this.toast('100% is required — it\u2019s the base rung'); return; }
+    this.setState({ rungsPct: this.state.rungsPct.filter(p => p !== pct) });
+  }
+
+  async doLODFiles() {
+    const eng = this._eng;
+    if (!eng || !eng.hasModel()) { this.toast('Load a mesh first'); return; }
+    if (!eng.makeLODFiles) { this.toast('Engine update pending — reload the app (old version cached)'); return; }
+    const job = this._makeJob('Building LOD set…');
+    try {
+      const r = await eng.makeLODFiles(this.state.rungsPct, job);
+      job.settle();
+      for (const f of r.files) {
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(new Blob([f.buffer], { type: 'model/gltf-binary' }));
+        a.download = f.name;
+        document.body.appendChild(a); a.click();
+        await new Promise(res => setTimeout(res, 350));   // stagger so the browser keeps each download
+        setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 4000);
+      }
+      // manifest snippet the user pastes into data/characters/manifest.json
+      const id = (r.baseName || 'character').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+      const snippet = {
+        id, label: r.baseName, path: 'data/characters/' + r.files[0].name, ext: 'glb',
+        rig: 'unknown', rigged: 'false', source: 'local', tags: [],
+        lods: r.files.map(f => ({ pct: f.pct, path: 'data/characters/' + f.name, tris: f.tris })),
+      };
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(new Blob([JSON.stringify(snippet, null, 2)], { type: 'application/json' }));
+      a.download = r.baseName + '_lods.manifest.json';
+      document.body.appendChild(a); a.click();
+      setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 4000);
+      this.toast('LOD set: ' + r.files.map(f => f.pct + '% ' + f.tris.toLocaleString()).join(' · ') + ' + manifest snippet');
+    } catch (e) {
+      if (JobController.isCancel(e)) this.toast('LOD set cancelled.');
       else this.toast(String(e && e.message || e));
     } finally { this._endJob(); }
   }
@@ -282,6 +343,8 @@ class Component extends DCLogic {
   presetStyle(on) { return 'flex:1;font-size:11px;font-weight:600;padding:7px;border-radius:5px;cursor:pointer;border:1px solid ' + (on ? 'var(--accent)' : 'var(--edge)') + ';background:' + (on ? 'var(--accent-dim)' : 'var(--panel-3)') + ';color:' + (on ? '#c2c6f7' : 'var(--text)') + ';'; }
   chip(on) { return 'font-family:var(--font-mono);font-size:10px;padding:5px 10px;border-radius:5px;cursor:pointer;background:rgba(15,15,15,.6);border:1px solid ' + (on ? 'var(--accent)' : 'var(--edge)') + ';color:' + (on ? '#c2c6f7' : 'var(--text-2)') + ';'; }
 
+  fmtSize(b) { b = +b || 0; return b >= 1048576 ? (b / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(b / 1024)) + ' KB'; }
+
   renderVals() {
     const st = this.state, eng = this._eng;
     const views = ['Persp', 'Front', 'Side', 'Top', 'Back'].map(v => ({ label: v, onClick: () => eng && eng.setView(v.toLowerCase()) }));
@@ -308,6 +371,18 @@ class Component extends DCLogic {
       doReset: () => { if (eng) eng.resetMesh(); this.refresh(); this.toast('Restored to ' + (eng ? eng.stats().origTris.toLocaleString() : '0') + ' tris'); },
       doExport: () => this.doExport(),
       doLODs: () => this.doLODs(),
+      rungChips: st.rungsPct.map(p => ({
+        label: p + '%' + (st.origTris ? '  ~' + this.fmtSize(Math.max(1, Math.round(st.origTris * p / 100)) * 56) : ''),
+        border: p === 100 ? 'var(--accent)' : 'var(--edge)',
+        xColor: p === 100 ? 'var(--muted-2)' : 'var(--muted)', xCursor: p === 100 ? 'default' : 'pointer',
+        xTip: p === 100 ? '100% is the required base' : 'Remove', onDel: () => this.delRungPct(p),
+      })),
+      rungInput: st.rungInput,
+      onRungInput: (e) => this.setState({ rungInput: e.target.value }),
+      onRungKey: (e) => { if (e.key === 'Enter') this.addRungPct(st.rungInput); },
+      addRung: () => this.addRungPct(st.rungInput),
+      resetRungs: () => this.setState({ rungsPct: [100, 60, 30, 12] }),
+      doLODFiles: () => this.doLODFiles(),
     };
   }
 }

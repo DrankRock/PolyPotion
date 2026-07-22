@@ -442,6 +442,81 @@ Phase 2 ideas, in order of value:
 
 ## Log
 
+- 2026-07-22 — **LOD polish (pp-v84)**: 3 asks.
+  1. Persist manual LOD choice: lod-runtime takes storageKey ('pp-lod:'+path);
+     picker writes the pinned pct / clears on AUTO. On reload it restores the
+     saved rung as the INITIAL load (no 100→saved flash) and stays manual.
+     Verified: pin 50 → saved "50" → next attach loads 50 first, auto off.
+  2. Library card LOD badge: shows "LOD N" (blue) with a tooltip listing the rung
+     %s, when a manifest entry has lods.
+  3. Decimate rung chips show an estimated file size (~56 B/tri of origTris×pct)
+     next to each %, so you see roughly what will chunk before exporting.
+  Files: lod-runtime.js, index.html, Decimate.dc.html, Showcase/Playground, sw.js.
+  (Skipped #4 lodgroup --report per user.) Remaining: Stage live per-actor swap.
+
+
+- 2026-07-22 — **Manual LOD picker (pp-v83 cont.)**. lod-runtime.attach now takes
+  an optional mount (selector/el) and builds a floating in-viewport picker: AUTO +
+  one chip per rung (shows tris in the tooltip). AUTO = fps-driven; clicking a rung
+  pins it (setAuto(false)+setManual); the auto-picked rung is outlined while in
+  AUTO. Mounted in Showcase (#sc-root) and Playground (#pg-root); disposed with the
+  controller on the next load. Verified: picker builds, manual pin → 10%, AUTO
+  restores auto, initial load finest. Files: lod-runtime.js, Showcase/Playground.
+  STILL OPEN: Stage live per-actor LOD swap (static device-tier pick per actor
+    still stands) — deferred as reloading one actor among many needs careful
+    engine work; the safe static path ships.
+
+
+- 2026-07-22 — **LOD runtime auto-switch wired (pp-v83)**. Stage / Playground /
+  Showcase now consume the LOD schema; plain imports with no lods are untouched.
+  • lod-runtime.js (NEW, window.LODRuntime.attach): hands a viewer’s rung list +
+    a load(rung,first) cb to the FPS controller, runs its own rAF dt-probe, swaps
+    rungs on sustained lag / headroom. <2 usable rungs → plain single load, no
+    probe (so drag-drop / imports behave exactly as before).
+  • Showcase + Playground: studio:loadCharUrl → _loadUrlLOD(d). If d.lods has
+    ≥2 rungs it lazy-imports lod-switch+lod-runtime, loads finest first, then
+    auto-reloads a coarser rung via eng.loadUrl when the viewport lags (toasts the
+    switch). loadVia() disposes any controller so a new user load cancels auto-LOD.
+  • Stage (multi-actor): _lodPick(d) chooses a STATIC device-tier rung per added
+    actor (≤4 cores/≤4GB→40%, ≤8→70%, else 100%) via pickRung — no live per-actor
+    swap (reloading one actor among many is ambiguous; deferred).
+  • Shell: lods passed on studio:loadCharUrl (sendActiveChar); stageFetch routes a
+    lods item through loadCharUrl (Stage picks the rung) instead of pre-fetching the
+    full _100 buffer.
+  Verified: single-rung→plain load; 3-rung→finest-first then 100→50→10 under
+    simulated 25fps lag; manual override. Files: lod-runtime.js (new), Showcase/
+    Playground/Stage.dc.html, index.html, sw.js.
+  OPEN: Stage live per-actor swap; an optional manual LOD picker in the viewer UI
+    (controller already supports setManual/setAuto).
+
+
+- 2026-07-22 — **LOD system (foundation + authoring + ingestion)**. Convention:
+  <base>_<pct>.glb where pct = % of ORIGINAL triangles, base is forced _100.
+  DONE this pass:
+  • Manifest schema: optional "lods":[{pct,path,chunked?,chunks?,tris?}]
+    (high→low); top-level path/chunk flags mirror the _100 rung for old readers.
+  • chunk-loader.js: lodRungs(entry), pickRung(rungs,wantedPct), fetchLODBuffer
+    (each rung chunked independently — big _100 splits, small _10 stays whole).
+  • lod-switch.js (NEW): createLODController — FPS/EMA watcher, drops a rung on
+    sustained lag, climbs back on headroom; manual override + auto flag. Advisory:
+    the viewer owns the swap. window.LODSwitch.
+  • Decimate: rung list is now EDITABLE (chips, add %, reset; 100% pinned).
+    New "Export LOD set for Library" → one GLB per rung named _<pct> + a
+    manifest snippet with the lods array (downloads staggered via the shell
+    download bridge). Kept the packed single-GLB _LOD0..N mode for Unity/Unreal.
+    engine.makeLODFiles(pcts,job) added (uses decimateMesh per rung).
+  • scripts/chunker.py: UPDATED — groups <base>_<pct> files (needs a _100) into
+    one entry with lods[], per-rung chunk flags; preserves labels/ids/tags.
+  • scripts/lodgroup.py: NEW one-shot migration for existing libraries (dry-run
+    then --apply); reads .chunks.json sidecars to set per-rung flags; no split.
+  STILL OPEN (next): runtime auto-switch WIRING in Stage / Playground / Showcase.
+    Needs the shell to pass an entry’s lods to the viewer + a rung-fetch message
+    (studio:mrFetch-style), the viewer to feed frame dt into the controller and
+    hot-swap the mesh on onPick. Foundation (loader+controller) is ready; this is
+    the remaining integration. Files: chunk-loader.js, lod-switch.js (new),
+    Decimate.dc.html, decimate-engine.js, scripts/chunker.py+lodgroup.py (new).
+
+
 - 2026-07-22 — **EXPORT/DOWNLOAD BUGFIX (pp-v82)**. User: "none of the download
   works … says exported X.glb but doesn’t" across Decimate/LOD/OBJ, Boolean,
   MeshDoctor, HumanGen, etc. Root cause: every tool builds a blob and clicks an

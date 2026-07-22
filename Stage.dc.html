@@ -289,13 +289,25 @@ class Component extends DCLogic {
     if (this._embedded) { const hide = () => { const h = document.querySelector('#sg-root > header'); if (h && h.firstElementChild) h.firstElementChild.style.display = 'none'; }; hide(); setTimeout(hide, 60); setTimeout(hide, 300); }
     window.addEventListener('message', (e) => {
       const d = e.data; if (!d || !d.__studio) return;
-      if (d.type === 'studio:loadCharUrl') this.queue(() => this.addUrl(d.url, d.ext, { chunked: d.chunked, chunks: d.chunks }, d.label || 'character'));
+      if (d.type === 'studio:loadCharUrl') { const a = this._lodPick(d); this.queue(() => this.addUrl(a[0], a[1], a[2], a[3])); }
       else if (d.type === 'studio:loadCharBuffer') this.queue(() => this.addBuffer(d.buffer, d.name || 'character', (d.name || '').split('.').pop()));
       else if (d.type === 'studio:stageAdd') this.queue(() => this.addBuffer(d.buffer, d.name || 'character', (d.name || '').split('.').pop()));
       else if (d.type === 'studio:library') this.setState({ libChars: d.characters || [] });
       else if (d.type === 'studio:error') { this.setState({ loading: false }); this.toast(d.message || 'error'); }
     });
     setTimeout(() => this._post('studio:ready', { tool: 'stage' }), 0);
+  }
+
+  _lodPick(d) {
+    const base = [d.url, d.ext, { chunked: d.chunked, chunks: d.chunks }, d.label || 'character'];
+    const usable = (d.lods || []).filter(r => r && r.path && +r.pct > 0).sort((a, b) => b.pct - a.pct);
+    if (usable.length < 2) return base;
+    const cores = navigator.hardwareConcurrency || 4, mem = navigator.deviceMemory || 4;
+    const want = (cores <= 4 || mem <= 4) ? 40 : (cores <= 8 ? 70 : 100);
+    let pick = usable[usable.length - 1];
+    for (const r of usable) { if (r.pct >= want) pick = r; }
+    if (pick.pct < 100) this.toast('Staged ' + (d.label || 'character') + ' at LOD ' + pick.pct + '% (scene is heavy)');
+    return [pick.path, pick.ext || d.ext, { chunked: pick.chunked, chunks: pick.chunks }, (d.label || 'character')];
   }
 
   toast(msg) {
