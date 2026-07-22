@@ -442,6 +442,36 @@ Phase 2 ideas, in order of value:
 
 ## Log
 
+- 2026-07-22 — **Decimate: textures + LOD-set export fix (pp-v85)**. Two user bugs.
+  (A) LOD SET EXPORTED ONLY ONE FILE: makeLODFiles clicked N anchors staggered,
+      but browsers block multiple programmatic downloads — only one landed.
+      FIX: bundle every rung GLB + manifest snippet into ONE .zip (store-only
+      writer with CRC32 in the DC, _zipStore) → single download name_LODset.zip.
+      Verified: 3 rungs → 3 distinct files 80k/50k/27k + valid zip (EOCD/central
+      /local sigs, 2+ entries round-trip).
+  (B) NO TEXTURE in view or output: the whole decimate pipeline was position-
+      only (baked to one gray blob, dropped UVs + materials). REWRITE:
+      • qem.js: UV-aware — decimateMesh(pos,target,{uv}) welds by pos+uv (seam-
+        aware), lerps UV along each edge collapse, returns a uv array. No uv arg
+        = old behaviour. Verified uv length matches out tris.
+      • decimate-engine.js: rewritten around per-MATERIAL surfaces {position,uv,
+        material}. Keeps each source material/texture (cloned, double-sided),
+        decimates each surface with UV, rebuilds a mesh per surface. Textures
+        show in the viewport and survive export.
+      • New "Texture" toggle (viewport show/hide; output always keeps it) beside
+        Wireframe.
+      • New "Download .glb (keeps texture)" primary export (exportGLB embeds
+        maps via GLTFExporter). OBJ kept as geometry-only secondary.
+      • makeLODs (packed) + makeLODFiles now build groups with the REAL textured
+        materials, so every LOD carries its texture. Verified: load textured GLB
+        → surfaces w/ uv, textured=true; after decimate mesh keeps uv + map;
+        exportGLB + LOD files all produced.
+  Note: textured GLBs are naturally larger (texture embedded per file); expected,
+  user accepts. Files: qem.js, decimate-engine.js (rewrite), Decimate.dc.html, sw.js.
+  RESOLVED priority-1 (LOD set export). Still open elsewhere: Stage per-actor live
+  LOD swap (engine.swapActorLOD shipped, DC driver spec’d in todos, deferred).
+
+
 - 2026-07-22 — **LOD polish (pp-v84)**: 3 asks.
   1. Persist manual LOD choice: lod-runtime takes storageKey ('pp-lod:'+path);
      picker writes the pinned pct / clears on AUTO. On reload it restores the

@@ -12,6 +12,10 @@
 //   positions : non-indexed triangle verts (length = 9 * triCount)
 //   target    : 0<r<1 => keep that fraction of triangles; >=1 => that many tris
 //   opts.onStatus(msg), opts.preserveBorder (default true)
+//   opts.uv   : optional non-indexed UVs (length = 6 * triCount). When given,
+//               verts weld by position+uv (seams preserved), UVs are lerped on
+//               each edge collapse, and the result carries a uv Float32Array so
+//               textures survive decimation.
 // ============================================================
 
 function det3(a, b, c, d, e, f, g, h, i) {
@@ -35,12 +39,13 @@ export async function decimateMesh(positions, target, opts) {
   const targetTris = target < 1 ? Math.max(4, Math.round(inTris * target)) : Math.max(4, Math.round(target));
   if (targetTris >= inTris) {
     // nothing to do — return a copy with smooth normals
-    return _emit(_weld(positions), null, inTris, inTris);
+    return _emit(_weld(positions, opts.uv), null, inTris, inTris);
   }
 
   status('Welding ' + inTris.toLocaleString() + ' tris…');
-  const W = _weld(positions);
+  const W = _weld(positions, opts.uv);
   const VX = W.VX, VY = W.VY, VZ = W.VZ;
+  const UVU = W.UVU, UVV = W.UVV, hasUV = W.hasUV;
   let nv = W.nv;
   const fA = W.fA, fB = W.fB, fC = W.fC;
   let nf = W.nf;
@@ -157,6 +162,16 @@ export async function decimateMesh(positions, target, opts) {
     if (!shared) continue;
     if (causesFlip(i, j, e.x, e.y, e.z) || causesFlip(j, i, e.x, e.y, e.z)) continue;
 
+    // lerp UV toward the optimal point along the collapsed edge (before we
+    // overwrite vertex i's position)
+    if (hasUV) {
+      const dijx = VX[j] - VX[i], dijy = VY[j] - VY[i], dijz = VZ[j] - VZ[i];
+      const dij = Math.hypot(dijx, dijy, dijz);
+      let t = dij > 1e-12 ? Math.hypot(e.x - VX[i], e.y - VY[i], e.z - VZ[i]) / dij : 0;
+      if (t < 0) t = 0; else if (t > 1) t = 1;
+      UVU[i] = UVU[i] * (1 - t) + UVU[j] * t;
+      UVV[i] = UVV[i] * (1 - t) + UVV[j] * t;
+    }
     // move i to optimal, fold j's quadric in
     VX[i] = e.x; VY[i] = e.y; VZ[i] = e.z;
     const oi = i * 10, oj = j * 10; for (let k = 0; k < 10; k++) Q[oi + k] += Q[oj + k];
@@ -196,28 +211,33 @@ export async function decimateMesh(positions, target, opts) {
     outFaces.push(a, b, c);
   }
   const oVX = new Float64Array(outNv), oVY = new Float64Array(outNv), oVZ = new Float64Array(outNv);
-  for (let v = 0; v < nv; v++) if (remap[v] >= 0) { const r = remap[v]; oVX[r] = VX[v]; oVY[r] = VY[v]; oVZ[r] = VZ[v]; }
-  return _emit({ VX: oVX, VY: oVY, VZ: oVZ, nv: outNv, faces: outFaces }, null, inTris, outFaces.length / 3);
+  const oUVU = hasUV ? new Float64Array(outNv) : null, oUVV = hasUV ? new Float64Array(outNv) : null;
+  for (let v = 0; v < nv; v++) if (remap[v] >= 0) { const r = remap[v]; oVX[r] = VX[v]; oVY[r] = VY[v]; oVZ[r] = VZ[v]; if (hasUV) { oUVU[r] = UVU[v]; oUVV[r] = UVV[v]; } }
+  return _emit({ VX: oVX, VY: oVY, VZ: oVZ, UVU: oUVU, UVV: oUVV, hasUV, nv: outNv, faces: outFaces }, null, inTris, outFaces.length / 3);
 }
 
 // weld non-indexed positions into unique verts + face index list
-function _weld(positions) {
+function _weld(positions, uvs) {
   const n = positions.length / 3;
-  const q = 1e5;
+  const q = 1e5, qUV = 1e4;
+  const hasUV = !!uvs;
   const map = new Map();
-  const VX = [], VY = [], VZ = [];
+  const VX = [], VY = [], VZ = [], UVU = [], UVV = [];
   const corner = new Int32Array(n);
   for (let i = 0; i < n; i++) {
     const x = positions[i * 3], y = positions[i * 3 + 1], z = positions[i * 3 + 2];
-    const k = Math.round(x * q) + '_' + Math.round(y * q) + '_' + Math.round(z * q);
+    let uu = 0, vv = 0;
+    if (hasUV) { uu = uvs[i * 2]; vv = uvs[i * 2 + 1]; }
+    let k = Math.round(x * q) + '_' + Math.round(y * q) + '_' + Math.round(z * q);
+    if (hasUV) k += '_' + Math.round(uu * qUV) + '_' + Math.round(vv * qUV);   // seam-aware
     let id = map.get(k);
-    if (id == null) { id = VX.length; VX.push(x); VY.push(y); VZ.push(z); map.set(k, id); }
+    if (id == null) { id = VX.length; VX.push(x); VY.push(y); VZ.push(z); if (hasUV) { UVU.push(uu); UVV.push(vv); } map.set(k, id); }
     corner[i] = id;
   }
   const nf = n / 3;
   const fA = new Int32Array(nf), fB = new Int32Array(nf), fC = new Int32Array(nf);
   for (let f = 0; f < nf; f++) { fA[f] = corner[f * 3]; fB[f] = corner[f * 3 + 1]; fC[f] = corner[f * 3 + 2]; }
-  return { VX: Float64Array.from(VX), VY: Float64Array.from(VY), VZ: Float64Array.from(VZ), nv: VX.length, fA, fB, fC, nf };
+  return { VX: Float64Array.from(VX), VY: Float64Array.from(VY), VZ: Float64Array.from(VZ), UVU: hasUV ? Float64Array.from(UVU) : null, UVV: hasUV ? Float64Array.from(UVV) : null, hasUV, nv: VX.length, fA, fB, fC, nf };
 }
 
 // build non-indexed position+smooth-normal output from a welded survivor set
@@ -238,12 +258,15 @@ function _emit(W, _u, inTris, outTris) {
   for (let v = 0; v < nv; v++) { const o = v * 3; const l = Math.hypot(N[o], N[o + 1], N[o + 2]) || 1; N[o] /= l; N[o + 1] /= l; N[o + 2] /= l; }
   const nTri = faces.length / 3;
   const position = new Float32Array(nTri * 9), normal = new Float32Array(nTri * 9);
+  const hasUV = W.hasUV && W.UVU;
+  const uv = hasUV ? new Float32Array(nTri * 6) : null;
   for (let i = 0; i < faces.length; i++) {
     const v = faces[i], o = i * 3;
     position[o] = VX[v]; position[o + 1] = VY[v]; position[o + 2] = VZ[v];
     normal[o] = N[v * 3]; normal[o + 1] = N[v * 3 + 1]; normal[o + 2] = N[v * 3 + 2];
+    if (hasUV) { uv[i * 2] = W.UVU[v]; uv[i * 2 + 1] = W.UVV[v]; }
   }
-  return { position, normal, stats: { inTris, outTris: nTri, verts: nv } };
+  return { position, normal, uv, stats: { inTris, outTris: nTri, verts: nv } };
 }
 
 if (typeof window !== 'undefined') window.decimateMesh = decimateMesh;

@@ -89,7 +89,8 @@
           <button style="font-size:11px;font-weight:600;padding:5px 9px;border-radius:5px;cursor:pointer;background:transparent;border:none;color:var(--text2);" onClick="{{ v.onClick }}">{{ v.label }}</button>
         </sc-for>
       </div>
-      <div style="position:absolute;right:10px;top:10px;">
+      <div style="position:absolute;right:10px;top:10px;display:flex;gap:6px;">
+        <button style="{{ texChipStyle }}" onClick="{{ toggleTex }}" title="Show/hide texture (output always keeps it)">🖼 Texture</button>
         <button style="{{ wireChipStyle }}" onClick="{{ toggleWire }}">▦ Wireframe</button>
       </div>
       <div style="position:absolute;left:10px;top:10px;font-family:var(--font-mono);font-size:10px;letter-spacing:.1em;color:var(--text2);background:rgba(15,15,15,.6);padding:3px 7px;border-radius:3px;pointer-events:none;">{{ modeBadge }}</div>
@@ -130,7 +131,8 @@
       <div style="border-bottom:1px solid var(--seam);">
         <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--header);border-bottom:1px solid var(--seam);"><span style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);">Export</span></div>
         <div style="padding:11px 12px;display:flex;flex-direction:column;gap:8px;">
-          <button style="display:flex;align-items:center;justify-content:center;gap:7px;padding:9px;border-radius:6px;font-size:12px;font-weight:600;background:var(--panel3);border:1px solid var(--edge);color:var(--text);width:100%;cursor:pointer;" onClick="{{ doExport }}">⬇ Download .obj</button>
+          <button style="display:flex;align-items:center;justify-content:center;gap:7px;padding:9px;border-radius:6px;font-size:12px;font-weight:700;background:var(--accent);border:1px solid var(--accent);color:#0d0f1f;width:100%;cursor:pointer;box-shadow:0 1px 0 rgba(255,255,255,.18) inset;" onClick="{{ doExportGLB }}">⬇ Download .glb (keeps texture)</button>
+          <button style="display:flex;align-items:center;justify-content:center;gap:7px;padding:8px;border-radius:6px;font-size:11.5px;font-weight:600;background:var(--panel3);border:1px solid var(--edge);color:var(--text);width:100%;cursor:pointer;" onClick="{{ doExport }}">⬇ Download .obj (geometry only)</button>
           <div style="margin-top:2px;display:flex;align-items:center;justify-content:space-between;">
             <span style="font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--text2);">LOD rungs · % of triangles</span>
             <button style="font-size:10px;padding:2px 7px;border-radius:5px;background:var(--panel3);border:1px solid var(--edge);color:var(--muted);cursor:pointer;" onClick="{{ resetRungs }}" title="Reset to 100 / 60 / 30 / 12">↺</button>
@@ -146,7 +148,7 @@
           </div>
           <button style="display:flex;align-items:center;justify-content:center;gap:7px;padding:9px;border-radius:6px;font-size:12px;font-weight:700;background:var(--accentDim);border:1px solid var(--accent-dim);color:#c9cdf6;width:100%;cursor:pointer;" onClick="{{ doLODFiles }}">⛃ Export LOD set for Library</button>
           <button style="display:flex;align-items:center;justify-content:center;gap:7px;padding:8px;border-radius:6px;font-size:11px;font-weight:600;background:var(--panel3);border:1px solid var(--edge);color:var(--text);width:100%;cursor:pointer;" onClick="{{ doLODs }}">▣ …or one packed GLB (Unity/Unreal)</button>
-          <div style="font-size:10px;color:var(--muted);line-height:1.5;"><b>Library set</b>: one file per rung named <span style="font-family:var(--font-mono);">name_100 · name_60 …</span> plus a <span style="font-family:var(--font-mono);">manifest snippet</span> — drop into <span style="font-family:var(--font-mono);">data/characters</span>, run <span style="font-family:var(--font-mono);">chunker.py</span>, and the app auto-switches rungs when it lags. 100% is always included.</div>
+          <div style="font-size:10px;color:var(--muted);line-height:1.5;"><b>Library set</b>: downloads ONE <span style="font-family:var(--font-mono);">.zip</span> with a textured GLB per rung (<span style="font-family:var(--font-mono);">name_100 · name_60 …</span>) + a <span style="font-family:var(--font-mono);">manifest snippet</span>. Unzip into <span style="font-family:var(--font-mono);">data/characters</span>, run <span style="font-family:var(--font-mono);">chunker.py</span>, and the app auto-switches rungs when it lags. 100% is always included.</div>
         </div>
       </div>
 
@@ -174,7 +176,7 @@ class Component extends DCLogic {
 
   state = {
     meshName: 'no model', loading: false, loadingMsg: '', canCancel: false,
-    hasModel: false, origTris: 0, curTris: 0, target: 50, wire: false,
+    hasModel: false, origTris: 0, curTris: 0, target: 50, wire: false, showTex: true,
     rungsPct: [100, 60, 30, 12], rungInput: '',
   };
 
@@ -270,31 +272,68 @@ class Component extends DCLogic {
     try {
       const r = await eng.makeLODFiles(this.state.rungsPct, job);
       job.settle();
-      for (const f of r.files) {
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(new Blob([f.buffer], { type: 'model/gltf-binary' }));
-        a.download = f.name;
-        document.body.appendChild(a); a.click();
-        await new Promise(res => setTimeout(res, 350));   // stagger so the browser keeps each download
-        setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 4000);
-      }
-      // manifest snippet the user pastes into data/characters/manifest.json
       const id = (r.baseName || 'character').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
       const snippet = {
         id, label: r.baseName, path: 'data/characters/' + r.files[0].name, ext: 'glb',
         rig: 'unknown', rigged: 'false', source: 'local', tags: [],
         lods: r.files.map(f => ({ pct: f.pct, path: 'data/characters/' + f.name, tris: f.tris })),
       };
+      // Bundle every rung GLB + the manifest snippet into ONE .zip — a single
+      // download (multiple programmatic downloads get blocked by the browser).
+      const entries = r.files.map(f => ({ name: f.name, data: new Uint8Array(f.buffer) }));
+      entries.push({ name: r.baseName + '_lods.manifest.json', data: new TextEncoder().encode(JSON.stringify(snippet, null, 2)) });
+      const zip = this._zipStore(entries);
       const a = document.createElement('a');
-      a.href = URL.createObjectURL(new Blob([JSON.stringify(snippet, null, 2)], { type: 'application/json' }));
-      a.download = r.baseName + '_lods.manifest.json';
+      a.href = URL.createObjectURL(zip);
+      a.download = r.baseName + '_LODset.zip';
       document.body.appendChild(a); a.click();
-      setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 4000);
-      this.toast('LOD set: ' + r.files.map(f => f.pct + '% ' + f.tris.toLocaleString()).join(' · ') + ' + manifest snippet');
+      setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 6000);
+      this.toast('LOD set .zip: ' + r.files.map(f => f.pct + '% ' + f.tris.toLocaleString()).join(' · ') + ' + manifest');
     } catch (e) {
       if (JobController.isCancel(e)) this.toast('LOD set cancelled.');
       else this.toast(String(e && e.message || e));
     } finally { this._endJob(); }
+  }
+
+  async doExportGLB() {
+    const eng = this._eng;
+    if (!eng || !eng.hasModel()) { this.toast('Load a mesh first'); return; }
+    this.setState({ loading: true, loadingMsg: 'Packing GLB…' });
+    try {
+      const buf = await eng.exportGLB();
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(new Blob([buf], { type: 'model/gltf-binary' }));
+      a.download = (eng.stats().name || 'mesh') + '_' + eng.stats().tris + 'tris.glb';
+      document.body.appendChild(a); a.click();
+      setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 4000);
+      this.setState({ loading: false });
+      this.toast('Exported ' + a.download + (eng.stats().textured ? ' (with texture)' : ''));
+    } catch (e) { this.setState({ loading: false }); this.toast('GLB export failed: ' + (e && e.message || e)); }
+  }
+
+  // minimal store-only (uncompressed) ZIP writer — reliable for binary GLBs
+  _zipStore(files) {
+    if (!this._crcTable) { const t = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1); t[n] = c >>> 0; } this._crcTable = t; }
+    const T = this._crcTable;
+    const crc32 = (buf) => { let c = 0xFFFFFFFF; for (let i = 0; i < buf.length; i++) c = T[(c ^ buf[i]) & 0xFF] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; };
+    const enc = new TextEncoder();
+    const chunks = [], central = []; let offset = 0;
+    const u16 = (v) => [v & 255, (v >>> 8) & 255];
+    const u32 = (v) => [v & 255, (v >>> 8) & 255, (v >>> 16) & 255, (v >>> 24) & 255];
+    for (const f of files) {
+      const name = enc.encode(f.name);
+      const data = f.data;
+      const crc = crc32(data);
+      const local = [].concat(u32(0x04034b50), u16(20), u16(0), u16(0), u16(0), u16(0), u32(crc), u32(data.length), u32(data.length), u16(name.length), u16(0));
+      chunks.push(new Uint8Array(local), name, data);
+      const localLen = local.length + name.length + data.length;
+      const cen = [].concat(u32(0x02014b50), u16(20), u16(20), u16(0), u16(0), u16(0), u16(0), u32(crc), u32(data.length), u32(data.length), u16(name.length), u16(0), u16(0), u16(0), u16(0), u32(0), u32(offset));
+      central.push(new Uint8Array(cen), name);
+      offset += localLen;
+    }
+    let cenSize = 0; for (const c of central) cenSize += c.length;
+    const end = new Uint8Array([].concat(u32(0x06054b50), u16(0), u16(0), u16(files.length), u16(files.length), u32(cenSize), u32(offset), u16(0)));
+    return new Blob([...chunks, ...central, end], { type: 'application/zip' });
   }
 
   doExport() {
@@ -359,6 +398,7 @@ class Component extends DCLogic {
       loadSample: () => this.pickSampleFlow(),
       views,
       wireChipStyle: this.chip(st.wire), toggleWire: () => { const w = !st.wire; this.setState({ wire: w }); if (eng) eng.setWire(w); },
+      texChipStyle: this.chip(st.showTex), toggleTex: () => { const t = !st.showTex; this.setState({ showTex: t }); if (eng) eng.setTexture(t); },
       origTrisLabel: st.origTris ? st.origTris.toLocaleString() : '—',
       curTrisLabel: st.curTris ? st.curTris.toLocaleString() : '—',
       curColor: (st.hasModel && st.curTris < st.origTris) ? '#8fd3a0' : 'var(--text)',
@@ -370,6 +410,7 @@ class Component extends DCLogic {
       doDecimate: () => this.runDecimate(),
       doReset: () => { if (eng) eng.resetMesh(); this.refresh(); this.toast('Restored to ' + (eng ? eng.stats().origTris.toLocaleString() : '0') + ' tris'); },
       doExport: () => this.doExport(),
+      doExportGLB: () => this.doExportGLB(),
       doLODs: () => this.doLODs(),
       rungChips: st.rungsPct.map(p => ({
         label: p + '%' + (st.origTris ? '  ~' + this.fmtSize(Math.max(1, Math.round(st.origTris * p / 100)) * 56) : ''),

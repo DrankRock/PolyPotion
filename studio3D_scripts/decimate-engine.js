@@ -1,10 +1,11 @@
 // ============================================================
 // decimate-engine.js — DECIMATE  (DEEngine)
-// Loads a model (GLB/FBX/OBJ), bakes + normalizes it into one surface,
-// and reduces its triangle count with quadric error-metric edge collapse
-// (qem.js) — non-destructively, re-running from the original each time so
-// the target slider is always predictable. Wireframe overlay shows the new
-// topology; OBJ export hands the lightened mesh back to you.
+// Loads a model (GLB/FBX/OBJ), groups it into per-material SURFACES (position
+// + UV + the original material/texture), normalizes them into one space, and
+// reduces triangle count with UV-aware quadric error-metric edge collapse
+// (qem.js) — non-destructively, re-running from the originals each time.
+// Textures are preserved: they show in the viewport (toggleable) and survive
+// export (GLB embeds them; OBJ is geometry-only). Wireframe overlays topology.
 // Loaded by dynamic import from Decimate.dc.html, like the other engines.
 // ============================================================
 import * as THREE from 'three';
@@ -53,11 +54,17 @@ export class DEEngine {
 
     this.root = new THREE.Group(); this.scene.add(this.root);
 
-    this.mesh = null; this._wire = null;
-    this.origPos = null;            // Float32Array non-indexed (the source of truth)
+    // per-material surfaces (source of truth); current display state per surface
+    this.surfaces = [];        // [{ position, uv, material, origTris }]
+    this._cur = [];            // [{ position, normal, uv, tris }]
+    this._meshes = [];         // display meshes (one per surface)
+    this._wire = null;         // wireframe Group
     this.origTris = 0; this.curTris = 0;
+    this.showTex = true;
     this.modelName = ''; this.modelRadius = 1; this.modelCenter = V(0, 0.95, 0);
     this.wire = false;
+
+    this._gray = new THREE.MeshStandardMaterial({ color: 0x9aa3ad, roughness: 0.66, metalness: 0.03, side: THREE.DoubleSide, flatShading: false });
 
     this.onStatus = null; this.onChange = null;
     this._fbx = new FBXLoader(); this._gltf = new GLTFLoader(); this._obj = new OBJLoader();
@@ -70,7 +77,8 @@ export class DEEngine {
 
   _status(m) { if (this.onStatus) this.onStatus(m); }
   _changed() { if (this.onChange) this.onChange(); }
-  hasModel() { return !!this.mesh; }
+  hasModel() { return this.surfaces.length > 0; }
+  hasTexture() { return this.surfaces.some(s => s.material && (s.material.map || s.material.emissiveMap)); }
 
   // ---------------------------------------------------------- LOADING
   async loadUrl(url, ext, opts) {
@@ -95,167 +103,234 @@ export class DEEngine {
     obj.traverse(o => { if ((o.isMesh || o.isSkinnedMesh) && o.geometry) srcs.push(o); });
     if (!srcs.length) throw new Error('No mesh found in file');
 
-    this._status('Baking surface…');
-    const chunks = []; const gbox = new THREE.Box3();
-    for (const m of srcs) {
-      let g = m.geometry; if (g.index) g = g.toNonIndexed(); g = g.clone();
-      const pg = new THREE.BufferGeometry();
-      pg.setAttribute('position', g.attributes.position.clone());
-      pg.applyMatrix4(m.matrixWorld); pg.computeBoundingBox(); gbox.union(pg.boundingBox);
-      chunks.push(pg);
-    }
+    this._status('Baking surfaces…');
+    // First pass: global bbox from world-space positions → shared normalization.
+    const gbox = new THREE.Box3();
+    for (const m of srcs) { const g = m.geometry.clone(); g.applyMatrix4(m.matrixWorld); g.computeBoundingBox(); if (g.boundingBox) gbox.union(g.boundingBox); g.dispose(); }
     const size = gbox.getSize(new THREE.Vector3());
     const s = 1.8 / (size.y || 1);
     const cx = (gbox.min.x + gbox.max.x) / 2, cz = (gbox.min.z + gbox.max.z) / 2, minY = gbox.min.y;
     const normM = new THREE.Matrix4().makeTranslation(-cx * s, -minY * s, -cz * s).multiply(new THREE.Matrix4().makeScale(s, s, s));
 
-    let total = 0; chunks.forEach(c => total += c.attributes.position.count);
-    const flat = new Float32Array(total * 3); let o = 0;
-    for (const c of chunks) { c.applyMatrix4(normM); const p = c.attributes.position; flat.set(p.array.subarray(0, p.count * 3), o); o += p.count * 3; c.dispose(); }
+    // Second pass: group corners by material (uuid), collecting position + uv.
+    const groups = new Map();   // key -> { material, pos:[], uv:[]|null }
+    for (const m of srcs) {
+      const mat = Array.isArray(m.material) ? (m.material[0] || null) : m.material;
+      const key = (mat && mat.uuid) || 'default';
+      let g = m.geometry; if (g.index) g = g.toNonIndexed(); g = g.clone();
+      g.applyMatrix4(m.matrixWorld); g.applyMatrix4(normM);
+      const pos = g.attributes.position;
+      const uvAttr = g.attributes.uv || g.attributes.uv2 || null;
+      let grp = groups.get(key);
+      if (!grp) { grp = { material: mat, pos: [], uv: (uvAttr ? [] : null) }; groups.set(key, grp); }
+      for (let i = 0; i < pos.count * 3; i++) grp.pos.push(pos.array[i]);
+      if (grp.uv) {
+        if (uvAttr) for (let i = 0; i < pos.count * 2; i++) grp.uv.push(uvAttr.array[i]);
+        else for (let i = 0; i < pos.count * 2; i++) grp.uv.push(0);   // keep alignment if only some meshes have uv
+      }
+      g.dispose();
+    }
 
-    this.origPos = flat;
-    this.origTris = total / 3;
+    this._reset();
+    let origTris = 0;
+    for (const grp of groups.values()) {
+      const position = Float32Array.from(grp.pos);
+      const uv = grp.uv ? Float32Array.from(grp.uv) : null;
+      const tris = position.length / 9;
+      origTris += tris;
+      this.surfaces.push({ position, uv, material: this._prepMaterial(grp.material), origTris: tris });
+    }
+    this.origTris = origTris;
     this.modelName = (name || 'model').replace(/\.(glb|gltf|fbx|obj)$/i, '');
-    this._setGeometry(flat, null);
-    this.curTris = this.origTris;
+
+    // display starts at 100%
+    this._apply(this.surfaces.map(sf => ({ position: sf.position, normal: null, uv: sf.uv, tris: sf.origTris })));
     this._frame();
     this._status('');
     this._changed();
     return this.stats();
   }
 
-  _setGeometry(position, normal) {
-    this._disposeMesh();
-    const geo = new THREE.BufferGeometry();
-    geo.setAttribute('position', new THREE.BufferAttribute(position.slice(0), 3));
-    if (normal) geo.setAttribute('normal', new THREE.BufferAttribute(normal.slice(0), 3));
-    else geo.computeVertexNormals();
-    geo.computeBoundingBox(); geo.computeBoundingSphere();
-    const mat = new THREE.MeshStandardMaterial({ color: 0x9aa3ad, roughness: 0.66, metalness: 0.03, side: THREE.DoubleSide, flatShading: false });
-    const mesh = new THREE.Mesh(geo, mat); mesh.castShadow = true; mesh.receiveShadow = true;
-    this.mesh = mesh; this.root.add(mesh);
-    const box = geo.boundingBox; this.modelCenter = box.getCenter(new THREE.Vector3());
-    this.modelRadius = box.getBoundingSphere(new THREE.Sphere()).radius || 1;
+  // clone the source material so decimation/rebuild never mutates the loaded
+  // asset, and make sure it renders double-sided; textures/maps are retained.
+  _prepMaterial(mat) {
+    let out;
+    try { out = mat ? mat.clone() : null; } catch (e) { out = null; }
+    if (!out) out = new THREE.MeshStandardMaterial({ color: 0xbfc4cb, roughness: 0.7, metalness: 0.03 });
+    out.side = THREE.DoubleSide;
+    if (out.map) { out.map.colorSpace = THREE.SRGBColorSpace; out.map.needsUpdate = true; }
+    out.needsUpdate = true;
+    return out;
+  }
+
+  _dispMat(i) { return this.showTex ? (this.surfaces[i] && this.surfaces[i].material) || this._gray : this._gray; }
+
+  // build display meshes from a set of per-surface states
+  _apply(states) {
+    this._disposeMeshes();
+    this._cur = states;
+    this._meshes = [];
+    const union = new THREE.Box3();
+    let curTris = 0;
+    states.forEach((st, i) => {
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.BufferAttribute(st.position.slice(0), 3));
+      if (st.normal) geo.setAttribute('normal', new THREE.BufferAttribute(st.normal.slice(0), 3)); else geo.computeVertexNormals();
+      if (st.uv) geo.setAttribute('uv', new THREE.BufferAttribute(st.uv.slice(0), 2));
+      geo.computeBoundingBox(); geo.computeBoundingSphere();
+      if (geo.boundingBox) union.union(geo.boundingBox);
+      const mesh = new THREE.Mesh(geo, this._dispMat(i));
+      mesh.castShadow = true; mesh.receiveShadow = true;
+      this.root.add(mesh); this._meshes.push(mesh);
+      curTris += st.tris;
+    });
+    this.curTris = curTris;
+    if (!union.isEmpty()) { this.modelCenter = union.getCenter(new THREE.Vector3()); this.modelRadius = union.getBoundingSphere(new THREE.Sphere()).radius || 1; }
     if (this.wire) this._refreshWire();
   }
 
   // ---------------------------------------------------------- DECIMATE
+  async _decimateSurface(sf, ratio, job) {
+    if (ratio >= 0.999) return { position: sf.position, normal: null, uv: sf.uv, tris: sf.origTris };
+    const out = await decimateMesh(sf.position, ratio, { uv: sf.uv || undefined, onStatus: m => this._status(m), job });
+    if (!out) return { position: sf.position, normal: null, uv: sf.uv, tris: sf.origTris };
+    return { position: out.position, normal: out.normal, uv: out.uv || sf.uv, tris: out.stats.outTris };
+  }
+  async _statesFor(ratio, job) {
+    const states = [];
+    for (const sf of this.surfaces) { if (job) job.checkpoint(); states.push(await this._decimateSurface(sf, ratio, job)); await new Promise(r => setTimeout(r, 0)); }
+    return states;
+  }
   async decimateTo(ratio, job) {
-    if (!this.origPos) return null;
+    if (!this.surfaces.length) return null;
     this._status('Decimating…');
     await new Promise(r => setTimeout(r, 20));
-    const out = await decimateMesh(this.origPos, ratio, { onStatus: m => this._status(m), job });
-    if (!out) { this._status(''); return null; }
-    this._setGeometry(out.position, out.normal);
-    this.curTris = out.stats.outTris;
+    const states = await this._statesFor(ratio, job);
+    this._apply(states);
     this._status(''); this._changed();
     return this.stats();
   }
-  // ---------------------------------------------------------- LOD CHAIN
-  // "Make LODs" (Frontier Audit): decimate the ORIGINAL at set ratios and
-  // export one GLB whose meshes are named <name>_LOD0..N — the naming Unity
-  // (LOD Group) and Unreal auto-recognise. Ratios default to 100/60/30/12%.
-  async makeLODs(ratios, job) {
-    if (!this.origPos) throw new Error('Load a model first');
-    ratios = (ratios && ratios.length ? ratios : [1, 0.6, 0.3, 0.12]);
+
+  resetMesh() {
+    if (!this.surfaces.length) return null;
+    this._apply(this.surfaces.map(sf => ({ position: sf.position, normal: null, uv: sf.uv, tris: sf.origTris })));
+    this._changed();
+    return this.stats();
+  }
+
+  // ---------------------------------------------------------- GROUP / EXPORT
+  // Build a THREE.Group from per-surface states, each mesh carrying its real
+  // (textured) material — so GLTFExporter embeds the textures into the GLB.
+  _buildGroup(states, name, nameFn) {
+    const group = new THREE.Group(); group.name = name || (this.modelName || 'character');
+    states.forEach((st, i) => {
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.BufferAttribute(st.position.slice(0), 3));
+      if (st.normal) geo.setAttribute('normal', new THREE.BufferAttribute(st.normal.slice(0), 3)); else geo.computeVertexNormals();
+      if (st.uv) geo.setAttribute('uv', new THREE.BufferAttribute(st.uv.slice(0), 2));
+      const mat = (this.surfaces[i] && this.surfaces[i].material) || this._gray;
+      const mesh = new THREE.Mesh(geo, mat);
+      mesh.name = nameFn ? nameFn(i) : ((this.modelName || 'mesh') + (states.length > 1 ? '_' + i : ''));
+      group.add(mesh);
+    });
+    return group;
+  }
+  async _exportGroup(group) {
     const { GLTFExporter } = await import('three/addons/exporters/GLTFExporter.js');
-    const group = new THREE.Group();
-    group.name = (this.modelName || 'character') + '_LODs';
+    const buf = await new Promise((res, rej) => new GLTFExporter().parse(group, res, rej, { binary: true }));
+    group.traverse(o => { if (o.isMesh && o.geometry) o.geometry.dispose(); });   // materials belong to surfaces — keep
+    return buf;
+  }
+
+  // Export the CURRENT (on-screen) decimation as a textured GLB.
+  async exportGLB() {
+    if (!this.surfaces.length) throw new Error('Load a model first');
+    this._status('Packing GLB…');
+    const buf = await this._exportGroup(this._buildGroup(this._cur, this.modelName));
+    this._status('');
+    return buf;
+  }
+
+  // "Make LODs": decimate the ORIGINAL at set ratios and pack ONE GLB whose
+  // meshes are named <name>_LOD0..N — the naming Unity/Unreal auto-recognise.
+  async makeLODs(ratios, job) {
+    if (!this.surfaces.length) throw new Error('Load a model first');
+    ratios = (ratios && ratios.length ? ratios : [1, 0.6, 0.3, 0.12]);
+    const group = new THREE.Group(); group.name = (this.modelName || 'character') + '_LODs';
     const rungs = [];
     for (let i = 0; i < ratios.length; i++) {
       if (job) job.checkpoint();
       this._status('LOD' + i + ' — ' + Math.round(ratios[i] * 100) + '%…');
       await new Promise(r => setTimeout(r, 20));
-      let position, normal, tris;
-      if (ratios[i] >= 0.999) { position = this.origPos; normal = null; tris = this.origTris; }
-      else {
-        const out = await decimateMesh(this.origPos, ratios[i], { onStatus: m => this._status(m), job });
-        if (!out) continue;
-        position = out.position; normal = out.normal; tris = out.stats.outTris;
-      }
-      const geo = new THREE.BufferGeometry();
-      geo.setAttribute('position', new THREE.BufferAttribute(position.slice(0), 3));
-      if (normal) geo.setAttribute('normal', new THREE.BufferAttribute(normal.slice(0), 3)); else geo.computeVertexNormals();
-      const mesh = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ name: 'lod_mat' }));
-      mesh.name = (this.modelName || 'character') + '_LOD' + i;
-      group.add(mesh);
-      rungs.push({ lod: i, ratio: ratios[i], tris });
+      const states = await this._statesFor(ratios[i], job);
+      const sub = this._buildGroup(states, (this.modelName || 'character') + '_LOD' + i, () => (this.modelName || 'character') + '_LOD' + i);
+      group.add(sub);
+      rungs.push({ lod: i, ratio: ratios[i], tris: states.reduce((a, b) => a + b.tris, 0) });
     }
     this._status('Packing GLB…');
-    const buf = await new Promise((res, rej) => new GLTFExporter().parse(group, res, rej, { binary: true }));
-    group.traverse(o => { if (o.isMesh) { o.geometry.dispose(); o.material.dispose(); } });
+    const buf = await this._exportGroup(group);
     this._status('');
     return { buffer: buf, rungs };
   }
 
-  // Separate LOD files for the Library: one GLB per rung named <name>_<pct>.glb.
-  // pcts: array of percentages (e.g. [100,60,30,12]); 100 is forced in.
+  // Separate textured LOD files for the Library: one GLB per rung named
+  // <name>_<pct>.glb. pcts: percentages (e.g. [100,60,30,12]); 100 forced in.
   async makeLODFiles(pcts, job) {
-    if (!this.origPos) throw new Error('Load a model first');
+    if (!this.surfaces.length) throw new Error('Load a model first');
     let list = (pcts && pcts.length ? pcts.slice() : [100, 60, 30, 12]).map(p => Math.max(1, Math.min(100, Math.round(p))));
     if (!list.includes(100)) list.unshift(100);
     list = [...new Set(list)].sort((a, b) => b - a);
-    const { GLTFExporter } = await import('three/addons/exporters/GLTFExporter.js');
     const baseName = (this.modelName || 'character');
     const files = [];
     for (const pct of list) {
       if (job) job.checkpoint();
       this._status('LOD ' + pct + '%…');
       await new Promise(r => setTimeout(r, 20));
-      let position, normal, tris;
-      if (pct >= 100) { position = this.origPos; normal = null; tris = this.origTris; }
-      else { const out = await decimateMesh(this.origPos, pct / 100, { onStatus: m => this._status(m), job }); if (!out) continue; position = out.position; normal = out.normal; tris = out.stats.outTris; }
-      const geo = new THREE.BufferGeometry();
-      geo.setAttribute('position', new THREE.BufferAttribute(position.slice(0), 3));
-      if (normal) geo.setAttribute('normal', new THREE.BufferAttribute(normal.slice(0), 3)); else geo.computeVertexNormals();
-      const mesh = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ name: baseName + '_mat' }));
-      mesh.name = baseName;
-      const grp = new THREE.Group(); grp.name = baseName; grp.add(mesh);
-      const buf = await new Promise((res, rej) => new GLTFExporter().parse(grp, res, rej, { binary: true }));
-      geo.dispose(); mesh.material.dispose();
-      files.push({ pct, name: baseName + '_' + pct + '.glb', buffer: buf, tris: Math.round(tris) });
+      const states = await this._statesFor(pct / 100, job);
+      const buf = await this._exportGroup(this._buildGroup(states, baseName));
+      files.push({ pct, name: baseName + '_' + pct + '.glb', buffer: buf, tris: states.reduce((a, b) => a + b.tris, 0) });
     }
     this._status('');
     return { baseName, files };
   }
 
-  resetMesh() {
-    if (!this.origPos) return null;
-    this._setGeometry(this.origPos, null);
-    this.curTris = this.origTris; this._changed();
-    return this.stats();
-  }
-
-  // ---------------------------------------------------------- OBJ EXPORT
+  // ---------------------------------------------------------- OBJ (geometry only)
   exportOBJ() {
-    if (!this.mesh) return '';
-    const pos = this.mesh.geometry.attributes.position;
-    // weld for a compact OBJ
-    const map = new Map(); const verts = []; const idx = new Int32Array(pos.count);
+    if (!this._meshes.length) return '';
+    const map = new Map(); const verts = []; const faces = [];
     const q = 1e5;
-    for (let i = 0; i < pos.count; i++) {
-      const x = pos.getX(i), y = pos.getY(i), z = pos.getZ(i);
-      const k = Math.round(x * q) + '_' + Math.round(y * q) + '_' + Math.round(z * q);
-      let id = map.get(k); if (id == null) { id = verts.length / 3; verts.push(x, y, z); map.set(k, id); } idx[i] = id;
+    for (const mesh of this._meshes) {
+      const pos = mesh.geometry.attributes.position; if (!pos) continue;
+      for (let i = 0; i < pos.count; i++) {
+        const x = pos.getX(i), y = pos.getY(i), z = pos.getZ(i);
+        const k = Math.round(x * q) + '_' + Math.round(y * q) + '_' + Math.round(z * q);
+        let id = map.get(k); if (id == null) { id = verts.length / 3; verts.push(x, y, z); map.set(k, id); }
+        faces.push(id);
+      }
     }
-    let s = '# ' + (this.modelName || 'mesh') + ' — decimated to ' + this.curTris + ' tris (Studio · Decimate)\n';
+    let s = '# ' + (this.modelName || 'mesh') + ' — decimated to ' + this.curTris + ' tris (Studio · Decimate). Geometry only — use GLB for textures.\n';
     for (let i = 0; i < verts.length; i += 3) s += 'v ' + verts[i].toFixed(6) + ' ' + verts[i + 1].toFixed(6) + ' ' + verts[i + 2].toFixed(6) + '\n';
-    for (let f = 0; f < pos.count; f += 3) s += 'f ' + (idx[f] + 1) + ' ' + (idx[f + 1] + 1) + ' ' + (idx[f + 2] + 1) + '\n';
+    for (let f = 0; f < faces.length; f += 3) s += 'f ' + (faces[f] + 1) + ' ' + (faces[f + 1] + 1) + ' ' + (faces[f + 2] + 1) + '\n';
     return s;
   }
 
   // ---------------------------------------------------------- VIEW / DISPLAY
+  setTexture(on) {
+    this.showTex = !!on;
+    this._meshes.forEach((m, i) => { m.material = this._dispMat(i); });
+  }
   setWire(on) {
     this.wire = !!on;
-    if (on) this._refreshWire(); else if (this._wire) { this._wire.visible = false; }
+    if (on) this._refreshWire(); else if (this._wire) this._wire.visible = false;
     if (this._wire) this._wire.visible = on;
   }
   _refreshWire() {
-    if (this._wire) { this.root.remove(this._wire); this._wire.geometry.dispose(); this._wire = null; }
-    if (!this.mesh) return;
-    const wg = new THREE.WireframeGeometry(this.mesh.geometry);
-    this._wire = new THREE.LineSegments(wg, new THREE.LineBasicMaterial({ color: 0x0e1014, transparent: true, opacity: 0.22 }));
-    this._wire.visible = this.wire; this.root.add(this._wire);
+    if (this._wire) { this.root.remove(this._wire); this._wire.traverse(o => { if (o.geometry) o.geometry.dispose(); }); this._wire = null; }
+    if (!this._meshes.length) return;
+    const g = new THREE.Group();
+    const mat = new THREE.LineBasicMaterial({ color: 0x0e1014, transparent: true, opacity: 0.22 });
+    for (const mesh of this._meshes) { const wg = new THREE.WireframeGeometry(mesh.geometry); g.add(new THREE.LineSegments(wg, mat)); }
+    g.visible = this.wire; this._wire = g; this.root.add(g);
   }
   setView(name) {
     const c = this.modelCenter, r = this.modelRadius, d = r * 2.6;
@@ -276,11 +351,17 @@ export class DEEngine {
   }
   frameModel() { this._frame(); }
 
-  stats() { return { name: this.modelName, origTris: this.origTris, tris: this.curTris }; }
+  stats() { return { name: this.modelName, origTris: this.origTris, tris: this.curTris, textured: this.hasTexture() }; }
 
-  _disposeMesh() {
-    if (this.mesh) { this.root.remove(this.mesh); this.mesh.geometry.dispose(); this.mesh.material.dispose(); this.mesh = null; }
-    if (this._wire) { this.root.remove(this._wire); this._wire.geometry.dispose(); this._wire = null; }
+  _disposeMeshes() {
+    for (const m of this._meshes) { this.root.remove(m); if (m.geometry) m.geometry.dispose(); }
+    this._meshes = [];
+    if (this._wire) { this.root.remove(this._wire); this._wire.traverse(o => { if (o.geometry) o.geometry.dispose(); }); this._wire = null; }
+  }
+  _reset() {
+    this._disposeMeshes();
+    for (const sf of this.surfaces) { try { sf.material && sf.material.dispose && sf.material.dispose(); } catch (e) {} }
+    this.surfaces = []; this._cur = []; this.origTris = this.curTris = 0;
   }
   resize() {
     const el = this.canvas.parentElement || this.canvas;
