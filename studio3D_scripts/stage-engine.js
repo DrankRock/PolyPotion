@@ -138,6 +138,42 @@ export class StageEngine {
     return { id: actor.id, name: actor.name, clips: clips.length };
   }
 
+  // Replace an actor's mesh in place with a different LOD rung, preserving its
+  // holder transform (position/rotation/scale), selection, and active clip.
+  async swapActorLOD(id, buf, ext) {
+    const a = this._actor(id); if (!a) return false;
+    ext = (ext || a.ext || 'glb').toLowerCase();
+    let root, clips = [];
+    try {
+      if (ext === 'glb' || ext === 'gltf') { const g = await new Promise((res, rej) => this._gltf.parse(buf.slice(0), '', res, rej)); root = g.scene || (g.scenes && g.scenes[0]); clips = g.animations || []; }
+      else if (ext === 'fbx') { root = this._fbx.parse(buf.slice(0), ''); clips = root.animations || []; }
+      else return false;
+    } catch (e) { return false; }
+    root.traverse(o => { if (o.isMesh || o.isSkinnedMesh) { o.castShadow = true; o.receiveShadow = true; } });
+    root.updateMatrixWorld(true);
+    const box = new THREE.Box3().setFromObject(root);
+    const size = box.getSize(new THREE.Vector3());
+    const s = 1.7 / (size.y || 1);
+    const norm = new THREE.Group();
+    norm.scale.setScalar(s);
+    norm.position.set(-(box.min.x + box.max.x) / 2 * s, -box.min.y * s, -(box.min.z + box.max.z) / 2 * s);
+    norm.add(root);
+    // swap under the (unchanged) holder
+    if (a.mixer) { try { a.mixer.stopAllAction(); } catch (e) {} }
+    a.holder.remove(a.norm);
+    try { a.norm.traverse(o => { if (o.geometry) o.geometry.dispose(); }); } catch (e) {}
+    a.holder.add(norm);
+    const mixer = clips.length ? new THREE.AnimationMixer(root) : null;
+    let action = null, clipIndex = -1;
+    if (mixer && clips.length) { const i = (a.clipIndex >= 0 && a.clipIndex < clips.length) ? a.clipIndex : 0; action = mixer.clipAction(clips[i]); action.play(); clipIndex = i; }
+    a.norm = norm; a.root = root; a.mixer = mixer; a.action = action; a.clips = clips; a.clipIndex = clipIndex;
+    a.srcBuffer = buf.slice(0); a.ext = ext;
+    a.footR = Math.max(0.35, Math.max(size.x, size.z) * s * 0.55);
+    if (this.selectedId === id) this._updateRing();
+    this._changed();
+    return true;
+  }
+
   _slotPosition(i) {
     // widening rows of 4, centered, 1.5m spacing
     const perRow = 4, sp = 1.5;
