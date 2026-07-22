@@ -13,7 +13,7 @@
        plane. (True vendoring is still better; this is the client-side half.)
    Bump CACHE_VERSION whenever shell files change so clients pick them up.
    ============================================================ */
-const CACHE_VERSION = 'pp-v85';
+const CACHE_VERSION = 'pp-v86';
 const CORE_CACHE = CACHE_VERSION + '-core';
 const RUNTIME_CACHE = CACHE_VERSION + '-runtime';
 const CDN_CACHE = CACHE_VERSION + '-cdn';

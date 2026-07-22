@@ -63,7 +63,7 @@
             <div style="font-size:12.5px;color:var(--text2);max-width:470px;line-height:1.6;">Load a <b>source clip</b> (a .glb / .fbx with animation — a Mixamo download works great) and a <b>target character</b> (any rigged humanoid, or the active character from the Library). Bones are auto-mapped by humanoid slot; the motion transfers with root-scale correction.</div>
           </div>
           <div style="display:flex;gap:10px;">
-            <button style="padding:10px 18px;border-radius:7px;font-size:12.5px;font-weight:600;background:var(--accent);border:1px solid var(--accent);color:#0d0f1f;cursor:pointer;box-shadow:0 2px 12px var(--accent-dim);" onClick="{{ pickSource }}">⛷ Import source clip…</button>
+            <button style="padding:10px 18px;border-radius:7px;font-size:12.5px;font-weight:600;background:var(--accent);border:1px solid var(--accent);color:var(--on-accent);cursor:pointer;box-shadow:0 2px 12px var(--accent-dim);" onClick="{{ pickSource }}">⛷ Import source clip…</button>
             <button style="padding:10px 18px;border-radius:7px;font-size:12.5px;font-weight:600;background:var(--panel3);border:1px solid var(--edge);color:var(--text);cursor:pointer;" onClick="{{ pickTarget }}">☺ Import target character…</button>
           </div>
         </div>
@@ -147,7 +147,7 @@
           <label style="display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--text2);margin-bottom:10px;cursor:pointer;">
             <input type="checkbox" checked="{{ preserveHips }}" onChange="{{ onPreserveHips }}"> Keep hips in place (in-place clip)
           </label>
-          <button style="display:flex;align-items:center;justify-content:center;gap:7px;padding:9px;border-radius:6px;font-size:12px;font-weight:600;background:var(--accent);border:1px solid var(--accent);color:#0d0f1f;width:100%;cursor:pointer;box-shadow:0 1px 0 rgba(255,255,255,.18) inset,0 2px 12px var(--accent-dim);" onClick="{{ doRetarget }}">⇄ Retarget</button>
+          <button style="display:flex;align-items:center;justify-content:center;gap:7px;padding:9px;border-radius:6px;font-size:12px;font-weight:600;background:var(--accent);border:1px solid var(--accent);color:var(--on-accent);width:100%;cursor:pointer;box-shadow:0 1px 0 rgba(255,255,255,.18) inset,0 2px 12px var(--accent-dim);" onClick="{{ doRetarget }}">⇄ Retarget</button>
           <sc-if value="{{ hasResult }}" hint-placeholder-val="{{ false }}">
             <div style="margin-top:9px;padding:8px 10px;border-radius:6px;font-size:11px;background:rgba(60,160,90,.12);border:1px solid rgba(60,160,90,.35);color:var(--good);font-family:var(--font-mono);">{{ resultLabel }}</div>
             <button style="display:flex;align-items:center;justify-content:center;gap:7px;padding:8px;border-radius:6px;font-size:11.5px;font-weight:600;background:var(--panel3);border:1px solid var(--edge);color:var(--text);width:100%;cursor:pointer;margin-top:8px;" onClick="{{ togglePlay }}">{{ playLabel }}</button>
@@ -164,7 +164,7 @@
       </div>
 
       <div style="padding:12px;">
-        <div style="display:flex;gap:9px;padding:9px 11px;border-radius:7px;font-size:11px;line-height:1.5;background:var(--accentDim);border:1px solid var(--accent-dim);color:#c9cdf6;"><span style="flex:none;">✦</span><span>Bones are matched by <b>humanoid slot</b>, not by name — Mixamo, UE5, Rigify and VRM skeletons are recognised automatically, with a fuzzy fallback for everything else. Root motion is rescaled by hip height so stride length matches the new legs.</span></div>
+        <div style="display:flex;gap:9px;padding:9px 11px;border-radius:7px;font-size:11px;line-height:1.5;background:var(--accentDim);border:1px solid var(--accent-dim);color:var(--text);"><span style="flex:none;">✦</span><span>Bones are matched by <b>humanoid slot</b>, not by name — Mixamo, UE5, Rigify and VRM skeletons are recognised automatically, with a fuzzy fallback for everything else. Root motion is rescaled by hip height so stride length matches the new legs.</span></div>
       </div>
     </aside>
   </div>

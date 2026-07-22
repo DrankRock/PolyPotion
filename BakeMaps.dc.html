@@ -65,7 +65,7 @@
             <div style="font-size:12.5px;color:var(--text2);max-width:460px;line-height:1.6;">Load a <b>low-poly target</b> (must be UV-unwrapped) — that's what the maps are baked onto. Optionally add a <b>high-res</b> sculpt to project its detail down. AO &amp; curvature bake from a single mesh too.</div>
           </div>
           <div style="display:flex;gap:10px;">
-            <button style="padding:10px 18px;border-radius:7px;font-size:12.5px;font-weight:600;background:var(--accent);border:1px solid var(--accent);color:#0d0f1f;cursor:pointer;" onClick="{{ pickLow }}">⬇ Load low-poly target…</button>
+            <button style="padding:10px 18px;border-radius:7px;font-size:12.5px;font-weight:600;background:var(--accent);border:1px solid var(--accent);color:var(--on-accent);cursor:pointer;" onClick="{{ pickLow }}">⬇ Load low-poly target…</button>
           </div>
         </div>
       </sc-if>
@@ -162,7 +162,7 @@
 
       <!-- bake + export -->
       <div style="padding:12px;display:flex;flex-direction:column;gap:8px;">
-        <button style="display:flex;align-items:center;justify-content:center;gap:7px;padding:11px;border-radius:7px;font-size:13px;font-weight:700;background:var(--accent);border:1px solid var(--accent);color:#0d0f1f;width:100%;cursor:pointer;" onClick="{{ doBake }}">☰ Bake maps</button>
+        <button style="display:flex;align-items:center;justify-content:center;gap:7px;padding:11px;border-radius:7px;font-size:13px;font-weight:700;background:var(--accent);border:1px solid var(--accent);color:var(--on-accent);width:100%;cursor:pointer;" onClick="{{ doBake }}">☰ Bake maps</button>
         <sc-if value="{{ hasMaps }}" hint-placeholder-val="{{ false }}">
           <button style="display:flex;align-items:center;justify-content:center;gap:7px;padding:9px;border-radius:6px;font-size:12px;font-weight:600;background:var(--panel-3);border:1px solid var(--edge);color:var(--text);width:100%;cursor:pointer;" onClick="{{ doDownloadAll }}">⬇ Download all maps (.png)</button>
         </sc-if>

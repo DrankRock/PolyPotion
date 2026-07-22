@@ -68,7 +68,7 @@
             <div style="font-size:12.5px;color:var(--text2);max-width:470px;line-height:1.6;">Add characters from your <b>Library</b> or drop <b>.glb / .fbx</b> files here. Place each on the ground, give it its own pose or clip, then export the whole set as <b>one glTF</b> — a diorama, a crowd, a cutscene. Director can fly its camera through it.</div>
           </div>
           <div style="display:flex;gap:10px;pointer-events:auto;">
-            <button style="padding:10px 18px;border-radius:7px;font-size:12.5px;font-weight:600;background:var(--accent);border:1px solid var(--accent);color:#0d0f1f;cursor:pointer;box-shadow:0 2px 12px rgba(124,131,255,.35);" onClick="{{ focusLibrary }}">＋ Add from Library</button>
+            <button style="padding:10px 18px;border-radius:7px;font-size:12.5px;font-weight:600;background:var(--accent);border:1px solid var(--accent);color:var(--on-accent);cursor:pointer;box-shadow:0 2px 12px rgba(124,131,255,.35);" onClick="{{ focusLibrary }}">＋ Add from Library</button>
             <button style="padding:10px 18px;border-radius:7px;font-size:12.5px;font-weight:600;background:var(--panel3);border:1px solid var(--edge);color:var(--text);cursor:pointer;" onClick="{{ pickFile }}">⬇ Import file…</button>
           </div>
         </div>
@@ -179,15 +179,15 @@
         <div style="border-bottom:1px solid var(--seam);">
           <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--header);border-bottom:1px solid var(--seam);"><span style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);">Export scene</span></div>
           <div style="padding:11px 12px;display:flex;flex-direction:column;gap:8px;">
-            <button style="display:flex;align-items:center;justify-content:center;gap:7px;padding:10px;border-radius:6px;font-size:12.5px;font-weight:700;background:var(--accent);border:1px solid var(--accent);color:#0d0f1f;width:100%;cursor:pointer;box-shadow:0 1px 0 rgba(255,255,255,.18) inset,0 2px 12px rgba(124,131,255,.35);" onClick="{{ exportGLB }}">⬇ Download scene .glb</button>
-            <button style="display:flex;align-items:center;justify-content:center;gap:7px;padding:9px;border-radius:6px;font-size:12px;font-weight:600;background:var(--accentDim);border:1px solid rgba(124,131,255,.45);color:#c9cdf6;width:100%;cursor:pointer;" onClick="{{ sendShowcase }}">◈ Open the set in Showcase</button>
+            <button style="display:flex;align-items:center;justify-content:center;gap:7px;padding:10px;border-radius:6px;font-size:12.5px;font-weight:700;background:var(--accent);border:1px solid var(--accent);color:var(--on-accent);width:100%;cursor:pointer;box-shadow:0 1px 0 rgba(255,255,255,.18) inset,0 2px 12px rgba(124,131,255,.35);" onClick="{{ exportGLB }}">⬇ Download scene .glb</button>
+            <button style="display:flex;align-items:center;justify-content:center;gap:7px;padding:9px;border-radius:6px;font-size:12px;font-weight:600;background:var(--accentDim);border:1px solid rgba(124,131,255,.45);color:var(--text);width:100%;cursor:pointer;" onClick="{{ sendShowcase }}">◈ Open the set in Showcase</button>
             <div style="font-size:10px;color:var(--muted);line-height:1.5;">One glTF holding every actor at its placed transform, each with its own animation preserved. Node names are prefixed per actor so nothing collides on import.</div>
           </div>
         </div>
       </sc-if>
 
       <div style="padding:12px;">
-        <div style="display:flex;gap:9px;padding:9px 11px;border-radius:7px;font-size:11px;line-height:1.5;background:var(--accentDim);border:1px solid rgba(124,131,255,.3);color:#c9cdf6;"><span style="flex:none;">✦</span><span>Each actor keeps its <b>own clip</b> and plays at its own speed — pick different clips per copy of the same character to fill a crowd with variety. <b>Duplicate</b> (⧉) is the fast way to populate.</span></div>
+        <div style="display:flex;gap:9px;padding:9px 11px;border-radius:7px;font-size:11px;line-height:1.5;background:var(--accentDim);border:1px solid rgba(124,131,255,.3);color:var(--text);"><span style="flex:none;">✦</span><span>Each actor keeps its <b>own clip</b> and plays at its own speed — pick different clips per copy of the same character to fill a crowd with variety. <b>Duplicate</b> (⧉) is the fast way to populate.</span></div>
       </div>
     </aside>
   </div>
@@ -208,7 +208,7 @@ class Component extends DCLogic {
   async boot() {
     try {
       const canvas = document.getElementById('sg-gl');
-      let mod; try { mod = await import('./studio3D_scripts/stage-engine.js?v=40'); } catch (e) { mod = await import('./stage-engine.js?v=40'); }
+      let mod; try { mod = await import('./studio3D_scripts/stage-engine.js?v=41'); } catch (e) { mod = await import('./stage-engine.js?v=41'); }
       const eng = new mod.StageEngine(canvas); this._eng = eng;
       eng.onChange = () => this.refresh();
       eng.onStatus = (msg) => this.setState({ loading: !!msg, loadingMsg: msg || '' });
@@ -231,9 +231,13 @@ class Component extends DCLogic {
     try { await this._eng.addBuffer(buf, name, ext); this.refresh(); this.setState({ loading: false }); this.toast('Added ' + (name || 'actor')); }
     catch (e) { this.setState({ loading: false }); this.toast('Add failed: ' + (e && e.message || e)); }
   }
-  async addUrl(url, ext, opts, label) {
+  async addUrl(url, ext, opts, label, lodRungs) {
     this.setState({ loading: true, loadingMsg: 'Adding ' + (label || 'actor') + '…' });
-    try { await this._eng.addUrl(url, ext, opts, label); this.refresh(); this.setState({ loading: false }); this.toast('Added ' + (label || 'actor')); }
+    try {
+      const r = await this._eng.addUrl(url, ext, opts, label);
+      if (r && r.id && lodRungs && lodRungs.length >= 2) { this._lodMeta = this._lodMeta || {}; this._lodMeta[r.id] = { rungs: lodRungs.slice().sort((a, b) => b.pct - a.pct), curPct: this._curStagePct || 100 }; this._ensureStageLOD(); }
+      this.refresh(); this.setState({ loading: false }); this.toast('Added ' + (label || 'actor'));
+    }
     catch (e) { this.setState({ loading: false }); this.toast('Add failed: ' + (e && e.message || e)); }
   }
 
@@ -289,7 +293,7 @@ class Component extends DCLogic {
     if (this._embedded) { const hide = () => { const h = document.querySelector('#sg-root > header'); if (h && h.firstElementChild) h.firstElementChild.style.display = 'none'; }; hide(); setTimeout(hide, 60); setTimeout(hide, 300); }
     window.addEventListener('message', (e) => {
       const d = e.data; if (!d || !d.__studio) return;
-      if (d.type === 'studio:loadCharUrl') { const a = this._lodPick(d); this.queue(() => this.addUrl(a[0], a[1], a[2], a[3])); }
+      if (d.type === 'studio:loadCharUrl') { const a = this._lodPick(d); const rungs = (d.lods || []).filter(r => r && r.path && +r.pct > 0); this.queue(() => this.addUrl(a[0], a[1], a[2], a[3], rungs)); }
       else if (d.type === 'studio:loadCharBuffer') this.queue(() => this.addBuffer(d.buffer, d.name || 'character', (d.name || '').split('.').pop()));
       else if (d.type === 'studio:stageAdd') this.queue(() => this.addBuffer(d.buffer, d.name || 'character', (d.name || '').split('.').pop()));
       else if (d.type === 'studio:library') this.setState({ libChars: d.characters || [] });
@@ -310,6 +314,46 @@ class Component extends DCLogic {
     return [pick.path, pick.ext || d.ext, { chunked: pick.chunked, chunks: pick.chunks }, (d.label || 'character')];
   }
 
+  _deviceWant() { const c = navigator.hardwareConcurrency || 4, m = navigator.deviceMemory || 4; return (c <= 4 || m <= 4) ? 40 : (c <= 8 ? 70 : 100); }
+
+  // One scene-wide FPS controller. When the stage lags it lowers a target %,
+  // and each LOD-capable actor is swapped to ITS nearest rung <= target (via
+  // engine.swapActorLOD, which preserves position/selection/clip). Climbs back
+  // on headroom. Actors without LODs are untouched.
+  async _ensureStageLOD() {
+    if (this._lodCtl) return;
+    let LS, CL;
+    try { LS = await import('./studio3D_scripts/lod-switch.js'); CL = await import('./studio3D_scripts/chunk-loader.js'); }
+    catch (e) { try { LS = await import('./lod-switch.js'); CL = await import('./chunk-loader.js'); } catch (e2) { return; } }
+    this._chunk = CL;
+    const ladder = [{ pct: 100 }, { pct: 70 }, { pct: 45 }, { pct: 25 }];
+    this._lodCtl = LS.createLODController({
+      rungs: ladder, targetFps: 42,
+      onPick: (pct) => { this._curStagePct = pct; this._applyStageTarget(pct); },
+    });
+    this._lodCtl.prime(this._deviceWant());
+    let last = 0; const loop = (t) => { if (this._disposed) return; if (last) this._lodCtl.tick(t - last); last = t; this._lodRaf = requestAnimationFrame(loop); };
+    this._lodRaf = requestAnimationFrame(loop);
+  }
+  async _applyStageTarget(pct) {
+    if (this._applying || !this._eng || !this._chunk) return;
+    this._applying = true;
+    try {
+      const meta = this._lodMeta || {};
+      for (const id of Object.keys(meta)) {
+        const m = meta[id];
+        if (!this._eng._actor || !this._eng._actor(id)) { delete meta[id]; continue; }
+        const target = this._chunk.pickRung(m.rungs, pct);
+        if (!target || target.pct === m.curPct) continue;
+        try {
+          const buf = await this._chunk.fetchLODBuffer(target);
+          const ok = await this._eng.swapActorLOD(id, buf, target.ext || 'glb');
+          if (ok) { m.curPct = target.pct; this.toast('LOD ' + target.pct + '% · ' + (this._eng._actor(id).name || 'actor')); }
+        } catch (e) {}
+      }
+    } finally { this._applying = false; }
+  }
+
   toast(msg) {
     const wrap = document.getElementById('sg-toasts'); if (!wrap) return;
     const el = document.createElement('div');
@@ -318,7 +362,7 @@ class Component extends DCLogic {
     setTimeout(() => { el.style.transition = 'opacity .3s'; el.style.opacity = '0'; setTimeout(() => el.remove(), 300); }, 3000);
   }
 
-  actorCard(sel) { return 'padding:9px 11px;border-radius:8px;border:1px solid ' + (sel ? 'var(--accent)' : 'var(--edge)') + ';background:' + (sel ? 'rgba(124,131,255,0.14)' : 'var(--panel-3)') + ';color:' + (sel ? '#c9cdf6' : 'var(--text)') + ';'; }
+  actorCard(sel) { return 'padding:9px 11px;border-radius:8px;border:1px solid ' + (sel ? 'var(--accent)' : 'var(--edge)') + ';background:' + (sel ? 'rgba(124,131,255,0.14)' : 'var(--panel-3)') + ';color:' + (sel ? 'var(--text)' : 'var(--text)') + ';'; }
 
   renderVals() {
     const st = this.state, eng = this._eng;
@@ -329,7 +373,7 @@ class Component extends DCLogic {
       clipOpts: a.hasClips ? a.clips.map(c => ({ v: String(c.i), label: c.name })) : [{ v: '-1', label: 'no clips' }],
       onSelect: () => eng && eng.select(a.id),
       onDup: () => eng && eng.duplicate(a.id),
-      onDel: () => eng && eng.remove(a.id),
+      onDel: () => { if (eng) eng.remove(a.id); if (this._lodMeta) delete this._lodMeta[a.id]; },
       onClip: (e) => eng && eng.setActorClip(a.id, +e.target.value),
     }));
     const sel = st.actors.find(a => a.selected);

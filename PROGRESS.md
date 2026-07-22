@@ -442,6 +442,24 @@ Phase 2 ideas, in order of value:
 
 ## Log
 
+- 2026-07-22 — **Stage per-actor live LOD swap + theme contrast fix (pp-v86)**.
+  STAGE LIVE LOD: engine.swapActorLOD already shipped; wired the DC driver.
+  addUrl now captures the actor id and, when the char carried ≥2 rungs, registers
+  _lodMeta[id]={rungs,curPct}. One scene-wide FPS controller (synthetic ladder
+  100/70/45/25, targetFps 42, own rAF dt loop) primes to the device tier; on each
+  target change _applyStageTarget(pct) swaps every LOD-capable actor to ITS nearest
+  rung ≤target via fetchLODBuffer + swapActorLOD (preserves holder transform/
+  selection/clip), guarded by _applying. Actors without LODs untouched; meta is
+  dropped on remove. stage-engine import bumped v40→v41. Verified: engine has
+  swapActorLOD, all DC hooks present, Stage loads clean.
+  THEME FIX: light-purple text (#c9cdf6, a leftover from the old dark palette) sat
+  on --accentDim info boxes/buttons — unreadable on the light themes (Cute Light,
+  Meadow). Replaced #c9cdf6→var(--text) and dark accent ink #0d0f1f→var(--on-
+  accent) across 8 DCs (30 literals): BakeMaps, Curves, Decimate, Morph, Retarget,
+  Stage, VAT, WeightPaint. Now readable in every theme. Files: Stage.dc.html,
+  + the 8 DCs, sw.js. Remaining LOD backlog: none critical.
+
+
 - 2026-07-22 — **Decimate: textures + LOD-set export fix (pp-v85)**. Two user bugs.
   (A) LOD SET EXPORTED ONLY ONE FILE: makeLODFiles clicked N anchors staggered,
       but browsers block multiple programmatic downloads — only one landed.
