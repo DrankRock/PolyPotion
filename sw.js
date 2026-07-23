@@ -13,7 +13,7 @@
        plane. (True vendoring is still better; this is the client-side half.)
    Bump CACHE_VERSION whenever shell files change so clients pick them up.
    ============================================================ */
-const CACHE_VERSION = 'pp-v86';
+const CACHE_VERSION = 'pp-v89';
 const CORE_CACHE = CACHE_VERSION + '-core';
 const RUNTIME_CACHE = CACHE_VERSION + '-runtime';
 const CDN_CACHE = CACHE_VERSION + '-cdn';
@@ -92,6 +92,7 @@ const CORE = [
   // zero network” now actually holds (Audit V: CORE covered ~1/3 of engines)
   'studio3D_scripts/ao-engine.js',
   'studio3D_scripts/app.js',
+  'studio3D_scripts/rig-cut.js',
   'studio3D_scripts/bakemaps-engine.js',
   'studio3D_scripts/chunk-loader.js',
   'studio3D_scripts/lod-switch.js',

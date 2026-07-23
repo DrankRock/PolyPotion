@@ -56,6 +56,7 @@ async function handleFile(file, keepLoading) {
     renderGroups();
     dzStage.classList.add('hide');
     $('#vpTools').classList.remove('hide');
+    if (E.getWireframe && E.getWireframe()) E.refreshWire();
     { const op = Math.round((E.getMeshOpacity ? E.getMeshOpacity() : 0.42) * 100); $('#meshOpacity').value = op; $('#meshOpacityVal').textContent = op + '%'; }
     $('#filechip').classList.add('loaded');
     $('#filechip .nm').textContent = `${info.name}  ·  ${info.verts.toLocaleString()} verts`;
@@ -622,6 +623,39 @@ function setZoneArmed(on) {
   vpWrap2.style.cursor = on ? 'crosshair' : '';
 }
 btnZone.addEventListener('click', () => { setZoneArmed(E.setZoneMode(!E.getZoneMode())); });
+
+// ---------- wireframe overlay (show the mesh triangles) ----------
+const btnWire = document.querySelector('#btnWire');
+if (btnWire) btnWire.addEventListener('click', () => { const on = E.setWireframe(!E.getWireframe()); btnWire.classList.toggle('on', on); });
+
+// ---------- cut links (separate glued/floating parts) ----------
+const cutPanel = document.querySelector("#cutPanel"), btnCut = document.querySelector("#btnCut");
+let cutOpen = false;
+function cutOpts() { return { sensitivity: (+document.querySelector("#cutSens").value) / 100, cutBridges: document.querySelector("#cutBridges").checked }; }
+function cutRefresh() {
+  if (!E.analyzeLinks) return;
+  const r = E.analyzeLinks(cutOpts());
+  const sum = document.querySelector("#cutSummary");
+  if (r && sum) sum.textContent = r.count + " piece" + (r.count !== 1 ? "s" : "") + (r.bridgesFound ? " · " + r.bridgesFound + " bridge tris" : " · no strings");
+  E.showLinkPreview(true, cutOpts());
+}
+function cutSetOpen(on) {
+  cutOpen = on; if (!cutPanel) return;
+  cutPanel.classList.toggle("hide", !on); if (btnCut) btnCut.classList.toggle("on", on);
+  if (on) cutRefresh(); else E.showLinkPreview(false);
+}
+if (btnCut) btnCut.addEventListener("click", () => cutSetOpen(!cutOpen));
+{ const cs = document.querySelector("#cutSens"); if (cs) cs.addEventListener("input", e => { document.querySelector("#cutSensVal").textContent = e.target.value + "%"; if (cutOpen) cutRefresh(); }); }
+{ const cb = document.querySelector("#cutBridges"); if (cb) cb.addEventListener("change", () => { if (cutOpen) cutRefresh(); }); }
+{ const ca = document.querySelector("#cutApply"); if (ca) ca.addEventListener("click", () => {
+  const drop = document.querySelector("#cutDrop").checked;
+  const res = E.applyCutLinks({ sensitivity: cutOpts().sensitivity, cutBridges: cutOpts().cutBridges, keepOnlyMain: drop });
+  toast("Cut " + (res.removed || 0) + " face" + (res.removed === 1 ? "" : "s") + " — parts separated. Re-check joints, then bind.", res.removed ? "success" : "info");
+  if (document.querySelector("#cutUndo")) document.querySelector("#cutUndo").disabled = !E.canUndoCut();
+  cutRefresh();
+}); }
+{ const cu = document.querySelector("#cutUndo"); if (cu) { cu.disabled = true; cu.addEventListener("click", () => { if (E.undoCut()) { toast("Cut undone.", "info"); cu.disabled = true; cutRefresh(); } }); } }
+{ const cc = document.querySelector("#cutClose"); if (cc) cc.addEventListener("click", () => cutSetOpen(false)); }
 btnZoneClear.addEventListener('click', () => E.clearZone());
 if (E.onZoneRect) E.onZoneRect(rect => {
   if (!rect) { zoneMarquee.classList.add('hide'); return; }
@@ -677,9 +711,19 @@ window.RigDemo = async function (clip, q) {
     return { buffer: buf, name: (name || (loadedName.replace(/\.[^.]+$/, '') || 'rigged')) + '_rigged.glb' };
   }
 
+  // ---- Multi Rig batch hooks ----
+  async function loadFromBuffer(buffer, name) { await handleFile(new File([buffer], name || 'model.glb'), false); }
+  async function loadFromFile(file) { await handleFile(file, false); }
+  function captureRig() { return E.getJointLayout(); }
+  function applyRig(layout) { if (!layout) return 0; const n = E.applyJointLayout(layout); if (typeof renderGroups === 'function') { try { renderGroups(); } catch (e) {} } return n; }
+
   window.AutoRigEmbed = {
     loadFromUrl,
+    loadFromBuffer,
+    loadFromFile,
     getRiggedGLB,
+    captureRig,
+    applyRig,
     isBound: () => !!(E.isBound && E.isBound()),
   };
   window.__studioEmit = post;

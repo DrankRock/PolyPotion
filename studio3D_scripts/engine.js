@@ -7,6 +7,7 @@
 // animations. GLB / glTF export built-in; FBX via fbx-export.js.
 // ============================================================
 import * as THREE from 'three';
+import './rig-cut.js';
 import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { OBJLoader } from 'three/addons/loaders/OBJLoader.js';
@@ -304,6 +305,112 @@ function applyEffectiveOpacity() { const op = effectiveOpacity(); setMeshOpacity
 E.setMeshOpacity = function (op) { meshOpacity = Math.max(0.05, Math.min(1, op)); setMeshOpacity(meshOpacity); if (onOpacityCb) onOpacityCb(Math.round(meshOpacity * 100), meshOpacity >= 0.999, focusMode); return meshOpacity; };
 E.getMeshOpacity = () => meshOpacity;
 E.onMeshOpacity = cb => onOpacityCb = cb;
+
+// ---- wireframe overlay: show the actual mesh triangles so seams/links read ----
+let wireGroup = null, wireOn = false;
+function buildWire() {
+  if (wireGroup) { if (wireGroup.parent) wireGroup.parent.remove(wireGroup); wireGroup.traverse(o => { if (o.geometry) o.geometry.dispose(); if (o.material) o.material.dispose(); }); wireGroup = null; }
+  if (!modelGroup || !modelMeshes.length) return;
+  wireGroup = new THREE.Group(); wireGroup.name = "__wire";
+  const mat = new THREE.LineBasicMaterial({ color: 0x8ad0ff, transparent: true, opacity: 0.5 });
+  modelMeshes.forEach(m => { const wg = new THREE.WireframeGeometry(m.geometry); const ls = new THREE.LineSegments(wg, mat); ls.applyMatrix4(m.matrixWorld); wireGroup.add(ls); });
+  wireGroup.visible = wireOn; modelGroup.add(wireGroup);
+}
+E.setWireframe = function (on) { wireOn = !!on; if (wireOn) buildWire(); if (wireGroup) wireGroup.visible = wireOn; return wireOn; };
+E.getWireframe = () => wireOn;
+E.refreshWire = () => { if (wireOn) buildWire(); };
+
+// ============================================================
+// CUT LINKS — separate parts glued by thin "strings" / floating islands so
+// binding can no longer drag one part with another. Analysis in rig-cut.js.
+// ============================================================
+let _cutData = null, _cutSnap = null, _linkPrev = null;
+const ISLAND_COLORS = [0x6cc07a, 0x5aa9ff, 0xffb454, 0xe86ad0, 0x53d6c4, 0xd0d24a, 0xff7a7a, 0x9a8cff];
+function _meshArrays() {
+  return modelMeshes.map(m => { const g = m.geometry; const p = g.getAttribute("position"); const idx = g.index; return { position: p.array, index: idx ? idx.array : null }; });
+}
+E.hasMesh = () => !!(modelGroup && modelMeshes.length);
+E.analyzeLinks = function (opts) {
+  if (!window.RigCut || !modelMeshes.length) return null;
+  _cutData = window.RigCut.analyze(_meshArrays(), opts || {});
+  const total = _cutData.islands.reduce((a, b) => a + b.tris, 0) || 1;
+  const islands = _cutData.islands.map((is, i) => ({ comp: is.comp, tris: is.tris, verts: is.verts, center: is.center, isMain: i === 0, pct: Math.round(is.tris / total * 100) }));
+  return { islands, count: islands.length, bridgesFound: _cutData.bridgesFound };
+};
+// colored overlay: each island a distinct hue, thin-bridge faces bright red
+function _clearLinkPrev() { if (_linkPrev) { scene.remove(_linkPrev); _linkPrev.traverse(o => { if (o.geometry) o.geometry.dispose(); if (o.material) o.material.dispose(); }); _linkPrev = null; } }
+E.showLinkPreview = function (on, opts) {
+  _clearLinkPrev();
+  if (!on) { applyEffectiveOpacity(); return; }
+  if (!_cutData) E.analyzeLinks(opts);
+  if (!_cutData) return;
+  const compColor = new Map();
+  _cutData.order.forEach((ci, i) => compColor.set(ci, i === 0 ? 0x9aa3ad : ISLAND_COLORS[(i - 1) % ISLAND_COLORS.length]));
+  _linkPrev = new THREE.Group(); _linkPrev.name = "__linkprev";
+  const showBridges = !opts || opts.cutBridges !== false;
+  modelMeshes.forEach((m, mi) => {
+    const g = m.geometry; const p = g.getAttribute("position"); const idx = g.index;
+    const tc = idx ? idx.count / 3 : p.count / 3; const vid = (i) => idx ? idx.getX(i) : i;
+    const posOut = new Float32Array(tc * 9), colOut = new Float32Array(tc * 9);
+    const tComp = _cutData.triComp[mi], tThin = _cutData.triThin[mi];
+    const col = new THREE.Color();
+    for (let t = 0; t < tc; t++) {
+      const thin = showBridges && tThin[t];
+      col.setHex(thin ? 0xff2d2d : (compColor.get(tComp[t]) || 0x9aa3ad));
+      for (let c = 0; c < 3; c++) { const i = vid(t * 3 + c); const o = (t * 3 + c) * 3;
+        posOut[o] = p.getX(i); posOut[o + 1] = p.getY(i); posOut[o + 2] = p.getZ(i);
+        colOut[o] = col.r; colOut[o + 1] = col.g; colOut[o + 2] = col.b; }
+    }
+    const ng = new THREE.BufferGeometry();
+    ng.setAttribute("position", new THREE.BufferAttribute(posOut, 3));
+    ng.setAttribute("color", new THREE.BufferAttribute(colOut, 3));
+    ng.computeVertexNormals();
+    const mat = new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.DoubleSide });
+    _linkPrev.add(new THREE.Mesh(ng, mat));
+  });
+  scene.add(_linkPrev);
+  setMeshOpacity(0.06);   // fade the real mesh so the colored preview reads
+};
+// physically rebuild geometry: drop thin-bridge faces + dropped islands
+E.applyCutLinks = function (opts) {
+  opts = opts || {};
+  if (!_cutData) E.analyzeLinks(opts);
+  if (!_cutData) return { removed: 0 };
+  if (!_cutSnap) _cutSnap = modelMeshes.map(m => m.geometry.clone());   // undo point (first cut only)
+  const cutBridges = opts.cutBridges !== false;
+  const drop = new Set(opts.dropIslands || []);
+  if (opts.keepOnlyMain) { _cutData.order.forEach((ci, i) => { if (i > 0) drop.add(ci); }); }
+  let removed = 0, kept = 0;
+  modelMeshes.forEach((m, mi) => {
+    const g = m.geometry; const p = g.getAttribute("position"); const idx = g.index; const uvA = g.getAttribute("uv");
+    const tc = idx ? idx.count / 3 : p.count / 3; const vid = (i) => idx ? idx.getX(i) : i;
+    const tComp = _cutData.triComp[mi], tThin = _cutData.triThin[mi];
+    const keepPos = [], keepUV = [];
+    for (let t = 0; t < tc; t++) {
+      if ((cutBridges && tThin[t]) || drop.has(tComp[t])) { removed++; continue; }
+      kept++;
+      for (let c = 0; c < 3; c++) { const i = vid(t * 3 + c); keepPos.push(p.getX(i), p.getY(i), p.getZ(i)); if (uvA) keepUV.push(uvA.getX(i), uvA.getY(i)); }
+    }
+    const ng = new THREE.BufferGeometry();
+    ng.setAttribute("position", new THREE.BufferAttribute(new Float32Array(keepPos), 3));
+    if (uvA && keepUV.length) ng.setAttribute("uv", new THREE.BufferAttribute(new Float32Array(keepUV), 2));
+    smoothNormals(ng); ng.computeBoundingBox();
+    m.geometry.dispose(); m.geometry = ng;
+  });
+  _cutData = null; _clearLinkPrev();
+  recomputeBounds(); applyEffectiveOpacity(); if (wireOn) buildWire();
+  return { removed, kept };
+};
+E.canUndoCut = () => !!_cutSnap;
+E.undoCut = function () {
+  if (!_cutSnap) return false;
+  modelMeshes.forEach((m, i) => { if (_cutSnap[i]) { m.geometry.dispose(); m.geometry = _cutSnap[i].clone(); } });
+  _cutSnap = null; _cutData = null; _clearLinkPrev();
+  recomputeBounds(); applyEffectiveOpacity(); if (wireOn) buildWire();
+  return true;
+};
+
+
 
 // ============================================================
 // DRAG-ZONE ISOLATE — marquee a region in an ortho view; clip the mesh + hide
@@ -1497,6 +1604,33 @@ E.exportGLTF = async function (binary) {
   if (binary) return { blob: new Blob([result], { type: 'model/gltf-binary' }), ext: 'glb' };
   return { blob: new Blob([JSON.stringify(result)], { type: 'model/gltf+json' }), ext: 'gltf' };
 };
+
+function _bboxFrame() {
+  const size = bbox.getSize(new THREE.Vector3());
+  return { ox: modelC.x, oy: bbox.min.y, oz: modelC.z,
+    sx: Math.abs(size.x) > 1e-6 ? size.x : 1, sy: Math.abs(size.y) > 1e-6 ? size.y : 1, sz: Math.abs(size.z) > 1e-6 ? size.z : 1 };
+}
+// Capture joint placement as per-axis fractions of the mesh bbox (feet-center
+// origin) so re-applying onto a similar body lands the joints in the right
+// relative spot even at a different size. Absolute positions kept for back-compat.
+E.getJointLayout = function () {
+  const f = _bboxFrame(); const frac = {};
+  joints.forEach(j => { const p = j.marker.position; frac[j.id] = [(p.x - f.ox) / f.sx, (p.y - f.oy) / f.sy, (p.z - f.oz) / f.sz]; });
+  return { frac, groupsOn: { ...groupsOn } };
+};
+E.applyJointLayout = function (layout) {
+  if (!layout) return 0;
+  const src = layout.frac || null, abs = layout.positions || null;
+  const f = _bboxFrame(); let n = 0;
+  joints.forEach(j => {
+    if (src && src[j.id]) { const q = src[j.id]; j.marker.position.set(f.ox + q[0]*f.sx, f.oy + q[1]*f.sy, f.oz + q[2]*f.sz); j._moved = true; n++; }
+    else if (abs && abs[j.id]) { const p = abs[j.id]; j.marker.position.set(p[0], p[1], p[2]); j._moved = true; n++; }
+  });
+  applyGroupVisibility(); updateBoneLines();
+  if (selJoint && onSelectCb) onSelectCb(serializeJoint(selJoint));
+  return n;
+};
+E.serializeAll = () => joints.map(serializeJoint);
 
 window.RigEngine = E;
 window.THREE_R = THREE;

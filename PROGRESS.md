@@ -442,6 +442,57 @@ Phase 2 ideas, in order of value:
 
 ## Log
 
+- 2026-07-23 — **Rig "Cut Links": separate glued/floating parts (pp-v89)**.
+  Fixes the "leaf on the leg follows the arm like a string" problem by PHYSICALLY
+  separating parts, so binding (nearest-bone or geodesic) can no longer drag one
+  part with another — works for both root causes without touching the solver.
+  • rig-cut.js (NEW, window.RigCut.analyze): welds all mesh verts by position,
+    builds the vertex graph, (a) finds connected components = "islands" (a floating
+    accessory is its own island), (b) detects THIN BRIDGES via a BFS-ball
+    thinness metric restricted to the MAIN body component (so small separate
+    islands aren’t mis-flagged). Sensitivity slider maps thinThresh = median*
+    (0.25+sens*0.75). Verified synthetically: dumbbell w/ 1-wide bridge → cut into
+    2 blobs; 3-wide bridge → left intact (limbs safe); separate small island →
+    kept whole, 0 bridges; solid sheet → intact (bar open-border corners, N/A for
+    closed character meshes).
+  • engine.js: E.analyzeLinks / showLinkPreview (colored overlay — red = thin
+    bridges to be cut, distinct hues per island) / applyCutLinks (rebuilds each
+    mesh geometry dropping thin faces + optionally non-main islands; re-welds
+    normals, bounds, wireframe) / undoCut (one-level snapshot) / canUndoCut.
+  • AutoRig.html + app.js: "✂ Cut links" button in the MESH toolbar opens a panel
+    (sensitivity, "Cut thin strings", "Delete leftover floating bits", Apply/Undo/
+    Done) with live colored preview.
+  Also this session: "▦ Wireframe" overlay (see the raw triangles) shipped pp-v88.
+  Files: studio3D_scripts/rig-cut.js (new), engine.js, app.js, AutoRig.html, sw.js.
+  Note: rig-cut.js precached in sw CORE. Verified all 3 files parse + analysis
+  correct; live iframe needed a cache refresh (SW bump handles users).
+
+
+- 2026-07-23 — **MultiRig load bug FIXED + Rig wireframe view (pp-v88)**.
+  ROOT CAUSE of "loading doesn’t work in MultiRig": AutoRig.html loads
+  studio3D_scripts/app.js + engine.js, but the batch hooks (loadFromBuffer/
+  captureRig/applyRig/getJointLayout/applyJointLayout/serializeAll) had been
+  added to the DEAD rig_scripts/ copies instead. AutoRigEmbed only exposed the
+  old 3 keys, so MultiRig.loadIndex→api.loadFromBuffer was undefined → every
+  load failed. FIX: ported all hooks into the LIVE studio3D_scripts/app.js
+  (AutoRigEmbed now +loadFromBuffer/loadFromFile/captureRig/applyRig) and
+  engine.js (fraction-based getJointLayout/applyJointLayout + serializeAll).
+  Verified disk files expose them. SW bumped so browser-cached copies refresh.
+  (Note: rig_scripts/ is dead but still SW-precached; left as-is to not break
+  install. Worth deleting + de-listing in a cleanup pass.)
+  RIG WIREFRAME: new "▦ Wireframe" button in the MESH viewport toolbar +
+  E.setWireframe/getWireframe/refreshWire (blue LineSegments overlay on the raw
+  mesh, rebuilt on load). Lets the user SEE how parts connect (seams, thin
+  bridges, floating bits) before rigging — the first half of the requested
+  "show the mesh + cut the links" feature.
+  OPEN — the AUTO "cut links" op is NOT built yet: correct algorithm depends on
+  whether the dragged bit (e.g. a leaf) is a SEPARATE island (→ rigid-rebind to
+  nearest bone) or WELDED to the body by a thin bridge (→ geodesic weight bleed;
+  needs geometric bridge-cut or weight-flow block). Asked the user to confirm on
+  their mesh via the new wireframe view before implementing. Files: studio3D_
+  scripts/app.js, studio3D_scripts/engine.js, AutoRig.html, sw.js.
+
+
 - 2026-07-22 — **Stage per-actor live LOD swap + theme contrast fix (pp-v86)**.
   STAGE LIVE LOD: engine.swapActorLOD already shipped; wired the DC driver.
   addUrl now captures the actor id and, when the char carried ≥2 rungs, registers

@@ -363,8 +363,21 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;heigh
         <input type="range" id="meshOpacity" min="8" max="100" value="42" title="Mesh opacity — crank up to 100% for solid hands">
         <span class="vt-val" id="meshOpacityVal">42%</span>
         <div class="vp-tsep"></div>
+        <button class="vt-btn" id="btnWire" title="Overlay the mesh triangles so you can see how parts connect (seams, thin bridges, floating bits)">▦ Wireframe</button>
+        <button class="vt-btn" id="btnCut" title="Separate parts that are glued by thin strings, and floating bits, so the rig can't drag one part with another">✂ Cut links</button>
+        <div class="vp-tsep"></div>
         <button class="vt-btn" id="btnZone" title="Drag a box across Front / Side / Top to isolate that region and zoom in">▣ Isolate zone</button>
         <button class="vt-btn hide" id="btnZoneClear">✕ Clear</button>
+      </div>
+      <!-- Cut Links panel -->
+      <div class="hide" id="cutPanel" style="position:absolute;top:58px;left:50%;transform:translateX(-50%);z-index:8;width:300px;background:rgba(20,20,22,0.96);border:1px solid var(--edge);border-radius:10px;padding:12px 13px;box-shadow:0 14px 40px rgba(0,0,0,0.5);font-size:12px;color:var(--text);">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:9px;"><span style="font-weight:700;letter-spacing:.04em;">✂ CUT LINKS</span><span id="cutSummary" style="margin-left:auto;font-family:var(--font-mono);font-size:10.5px;color:var(--muted);">analyzing…</span></div>
+        <div style="font-size:11px;color:var(--muted-2,#9a9a9a);line-height:1.5;margin-bottom:10px;">Red = thin bridges that will be cut. Colors = separate pieces. Turn sensitivity up to cut more.</div>
+        <label style="display:block;font-size:10.5px;letter-spacing:.05em;color:var(--muted);margin-bottom:3px;">SENSITIVITY <span id="cutSensVal" style="float:right;font-family:var(--font-mono);color:var(--text);">35%</span></label>
+        <input type="range" id="cutSens" min="5" max="90" value="35" style="width:100%;accent-color:#ff5a1f;margin-bottom:10px;">
+        <label style="display:flex;align-items:center;gap:8px;margin-bottom:7px;cursor:pointer;"><input type="checkbox" id="cutBridges" checked style="accent-color:#ff5a1f;width:14px;height:14px;">Cut thin strings / bridges</label>
+        <label style="display:flex;align-items:center;gap:8px;margin-bottom:11px;cursor:pointer;"><input type="checkbox" id="cutDrop" style="accent-color:#ff5a1f;width:14px;height:14px;">Delete leftover floating bits</label>
+        <div class="btn-row" style="gap:6px;"><button class="btn primary sm" id="cutApply" style="flex:2;">Apply cut</button><button class="btn ghost sm" id="cutUndo" style="flex:1;">Undo</button><button class="btn ghost sm" id="cutClose" style="flex:1;">Done</button></div>
       </div>
       <div class="zone-marquee hide" id="zoneMarquee"></div>
 
