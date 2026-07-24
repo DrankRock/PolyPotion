@@ -2,21 +2,6 @@
     "comment": "Studio character library. Each entry: {id,label,path,ext,rig,rigged,source,tags,chunked?,chunks?}. rig=mixamo|autorig|unknown. tags are free-form categories used by the library filter (e.g. male,female,human,non-human,sfw,nsfw,t-pose). Add/edit tags freely — chunker.py never overwrites them. Paths are relative to the app root. Portraits go in data/characters/pfp/<id>.png",
     "characters": [
         {
-            "id": "8-tailed-white-fox-woman",
-            "label": "8 tailed white fox woman",
-            "path": "data/characters/8 tailed white fox woman.glb",
-            "ext": "glb",
-            "rig": "unknown",
-            "rigged": "false",
-            "source": "local",
-            "tags": [
-                "female",
-                "non-human"
-            ],
-            "chunked": "true",
-            "chunks": 3
-        },
-        {
             "id": "aura-minotaur",
             "label": "Aura minotaur",
             "path": "data/characters/Aura minotaur_100.glb",
@@ -177,47 +162,6 @@
                     "pct": 12,
                     "path": "data/characters/Computer woman_12.glb",
                     "tris": 44143
-                }
-            ]
-        },
-        {
-            "id": "cow-woman",
-            "label": "Cow woman",
-            "path": "data/characters/Cow woman_100.glb",
-            "ext": "glb",
-            "rig": "unknown",
-            "rigged": "false",
-            "source": "local",
-            "tags": [
-                "female",
-                "non-human"
-            ],
-            "chunked": "true",
-            "chunks": 3,
-            "lods": [
-                {
-                    "pct": 100,
-                    "path": "data/characters/Cow woman_100.glb",
-                    "tris": 714116,
-                    "chunked": "true",
-                    "chunks": 3
-                },
-                {
-                    "pct": 60,
-                    "path": "data/characters/Cow woman_60.glb",
-                    "tris": 428470,
-                    "chunked": "true",
-                    "chunks": 2
-                },
-                {
-                    "pct": 30,
-                    "path": "data/characters/Cow woman_30.glb",
-                    "tris": 214234
-                },
-                {
-                    "pct": 12,
-                    "path": "data/characters/Cow woman_12.glb",
-                    "tris": 85694
                 }
             ]
         },
@@ -837,45 +781,6 @@
             ]
         },
         {
-            "id": "purple-haired-demon-woman",
-            "label": "Purple haired demon-woman",
-            "path": "data/characters/Purple haired demon-woman_100.glb",
-            "ext": "glb",
-            "rig": "unknown",
-            "rigged": "false",
-            "source": "local",
-            "tags": [
-                "female",
-                "non-human"
-            ],
-            "lods": [
-                {
-                    "pct": 100,
-                    "path": "data/characters/Purple haired demon-woman_100.glb",
-                    "tris": 305844,
-                    "chunked": "true",
-                    "chunks": 2
-                },
-                {
-                    "pct": 60,
-                    "path": "data/characters/Purple haired demon-woman_60.glb",
-                    "tris": 183505
-                },
-                {
-                    "pct": 30,
-                    "path": "data/characters/Purple haired demon-woman_30.glb",
-                    "tris": 91752
-                },
-                {
-                    "pct": 12,
-                    "path": "data/characters/Purple haired demon-woman_12.glb",
-                    "tris": 36701
-                }
-            ],
-            "chunked": "true",
-            "chunks": 2
-        },
-        {
             "id": "purple-succubus-woman",
             "label": "Purple succubus woman",
             "path": "data/characters/Purple succubus woman_100.glb",
@@ -915,78 +820,6 @@
             "chunks": 2
         },
         {
-            "id": "snake-woman",
-            "label": "Snake woman",
-            "path": "data/characters/Snake woman_100.glb",
-            "ext": "glb",
-            "rig": "unknown",
-            "rigged": "false",
-            "source": "local",
-            "tags": [
-                "female",
-                "non-human"
-            ],
-            "chunked": "true",
-            "chunks": 3,
-            "lods": [
-                {
-                    "pct": 100,
-                    "path": "data/characters/Snake woman_100.glb",
-                    "tris": 504246,
-                    "chunked": "true",
-                    "chunks": 3
-                },
-                {
-                    "pct": 60,
-                    "path": "data/characters/Snake woman_60.glb",
-                    "tris": 302547,
-                    "chunked": "true",
-                    "chunks": 2
-                },
-                {
-                    "pct": 30,
-                    "path": "data/characters/Snake woman_30.glb",
-                    "tris": 151273
-                },
-                {
-                    "pct": 12,
-                    "path": "data/characters/Snake woman_12.glb",
-                    "tris": 60510
-                }
-            ]
-        },
-        {
-            "id": "storm-woman",
-            "label": "Storm woman",
-            "path": "data/characters/Storm woman.glb",
-            "ext": "glb",
-            "rig": "unknown",
-            "rigged": "false",
-            "source": "local",
-            "tags": [
-                "female",
-                "non-human"
-            ],
-            "chunked": "true",
-            "chunks": 3
-        },
-        {
-            "id": "t-pose-10-tailed-fox-girl-red-clothes",
-            "label": "T-Pose 10-tailed fox girl red clothes",
-            "path": "data/characters/T-Pose 10-tailed fox girl red clothes.glb",
-            "ext": "glb",
-            "rig": "unknown",
-            "rigged": "false",
-            "source": "local",
-            "tags": [
-                "female",
-                "non-human",
-                "t-pose"
-            ],
-            "chunked": "true",
-            "chunks": 3
-        },
-        {
             "id": "t-pose-alien",
             "label": "T-Pose alien",
             "path": "data/characters/T-Pose alien_100.glb",
@@ -1020,22 +853,6 @@
                     "tris": 20007
                 }
             ]
-        },
-        {
-            "id": "t-pose-bunny-girl-white",
-            "label": "T-Pose bunny girl white",
-            "path": "data/characters/T-Pose bunny girl white.glb",
-            "ext": "glb",
-            "rig": "unknown",
-            "rigged": "false",
-            "source": "local",
-            "tags": [
-                "female",
-                "non-human",
-                "t-pose"
-            ],
-            "chunked": "true",
-            "chunks": 2
         },
         {
             "id": "t-pose-demoness",
