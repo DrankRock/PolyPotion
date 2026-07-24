@@ -1562,6 +1562,204 @@
                     "tris": 82121
                 }
             ]
+        },
+        {
+            "id": "meshy-ai-arms-outstretched-0724113524-texture",
+            "label": "Meshy_AI_Arms_Outstretched_0724113524_texture",
+            "path": "data/characters/Meshy_AI_Arms_Outstretched_0724113524_texture_100.glb",
+            "ext": "glb",
+            "rig": "unknown",
+            "rigged": "false",
+            "source": "local",
+            "tags": [],
+            "lods": [
+                {
+                    "pct": 100,
+                    "path": "data/characters/Meshy_AI_Arms_Outstretched_0724113524_texture_100.glb",
+                    "tris": 630038,
+                    "chunked": "true",
+                    "chunks": 3
+                },
+                {
+                    "pct": 60,
+                    "path": "data/characters/Meshy_AI_Arms_Outstretched_0724113524_texture_60.glb",
+                    "tris": 378022,
+                    "chunked": "true",
+                    "chunks": 2
+                },
+                {
+                    "pct": 30,
+                    "path": "data/characters/Meshy_AI_Arms_Outstretched_0724113524_texture_30.glb",
+                    "tris": 189011,
+                    "chunked": "true",
+                    "chunks": 2
+                },
+                {
+                    "pct": 12,
+                    "path": "data/characters/Meshy_AI_Arms_Outstretched_0724113524_texture_12.glb",
+                    "tris": 75604
+                }
+            ],
+            "chunked": "true",
+            "chunks": 3
+        },
+        {
+            "id": "meshy-ai-arms-outstretched-0724113811-texture",
+            "label": "Meshy_AI_Arms_Outstretched_0724113811_texture",
+            "path": "data/characters/Meshy_AI_Arms_Outstretched_0724113811_texture_100.glb",
+            "ext": "glb",
+            "rig": "unknown",
+            "rigged": "false",
+            "source": "local",
+            "tags": [],
+            "lods": [
+                {
+                    "pct": 100,
+                    "path": "data/characters/Meshy_AI_Arms_Outstretched_0724113811_texture_100.glb",
+                    "tris": 277614,
+                    "chunked": "true",
+                    "chunks": 2
+                },
+                {
+                    "pct": 60,
+                    "path": "data/characters/Meshy_AI_Arms_Outstretched_0724113811_texture_60.glb",
+                    "tris": 166568,
+                    "chunked": "true",
+                    "chunks": 2
+                },
+                {
+                    "pct": 30,
+                    "path": "data/characters/Meshy_AI_Arms_Outstretched_0724113811_texture_30.glb",
+                    "tris": 83284
+                },
+                {
+                    "pct": 12,
+                    "path": "data/characters/Meshy_AI_Arms_Outstretched_0724113811_texture_12.glb",
+                    "tris": 33313
+                }
+            ],
+            "chunked": "true",
+            "chunks": 2
+        },
+        {
+            "id": "meshy-ai-arms-outstretched-in-0724113202-texture",
+            "label": "Meshy_AI_Arms_Outstretched_in__0724113202_texture",
+            "path": "data/characters/Meshy_AI_Arms_Outstretched_in__0724113202_texture_100.glb",
+            "ext": "glb",
+            "rig": "unknown",
+            "rigged": "false",
+            "source": "local",
+            "tags": [],
+            "lods": [
+                {
+                    "pct": 100,
+                    "path": "data/characters/Meshy_AI_Arms_Outstretched_in__0724113202_texture_100.glb",
+                    "tris": 392952,
+                    "chunked": "true",
+                    "chunks": 3
+                },
+                {
+                    "pct": 60,
+                    "path": "data/characters/Meshy_AI_Arms_Outstretched_in__0724113202_texture_60.glb",
+                    "tris": 235771,
+                    "chunked": "true",
+                    "chunks": 2
+                },
+                {
+                    "pct": 30,
+                    "path": "data/characters/Meshy_AI_Arms_Outstretched_in__0724113202_texture_30.glb",
+                    "tris": 117886,
+                    "chunked": "true",
+                    "chunks": 2
+                },
+                {
+                    "pct": 12,
+                    "path": "data/characters/Meshy_AI_Arms_Outstretched_in__0724113202_texture_12.glb",
+                    "tris": 47153,
+                    "chunked": "true",
+                    "chunks": 2
+                }
+            ],
+            "chunked": "true",
+            "chunks": 3
+        },
+        {
+            "id": "meshy-ai-arms-wide-open-0724113735-texture",
+            "label": "Meshy_AI_Arms_Wide_Open_0724113735_texture",
+            "path": "data/characters/Meshy_AI_Arms_Wide_Open_0724113735_texture_100.glb",
+            "ext": "glb",
+            "rig": "unknown",
+            "rigged": "false",
+            "source": "local",
+            "tags": [],
+            "lods": [
+                {
+                    "pct": 100,
+                    "path": "data/characters/Meshy_AI_Arms_Wide_Open_0724113735_texture_100.glb",
+                    "tris": 475818,
+                    "chunked": "true",
+                    "chunks": 3
+                },
+                {
+                    "pct": 60,
+                    "path": "data/characters/Meshy_AI_Arms_Wide_Open_0724113735_texture_60.glb",
+                    "tris": 285490,
+                    "chunked": "true",
+                    "chunks": 2
+                },
+                {
+                    "pct": 30,
+                    "path": "data/characters/Meshy_AI_Arms_Wide_Open_0724113735_texture_30.glb",
+                    "tris": 142745,
+                    "chunked": "true",
+                    "chunks": 2
+                },
+                {
+                    "pct": 12,
+                    "path": "data/characters/Meshy_AI_Arms_Wide_Open_0724113735_texture_12.glb",
+                    "tris": 57098
+                }
+            ],
+            "chunked": "true",
+            "chunks": 3
+        },
+        {
+            "id": "meshy-ai-t-pose-rider-0724114029-texture",
+            "label": "Meshy_AI_T_Pose_Rider_0724114029_texture",
+            "path": "data/characters/Meshy_AI_T_Pose_Rider_0724114029_texture_100.glb",
+            "ext": "glb",
+            "rig": "unknown",
+            "rigged": "false",
+            "source": "local",
+            "tags": [],
+            "lods": [
+                {
+                    "pct": 100,
+                    "path": "data/characters/Meshy_AI_T_Pose_Rider_0724114029_texture_100.glb",
+                    "tris": 258688,
+                    "chunked": "true",
+                    "chunks": 2
+                },
+                {
+                    "pct": 60,
+                    "path": "data/characters/Meshy_AI_T_Pose_Rider_0724114029_texture_60.glb",
+                    "tris": 155212,
+                    "chunked": "true",
+                    "chunks": 2
+                },
+                {
+                    "pct": 30,
+                    "path": "data/characters/Meshy_AI_T_Pose_Rider_0724114029_texture_30.glb",
+                    "tris": 77605
+                },
+                {
+                    "pct": 12,
+                    "path": "data/characters/Meshy_AI_T_Pose_Rider_0724114029_texture_12.glb",
+                    "tris": 31042
+                }
+            ],
+            "chunked": "true",
+            "chunks": 2
         }
     ]
 }

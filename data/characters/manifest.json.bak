@@ -19,7 +19,7 @@
         {
             "id": "aura-minotaur",
             "label": "Aura minotaur",
-            "path": "data/characters/Aura minotaur.glb",
+            "path": "data/characters/Aura minotaur_100.glb",
             "ext": "glb",
             "rig": "unknown",
             "rigged": "false",
@@ -29,12 +29,38 @@
                 "non-human"
             ],
             "chunked": "true",
-            "chunks": 2
+            "chunks": 3,
+            "lods": [
+                {
+                    "pct": 100,
+                    "path": "data/characters/Aura minotaur_100.glb",
+                    "tris": 629970,
+                    "chunked": "true",
+                    "chunks": 3
+                },
+                {
+                    "pct": 60,
+                    "path": "data/characters/Aura minotaur_60.glb",
+                    "tris": 377982,
+                    "chunked": "true",
+                    "chunks": 2
+                },
+                {
+                    "pct": 30,
+                    "path": "data/characters/Aura minotaur_30.glb",
+                    "tris": 188991
+                },
+                {
+                    "pct": 12,
+                    "path": "data/characters/Aura minotaur_12.glb",
+                    "tris": 75596
+                }
+            ]
         },
         {
             "id": "autumn-woman",
             "label": "Autumn woman",
-            "path": "data/characters/Autumn woman.glb",
+            "path": "data/characters/Autumn woman_100.glb",
             "ext": "glb",
             "rig": "unknown",
             "rigged": "false",
@@ -42,12 +68,40 @@
             "tags": [
                 "female",
                 "human"
-            ]
+            ],
+            "lods": [
+                {
+                    "pct": 100,
+                    "path": "data/characters/Autumn woman_100.glb",
+                    "tris": 469512,
+                    "chunked": "true",
+                    "chunks": 2
+                },
+                {
+                    "pct": 60,
+                    "path": "data/characters/Autumn woman_60.glb",
+                    "tris": 281707,
+                    "chunked": "true",
+                    "chunks": 2
+                },
+                {
+                    "pct": 30,
+                    "path": "data/characters/Autumn woman_30.glb",
+                    "tris": 140853
+                },
+                {
+                    "pct": 12,
+                    "path": "data/characters/Autumn woman_12.glb",
+                    "tris": 56341
+                }
+            ],
+            "chunked": "true",
+            "chunks": 2
         },
         {
             "id": "blue-laser-man",
             "label": "Blue laser man",
-            "path": "data/characters/Blue laser man.glb",
+            "path": "data/characters/Blue laser man_100.glb",
             "ext": "glb",
             "rig": "unknown",
             "rigged": "false",
@@ -57,12 +111,38 @@
                 "non-human"
             ],
             "chunked": "true",
-            "chunks": 2
+            "chunks": 2,
+            "lods": [
+                {
+                    "pct": 100,
+                    "path": "data/characters/Blue laser man_100.glb",
+                    "tris": 317548,
+                    "chunked": "true",
+                    "chunks": 2
+                },
+                {
+                    "pct": 60,
+                    "path": "data/characters/Blue laser man_60.glb",
+                    "tris": 190529,
+                    "chunked": "true",
+                    "chunks": 2
+                },
+                {
+                    "pct": 30,
+                    "path": "data/characters/Blue laser man_30.glb",
+                    "tris": 95263
+                },
+                {
+                    "pct": 12,
+                    "path": "data/characters/Blue laser man_12.glb",
+                    "tris": 38105
+                }
+            ]
         },
         {
             "id": "computer-woman",
             "label": "Computer woman",
-            "path": "data/characters/Computer woman.glb",
+            "path": "data/characters/Computer woman_100.glb",
             "ext": "glb",
             "rig": "unknown",
             "rigged": "false",
@@ -72,12 +152,38 @@
                 "non-human"
             ],
             "chunked": "true",
-            "chunks": 2
+            "chunks": 2,
+            "lods": [
+                {
+                    "pct": 100,
+                    "path": "data/characters/Computer woman_100.glb",
+                    "tris": 367860,
+                    "chunked": "true",
+                    "chunks": 2
+                },
+                {
+                    "pct": 60,
+                    "path": "data/characters/Computer woman_60.glb",
+                    "tris": 220715,
+                    "chunked": "true",
+                    "chunks": 2
+                },
+                {
+                    "pct": 30,
+                    "path": "data/characters/Computer woman_30.glb",
+                    "tris": 110358
+                },
+                {
+                    "pct": 12,
+                    "path": "data/characters/Computer woman_12.glb",
+                    "tris": 44143
+                }
+            ]
         },
         {
             "id": "cow-woman",
             "label": "Cow woman",
-            "path": "data/characters/Cow woman.glb",
+            "path": "data/characters/Cow woman_100.glb",
             "ext": "glb",
             "rig": "unknown",
             "rigged": "false",
@@ -87,12 +193,38 @@
                 "non-human"
             ],
             "chunked": "true",
-            "chunks": 2
+            "chunks": 3,
+            "lods": [
+                {
+                    "pct": 100,
+                    "path": "data/characters/Cow woman_100.glb",
+                    "tris": 714116,
+                    "chunked": "true",
+                    "chunks": 3
+                },
+                {
+                    "pct": 60,
+                    "path": "data/characters/Cow woman_60.glb",
+                    "tris": 428470,
+                    "chunked": "true",
+                    "chunks": 2
+                },
+                {
+                    "pct": 30,
+                    "path": "data/characters/Cow woman_30.glb",
+                    "tris": 214234
+                },
+                {
+                    "pct": 12,
+                    "path": "data/characters/Cow woman_12.glb",
+                    "tris": 85694
+                }
+            ]
         },
         {
             "id": "death-demoness-woman",
             "label": "Death demoness woman",
-            "path": "data/characters/Death demoness woman.glb",
+            "path": "data/characters/Death demoness woman_100.glb",
             "ext": "glb",
             "rig": "unknown",
             "rigged": "false",
@@ -100,7 +232,35 @@
             "tags": [
                 "female",
                 "non-human"
-            ]
+            ],
+            "lods": [
+                {
+                    "pct": 100,
+                    "path": "data/characters/Death demoness woman_100.glb",
+                    "tris": 465990,
+                    "chunked": "true",
+                    "chunks": 2
+                },
+                {
+                    "pct": 60,
+                    "path": "data/characters/Death demoness woman_60.glb",
+                    "tris": 279594,
+                    "chunked": "true",
+                    "chunks": 2
+                },
+                {
+                    "pct": 30,
+                    "path": "data/characters/Death demoness woman_30.glb",
+                    "tris": 139796
+                },
+                {
+                    "pct": 12,
+                    "path": "data/characters/Death demoness woman_12.glb",
+                    "tris": 55918
+                }
+            ],
+            "chunked": "true",
+            "chunks": 2
         },
         {
             "id": "demon-warrior",
@@ -119,7 +279,7 @@
         {
             "id": "dragon-man-warrior",
             "label": "Dragon man warrior",
-            "path": "data/characters/Dragon man warrior.glb",
+            "path": "data/characters/Dragon man warrior_100.glb",
             "ext": "glb",
             "rig": "unknown",
             "rigged": "false",
@@ -129,12 +289,38 @@
                 "non-human"
             ],
             "chunked": "true",
-            "chunks": 2
+            "chunks": 3,
+            "lods": [
+                {
+                    "pct": 100,
+                    "path": "data/characters/Dragon man warrior_100.glb",
+                    "tris": 632504,
+                    "chunked": "true",
+                    "chunks": 3
+                },
+                {
+                    "pct": 60,
+                    "path": "data/characters/Dragon man warrior_60.glb",
+                    "tris": 379501,
+                    "chunked": "true",
+                    "chunks": 2
+                },
+                {
+                    "pct": 30,
+                    "path": "data/characters/Dragon man warrior_30.glb",
+                    "tris": 189750
+                },
+                {
+                    "pct": 12,
+                    "path": "data/characters/Dragon man warrior_12.glb",
+                    "tris": 75899
+                }
+            ]
         },
         {
             "id": "dragon-woman",
             "label": "Dragon woman",
-            "path": "data/characters/Dragon woman.glb",
+            "path": "data/characters/Dragon woman_100.glb",
             "ext": "glb",
             "rig": "unknown",
             "rigged": "false",
@@ -142,12 +328,40 @@
             "tags": [
                 "female",
                 "non-human"
-            ]
+            ],
+            "lods": [
+                {
+                    "pct": 100,
+                    "path": "data/characters/Dragon woman_100.glb",
+                    "tris": 439674,
+                    "chunked": "true",
+                    "chunks": 2
+                },
+                {
+                    "pct": 60,
+                    "path": "data/characters/Dragon woman_60.glb",
+                    "tris": 263803,
+                    "chunked": "true",
+                    "chunks": 2
+                },
+                {
+                    "pct": 30,
+                    "path": "data/characters/Dragon woman_30.glb",
+                    "tris": 131901
+                },
+                {
+                    "pct": 12,
+                    "path": "data/characters/Dragon woman_12.glb",
+                    "tris": 52761
+                }
+            ],
+            "chunked": "true",
+            "chunks": 2
         },
         {
             "id": "dreamworld-woman",
             "label": "Dreamworld woman",
-            "path": "data/characters/Dreamworld woman.glb",
+            "path": "data/characters/Dreamworld woman_100.glb",
             "ext": "glb",
             "rig": "unknown",
             "rigged": "false",
@@ -157,12 +371,40 @@
                 "human"
             ],
             "chunked": "true",
-            "chunks": 2
+            "chunks": 5,
+            "lods": [
+                {
+                    "pct": 100,
+                    "path": "data/characters/Dreamworld woman_100.glb",
+                    "tris": 1135326,
+                    "chunked": "true",
+                    "chunks": 5
+                },
+                {
+                    "pct": 60,
+                    "path": "data/characters/Dreamworld woman_60.glb",
+                    "tris": 681195,
+                    "chunked": "true",
+                    "chunks": 3
+                },
+                {
+                    "pct": 30,
+                    "path": "data/characters/Dreamworld woman_30.glb",
+                    "tris": 340598,
+                    "chunked": "true",
+                    "chunks": 2
+                },
+                {
+                    "pct": 12,
+                    "path": "data/characters/Dreamworld woman_12.glb",
+                    "tris": 136239
+                }
+            ]
         },
         {
             "id": "egyptian-cat-girl-gold",
             "label": "Egyptian cat girl gold",
-            "path": "data/characters/Egyptian cat girl gold.glb",
+            "path": "data/characters/Egyptian cat girl gold_100.glb",
             "ext": "glb",
             "rig": "unknown",
             "rigged": "false",
@@ -170,12 +412,38 @@
             "tags": [
                 "female",
                 "non-human"
-            ]
+            ],
+            "lods": [
+                {
+                    "pct": 100,
+                    "path": "data/characters/Egyptian cat girl gold_100.glb",
+                    "tris": 249892,
+                    "chunked": "true",
+                    "chunks": 2
+                },
+                {
+                    "pct": 60,
+                    "path": "data/characters/Egyptian cat girl gold_60.glb",
+                    "tris": 149934
+                },
+                {
+                    "pct": 30,
+                    "path": "data/characters/Egyptian cat girl gold_30.glb",
+                    "tris": 74967
+                },
+                {
+                    "pct": 12,
+                    "path": "data/characters/Egyptian cat girl gold_12.glb",
+                    "tris": 29987
+                }
+            ],
+            "chunked": "true",
+            "chunks": 2
         },
         {
             "id": "egyptian-tomb-spirit",
             "label": "Egyptian tomb spirit",
-            "path": "data/characters/Egyptian tomb spirit.glb",
+            "path": "data/characters/Egyptian tomb spirit_100.glb",
             "ext": "glb",
             "rig": "unknown",
             "rigged": "false",
@@ -184,12 +452,40 @@
                 "non-human"
             ],
             "chunked": "true",
-            "chunks": 2
+            "chunks": 3,
+            "lods": [
+                {
+                    "pct": 100,
+                    "path": "data/characters/Egyptian tomb spirit_100.glb",
+                    "tris": 466332,
+                    "chunked": "true",
+                    "chunks": 3
+                },
+                {
+                    "pct": 60,
+                    "path": "data/characters/Egyptian tomb spirit_60.glb",
+                    "tris": 279798,
+                    "chunked": "true",
+                    "chunks": 2
+                },
+                {
+                    "pct": 30,
+                    "path": "data/characters/Egyptian tomb spirit_30.glb",
+                    "tris": 139900,
+                    "chunked": "true",
+                    "chunks": 2
+                },
+                {
+                    "pct": 12,
+                    "path": "data/characters/Egyptian tomb spirit_12.glb",
+                    "tris": 55959
+                }
+            ]
         },
         {
             "id": "ice-warrior",
             "label": "Ice warrior",
-            "path": "data/characters/Ice warrior.glb",
+            "path": "data/characters/Ice warrior_100.glb",
             "ext": "glb",
             "rig": "unknown",
             "rigged": "false",
@@ -198,12 +494,38 @@
                 "human"
             ],
             "chunked": "true",
-            "chunks": 2
+            "chunks": 3,
+            "lods": [
+                {
+                    "pct": 100,
+                    "path": "data/characters/Ice warrior_100.glb",
+                    "tris": 670524,
+                    "chunked": "true",
+                    "chunks": 3
+                },
+                {
+                    "pct": 60,
+                    "path": "data/characters/Ice warrior_60.glb",
+                    "tris": 402313,
+                    "chunked": "true",
+                    "chunks": 2
+                },
+                {
+                    "pct": 30,
+                    "path": "data/characters/Ice warrior_30.glb",
+                    "tris": 201157
+                },
+                {
+                    "pct": 12,
+                    "path": "data/characters/Ice warrior_12.glb",
+                    "tris": 80463
+                }
+            ]
         },
         {
             "id": "ice-winged-angel-man",
             "label": "Ice winged angel man",
-            "path": "data/characters/Ice winged angel man.glb",
+            "path": "data/characters/Ice winged angel man_100.glb",
             "ext": "glb",
             "rig": "unknown",
             "rigged": "false",
@@ -213,7 +535,35 @@
                 "non-human"
             ],
             "chunked": "true",
-            "chunks": 2
+            "chunks": 5,
+            "lods": [
+                {
+                    "pct": 100,
+                    "path": "data/characters/Ice winged angel man_100.glb",
+                    "tris": 1012106,
+                    "chunked": "true",
+                    "chunks": 5
+                },
+                {
+                    "pct": 60,
+                    "path": "data/characters/Ice winged angel man_60.glb",
+                    "tris": 607263,
+                    "chunked": "true",
+                    "chunks": 3
+                },
+                {
+                    "pct": 30,
+                    "path": "data/characters/Ice winged angel man_30.glb",
+                    "tris": 303632,
+                    "chunked": "true",
+                    "chunks": 2
+                },
+                {
+                    "pct": 12,
+                    "path": "data/characters/Ice winged angel man_12.glb",
+                    "tris": 121452
+                }
+            ]
         },
         {
             "id": "lion-man-warrior",
@@ -233,7 +583,7 @@
         {
             "id": "lizard-man-warrior",
             "label": "Lizard man warrior",
-            "path": "data/characters/Lizard man warrior.glb",
+            "path": "data/characters/Lizard man warrior_100.glb",
             "ext": "glb",
             "rig": "unknown",
             "rigged": "false",
@@ -243,7 +593,35 @@
                 "non-human"
             ],
             "chunked": "true",
-            "chunks": 2
+            "chunks": 3,
+            "lods": [
+                {
+                    "pct": 100,
+                    "path": "data/characters/Lizard man warrior_100.glb",
+                    "tris": 725678,
+                    "chunked": "true",
+                    "chunks": 3
+                },
+                {
+                    "pct": 60,
+                    "path": "data/characters/Lizard man warrior_60.glb",
+                    "tris": 435407,
+                    "chunked": "true",
+                    "chunks": 2
+                },
+                {
+                    "pct": 30,
+                    "path": "data/characters/Lizard man warrior_30.glb",
+                    "tris": 217702,
+                    "chunked": "true",
+                    "chunks": 2
+                },
+                {
+                    "pct": 12,
+                    "path": "data/characters/Lizard man warrior_12.glb",
+                    "tris": 87081
+                }
+            ]
         },
         {
             "id": "matvei",
@@ -260,7 +638,7 @@
         {
             "id": "metallic-woman",
             "label": "Metallic woman",
-            "path": "data/characters/Metallic woman.glb",
+            "path": "data/characters/Metallic woman_100.glb",
             "ext": "glb",
             "rig": "unknown",
             "rigged": "false",
@@ -268,12 +646,38 @@
             "tags": [
                 "female",
                 "non-human"
-            ]
+            ],
+            "lods": [
+                {
+                    "pct": 100,
+                    "path": "data/characters/Metallic woman_100.glb",
+                    "tris": 342804,
+                    "chunked": "true",
+                    "chunks": 2
+                },
+                {
+                    "pct": 60,
+                    "path": "data/characters/Metallic woman_60.glb",
+                    "tris": 205682
+                },
+                {
+                    "pct": 30,
+                    "path": "data/characters/Metallic woman_30.glb",
+                    "tris": 102841
+                },
+                {
+                    "pct": 12,
+                    "path": "data/characters/Metallic woman_12.glb",
+                    "tris": 41135
+                }
+            ],
+            "chunked": "true",
+            "chunks": 2
         },
         {
             "id": "nightmare-woman",
             "label": "Nightmare woman",
-            "path": "data/characters/Nightmare woman.glb",
+            "path": "data/characters/Nightmare woman_100.glb",
             "ext": "glb",
             "rig": "unknown",
             "rigged": "false",
@@ -283,12 +687,38 @@
                 "human"
             ],
             "chunked": "true",
-            "chunks": 2
+            "chunks": 3,
+            "lods": [
+                {
+                    "pct": 100,
+                    "path": "data/characters/Nightmare woman_100.glb",
+                    "tris": 579514,
+                    "chunked": "true",
+                    "chunks": 3
+                },
+                {
+                    "pct": 60,
+                    "path": "data/characters/Nightmare woman_60.glb",
+                    "tris": 347707,
+                    "chunked": "true",
+                    "chunks": 2
+                },
+                {
+                    "pct": 30,
+                    "path": "data/characters/Nightmare woman_30.glb",
+                    "tris": 173854
+                },
+                {
+                    "pct": 12,
+                    "path": "data/characters/Nightmare woman_12.glb",
+                    "tris": 69541
+                }
+            ]
         },
         {
             "id": "panther-woman",
             "label": "Panther woman",
-            "path": "data/characters/Panther woman.glb",
+            "path": "data/characters/Panther woman_100.glb",
             "ext": "glb",
             "rig": "unknown",
             "rigged": "false",
@@ -296,12 +726,40 @@
             "tags": [
                 "female",
                 "non-human"
-            ]
+            ],
+            "lods": [
+                {
+                    "pct": 100,
+                    "path": "data/characters/Panther woman_100.glb",
+                    "tris": 374572,
+                    "chunked": "true",
+                    "chunks": 2
+                },
+                {
+                    "pct": 60,
+                    "path": "data/characters/Panther woman_60.glb",
+                    "tris": 224743,
+                    "chunked": "true",
+                    "chunks": 2
+                },
+                {
+                    "pct": 30,
+                    "path": "data/characters/Panther woman_30.glb",
+                    "tris": 112372
+                },
+                {
+                    "pct": 12,
+                    "path": "data/characters/Panther woman_12.glb",
+                    "tris": 44948
+                }
+            ],
+            "chunked": "true",
+            "chunks": 2
         },
         {
             "id": "psychic-purple-demoness",
             "label": "Psychic purple demoness",
-            "path": "data/characters/Psychic purple demoness.glb",
+            "path": "data/characters/Psychic purple demoness_100.glb",
             "ext": "glb",
             "rig": "unknown",
             "rigged": "false",
@@ -309,12 +767,38 @@
             "tags": [
                 "female",
                 "non-human"
-            ]
+            ],
+            "lods": [
+                {
+                    "pct": 100,
+                    "path": "data/characters/Psychic purple demoness_100.glb",
+                    "tris": 312800,
+                    "chunked": "true",
+                    "chunks": 2
+                },
+                {
+                    "pct": 60,
+                    "path": "data/characters/Psychic purple demoness_60.glb",
+                    "tris": 187680
+                },
+                {
+                    "pct": 30,
+                    "path": "data/characters/Psychic purple demoness_30.glb",
+                    "tris": 93840
+                },
+                {
+                    "pct": 12,
+                    "path": "data/characters/Psychic purple demoness_12.glb",
+                    "tris": 37535
+                }
+            ],
+            "chunked": "true",
+            "chunks": 2
         },
         {
             "id": "purity-woman",
             "label": "Purity woman",
-            "path": "data/characters/Purity woman.glb",
+            "path": "data/characters/Purity woman_100.glb",
             "ext": "glb",
             "rig": "unknown",
             "rigged": "false",
@@ -324,12 +808,38 @@
                 "human"
             ],
             "chunked": "true",
-            "chunks": 2
+            "chunks": 2,
+            "lods": [
+                {
+                    "pct": 100,
+                    "path": "data/characters/Purity woman_100.glb",
+                    "tris": 324991,
+                    "chunked": "true",
+                    "chunks": 2
+                },
+                {
+                    "pct": 60,
+                    "path": "data/characters/Purity woman_60.glb",
+                    "tris": 194995,
+                    "chunked": "true",
+                    "chunks": 2
+                },
+                {
+                    "pct": 30,
+                    "path": "data/characters/Purity woman_30.glb",
+                    "tris": 97496
+                },
+                {
+                    "pct": 12,
+                    "path": "data/characters/Purity woman_12.glb",
+                    "tris": 38999
+                }
+            ]
         },
         {
             "id": "purple-haired-demon-woman",
             "label": "Purple haired demon-woman",
-            "path": "data/characters/Purple haired demon-woman.glb",
+            "path": "data/characters/Purple haired demon-woman_100.glb",
             "ext": "glb",
             "rig": "unknown",
             "rigged": "false",
@@ -337,12 +847,38 @@
             "tags": [
                 "female",
                 "non-human"
-            ]
+            ],
+            "lods": [
+                {
+                    "pct": 100,
+                    "path": "data/characters/Purple haired demon-woman_100.glb",
+                    "tris": 305844,
+                    "chunked": "true",
+                    "chunks": 2
+                },
+                {
+                    "pct": 60,
+                    "path": "data/characters/Purple haired demon-woman_60.glb",
+                    "tris": 183505
+                },
+                {
+                    "pct": 30,
+                    "path": "data/characters/Purple haired demon-woman_30.glb",
+                    "tris": 91752
+                },
+                {
+                    "pct": 12,
+                    "path": "data/characters/Purple haired demon-woman_12.glb",
+                    "tris": 36701
+                }
+            ],
+            "chunked": "true",
+            "chunks": 2
         },
         {
             "id": "purple-succubus-woman",
             "label": "Purple succubus woman",
-            "path": "data/characters/Purple succubus woman.glb",
+            "path": "data/characters/Purple succubus woman_100.glb",
             "ext": "glb",
             "rig": "unknown",
             "rigged": "false",
@@ -350,12 +886,38 @@
             "tags": [
                 "female",
                 "non-human"
-            ]
+            ],
+            "lods": [
+                {
+                    "pct": 100,
+                    "path": "data/characters/Purple succubus woman_100.glb",
+                    "tris": 291596,
+                    "chunked": "true",
+                    "chunks": 2
+                },
+                {
+                    "pct": 60,
+                    "path": "data/characters/Purple succubus woman_60.glb",
+                    "tris": 174957
+                },
+                {
+                    "pct": 30,
+                    "path": "data/characters/Purple succubus woman_30.glb",
+                    "tris": 87479
+                },
+                {
+                    "pct": 12,
+                    "path": "data/characters/Purple succubus woman_12.glb",
+                    "tris": 34992
+                }
+            ],
+            "chunked": "true",
+            "chunks": 2
         },
         {
             "id": "snake-woman",
             "label": "Snake woman",
-            "path": "data/characters/Snake woman.glb",
+            "path": "data/characters/Snake woman_100.glb",
             "ext": "glb",
             "rig": "unknown",
             "rigged": "false",
@@ -365,7 +927,33 @@
                 "non-human"
             ],
             "chunked": "true",
-            "chunks": 2
+            "chunks": 3,
+            "lods": [
+                {
+                    "pct": 100,
+                    "path": "data/characters/Snake woman_100.glb",
+                    "tris": 504246,
+                    "chunked": "true",
+                    "chunks": 3
+                },
+                {
+                    "pct": 60,
+                    "path": "data/characters/Snake woman_60.glb",
+                    "tris": 302547,
+                    "chunked": "true",
+                    "chunks": 2
+                },
+                {
+                    "pct": 30,
+                    "path": "data/characters/Snake woman_30.glb",
+                    "tris": 151273
+                },
+                {
+                    "pct": 12,
+                    "path": "data/characters/Snake woman_12.glb",
+                    "tris": 60510
+                }
+            ]
         },
         {
             "id": "storm-woman",
@@ -401,7 +989,7 @@
         {
             "id": "t-pose-alien",
             "label": "T-Pose alien",
-            "path": "data/characters/T-Pose alien.glb",
+            "path": "data/characters/T-Pose alien_100.glb",
             "ext": "glb",
             "rig": "unknown",
             "rigged": "false",
@@ -409,6 +997,28 @@
             "tags": [
                 "non-human",
                 "t-pose"
+            ],
+            "lods": [
+                {
+                    "pct": 100,
+                    "path": "data/characters/T-Pose alien_100.glb",
+                    "tris": 166722
+                },
+                {
+                    "pct": 60,
+                    "path": "data/characters/T-Pose alien_60.glb",
+                    "tris": 100033
+                },
+                {
+                    "pct": 30,
+                    "path": "data/characters/T-Pose alien_30.glb",
+                    "tris": 50016
+                },
+                {
+                    "pct": 12,
+                    "path": "data/characters/T-Pose alien_12.glb",
+                    "tris": 20007
+                }
             ]
         },
         {
@@ -446,7 +1056,7 @@
         {
             "id": "t-pose-earth-dragon",
             "label": "T-Pose earth dragon",
-            "path": "data/characters/T-Pose earth dragon.glb",
+            "path": "data/characters/T-Pose earth dragon_100.glb",
             "ext": "glb",
             "rig": "unknown",
             "rigged": "false",
@@ -454,12 +1064,34 @@
             "tags": [
                 "non-human",
                 "t-pose"
+            ],
+            "lods": [
+                {
+                    "pct": 100,
+                    "path": "data/characters/T-Pose earth dragon_100.glb",
+                    "tris": 31106
+                },
+                {
+                    "pct": 60,
+                    "path": "data/characters/T-Pose earth dragon_60.glb",
+                    "tris": 18664
+                },
+                {
+                    "pct": 30,
+                    "path": "data/characters/T-Pose earth dragon_30.glb",
+                    "tris": 9332
+                },
+                {
+                    "pct": 12,
+                    "path": "data/characters/T-Pose earth dragon_12.glb",
+                    "tris": 3733
+                }
             ]
         },
         {
             "id": "t-pose-egyptian-cat-girl-golden-attire",
             "label": "T-Pose egyptian cat girl golden attire",
-            "path": "data/characters/T-Pose egyptian cat girl golden attire.glb",
+            "path": "data/characters/T-Pose egyptian cat girl golden attire_100.glb",
             "ext": "glb",
             "rig": "unknown",
             "rigged": "false",
@@ -468,12 +1100,40 @@
                 "female",
                 "non-human",
                 "t-pose"
-            ]
+            ],
+            "lods": [
+                {
+                    "pct": 100,
+                    "path": "data/characters/T-Pose egyptian cat girl golden attire_100.glb",
+                    "tris": 430980,
+                    "chunked": "true",
+                    "chunks": 2
+                },
+                {
+                    "pct": 60,
+                    "path": "data/characters/T-Pose egyptian cat girl golden attire_60.glb",
+                    "tris": 258587,
+                    "chunked": "true",
+                    "chunks": 2
+                },
+                {
+                    "pct": 30,
+                    "path": "data/characters/T-Pose egyptian cat girl golden attire_30.glb",
+                    "tris": 129294
+                },
+                {
+                    "pct": 12,
+                    "path": "data/characters/T-Pose egyptian cat girl golden attire_12.glb",
+                    "tris": 51717
+                }
+            ],
+            "chunked": "true",
+            "chunks": 2
         },
         {
             "id": "t-pose-gargoyl",
             "label": "T-Pose gargoyl",
-            "path": "data/characters/T-Pose gargoyl.glb",
+            "path": "data/characters/T-Pose gargoyl_100.glb",
             "ext": "glb",
             "rig": "unknown",
             "rigged": "false",
@@ -481,12 +1141,38 @@
             "tags": [
                 "non-human",
                 "t-pose"
-            ]
+            ],
+            "lods": [
+                {
+                    "pct": 100,
+                    "path": "data/characters/T-Pose gargoyl_100.glb",
+                    "tris": 104112,
+                    "chunked": "true",
+                    "chunks": 2
+                },
+                {
+                    "pct": 60,
+                    "path": "data/characters/T-Pose gargoyl_60.glb",
+                    "tris": 62467
+                },
+                {
+                    "pct": 30,
+                    "path": "data/characters/T-Pose gargoyl_30.glb",
+                    "tris": 31233
+                },
+                {
+                    "pct": 12,
+                    "path": "data/characters/T-Pose gargoyl_12.glb",
+                    "tris": 12493
+                }
+            ],
+            "chunked": "true",
+            "chunks": 2
         },
         {
             "id": "t-pose-medusa",
             "label": "T-Pose medusa",
-            "path": "data/characters/T-Pose medusa.glb",
+            "path": "data/characters/T-Pose medusa_100.glb",
             "ext": "glb",
             "rig": "unknown",
             "rigged": "false",
@@ -495,12 +1181,38 @@
                 "female",
                 "non-human",
                 "t-pose"
-            ]
+            ],
+            "lods": [
+                {
+                    "pct": 100,
+                    "path": "data/characters/T-Pose medusa_100.glb",
+                    "tris": 103888,
+                    "chunked": "true",
+                    "chunks": 2
+                },
+                {
+                    "pct": 60,
+                    "path": "data/characters/T-Pose medusa_60.glb",
+                    "tris": 62332
+                },
+                {
+                    "pct": 30,
+                    "path": "data/characters/T-Pose medusa_30.glb",
+                    "tris": 31166
+                },
+                {
+                    "pct": 12,
+                    "path": "data/characters/T-Pose medusa_12.glb",
+                    "tris": 12466
+                }
+            ],
+            "chunked": "true",
+            "chunks": 2
         },
         {
             "id": "t-pose-minotaur",
             "label": "T-Pose minotaur",
-            "path": "data/characters/T-Pose minotaur.glb",
+            "path": "data/characters/T-Pose minotaur_100.glb",
             "ext": "glb",
             "rig": "unknown",
             "rigged": "false",
@@ -509,12 +1221,34 @@
                 "male",
                 "non-human",
                 "t-pose"
+            ],
+            "lods": [
+                {
+                    "pct": 100,
+                    "path": "data/characters/T-Pose minotaur_100.glb",
+                    "tris": 31104
+                },
+                {
+                    "pct": 60,
+                    "path": "data/characters/T-Pose minotaur_60.glb",
+                    "tris": 18662
+                },
+                {
+                    "pct": 30,
+                    "path": "data/characters/T-Pose minotaur_30.glb",
+                    "tris": 9331
+                },
+                {
+                    "pct": 12,
+                    "path": "data/characters/T-Pose minotaur_12.glb",
+                    "tris": 3731
+                }
             ]
         },
         {
             "id": "t-pose-mushroom-zombie",
             "label": "T-Pose mushroom zombie",
-            "path": "data/characters/T-Pose mushroom zombie.glb",
+            "path": "data/characters/T-Pose mushroom zombie_100.glb",
             "ext": "glb",
             "rig": "unknown",
             "rigged": "false",
@@ -522,12 +1256,38 @@
             "tags": [
                 "non-human",
                 "t-pose"
-            ]
+            ],
+            "lods": [
+                {
+                    "pct": 100,
+                    "path": "data/characters/T-Pose mushroom zombie_100.glb",
+                    "tris": 103563,
+                    "chunked": "true",
+                    "chunks": 2
+                },
+                {
+                    "pct": 60,
+                    "path": "data/characters/T-Pose mushroom zombie_60.glb",
+                    "tris": 62138
+                },
+                {
+                    "pct": 30,
+                    "path": "data/characters/T-Pose mushroom zombie_30.glb",
+                    "tris": 31068
+                },
+                {
+                    "pct": 12,
+                    "path": "data/characters/T-Pose mushroom zombie_12.glb",
+                    "tris": 12427
+                }
+            ],
+            "chunked": "true",
+            "chunks": 2
         },
         {
             "id": "t-pose-normal-warrior-woman",
             "label": "T-Pose normal warrior woman",
-            "path": "data/characters/T-Pose normal warrior woman.glb",
+            "path": "data/characters/T-Pose normal warrior woman_100.glb",
             "ext": "glb",
             "rig": "unknown",
             "rigged": "false",
@@ -536,12 +1296,40 @@
                 "female",
                 "human",
                 "t-pose"
-            ]
+            ],
+            "lods": [
+                {
+                    "pct": 100,
+                    "path": "data/characters/T-Pose normal warrior woman_100.glb",
+                    "tris": 509348,
+                    "chunked": "true",
+                    "chunks": 3
+                },
+                {
+                    "pct": 60,
+                    "path": "data/characters/T-Pose normal warrior woman_60.glb",
+                    "tris": 305608,
+                    "chunked": "true",
+                    "chunks": 2
+                },
+                {
+                    "pct": 30,
+                    "path": "data/characters/T-Pose normal warrior woman_30.glb",
+                    "tris": 152803
+                },
+                {
+                    "pct": 12,
+                    "path": "data/characters/T-Pose normal warrior woman_12.glb",
+                    "tris": 61121
+                }
+            ],
+            "chunked": "true",
+            "chunks": 3
         },
         {
             "id": "t-pose-old-hag",
             "label": "T-Pose old hag",
-            "path": "data/characters/T-Pose old hag.glb",
+            "path": "data/characters/T-Pose old hag_100.glb",
             "ext": "glb",
             "rig": "unknown",
             "rigged": "false",
@@ -552,12 +1340,38 @@
                 "t-pose"
             ],
             "chunked": "true",
-            "chunks": 2
+            "chunks": 3,
+            "lods": [
+                {
+                    "pct": 100,
+                    "path": "data/characters/T-Pose old hag_100.glb",
+                    "tris": 680456,
+                    "chunked": "true",
+                    "chunks": 3
+                },
+                {
+                    "pct": 60,
+                    "path": "data/characters/T-Pose old hag_60.glb",
+                    "tris": 408273,
+                    "chunked": "true",
+                    "chunks": 2
+                },
+                {
+                    "pct": 30,
+                    "path": "data/characters/T-Pose old hag_30.glb",
+                    "tris": 204136
+                },
+                {
+                    "pct": 12,
+                    "path": "data/characters/T-Pose old hag_12.glb",
+                    "tris": 81654
+                }
+            ]
         },
         {
             "id": "t-pose-skeleton",
             "label": "T-Pose skeleton",
-            "path": "data/characters/T-Pose skeleton.glb",
+            "path": "data/characters/T-Pose skeleton_100.glb",
             "ext": "glb",
             "rig": "unknown",
             "rigged": "false",
@@ -565,12 +1379,38 @@
             "tags": [
                 "non-human",
                 "t-pose"
-            ]
+            ],
+            "lods": [
+                {
+                    "pct": 100,
+                    "path": "data/characters/T-Pose skeleton_100.glb",
+                    "tris": 332224,
+                    "chunked": "true",
+                    "chunks": 2
+                },
+                {
+                    "pct": 60,
+                    "path": "data/characters/T-Pose skeleton_60.glb",
+                    "tris": 199334
+                },
+                {
+                    "pct": 30,
+                    "path": "data/characters/T-Pose skeleton_30.glb",
+                    "tris": 99667
+                },
+                {
+                    "pct": 12,
+                    "path": "data/characters/T-Pose skeleton_12.glb",
+                    "tris": 39866
+                }
+            ],
+            "chunked": "true",
+            "chunks": 2
         },
         {
             "id": "t-pose-slime-monster",
             "label": "T-Pose slime monster",
-            "path": "data/characters/T-Pose slime monster.glb",
+            "path": "data/characters/T-Pose slime monster_100.glb",
             "ext": "glb",
             "rig": "unknown",
             "rigged": "false",
@@ -578,12 +1418,34 @@
             "tags": [
                 "non-human",
                 "t-pose"
+            ],
+            "lods": [
+                {
+                    "pct": 100,
+                    "path": "data/characters/T-Pose slime monster_100.glb",
+                    "tris": 147558
+                },
+                {
+                    "pct": 60,
+                    "path": "data/characters/T-Pose slime monster_60.glb",
+                    "tris": 88535
+                },
+                {
+                    "pct": 30,
+                    "path": "data/characters/T-Pose slime monster_30.glb",
+                    "tris": 44267
+                },
+                {
+                    "pct": 12,
+                    "path": "data/characters/T-Pose slime monster_12.glb",
+                    "tris": 17707
+                }
             ]
         },
         {
             "id": "tentacular-alien-woman",
             "label": "Tentacular alien woman",
-            "path": "data/characters/Tentacular alien woman.glb",
+            "path": "data/characters/Tentacular alien woman_100.glb",
             "ext": "glb",
             "rig": "unknown",
             "rigged": "false",
@@ -591,12 +1453,38 @@
             "tags": [
                 "female",
                 "non-human"
-            ]
+            ],
+            "lods": [
+                {
+                    "pct": 100,
+                    "path": "data/characters/Tentacular alien woman_100.glb",
+                    "tris": 315298,
+                    "chunked": "true",
+                    "chunks": 2
+                },
+                {
+                    "pct": 60,
+                    "path": "data/characters/Tentacular alien woman_60.glb",
+                    "tris": 189179
+                },
+                {
+                    "pct": 30,
+                    "path": "data/characters/Tentacular alien woman_30.glb",
+                    "tris": 94588
+                },
+                {
+                    "pct": 12,
+                    "path": "data/characters/Tentacular alien woman_12.glb",
+                    "tris": 37836
+                }
+            ],
+            "chunked": "true",
+            "chunks": 2
         },
         {
             "id": "wolf-man-warrior",
             "label": "Wolf man warrior",
-            "path": "data/characters/Wolf man warrior.glb",
+            "path": "data/characters/Wolf man warrior_100.glb",
             "ext": "glb",
             "rig": "unknown",
             "rigged": "false",
@@ -604,12 +1492,40 @@
             "tags": [
                 "male",
                 "non-human"
-            ]
+            ],
+            "lods": [
+                {
+                    "pct": 100,
+                    "path": "data/characters/Wolf man warrior_100.glb",
+                    "tris": 427410,
+                    "chunked": "true",
+                    "chunks": 2
+                },
+                {
+                    "pct": 60,
+                    "path": "data/characters/Wolf man warrior_60.glb",
+                    "tris": 256445,
+                    "chunked": "true",
+                    "chunks": 2
+                },
+                {
+                    "pct": 30,
+                    "path": "data/characters/Wolf man warrior_30.glb",
+                    "tris": 128223
+                },
+                {
+                    "pct": 12,
+                    "path": "data/characters/Wolf man warrior_12.glb",
+                    "tris": 51289
+                }
+            ],
+            "chunked": "true",
+            "chunks": 2
         },
         {
             "id": "wolf-woman",
             "label": "Wolf woman",
-            "path": "data/characters/Wolf woman.glb",
+            "path": "data/characters/Wolf woman_100.glb",
             "ext": "glb",
             "rig": "unknown",
             "rigged": "false",
@@ -619,7 +1535,33 @@
                 "non-human"
             ],
             "chunked": "true",
-            "chunks": 2
+            "chunks": 3,
+            "lods": [
+                {
+                    "pct": 100,
+                    "path": "data/characters/Wolf woman_100.glb",
+                    "tris": 684340,
+                    "chunked": "true",
+                    "chunks": 3
+                },
+                {
+                    "pct": 60,
+                    "path": "data/characters/Wolf woman_60.glb",
+                    "tris": 410604,
+                    "chunked": "true",
+                    "chunks": 2
+                },
+                {
+                    "pct": 30,
+                    "path": "data/characters/Wolf woman_30.glb",
+                    "tris": 205302
+                },
+                {
+                    "pct": 12,
+                    "path": "data/characters/Wolf woman_12.glb",
+                    "tris": 82121
+                }
+            ]
         }
     ]
 }
