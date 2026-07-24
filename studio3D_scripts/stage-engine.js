@@ -22,6 +22,7 @@ import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
 import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
 import { clone as skeletonClone } from 'three/addons/utils/SkeletonUtils.js';
 import { fetchAssetBuffer } from './chunk-loader.js';
+import { retargetClip, findSkeleton } from './retarget-core.js';
 
 const readVar = (n, fb) => { try { const v = getComputedStyle(document.documentElement).getPropertyValue(n).trim(); return v || fb; } catch (e) { return fb; } };
 
@@ -207,6 +208,61 @@ export class StageEngine {
     a.action = a.mixer.clipAction(a.clips[i]); a.action.play(); a.clipIndex = i; this._changed();
   }
 
+  // ---------------------------------------------------------- LIBRARY MOTION → ACTORS
+  // Put one library clip onto actors. `scope` is 'all' | 'selected' | actorId.
+  // Each actor is retargeted independently onto ITS OWN skeleton (semantic bone
+  // match), the clip is appended to that actor's clip list and made active, so
+  // it also shows up in the per-actor Clip dropdown. Actors with no skeleton
+  // (props) are skipped. Returns a summary for the UI toast.
+  async applyAnimUrl(url, ext, opts, label, scope) {
+    const buf = await fetchAssetBuffer(url, opts || {});
+    return this.applyAnimBuffer(buf, label || url.split('/').pop(), ext || (url.split('.').pop() || 'fbx'), scope);
+  }
+
+  async applyAnimBuffer(buffer, name, ext, scope) {
+    ext = (ext || 'fbx').toLowerCase();
+    let srcRoot = null, clips = [];
+    if (ext === 'fbx') { srcRoot = this._fbx.parse(buffer, ''); clips = srcRoot.animations || []; }
+    else if (ext === 'glb' || ext === 'gltf') { const g = await new Promise((res, rej) => this._gltf.parse(buffer, '', res, rej)); srcRoot = g.scene || (g.scenes && g.scenes[0]) || null; clips = g.animations || []; }
+    else throw new Error('Animation must be .fbx / .glb / .gltf');
+    if (!clips.length) throw new Error('No animation clip found in ' + name);
+    const clip = clips[0];
+    const clipName = String(name).replace(/\.(fbx|glb|gltf)$/i, '');
+
+    let targets;
+    if (scope === 'all') targets = this.actors.slice();
+    else { const a = this._actor(scope) || this.selected(); targets = a ? [a] : []; }
+    if (!targets.length) throw new Error('No actor to animate');
+
+    this._status('Retargeting ' + clipName + '…');
+    let applied = 0, skipped = 0;
+    for (const a of targets) {
+      const sk = findSkeleton(a.root);
+      if (!sk && !a.root.getObjectByProperty('isBone', true)) { skipped++; continue; }
+      let res = null;
+      try { res = retargetClip(a.root, sk, srcRoot, clip, clipName); } catch (e) { res = null; }
+      if (!res) { skipped++; continue; }
+      if (!a.mixer) a.mixer = new THREE.AnimationMixer(a.root);
+      a.mixer.stopAllAction();
+      // reuse a slot if this same lib clip was already applied, else append
+      let idx = a.clips.findIndex(c => c.name === clipName && c.__lib);
+      if (idx < 0) { res.retargeted.__lib = true; a.clips = a.clips.concat([res.retargeted]); idx = a.clips.length - 1; }
+      else { res.retargeted.__lib = true; a.clips = a.clips.slice(); a.clips[idx] = res.retargeted; }
+      const act = a.mixer.clipAction(res.retargeted); act.reset(); act.play();
+      a.action = act; a.clipIndex = idx;
+      applied++;
+    }
+    this._status(''); this._changed();
+    return { applied, skipped, name: clipName, scope: scope === 'all' ? 'all' : 'one' };
+  }
+
+  // stop motion on all actors (or the selected one) → rest pose
+  stopAnim(scope) {
+    const targets = scope === 'all' ? this.actors : [this.selected()].filter(Boolean);
+    targets.forEach(a => { if (a.mixer) { a.mixer.stopAllAction(); a.action = null; a.clipIndex = -1; a.root.updateMatrixWorld(true); } });
+    this._changed();
+  }
+
   duplicate(id) {
     const a = this._actor(id) || this.selected(); if (!a) return;
     this.addBuffer(a.srcBuffer.slice(0), a.name, a.ext).then((r) => {
@@ -345,6 +401,7 @@ export class StageEngine {
       id: a.id, name: a.name, selected: a.id === this.selectedId,
       clips: a.clips.map((c, i) => ({ i, name: c.name || ('Clip ' + (i + 1)) })),
       clipIndex: a.clipIndex, hasClips: a.clips.length > 0,
+      rigged: !!findSkeleton(a.root), animated: a.clipIndex >= 0,
       posX: +a.holder.position.x.toFixed(2), posZ: +a.holder.position.z.toFixed(2),
       rotY: Math.round(a.rotY), scale: +a.scale.toFixed(2),
     }));

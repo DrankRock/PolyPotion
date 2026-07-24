@@ -64,8 +64,8 @@
         <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;background:rgba(18,20,24,.86);pointer-events:none;">
           <div style="width:70px;height:70px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:30px;background:var(--accentDim);border:1px solid rgba(124,131,255,.3);color:var(--accent);">⊞</div>
           <div style="text-align:center;">
-            <div style="font-size:16px;font-weight:700;margin-bottom:6px;">Build a scene from many characters</div>
-            <div style="font-size:12.5px;color:var(--text2);max-width:470px;line-height:1.6;">Add characters from your <b>Library</b> or drop <b>.glb / .fbx</b> files here. Place each on the ground, give it its own pose or clip, then export the whole set as <b>one glTF</b> — a diorama, a crowd, a cutscene. Director can fly its camera through it.</div>
+            <div style="font-size:16px;font-weight:700;margin-bottom:6px;">Direct a whole cast at once</div>
+            <div style="font-size:12.5px;color:var(--text2);max-width:470px;line-height:1.6;">Add characters from your <b>Library</b> or drop <b>.glb / .fbx</b> files here, place each on the ground, then hand the <b>whole cast one motion clip</b> — everyone walks, waves or dances together — or give one actor its own move. Export the set as <b>one glTF</b>, or let Director fly a camera through it.</div>
           </div>
           <div style="display:flex;gap:10px;pointer-events:auto;">
             <button style="padding:10px 18px;border-radius:7px;font-size:12.5px;font-weight:600;background:var(--accent);border:1px solid var(--accent);color:var(--on-accent);cursor:pointer;box-shadow:0 2px 12px rgba(124,131,255,.35);" onClick="{{ focusLibrary }}">＋ Add from Library</button>
@@ -129,6 +129,47 @@
         </div>
       </div>
 
+      <!-- animate the cast -->
+      <div style="border-bottom:1px solid var(--seam);">
+        <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--header);border-bottom:1px solid var(--seam);">
+          <span style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);">Animate the cast</span>
+          <span style="margin-left:auto;font-family:var(--font-mono);font-size:10px;color:var(--muted);">{{ animScopeNote }}</span>
+        </div>
+        <div style="padding:11px 12px;display:flex;flex-direction:column;gap:11px;">
+          <sc-if value="{{ hasActors }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;flex-direction:column;gap:11px;">
+              <!-- scope -->
+              <div>
+                <div style="font-size:10.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:7px;">Apply to</div>
+                <div style="display:flex;gap:6px;">
+                  <button style="{{ scopeAllStyle }}" onClick="{{ setScopeAll }}">Every actor</button>
+                  <button style="{{ scopeSelStyle }}" onClick="{{ setScopeSel }}">Selected only</button>
+                </div>
+              </div>
+              <!-- library clips -->
+              <div>
+                <div style="font-size:10.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:7px;">Motion clip</div>
+                <sc-if value="{{ hasAnimLib }}" hint-placeholder-val="{{ true }}">
+                  <div style="display:flex;flex-direction:column;gap:5px;max-height:200px;overflow-y:auto;">
+                    <sc-for list="{{ animItems }}" as="a" hint-placeholder-count="3">
+                      <button style="{{ a.style }}" onClick="{{ a.onClick }}"><span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">⛷ {{ a.label }}</span></button>
+                    </sc-for>
+                  </div>
+                </sc-if>
+                <sc-if value="{{ noAnimLib }}" hint-placeholder-val="{{ false }}">
+                  <div style="font-size:11px;color:var(--muted);line-height:1.5;">No motion clips in the Library yet. Drop <b>.fbx / .glb</b> clips into <span style="font-family:var(--font-mono);">data/animations/</span> and they'll appear here to drive the whole cast at once.</div>
+                </sc-if>
+              </div>
+              <button style="width:100%;padding:8px;border-radius:6px;font-size:11.5px;font-weight:600;background:transparent;border:1px solid var(--edge);color:var(--text);cursor:pointer;" onClick="{{ stopAllAnim }}">■ Stop {{ stopScopeLabel }} · rest pose</button>
+              <div style="font-size:10px;color:var(--muted);line-height:1.5;">Each actor is retargeted onto its own skeleton, so one clip drives a whole crowd — or switch to <b>Selected only</b> and give one actor a different move. Props with no bones are skipped.</div>
+            </div>
+          </sc-if>
+          <sc-if value="{{ empty }}" hint-placeholder-val="{{ true }}">
+            <div style="font-size:11.5px;color:var(--muted);padding:2px;line-height:1.5;">Add a character or two first, then pick a motion clip to play it on the whole cast at once.</div>
+          </sc-if>
+        </div>
+      </div>
+
       <!-- selected transform -->
       <sc-if value="{{ hasSel }}" hint-placeholder-val="{{ false }}">
         <div style="border-bottom:1px solid var(--seam);">
@@ -187,7 +228,7 @@
       </sc-if>
 
       <div style="padding:12px;">
-        <div style="display:flex;gap:9px;padding:9px 11px;border-radius:7px;font-size:11px;line-height:1.5;background:var(--accentDim);border:1px solid rgba(124,131,255,.3);color:var(--text);"><span style="flex:none;">✦</span><span>Each actor keeps its <b>own clip</b> and plays at its own speed — pick different clips per copy of the same character to fill a crowd with variety. <b>Duplicate</b> (⧉) is the fast way to populate.</span></div>
+        <div style="display:flex;gap:9px;padding:9px 11px;border-radius:7px;font-size:11px;line-height:1.5;background:var(--accentDim);border:1px solid rgba(124,131,255,.3);color:var(--text);"><span style="flex:none;">✦</span><span>Pick a clip under <b>Animate the cast</b> to drive everyone at once, then switch to <b>Selected only</b> to vary a few. <b>Duplicate</b> (⧉) is the fast way to populate a crowd — each copy keeps its own clip and plays at its own speed.</span></div>
       </div>
     </aside>
   </div>
@@ -201,6 +242,7 @@ class Component extends DCLogic {
   state = {
     count: 0, loading: false, loadingMsg: '', tick: 0,
     actors: [], selectedId: null, playing: true, libChars: [],
+    libAnims: [], animScope: 'all', activeAnimId: null,
   };
 
   componentDidMount() { this.setupEmbed(); this.boot(); this.setupDrop(); }
@@ -245,6 +287,23 @@ class Component extends DCLogic {
     if (!this._post) { this.toast('Open the Stage inside the studio to pull from the Library'); return; }
     this.setState({ loading: true, loadingMsg: 'Fetching ' + l.label + '…' });
     this._post('studio:stageFetch', { id: l.id, label: l.label });
+  }
+
+  async applyAnim(a) {
+    const eng = this._eng; if (!eng || !eng.count()) { this.toast('Add a character first'); return; }
+    const scope = this.state.animScope;
+    this.setState({ loading: true, loadingMsg: 'Retargeting ' + a.label + '…', activeAnimId: a.path || a.label });
+    try {
+      const r = await eng.applyAnimUrl(a.path, a.ext, { chunked: a.chunked, chunks: a.chunks }, a.label, scope);
+      this.refresh(); this.setState({ loading: false });
+      if (!r.applied) { this.setState({ activeAnimId: null }); this.toast('No riggable actor for ' + r.name + (r.skipped ? ' — the ' + (scope === 'all' ? 'cast has' : 'selected actor has') + ' no skeleton' : '')); }
+      else this.toast('Playing ' + r.name + ' on ' + r.applied + ' actor' + (r.applied > 1 ? 's' : '') + (r.skipped ? ' · ' + r.skipped + ' skipped (no rig)' : ''));
+    } catch (e) { this.setState({ loading: false, activeAnimId: null }); this.toast(String(e && e.message || e)); }
+  }
+  stopAllAnim() {
+    const eng = this._eng; if (!eng) return;
+    eng.stopAnim(this.state.animScope === 'all' ? 'all' : 'selected');
+    this.setState({ activeAnimId: null }); this.refresh();
   }
 
   async exportGLB() {
@@ -297,6 +356,7 @@ class Component extends DCLogic {
       else if (d.type === 'studio:loadCharBuffer') this.queue(() => this.addBuffer(d.buffer, d.name || 'character', (d.name || '').split('.').pop()));
       else if (d.type === 'studio:stageAdd') this.queue(() => this.addBuffer(d.buffer, d.name || 'character', (d.name || '').split('.').pop()));
       else if (d.type === 'studio:library') this.setState({ libChars: d.characters || [] });
+      else if (d.type === 'studio:animLibrary') this.setState({ libAnims: d.animations || [] });
       else if (d.type === 'studio:error') { this.setState({ loading: false }); this.toast(d.message || 'error'); }
     });
     setTimeout(() => this._post('studio:ready', { tool: 'stage' }), 0);
@@ -379,6 +439,14 @@ class Component extends DCLogic {
     const sel = st.actors.find(a => a.selected);
     const lib = st.libChars.map(l => ({ label: l.label, onAdd: () => this.addFromLibrary(l) }));
 
+    const scopeBtn = (on) => 'flex:1;font-size:11px;font-weight:600;padding:7px 6px;border-radius:6px;cursor:pointer;border:1px solid ' + (on ? 'var(--accent)' : 'var(--edge)') + ';background:' + (on ? 'rgba(124,131,255,0.16)' : 'var(--panel-3)') + ';color:' + (on ? 'var(--text)' : 'var(--text2)') + ';';
+    const animRow = (on) => 'display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;text-align:left;border:1px solid ' + (on ? 'var(--accent)' : 'var(--edge)') + ';background:' + (on ? 'rgba(124,131,255,0.14)' : 'var(--panel-3)') + ';color:var(--text);';
+    const animItems = (st.libAnims || []).map(a => ({
+      label: a.label || (a.path || '').split('/').pop(),
+      style: animRow(st.activeAnimId === (a.path || a.label)),
+      onClick: () => this.applyAnim(a),
+    }));
+
     return {
       countLabel: st.count ? (st.count + ' actor' + (st.count > 1 ? 's' : '')) : 'empty stage',
       dotColor: st.count ? 'var(--good)' : 'var(--muted)',
@@ -397,6 +465,13 @@ class Component extends DCLogic {
       centerSel: () => eng && eng.setPos(null, 0, 0),
       libChars: lib, hasLib: lib.length > 0, noLib: lib.length === 0,
       libCountLabel: lib.length ? (lib.length + ' available') : '',
+      animItems, hasAnimLib: animItems.length > 0, noAnimLib: animItems.length === 0,
+      scopeAllStyle: scopeBtn(st.animScope === 'all'), scopeSelStyle: scopeBtn(st.animScope === 'selected'),
+      setScopeAll: () => this.setState({ animScope: 'all' }),
+      setScopeSel: () => this.setState({ animScope: 'selected' }),
+      animScopeNote: st.animScope === 'all' ? (st.count ? 'all ' + st.count : 'all') : (sel ? sel.name : 'none selected'),
+      stopScopeLabel: st.animScope === 'all' ? 'all' : (sel ? sel.name : 'selection'),
+      stopAllAnim: () => this.stopAllAnim(),
       playIcon: st.playing ? '❙❙' : '►', togglePlay: () => eng && eng.setPlaying(!eng.playing),
       resetTime: () => eng && eng.resetTime(),
       exportGLB: () => this.exportGLB(), sendShowcase: () => this.sendShowcase(),

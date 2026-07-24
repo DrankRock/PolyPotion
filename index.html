@@ -311,6 +311,7 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
     <nav class="dock" id="dock" role="tablist" aria-orientation="vertical" aria-label="Tools">
       <div class="dock-item" data-tool="library"><span class="ic">▤</span><span class="lb">Library</span></div>
       <div class="dock-item" data-tool="showcase" title="Showcase — view, spin & animate a finished character"><span class="ic">◈</span><span class="lb">Show</span></div>
+      <div class="dock-item" data-tool="scene" title="Scene — dress an environment with prefab objects &amp; rooms, drop your character in"><span class="ic">⌂</span><span class="lb">Scene</span></div>
       <div class="persona-strip" id="personaStrip">
         <div class="p-lb">i’m here to…</div>
         <div class="p-chips">
@@ -464,7 +465,12 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
       <!-- Stage tool -->
       <div class="tool-pane" id="pane-stage">
         <div class="tool-loading" id="load-stage"><div class="ring"></div><div>Loading Stage workspace…</div></div>
-      </div>      <!-- Mesh Doctor tool -->
+      </div>
+      <!-- Scene tool -->
+      <div class="tool-pane" id="pane-scene">
+        <div class="tool-loading" id="load-scene"><div class="ring"></div><div>Loading Scene workspace…</div></div>
+      </div>
+      <!-- Mesh Doctor tool -->
       <div class="tool-pane" id="pane-doctor">
         <div class="tool-loading" id="load-doctor"><div class="ring"></div><div>Loading Mesh Doctor…</div></div>
       </div>
@@ -928,6 +934,7 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
     { k:'decimate',   file:'Decimate.dc.html',    label:'Decimate',    icon:'◧', char:1 },
     { k:'vat',        file:'VAT.dc.html',         label:'VAT Bake',    icon:'⧈', char:1, pal:'VAT Bake — bake a clip into a texture for zero-cost GPU replay' },
     { k:'stage',      file:'Stage.dc.html',       label:'Stage',       icon:'⊞', char:1, pal:'Stage — assemble a multi-character scene, export as one glTF' },
+    { k:'scene',      file:'Scene.html',          label:'Scene',       icon:'⌂', char:1, pal:'Scene — dress an environment with prefab objects & rooms, drop your character in, save/open .ppscene' },
     { k:'doctor',     file:'MeshDoctor.dc.html',  label:'Mesh Doctor', icon:'✚', char:1, pal:'Mesh Doctor — audit & auto-fix topology' },
     { k:'shaderlab',  file:'ShaderLab.dc.html',   label:'Shader Lab',  icon:'◈', char:1, pal:'Shader Lab — node-graph shader editor' },
     { k:'director',   file:'Director.dc.html',    label:'Director',    icon:'🎬', char:1, pal:'Director — camera sequencer + video render-out' },
@@ -2357,6 +2364,7 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
       const t = d.tool; if (TOOLS[t]) { TOOLS[t].ready = true; const ld = $('#load-' + t); if (ld) ld.style.display = 'none';
         if (TOOLS[t]._pending) { TOOLS[t]._pending(); TOOLS[t]._pending = null; }
         if (t === 'showcase') post('showcase', 'studio:animLibrary', { animations: [...session.animations, ...libData.animations] });
+        if (t === 'stage') post('stage', 'studio:animLibrary', { animations: [...session.animations, ...libData.animations] });
         if (t === 'stage' || t === 'multirig') post(t, 'studio:library', { characters: [...session.characters, ...libData.characters].map((it, i) => ({ id: it.path || ('lib' + i), label: it.label || 'character', path: it.path, ext: it.ext || 'glb', chunked: it.chunked, chunks: it.chunks, session: !!it.session, thumb: it.thumb || null })) }); }
     }
     else if (d.type === 'studio:riggedGLB') {

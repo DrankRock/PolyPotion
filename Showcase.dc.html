@@ -151,6 +151,35 @@
         </div>
       </div>
 
+      <!-- level of detail -->
+      <sc-if value="{{ hasLOD }}" hint-placeholder-val="{{ false }}">
+        <div style="border-bottom:1px solid var(--seam);">
+          <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--header);border-bottom:1px solid var(--seam);">
+            <span style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);">Level of detail</span>
+            <span style="margin-left:auto;font-family:var(--font-mono);font-size:9px;letter-spacing:.1em;color:var(--accent);text-transform:uppercase;">{{ lodStatus }}</span>
+          </div>
+          <div style="padding:11px 12px;display:flex;flex-direction:column;gap:8px;">
+            <div style="font-size:11px;color:var(--text2);line-height:1.5;">This character ships with <b>{{ lodCount }} detail levels</b>. Auto picks one from your frame rate — or lock a rung to inspect it.</div>
+            <button style="{{ lodAutoStyle }}" onClick="{{ lodAutoOn }}">
+              <span style="display:flex;align-items:center;gap:8px;"><span style="font-family:var(--font-mono);font-size:11px;">AUTO</span><span style="font-weight:500;color:var(--text2);">frame-rate driven</span></span>
+              <sc-if value="{{ lodAutoLive }}" hint-placeholder-val="{{ false }}"><span style="font-family:var(--font-mono);font-size:10px;color:var(--accent);">now {{ lodCurLabel }}</span></sc-if>
+            </button>
+            <div style="display:flex;flex-direction:column;gap:5px;">
+              <sc-for list="{{ lodRungItems }}" as="r" hint-placeholder-count="3">
+                <button style="{{ r.style }}" onClick="{{ r.onClick }}">
+                  <span style="display:flex;align-items:center;gap:9px;">
+                    <span style="width:34px;height:5px;border-radius:3px;background:var(--panel);overflow:hidden;flex:none;"><span style="display:block;height:100%;width:{{ r.bar }};background:{{ r.barColor }};"></span></span>
+                    <span style="font-family:var(--font-mono);font-size:12px;">{{ r.pct }}%</span>
+                  </span>
+                  <span style="font-family:var(--font-mono);font-size:10px;color:var(--text2);">{{ r.tris }}</span>
+                </button>
+              </sc-for>
+            </div>
+            <div style="font-size:10px;color:var(--muted);line-height:1.45;">Lower rungs are lighter meshes — the same character with fewer triangles. Lock the finest to judge quality, the lightest to see what ships to weak devices.</div>
+          </div>
+        </div>
+      </sc-if>
+
       <!-- shaders / materials -->
       <div style="border-bottom:1px solid var(--seam);">
         <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--header);border-bottom:1px solid var(--seam);">
@@ -415,6 +444,7 @@ class Component extends DCLogic {
     spin: false, wire: false, bg: 'studio', ground: true, speed: 100, ortho: false,
     env: 'studio', envInt: 75, envBg: false, shadow: 34, view: 'srgb', exposure: 100,
     hasUVs: false, hasTexture: false, suggestDismiss: false,
+    lodRungs: [], lodCur: null, lodAuto: true,
     presets: [], meshes: [], shaderTarget: 'all', activeShader: null, shaderParams: {}, texMix: 1,
     bakeRes: 1024, baked: false, baking: false,
   };
@@ -463,7 +493,7 @@ class Component extends DCLogic {
     });
   }
 
-  _lodDispose() { if (this._lod) { try { this._lod.dispose(); } catch (e) {} this._lod = null; } }
+  _lodDispose() { if (this._lod) { try { this._lod.dispose(); } catch (e) {} this._lod = null; } this.setState({ lodRungs: [], lodCur: null, lodAuto: true }); }
   async _loadUrlLOD(d) {
     this._lodDispose();
     const usable = (d.lods || []).filter(r => r && r.path && +r.pct > 0);
@@ -472,22 +502,26 @@ class Component extends DCLogic {
     try { await import('./studio3D_scripts/lod-switch.js'); await import('./studio3D_scripts/lod-runtime.js'); } catch (e) {}
     if (!window.LODRuntime) return plain();
     this._lodDispose();
-    this.setState({ loading: true, loadingMsg: 'Loading ' + (d.label || 'character') + '…', activeLib: '' });
+    const rungs = window.LODRuntime.normalize(usable);
+    this.setState({ loading: true, loadingMsg: 'Loading ' + (d.label || 'character') + '…', activeLib: '', lodRungs: rungs, lodAuto: true, lodCur: rungs[0] ? rungs[0].pct : null });
     this._lod = window.LODRuntime.attach({
-      lods: usable, ext: d.ext, mount: '#sc-root', storageKey: 'pp-lod:' + (d.url || d.label || 'char'),
+      lods: usable, ext: d.ext, storageKey: 'pp-lod:' + (d.url || d.label || 'char'),
+      onSwitch: (pct) => { this.setState({ lodCur: pct }); if (this._lod && this._lod.controller && this._lod.controller.isAuto()) this.toast('Auto LOD → ' + pct + '% · viewport load'); },
       load: async (rung, first) => {
         try {
           const r = await this._eng.loadUrl(rung.path, rung.ext || d.ext, { chunked: rung.chunked, chunks: rung.chunks });
-          this.refresh();
+          this.refresh(); this.setState({ lodCur: rung.pct });
           if (first) {
             this.setState({ loading: false, suggestDismiss: false, activeShader: null, shaderParams: {}, shaderTarget: 'all', baked: false });
             this.toast('Loaded ' + ((r && r.name) || d.label || 'character') + ' · LOD ' + rung.pct + '%');
             if (this._animQueued) { const a = this._animQueued; this._animQueued = null; if (this._eng.hasModel()) this.playLibAnim(a); }
-          } else { this.toast('\u2193 Auto LOD ' + rung.pct + '% \u2014 easing viewport load'); }
+          }
         } catch (e) { if (first) this.setState({ loading: false }); this.toast('LOD load failed: ' + (e && e.message || e)); }
       },
     });
   }
+  lodPick(pct) { if (!this._lod) return; this._lod.setAuto(false); this._lod.setManual(pct); this.setState({ lodAuto: false, lodCur: pct }); this.toast('LOD locked to ' + pct + '%'); }
+  lodAutoOn() { if (!this._lod) return; this._lod.setManual(null); this._lod.setAuto(true); this.setState({ lodAuto: true }); this.toast('LOD back to automatic'); }
 
   async loadVia(fn, label) {
     this._lodDispose && this._lodDispose();
@@ -727,8 +761,31 @@ class Component extends DCLogic {
     const bakeResBtn = (on) => 'flex:1;font-size:10.5px;font-weight:600;padding:7px 4px;border-radius:5px;cursor:pointer;border:1px solid ' + (on ? 'var(--accent)' : 'var(--edge)') + ';background:' + (on ? 'var(--accent-dim)' : 'var(--panel-3)') + ';color:' + (on ? '#e6c3a3' : 'var(--text)') + ';';
     const bakeResOpts = [512, 1024, 2048].map(n => ({ label: n + '²', style: bakeResBtn(st.bakeRes === n), onClick: () => this.setState({ bakeRes: n }) }));
 
+    // ---------- level of detail ----------
+    const lodRungs = st.lodRungs || [];
+    const lodMax = lodRungs.length ? Math.max.apply(null, lodRungs.map(r => r.pct)) : 100;
+    const fmtTris = (t) => t ? (t >= 1000 ? (t / 1000).toFixed(t >= 10000 ? 0 : 1) + 'k tris' : t + ' tris') : '';
+    const lodRow = (locked) => 'display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 10px;border-radius:6px;cursor:pointer;text-align:left;border:1px solid ' + (locked ? 'var(--accent)' : 'var(--edge)') + ';background:' + (locked ? 'var(--accent-dim)' : 'var(--panel-3)') + ';color:' + (locked ? '#e6c3a3' : 'var(--text)') + ';';
+    const lodRungItems = lodRungs.map(r => {
+      const locked = !st.lodAuto && st.lodCur === r.pct;
+      const live = st.lodAuto && st.lodCur === r.pct;
+      return {
+        pct: r.pct, tris: r.tris ? fmtTris(r.tris) : (live ? 'in use' : ''),
+        bar: Math.round((r.pct / lodMax) * 100) + '%',
+        barColor: (locked || live) ? 'var(--accent)' : 'var(--muted)',
+        style: lodRow(locked) + (live ? 'box-shadow:0 0 0 1px var(--accent) inset;' : ''),
+        onClick: () => this.lodPick(r.pct),
+      };
+    });
+
     return {
       charName: st.meshName, dotColor: st.hasModel ? 'var(--good)' : 'var(--muted)',
+      hasLOD: lodRungs.length >= 2, lodCount: lodRungs.length,
+      lodRungItems, lodAutoOn: () => this.lodAutoOn(),
+      lodAutoStyle: 'display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 10px;border-radius:6px;cursor:pointer;text-align:left;border:1px solid ' + (st.lodAuto ? 'var(--accent)' : 'var(--edge)') + ';background:' + (st.lodAuto ? 'var(--accent-dim)' : 'var(--panel-3)') + ';color:' + (st.lodAuto ? '#e6c3a3' : 'var(--text)') + ';',
+      lodAutoLive: st.lodAuto && st.lodCur != null,
+      lodStatus: st.lodAuto ? 'auto' : 'locked ' + (st.lodCur != null ? st.lodCur + '%' : ''),
+      lodCurLabel: (st.lodCur != null ? st.lodCur : 100) + '%',
       showSuggest: actionable.length > 0 && st.hasModel && !st.suggestDismiss,
       suggestReason: topSug ? topSug.reason : '',
       suggestIcon: topSug ? (lvlIcon[topSug.level] || '✦') : '✦',

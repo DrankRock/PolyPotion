@@ -1,0 +1,2237 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8" />
+<title>Scene — PolyPotion</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<style>
+  /* ═══════════════════════════════════════════════════════
+     THEMES
+     ═══════════════════════════════════════════════════════ */
+  :root,
+  [data-theme="dark"] {
+    --bg:#111010; --surface:#1a1918; --surface2:#232220; --surface3:#2d2b29;
+    --border:#3a3735; --text:#d8d0c4; --text2:#9a9488;
+    --accent:#d4a373; --accent2:#e8c08a; --danger:#c0453a; --ok:#5a9a5a;
+    --viewport-bg:#0e0d0c; --code-bg:#0c0c0a; --code-fg:#b8e0a8;
+    --splitter-idle:var(--border); --splitter-hover:var(--accent);
+    --mono:'DM Mono',monospace; --serif:'Instrument Serif',Georgia,serif;
+  }
+  [data-theme="light"] {
+    --bg:#f2f0ec; --surface:#ffffff; --surface2:#f5f3ef; --surface3:#eae7e1;
+    --border:#d4d0c8; --text:#2a2620; --text2:#7a756c;
+    --accent:#b07a40; --accent2:#c8923a; --danger:#c0453a; --ok:#3a8a3a;
+    --viewport-bg:#e8e4dc; --code-bg:#faf8f4; --code-fg:#2a5a1a;
+    --splitter-idle:var(--border); --splitter-hover:var(--accent);
+  }
+  /* Light-mode overrides for hardcoded colors */
+  [data-theme="light"] .vp-hint{background:rgba(0,0,0,.25);color:#4a4540}
+  [data-theme="light"] .vp-info{background:rgba(0,0,0,.12);color:#4a4540}
+  [data-theme="light"] .mode-btn{background:rgba(0,0,0,.08);color:#5a5550;border-color:#c4c0b8}
+  [data-theme="light"] .mode-btn.on{color:var(--accent);border-color:var(--accent)}
+  [data-theme="light"] #view-bar{background:rgba(0,0,0,.08)}
+  [data-theme="light"] #view-bar button{color:#5a5550}
+  [data-theme="light"] #sims-toolbar{background:rgba(255,255,255,.88);border-color:#d4d0c8}
+  [data-theme="light"] #sims-toolbar button{color:#5a5550}
+  [data-theme="light"] #sims-toolbar button:hover{color:var(--accent)}
+  [data-theme="light"] #walk-banner{background:rgba(176,122,64,0.92);color:#fff}
+  [data-theme="light"] #align-panel{background:rgba(255,255,255,.92);border-color:#d4d0c8}
+  [data-theme="light"] .align-row button{background:rgba(0,0,0,.04);border-color:#d4d0c8;color:#5a5550}
+  [data-theme="light"] #quick-rot button{background:rgba(255,255,255,.85);border-color:#d4d0c8;color:#5a5550}
+  [data-theme="light"] #repeat-popup{background:rgba(255,255,255,.95);border-color:#d4d0c8}
+  [data-theme="light"] #cutaway-badge{background:rgba(176,122,64,0.88);color:#fff}
+  [data-theme="light"] #dim-hud{background:rgba(176,122,64,0.92);color:#fff}
+  [data-theme="light"] #plan-toolbar{background:rgba(255,255,255,.75)}
+  [data-theme="light"] #plan-status{background:rgba(255,255,255,.75);color:#4a4540}
+  [data-theme="light"] .topbar-mini-group button{color:#5a5550;border-color:#c4c0b8}
+  [data-theme="light"] .pal-recents-label{color:#7a756c}
+  [data-theme="light"] #drop-ring{border-color:var(--accent);background:radial-gradient(circle,rgba(176,122,64,0.12),transparent)}
+  [data-theme="light"] #dollhouse-btn{background:rgba(255,255,255,.85);color:#5a5550;border-color:#d4d0c8}
+  [data-theme="light"] #dollhouse-btn:hover{color:var(--accent);border-color:var(--accent)}
+  [data-theme="light"] #vp-hud{background:rgba(255,255,255,.65);color:#5a5550}
+  [data-theme="light"] #ctx-menu{background:var(--surface);border-color:#d4d0c8;box-shadow:0 8px 24px rgba(0,0,0,.15)}
+  [data-theme="light"] #nudge-toast{background:rgba(255,255,255,.85);color:#5a5550}
+  [data-theme="light"] #room-presets button{color:#5a5550;border-color:#d4d0c8;background:#f5f3ef}
+
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:var(--mono);font-size:13px}
+
+  /* ═══════════════════════════════════════════════════════
+     LAYOUT — flex with draggable splitters
+     ═══════════════════════════════════════════════════════ */
+  #app{display:flex;flex-direction:column;height:100vh}
+  #topbar{flex:0 0 48px;background:var(--surface);display:flex;align-items:center;padding:0 16px;gap:12px;border-bottom:1px solid var(--border);z-index:10}
+  #main{flex:1;display:flex;flex-direction:row;min-height:0;overflow:hidden}
+  #center-wrap{display:flex;flex-direction:column;flex:1;min-width:0;min-height:0}
+
+  #left-panel{flex:0 0 260px;min-width:140px;max-width:50vw;background:var(--surface);overflow-y:auto;display:flex;flex-direction:column}
+  #viewport-area{flex:1;min-height:80px;position:relative;background:var(--viewport-bg);overflow:hidden}
+  #viewport-area canvas{width:100%!important;height:100%!important;display:block}
+  #right-panel{flex:0 0 280px;min-width:140px;max-width:50vw;background:var(--surface);overflow-y:auto;display:flex;flex-direction:column}
+  #bottom-panel{flex:0 0 200px;min-height:60px;max-height:70vh;background:var(--surface);overflow:hidden;display:flex;flex-direction:column}
+
+  /* ═══════════════════════════════════════════════════════
+     SPLITTERS
+     ═══════════════════════════════════════════════════════ */
+  .splitter{flex:0 0 5px;background:var(--splitter-idle);position:relative;z-index:5;transition:background .15s;cursor:col-resize}
+  .splitter:hover,.splitter.active{background:var(--splitter-hover)}
+  .splitter-h{cursor:row-resize}
+  .splitter::after{content:'';position:absolute;inset:-3px;z-index:6}
+  .splitter::before{content:'';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:3px;height:24px;border-radius:2px;background:var(--text2);opacity:.3}
+  .splitter-h::before{width:24px;height:3px}
+
+  /* ═══════════════════════════════════════════════════════
+     TOPBAR
+     ═══════════════════════════════════════════════════════ */
+  #topbar h1{font-family:var(--serif);font-size:20px;font-weight:400;color:var(--accent)}
+  .sep{width:1px;height:24px;background:var(--border)}
+  .spacer{flex:1}
+  .btn{padding:6px 14px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font:inherit;cursor:pointer;border-radius:4px;transition:all .15s}
+  .btn:hover{border-color:var(--accent);color:var(--accent)}
+  .btn.primary{background:var(--accent);color:var(--bg);border-color:var(--accent);font-weight:500}
+  .btn.primary:hover{background:var(--accent2)}
+  .btn.danger{border-color:var(--danger);color:var(--danger)}
+  .btn.danger:hover{background:var(--danger);color:var(--bg)}
+  .btn.sm{padding:3px 10px;font-size:11px}
+  a.btn{text-decoration:none}
+
+  .theme-toggle{appearance:none;border:1px solid var(--border);background:var(--surface2);color:var(--text);width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;transition:all .15s;padding:0}
+  .theme-toggle:hover{border-color:var(--accent);color:var(--accent)}
+  .tab-group{display:flex;gap:2px}
+  .tab{padding:6px 14px;border:none;background:transparent;color:var(--text2);font:inherit;cursor:pointer;border-radius:4px;transition:all .15s}
+  .tab:hover{color:var(--text);background:var(--surface2)}
+  .tab.active{color:var(--accent);background:var(--surface3)}
+
+  /* ═══════════════════════════════════════════════════════
+     PANEL INTERNALS
+     ═══════════════════════════════════════════════════════ */
+  .psec{padding:12px;border-bottom:1px solid var(--border)}
+  .psec h3{font-family:var(--serif);font-size:14px;font-weight:400;color:var(--accent);margin-bottom:8px}
+
+  /* ── Collapsible sections ── */
+  details.psec{padding:0;border-bottom:1px solid var(--border)}
+  details.psec > summary{padding:10px 12px;cursor:pointer;font-family:var(--serif);font-size:14px;font-weight:400;color:var(--accent);list-style:none;display:flex;align-items:center;gap:6px;user-select:none;transition:background .1s}
+  details.psec > summary:hover{background:var(--surface2)}
+  details.psec > summary::before{content:'▸';font-size:10px;color:var(--text2);transition:transform .15s;display:inline-block;width:12px;flex-shrink:0}
+  details.psec[open] > summary::before{transform:rotate(90deg)}
+  details.psec > summary::-webkit-details-marker{display:none}
+  details.psec > .psec-body{padding:0 12px 12px}
+
+  /* ── Mode-aware panel visibility ── */
+  .room-only{display:none}
+  .plan-only{display:none}
+  [data-mode="room"] .room-only{display:block}
+  [data-mode="plan"] .plan-only{display:block}
+  [data-mode="room"] .plan-only{display:none}
+  [data-mode="plan"] .room-only{display:none}
+  .field{margin-bottom:8px}
+  .field label{display:block;font-size:11px;color:var(--text2);margin-bottom:3px;text-transform:uppercase;letter-spacing:.06em}
+  .field input,.field select{width:100%;padding:5px 8px;background:var(--surface3);border:1px solid var(--border);color:var(--text);font:inherit;font-size:12px;border-radius:3px;outline:none}
+  .field input:focus,.field select:focus{border-color:var(--accent)}
+  .frow{display:flex;gap:6px}
+  .frow .field{flex:1}
+  .cswatch{width:28px;height:28px;border-radius:3px;border:1px solid var(--border);cursor:pointer;display:inline-block;vertical-align:middle;position:relative;overflow:hidden}
+  .cswatch input[type=color]{position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer}
+  .mat-presets{display:flex;flex-wrap:wrap;gap:3px;margin-top:2px}
+  .mat-presets .mp{width:26px;height:26px;border-radius:4px;cursor:pointer;border:2px solid transparent;transition:border-color .1s;position:relative;overflow:hidden}
+  .mat-presets .mp:hover{border-color:var(--accent)}
+  .mat-presets .mp.active{border-color:var(--accent)}
+  .mat-presets .mp img{width:100%;height:100%;object-fit:cover;border-radius:2px}
+  .mat-presets .mp .mp-swatch{width:100%;height:100%;border-radius:2px}
+
+  .obj-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px}
+  .obj-btn{padding:8px 6px;border:1px solid var(--border);background:var(--surface2);color:var(--text2);font:inherit;font-size:11px;cursor:pointer;border-radius:4px;text-align:center;transition:all .15s}
+  .obj-btn:hover{border-color:var(--accent);color:var(--accent);background:var(--surface3)}
+  .obj-btn .ic{font-size:16px;display:block;margin-bottom:2px}
+  .cat-label{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--text2);padding:8px 0 4px;grid-column:1/-1}
+
+  .tree-item{padding:4px 8px;cursor:pointer;border-radius:3px;font-size:12px;display:flex;align-items:center;gap:6px;color:var(--text2);transition:all .1s}
+  .tree-item:hover{background:var(--surface3);color:var(--text)}
+  .tree-item.sel{background:var(--surface3);color:var(--accent);border-left:2px solid var(--accent)}
+  .tree-item .dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+  .tree-item .nm{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .tree-item .x{opacity:0;background:none;border:none;color:var(--danger);cursor:pointer;font-size:14px;padding:0 4px}
+  .tree-item:hover .x{opacity:.7}
+
+  .vp-hint{position:absolute;bottom:10px;left:20px;font-size:11px;color:var(--text2);pointer-events:none;background:rgba(0,0,0,.5);padding:4px 12px;border-radius:12px}
+  .vp-info{position:absolute;top:10px;left:10px;font-size:11px;color:var(--text2);background:rgba(0,0,0,.5);padding:4px 10px;border-radius:8px}
+  .mode-btns{position:absolute;top:10px;right:10px;display:flex;gap:3px}
+  .mode-btn{padding:4px 10px;background:rgba(0,0,0,.5);border:1px solid var(--border);color:var(--text2);font:inherit;font-size:11px;cursor:pointer;border-radius:4px}
+  .mode-btn.on{color:var(--accent);border-color:var(--accent)}
+
+  #bottom-panel .ph{padding:8px 12px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--border)}
+  #bottom-panel .ph h3{font-family:var(--serif);font-size:14px;font-weight:400;color:var(--accent);flex:1}
+  #code-out{flex:1;padding:10px 12px;overflow:auto;font-family:var(--mono);font-size:12px;color:var(--code-fg);background:var(--code-bg);white-space:pre;tab-size:2;line-height:1.5}
+
+  ::-webkit-scrollbar{width:6px;height:6px}
+  ::-webkit-scrollbar-track{background:transparent}
+  ::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+  ::-webkit-scrollbar-thumb:hover{background:var(--text2)}
+
+  body.dragging{user-select:none;-webkit-user-select:none}
+  body.dragging iframe,body.dragging canvas{pointer-events:none}
+
+  /* Import / drop zone */
+  .drop-zone{border:2px dashed var(--border);border-radius:6px;padding:16px 12px;text-align:center;color:var(--text2);font-size:11px;cursor:pointer;transition:all .2s;position:relative;overflow:hidden}
+  .drop-zone:hover,.drop-zone.over{border-color:var(--accent);color:var(--accent);background:rgba(212,163,115,0.05)}
+  .drop-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer}
+  .drop-zone .dz-icon{font-size:24px;display:block;margin-bottom:4px}
+  .drop-zone .dz-hint{font-size:10px;color:var(--text2);margin-top:4px}
+
+  /* Progress bar */
+  .progress-wrap{margin-top:10px;display:none}
+  .progress-wrap.active{display:block}
+  .progress-bar{height:6px;background:var(--surface3);border-radius:3px;overflow:hidden}
+  .progress-bar .fill{height:100%;background:var(--accent);border-radius:3px;width:0%;transition:width .2s}
+  .progress-label{font-size:10px;color:var(--text2);margin-top:4px;min-height:14px}
+
+  /* Model info */
+  .model-stats{font-size:11px;color:var(--text2);line-height:1.6;padding:4px 0}
+  .model-stats span{color:var(--text)}
+  .export-mode-btns{display:flex;gap:4px;margin-top:8px}
+  .export-mode-btn{flex:1;padding:6px 8px;border:1px solid var(--border);background:var(--surface2);color:var(--text2);font:inherit;font-size:10px;cursor:pointer;border-radius:4px;text-align:center;transition:all .15s}
+  .export-mode-btn:hover{border-color:var(--accent);color:var(--accent)}
+  .export-mode-btn.active{border-color:var(--accent);color:var(--accent);background:var(--surface3)}
+
+  /* ═══════════════════════════════════════════════════════
+     PLAN MODE (2D top-down floor-plan editor)
+     ═══════════════════════════════════════════════════════ */
+  #plan-canvas{cursor:crosshair;background:var(--viewport-bg)}
+  #plan-canvas.tool-select{cursor:default}
+  #plan-canvas.tool-erase{cursor:not-allowed}
+  #plan-toolbar{position:absolute;top:10px;left:10px;z-index:10;display:flex;gap:2px;background:rgba(0,0,0,.5);padding:4px;border-radius:6px;flex-wrap:wrap;max-width:calc(100% - 20px)}
+  .ptool{padding:6px 10px;background:transparent;border:1px solid transparent;color:var(--text2);font:inherit;font-size:11px;cursor:pointer;border-radius:4px;display:flex;align-items:center;gap:5px}
+  .ptool:hover{color:var(--text);background:var(--surface3)}
+  .ptool.on{color:var(--accent);border-color:var(--accent);background:var(--surface3)}
+  .ptool .ki{font-size:9px;color:var(--text2);opacity:.7;margin-left:3px;border:1px solid var(--border);padding:0 4px;border-radius:2px}
+  .ptool.on .ki{color:var(--accent);border-color:var(--accent)}
+  .ptool-sep{width:1px;background:var(--border);margin:4px 2px}
+  #plan-status{position:absolute;bottom:10px;left:10px;z-index:10;font-size:11px;color:var(--text2);background:rgba(0,0,0,.55);padding:5px 12px;border-radius:6px;font-family:var(--mono);pointer-events:none;line-height:1.5}
+  #plan-status .pst-val{color:var(--text)}
+  #plan-status .pst-hint{color:var(--text2);font-size:10px;opacity:.85}
+  #plan-hud{position:absolute;z-index:9;pointer-events:none;background:rgba(212,163,115,0.92);color:#1a1815;font-family:var(--mono);font-size:11px;padding:2px 6px;border-radius:3px;white-space:nowrap;transform:translate(8px,-22px)}
+
+  /* Plan settings in the left panel */
+  #sec-plan h3{font-family:var(--serif);font-size:14px;font-weight:400;color:var(--accent);margin-bottom:8px}
+  #sec-plan .ptip{font-size:10px;color:var(--text2);margin-top:6px;line-height:1.4;border-top:1px solid var(--border);padding-top:8px}
+  #sec-plan .ptip kbd{display:inline-block;padding:0 4px;border:1px solid var(--border);border-radius:2px;font-family:var(--mono);font-size:9px;color:var(--text)}
+
+</style>
+<!-- PolyPotion shared theme engine (owns the palette + fonts; live-syncs across tools) -->
+<script src="theme.js"></script>
+<style id="pp-theme-bridge">
+  /* Map the designer's own tokens onto PolyPotion's theme.js variables so the
+     entire existing GUI restyles with the app and follows live theme switches.
+     Colliding vars (--bg/--text/--text2/--accent/--danger) are already owned by
+     theme.js (set inline on <html>); we only remap the designer-specific ones. */
+  :root, [data-theme="dark"], [data-theme="light"] {
+    --surface: var(--panel);
+    --surface2: var(--panel-2);
+    --surface3: var(--panel-3);
+    --border: var(--edge);
+    --accent2: var(--honey);
+    --ok: var(--good);
+    --viewport-bg: var(--viewport);
+    --code-bg: var(--gutter);
+    --code-fg: var(--good);
+    --mono: var(--font-ui);      /* body / UI → Nunito */
+    --serif: var(--font-mono);   /* headings → Pixelify Sans (PolyPotion display) */
+    --splitter-idle: var(--edge);
+    --splitter-hover: var(--accent);
+  }
+  /* Clearer, PolyPotion-flavoured controls: chunkier radius, display headings,
+     accent-tinted active states. Appended (non-destructive) overrides. */
+  #topbar h1 { font-family: var(--font-mono); letter-spacing: .01em; }
+  .psec h3, details.psec > summary { font-family: var(--font-mono); letter-spacing: .01em; }
+  .btn, .obj-btn, .tab { border-radius: 8px; }
+  .btn.primary { color: var(--on-accent); }
+  .tab.active { background: var(--accent-dim); color: var(--accent); }
+  .field input, .field select { border-radius: 6px; }
+  #bottom-panel .ph h3, #right-panel .psec h3, #left-panel .psec h3 { font-family: var(--font-mono); }
+  ::selection { background: var(--accent-dim); }
+</style>
+</head>
+<body>
+
+<div id="app">
+  <div id="topbar">
+    <h1>Scene</h1>
+    <div class="sep"></div>
+    <a class="btn sm" href="index.html">&larr; Back</a>
+    <div class="sep"></div>
+    <div class="tab-group">
+      <button class="tab active" id="tab-room" onclick="D.switchMode('room')">Room</button>
+      <button class="tab" id="tab-plan" onclick="D.switchMode('plan')">Plan</button>
+    </div>
+    <div class="sep"></div>
+    <select id="loadRoomSel" class="btn sm" title="Load an existing room from rooms.js" onchange="D.loadRoom(this.value)">
+      <option value="">Load room…</option>
+      <option value="room">The room (study)</option>
+      <option value="garden">The garden</option>
+      <option value="library">The library</option>
+      <option value="observatory">The observatory</option>
+      <option value="workshop">The workshop</option>
+      <option value="tavern">The hearth (tavern)</option>
+      <option value="shore">The shore</option>
+    </select>
+    <div class="spacer"></div>
+    <button class="theme-toggle" id="theme-btn" onclick="D.toggleTheme()" title="Toggle light/dark">&#9788;</button>
+    <div class="sep"></div>
+    <button class="btn" onclick="D.exportFile()">Download JS</button>
+    <button class="btn" onclick="D.copyCode()">Copy Code</button>
+    <button class="btn danger" onclick="D.clearAll()">Clear</button>
+  </div>
+
+  <div id="main">
+    <div id="left-panel">
+      <!-- Room Shell — always visible -->
+      <details class="psec" id="room-cfg" open>
+        <summary>Room Shell</summary>
+        <div class="psec-body">
+        <div class="frow">
+          <div class="field"><label>Width</label><input type="number" id="rW" value="6" step=".5" min="2" onchange="D.rebuildShell()"></div>
+          <div class="field"><label>Depth</label><input type="number" id="rD" value="5" step=".5" min="2" onchange="D.rebuildShell()"></div>
+          <div class="field"><label>Height</label><input type="number" id="rH" value="2.8" step=".1" min="1.5" onchange="D.rebuildShell()"></div>
+        </div>
+        <div class="frow">
+          <div class="field"><label>Floor</label><div class="cswatch" id="sw-floor" style="background:#4a3220"><input type="color" id="rFloorCol" value="#4a3220" onchange="D.rebuildShell();this.parentElement.style.background=this.value"></div></div>
+          <div class="field"><label>Wall</label><div class="cswatch" id="sw-wall" style="background:#2a2018"><input type="color" id="rWallCol" value="#2a2018" onchange="D.rebuildShell();this.parentElement.style.background=this.value"></div></div>
+        </div>
+        <div class="frow">
+          <div class="field"><label>Floor preset</label>
+            <div class="mat-presets" id="floor-presets"></div>
+          </div>
+        </div>
+        <div class="frow">
+          <div class="field"><label>Wall preset</label>
+            <div class="mat-presets" id="wall-presets"></div>
+          </div>
+        </div>
+        <div class="frow">
+          <div class="field"><label>Walls</label><select id="rWalls" onchange="D.rebuildShell()">
+            <option value="0" selected>None</option>
+            <option value="4">All four</option><option value="3">Three (open front)</option>
+            <option value="back">Back only</option>
+            <option value="plan">From plan ↗</option>
+          </select></div>
+          <div class="field"><label>Floor shape</label><select id="rShape" onchange="D.rebuildShell()">
+            <option value="rect">Rectangle</option><option value="circle">Circle</option>
+          </select></div>
+        </div>
+        </div>
+      </details>
+
+      <!-- Plan settings — plan mode only -->
+      <details class="psec plan-only" id="sec-plan" open>
+        <summary>Plan Settings</summary>
+        <div class="psec-body">
+        <div class="frow">
+          <div class="field"><label>Wall height</label><input type="number" id="planHeight" value="2.8" step=".1" min="1.5"></div>
+          <div class="field"><label>Thickness</label><input type="number" id="planThickness" value="0.18" step=".02" min=".05"></div>
+        </div>
+        <div class="frow">
+          <div class="field"><label>Snap (m)</label>
+            <select id="planSnap">
+              <option value="0">Off</option>
+              <option value="0.1">0.10 m</option>
+              <option value="0.25" selected>0.25 m</option>
+              <option value="0.5">0.50 m</option>
+              <option value="1">1.00 m</option>
+            </select>
+          </div>
+          <div class="field"><label>Angle lock</label>
+            <select id="planAngle">
+              <option value="15">15&deg;</option>
+              <option value="45" selected>45&deg;</option>
+              <option value="90">90&deg; only</option>
+              <option value="0">Free</option>
+            </select>
+          </div>
+        </div>
+        <div class="frow">
+          <div class="field"><label>Door W</label><input type="number" id="planDoorW" value="0.9" step=".1" min=".4"></div>
+          <div class="field"><label>Door H</label><input type="number" id="planDoorH" value="2.1" step=".1" min=".5"></div>
+        </div>
+        <div class="frow">
+          <div class="field"><label>Win W</label><input type="number" id="planWinW" value="1.4" step=".1" min=".3"></div>
+          <div class="field"><label>Win H</label><input type="number" id="planWinH" value="1.2" step=".1" min=".3"></div>
+          <div class="field"><label>Sill</label><input type="number" id="planSill" value="1" step=".1" min="0"></div>
+        </div>
+        <button class="btn" id="planClearBtn" style="width:100%;margin-top:8px">Clear plan</button>
+        <div class="ptip">
+          <b>Pen:</b> click to add points. Double-click or <kbd>Enter</kbd> to close. <kbd>Shift</kbd> = free angle.<br>
+          <b>Select:</b> drag a point. <kbd>Del</kbd> removes it.<br>
+          <b>Door / Window:</b> click on a wall segment.<br>
+          Walls auto-build into 3D as you draw.
+        </div>
+        </div>
+      </details>
+
+      <!-- Primitives — room mode only -->
+      <details class="psec room-only" id="sec-primitives" open>
+        <summary>Primitives</summary>
+        <div class="psec-body">
+        <div class="obj-grid">
+          <button class="obj-btn" onclick="D.addPrimitive('box')"><span class="ic">&#9644;</span>Box</button>
+          <button class="obj-btn" onclick="D.addPrimitive('cylinder')"><span class="ic">&#9678;</span>Cylinder</button>
+          <button class="obj-btn" onclick="D.addPrimitive('sphere')"><span class="ic">&#9679;</span>Sphere</button>
+          <button class="obj-btn" onclick="D.addPrimitive('cone')"><span class="ic">&#9651;</span>Cone</button>
+          <button class="obj-btn" onclick="D.addPrimitive('torus')"><span class="ic">&#9676;</span>Torus</button>
+          <button class="obj-btn" onclick="D.addPrimitive('plane')"><span class="ic">&#9645;</span>Plane</button>
+        </div>
+        </div>
+      </details>
+
+      <!-- Import Model — room mode only -->
+      <details class="psec room-only" id="sec-import">
+        <summary>Import Model</summary>
+        <div class="psec-body">
+        <div class="drop-zone" id="drop-zone">
+          <input type="file" id="file-input" accept=".glb,.gltf,.obj" onchange="D.handleFile(this.files[0])">
+          <span class="dz-icon">&#128230;</span>
+          Drop .glb, .gltf or .obj here
+          <span class="dz-hint">or click to browse</span>
+        </div>
+        <div class="progress-wrap" id="progress-wrap">
+          <div class="progress-bar"><div class="fill" id="progress-fill"></div></div>
+          <div class="progress-label" id="progress-label"></div>
+        </div>
+        </div>
+      </details>
+
+      <!-- Prefabs — room mode only -->
+      <details class="psec room-only" open>
+        <summary>Prefabs</summary>
+        <div class="psec-body">
+        <div class="obj-grid" id="palette"></div>
+        </div>
+      </details>
+
+      <!-- Scene Tree — always visible -->
+      <div class="psec" style="flex:1">
+        <h3>Scene Tree</h3>
+        <div id="tree"></div>
+      </div>
+      <!-- Hidden stubs for object builder compatibility -->
+      <input type="hidden" id="grpName" value="customObject">
+      <input type="hidden" id="grpIcon" value="◆">
+      <input type="hidden" id="grpCat" value="furniture">
+    </div>
+
+    <div class="splitter" id="sp-left"></div>
+
+    <div id="center-wrap">
+      <div id="viewport-area">
+        <canvas id="c"></canvas>
+        <canvas id="plan-canvas" style="display:none;position:absolute;inset:0;width:100%;height:100%"></canvas>
+        <div id="plan-toolbar" style="display:none"></div>
+        <div id="plan-status"></div>
+        <div class="vp-info" id="vp-info">select an object to move it</div>
+        <div class="mode-btns">
+          <button class="mode-btn on" id="mb-translate" onclick="D.gizmoMode('translate')">Move</button>
+          <button class="mode-btn" id="mb-rotate" onclick="D.gizmoMode('rotate')">Rotate</button>
+          <button class="mode-btn" id="mb-scale" onclick="D.gizmoMode('scale')">Scale</button>
+          <span style="width:1px;height:20px;background:var(--border);margin:0 2px"></span>
+          <button class="mode-btn" id="btn-brush" onclick="D.toggleBrush()">&#9986; Erase</button>
+          <span style="font-size:10px;color:var(--text2);padding:4px 4px" id="brush-radius-wrap">r:<span id="brush-radius-val">0.30</span></span>
+        </div>
+        <div class="vp-hint">LMB orbit &middot; RMB pan &middot; scroll zoom &middot; click = select &middot; G R S E keys</div>
+      </div>
+      <div class="splitter splitter-h" id="sp-bottom"></div>
+      <div id="bottom-panel">
+        <div class="ph">
+          <h3>Generated Code</h3>
+          <button class="btn sm" onclick="D.copyCode()">Copy</button>
+        </div>
+        <div id="code-out">// Add objects above — code appears here.</div>
+      </div>
+    </div>
+
+    <div class="splitter" id="sp-right"></div>
+
+    <div id="right-panel">
+      <div class="psec">
+        <h3>Properties</h3>
+        <div id="p-empty" style="color:var(--text2);font-size:12px">Select an object.</div>
+        <div id="p-form" style="display:none">
+          <div class="field"><label>Name</label><input id="pName" onchange="D.setProp('name',this.value)"></div>
+          <div class="field"><label>Object type</label><input id="pType" disabled style="opacity:.6"></div>
+          <hr style="border:none;border-top:1px solid var(--border);margin:10px 0">
+          <div class="frow">
+            <div class="field"><label>X</label><input type="number" step=".1" id="pX" onchange="D.setPos()"></div>
+            <div class="field"><label>Y</label><input type="number" step=".1" id="pY" onchange="D.setPos()"></div>
+            <div class="field"><label>Z</label><input type="number" step=".1" id="pZ" onchange="D.setPos()"></div>
+          </div>
+          <div class="frow">
+            <div class="field"><label>Rot X&deg;</label><input type="number" step="5" id="pRX" onchange="D.setRot()"></div>
+            <div class="field"><label>Rot Y&deg;</label><input type="number" step="5" id="pRY" onchange="D.setRot()"></div>
+            <div class="field"><label>Rot Z&deg;</label><input type="number" step="5" id="pRZ" onchange="D.setRot()"></div>
+          </div>
+          <div class="frow">
+            <div class="field"><label>Sc X</label><input type="number" step=".1" min=".01" id="pSX" onchange="D.setScale()"></div>
+            <div class="field"><label>Sc Y</label><input type="number" step=".1" min=".01" id="pSY" onchange="D.setScale()"></div>
+            <div class="field"><label>Sc Z</label><input type="number" step=".1" min=".01" id="pSZ" onchange="D.setScale()"></div>
+          </div>
+          <hr style="border:none;border-top:1px solid var(--border);margin:10px 0">
+          <div class="field"><label>Interactive topic</label><input id="pTopic" placeholder="e.g. work_tool" onchange="D.setProp('topic',this.value)"></div>
+          <div class="field"><label>Interactive label</label><input id="pLabel" placeholder="e.g. On Tools" onchange="D.setProp('intLabel',this.value)"></div>
+          <!-- Model info (for imported models) -->
+          <div id="model-info" style="display:none">
+            <hr style="border:none;border-top:1px solid var(--border);margin:10px 0">
+            <div class="model-stats" id="model-stats"></div>
+            <div class="field" style="margin-top:8px"><label>Export as</label>
+              <div class="export-mode-btns">
+                <button class="export-mode-btn active" id="exp-ref" onclick="D.setExportMode('reference')">Reference file</button>
+                <button class="export-mode-btn" id="exp-js" onclick="D.setExportMode('convert')">Convert to JS</button>
+              </div>
+            </div>
+            <div class="field" style="margin-top:6px"><label>Model path</label><input id="pModelPath" placeholder="models/my-model.glb" onchange="D.setProp('modelPath',this.value)"></div>
+            <div class="field" style="margin-top:8px"><label>Simplify mesh</label>
+              <div class="frow" style="align-items:center;gap:4px">
+                <input type="range" id="decimate-ratio" min="0.05" max="1" step="0.05" value="0.5" style="flex:1" oninput="document.getElementById('dec-val').textContent=Math.round(this.value*100)+'%'">
+                <span id="dec-val" style="font-size:10px;color:var(--text2);min-width:28px">50%</span>
+                <button class="btn sm" onclick="D.decimateSel()">Reduce</button>
+              </div>
+            </div>
+          </div>
+          <hr style="border:none;border-top:1px solid var(--border);margin:10px 0">
+          <div id="prim-fields">
+            <div class="field"><label>Material</label>
+              <select id="pMat" onchange="D.setMaterial(this.value)">
+                <option value="standard">standard</option><option value="wood">wood</option>
+                <option value="stone">stone</option><option value="plaster">plaster</option>
+                <option value="metal">metal</option><option value="cloth">cloth</option>
+                <option value="book">book</option><option value="leaf">leaf</option>
+                <option value="glass">glass</option>
+              </select>
+            </div>
+            <div class="frow">
+              <div class="field"><label>Color</label><div class="cswatch" id="sw-obj" style="background:#aaaaaa"><input type="color" id="pColor" value="#aaaaaa" onchange="D.setColor(this.value);this.parentElement.style.background=this.value"></div></div>
+            </div>
+            <div id="geom-params"></div>
+          </div>
+          <hr style="border:none;border-top:1px solid var(--border);margin:10px 0">
+          <button class="btn" style="width:100%;margin-bottom:6px" onclick="D.duplicate()">Duplicate</button>
+          <button class="btn danger" style="width:100%" onclick="D.deleteSel()">Delete</button>
+        </div>
+      </div>
+
+    </div>
+
+  </div><!-- /main -->
+</div><!-- /app -->
+
+<script src="https://unpkg.com/three@0.137.0/build/three.min.js"></script>
+<script src="https://unpkg.com/three@0.137.0/examples/js/controls/OrbitControls.js"></script>
+<script src="https://unpkg.com/three@0.137.0/examples/js/controls/TransformControls.js"></script>
+<script src="https://unpkg.com/three@0.137.0/examples/js/loaders/GLTFLoader.js"></script>
+<script src="https://unpkg.com/three@0.137.0/examples/js/loaders/OBJLoader.js"></script>
+<script src="data/objects_core.js"></script>
+<script src="data/objects_furniture.js"></script>
+<script src="data/objects_utility.js"></script>
+<script src="data/objects_arch.js"></script>
+<script src="data/objects_lighting.js"></script>
+<script src="data/objects_decor_interior.js"></script>
+<script src="data/objects_z_ai.js"></script>
+<script src="data/objects_uncategorized.js"></script>
+<script src="data/objects_nature.js"></script>
+<script src="data/objects_props.js"></script>
+<script src="data/objects_decor_exterior.js"></script>
+<script src="data/objects_buildings.js"></script>
+<script src="data/objects_military.js"></script>
+<script src="data/objects_wiz_arch.js"></script>
+<script src="data/objects_wiz_furniture.js"></script>
+<script src="data/objects_wiz_lighting.js"></script>
+<script src="data/objects_wiz_decor.js"></script>
+<script src="data/objects_wiz_creatures.js"></script>
+<script src="data/objects_wiz_spirits.js"></script>
+<script src="data/objects_wiz_plants.js"></script>
+<script src="data/objects_wiz_food.js"></script>
+<script src="data/objects_wiz_artifacts.js"></script>
+<script src="data/objects_wiz_magic.js"></script>
+<script src="data/objects_wiz_projectiles.js"></script>
+<script src="data/objects_wiz_containers.js"></script>
+<script src="data/objects_wiz_music.js"></script>
+<script src="data/objects_wiz_sport.js"></script>
+<script src="data/dialogue.js" onerror="console.info('dialogue.js not loaded \u2014 topic dropdown will be empty')"></script>
+<!-- Room builders — exposes window.ROOMS for the "Load Room" feature. -->
+<script src="data/rooms.js"></script>
+<script src="data/rooms_hogwarts.js"></script>
+<script src="scene_scripts/designer-plan.js" defer></script>
+<script src="scene_scripts/designer-history.js" defer></script>
+<script src="scene_scripts/designer-snap.js" defer></script>
+<script src="scene_scripts/designer-extras.js" defer></script>
+<script src="scene_scripts/designer-extras2.js" defer></script>
+<script src="scene_scripts/designer-params.js" defer></script>
+<script src="scene_scripts/designer-sims.js" defer></script>
+<script src="scene_scripts/designer-ux.js" defer></script>
+<!-- pb-url meta removed (PocketBase offline) -->
+<script src="scene_scripts/designer-wallcut.js" defer></script>
+<!-- designer-cloud.js (PocketBase) dropped — server offline. Save/import via scene_scripts/scene-io.js (next step). -->
+<script src="scene_scripts/designer-atmosphere.js" defer></script>
+<script src="scene_scripts/designer-showcase.js" defer></script>
+<!-- Save/import: Scene JSON v1 (replaces PocketBase cloud). -->
+<script src="scene_scripts/scene-io.js" defer></script>
+<!-- Play mode: walk the room & interact with objects (option A). -->
+<script src="scene_scripts/interaction.js" defer></script>
+<script src="scene_scripts/scene-play.js" defer></script>
+
+<script>
+// ════════════════════════════════════════════════════════
+// SPLITTER SYSTEM
+// ════════════════════════════════════════════════════════
+(function(){
+  function initSplitter(id, target, side, dir){
+    var splitter=document.getElementById(id);
+    var el=document.getElementById(target);
+    if(!splitter||!el) return;
+    var startPos=0, startSize=0;
+    splitter.addEventListener('pointerdown',function(e){
+      e.preventDefault();
+      splitter.setPointerCapture(e.pointerId);
+      splitter.classList.add('active');
+      document.body.classList.add('dragging');
+      if(dir==='h'){startPos=e.clientX;startSize=el.getBoundingClientRect().width}
+      else{startPos=e.clientY;startSize=el.getBoundingClientRect().height}
+      function onMove(ev){
+        var delta=dir==='h'?ev.clientX-startPos:ev.clientY-startPos;
+        var sign=side==='before'?1:-1;
+        var newSize=Math.max(100,startSize+delta*sign);
+        el.style.flexBasis=newSize+'px';
+        window.dispatchEvent(new Event('resize'));
+      }
+      function onUp(){
+        splitter.classList.remove('active');
+        document.body.classList.remove('dragging');
+        window.removeEventListener('pointermove',onMove);
+        window.removeEventListener('pointerup',onUp);
+      }
+      window.addEventListener('pointermove',onMove);
+      window.addEventListener('pointerup',onUp);
+    });
+  }
+  initSplitter('sp-left','left-panel','before','h');
+  initSplitter('sp-right','right-panel','after','h');
+  initSplitter('sp-bottom','bottom-panel','after','v');
+})();
+
+// ════════════════════════════════════════════════════════
+// THEME
+// ════════════════════════════════════════════════════════
+function _applyTheme(t){
+  document.documentElement.setAttribute('data-theme',t);
+  document.getElementById('theme-btn').innerHTML=t==='dark'?'&#9788;':'&#9790;';
+  localStorage.setItem('designer-theme',t);
+  if(window._dScene) window._dScene.background.set(t==='dark'?0x0e0d0c:0xe8e4dc);
+}
+
+// ════════════════════════════════════════════════════════
+// DESIGNER ENGINE
+// ════════════════════════════════════════════════════════
+(function(){
+  var THREE=window.THREE, OBJ=window.OBJECTS;
+
+  var scene=new THREE.Scene();
+  scene.background=new THREE.Color(0x0e0d0c);
+  window._dScene=scene;
+
+  var camera=new THREE.PerspectiveCamera(45,1,0.1,200);
+  camera.position.set(6,6,8);
+  var renderer=new THREE.WebGLRenderer({canvas:document.getElementById('c'),antialias:true});
+  renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+  renderer.outputEncoding=THREE.sRGBEncoding;
+  renderer.toneMapping=THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure=0.9;
+
+  var orbit=new THREE.OrbitControls(camera,renderer.domElement);
+  orbit.enableDamping=true;orbit.dampingFactor=0.08;orbit.target.set(0,1.5,0);
+  var gizmo=new THREE.TransformControls(camera,renderer.domElement);
+  gizmo.setSize(0.8);
+  gizmo.addEventListener('dragging-changed',function(e){orbit.enabled=!e.value});
+  gizmo.addEventListener('objectChange',function(){if(sel){syncFromObj();genCode()}});
+  scene.add(gizmo);
+
+  scene.add(new THREE.AmbientLight(0xffffff,0.4));
+  var dL=new THREE.DirectionalLight(0xfff0d8,1.2);dL.position.set(6,10,5);scene.add(dL);
+  var fL=new THREE.DirectionalLight(0x8090b0,0.4);fL.position.set(-4,3,-3);scene.add(fL);
+  scene.add(new THREE.GridHelper(30,30,0x2a2520,0x1a1815));
+
+  var items=[],sel=null,idN=0;
+  var shell=new THREE.Group();shell.name='__shell__';scene.add(shell);
+  var currentMode='room'; // 'room' or 'object'
+
+  // ─── Materials for primitives ───
+  var MAT={
+    standard:function(c){return new THREE.MeshStandardMaterial({color:c,roughness:0.6,metalness:0.1})},
+    wood:function(c){return new THREE.MeshStandardMaterial({color:c,roughness:0.85,metalness:0})},
+    stone:function(c){return new THREE.MeshStandardMaterial({color:c,roughness:0.95,metalness:0})},
+    plaster:function(c){return new THREE.MeshStandardMaterial({color:c,roughness:0.92,metalness:0,side:THREE.DoubleSide})},
+    metal:function(c){return new THREE.MeshStandardMaterial({color:c,roughness:0.45,metalness:0.7})},
+    cloth:function(c){return new THREE.MeshStandardMaterial({color:c,roughness:0.85,metalness:0})},
+    book:function(c){return new THREE.MeshStandardMaterial({color:c,roughness:0.8,metalness:0})},
+    leaf:function(c){return new THREE.MeshStandardMaterial({color:c,roughness:0.9,metalness:0,side:THREE.DoubleSide})},
+    glass:function(c){return new THREE.MeshStandardMaterial({color:c,roughness:0.05,metalness:0,transparent:true,opacity:0.32})},
+  };
+
+  // ─── Primitive geometry ───
+  var defaultGeomParams={
+    box:{w:1,h:1,d:1},
+    cylinder:{rT:0.5,rB:0.5,h:1,seg:16},
+    sphere:{r:0.5,seg:24,seg2:16},
+    cone:{r:0.5,h:1,seg:16},
+    torus:{r:0.4,tube:0.1,seg:12,seg2:32},
+    plane:{w:1,h:1},
+  };
+  function makePrimGeo(type,p){
+    switch(type){
+      case 'box':return new THREE.BoxGeometry(p.w||1,p.h||1,p.d||1);
+      case 'cylinder':return new THREE.CylinderGeometry(p.rT||.5,p.rB||.5,p.h||1,p.seg||16);
+      case 'sphere':return new THREE.SphereGeometry(p.r||.5,p.seg||24,p.seg2||16);
+      case 'cone':return new THREE.ConeGeometry(p.r||.5,p.h||1,p.seg||16);
+      case 'torus':return new THREE.TorusGeometry(p.r||.4,p.tube||.1,p.seg||12,p.seg2||32);
+      case 'plane':return new THREE.PlaneGeometry(p.w||1,p.h||1);
+    }
+  }
+
+  function addPrimitive(type){
+    var params=JSON.parse(JSON.stringify(defaultGeomParams[type]));
+    var color=0xaaaaaa, matType='standard';
+    var geo=makePrimGeo(type,params);
+    var mat=MAT[matType](color);
+    var mesh=new THREE.Mesh(geo,mat);
+    mesh.position.set(0,(params.h||params.r||0.5),0);
+    mesh.name=type+'_'+idN;
+    scene.add(mesh);
+    var entry={id:idN++,name:mesh.name,type:type,obj3d:mesh,topic:'',intLabel:'',opts:{},
+      isPrimitive:true,geomParams:params,matType:matType,color:'#aaaaaa',children:null};
+    items.push(entry);selectItem(entry);refreshTree();genCode();
+  }
+
+  // ─── Mode switching ───
+  function switchMode(mode){
+    if(mode==='object') mode='room'; // object builder removed, fall back
+    currentMode=mode;
+    document.getElementById('left-panel').setAttribute('data-mode',mode);
+    $('tab-room').classList.toggle('active',mode==='room');
+    var tabPlan=$('tab-plan'); if(tabPlan) tabPlan.classList.toggle('active',mode==='plan');
+    // Plan-mode panel toggles — plan-only / room-only classes handle via CSS now
+    // But still need to show/hide 3D vs plan canvas
+    shell.visible=true; // always show shell
+    var pc=document.getElementById('plan-canvas'); var tb=document.getElementById('plan-toolbar'); var ps=document.getElementById('plan-status');
+    if(mode==='plan'){
+      if(pc) pc.style.display='block';
+      if(tb) tb.style.display='flex';
+      if(ps) ps.style.display='block';
+      $('c').style.display='none';
+      $('vp-info').style.display='none';
+      document.querySelectorAll('.mode-btns').forEach(function(el){el.style.display='none'});
+      document.querySelector('.vp-hint').style.display='none';
+    } else {
+      if(pc) pc.style.display='none';
+      if(tb) tb.style.display='none';
+      if(ps) ps.style.display='none';
+      $('c').style.display='block';
+      $('vp-info').style.display='block';
+      document.querySelectorAll('.mode-btns').forEach(function(el){el.style.display='flex'});
+      document.querySelector('.vp-hint').style.display='';
+    }
+    $('vp-info').textContent='select an object to move it';
+    $('vp-info').style.color='';
+    window.dispatchEvent(new CustomEvent('designer:modeChange',{detail:{mode:mode}}));
+    genCode();
+  }
+
+  function buildPalette(){
+    var el=$('palette');el.innerHTML='';
+    var list=OBJ.list();
+    var cats={};
+    list.forEach(function(o){var c=o.category||'other';if(!cats[c])cats[c]=[];cats[c].push(o)});
+    Object.keys(cats).forEach(function(cat){
+      var lbl=document.createElement('div');
+      lbl.className='cat-label';lbl.textContent=cat;el.appendChild(lbl);
+      cats[cat].forEach(function(o){
+        var b=document.createElement('button');
+        b.className='obj-btn';
+        b.innerHTML='<span class="ic">'+(o.icon||'&#9670;')+'</span>'+o.name;
+        b.onclick=function(){addObject(o.name)};
+        el.appendChild(b);
+      });
+    });
+  }
+
+  function addObject(type,opts){
+    var o=OBJ.create(type,opts||{});
+    o.name=type+'_'+idN;scene.add(o);
+    var entry={id:idN++,name:o.name,type:type,obj3d:o,topic:'',intLabel:'',opts:opts||{}};
+    items.push(entry);selectItem(entry);refreshTree();genCode();
+  }
+
+  function rebuildShell(){
+    while(shell.children.length){var c=shell.children[0];shell.remove(c);disposeObj(c)}
+    var wallsMode=$('rWalls').value;
+    if(wallsMode==='plan' && window._plan){
+      // Floor + walls + arcs all come from the plan-mode polygon. Other
+      // shell inputs (W/D/H/shape) are ignored; floor/wall colors are still
+      // read by buildToShell from the swatches.
+      window._plan.buildToShell();
+      genCode();
+      return;
+    }
+    var W=parseFloat($('rW').value)||14,D=parseFloat($('rD').value)||12,H=parseFloat($('rH').value)||5;
+    var fc=parseInt($('rFloorCol').value.slice(1),16);
+    var wc=parseInt($('rWallCol').value.slice(1),16);
+    var walls=wallsMode,shape=$('rShape').value;
+    var hW=W/2,hD=D/2;
+    var fgeo=shape==='circle'?new THREE.CircleGeometry(Math.max(W,D)/2,64):new THREE.PlaneGeometry(W,D);
+    var flMat=new THREE.MeshStandardMaterial({color:fc,roughness:0.85,metalness:0,side:THREE.DoubleSide});
+    var fl=new THREE.Mesh(fgeo,flMat);fl.rotation.x=-Math.PI/2;shell.add(fl);
+    if(walls==='0'){genCode();return;}
+    var wmat=new THREE.MeshStandardMaterial({color:wc,roughness:0.92,metalness:0,side:THREE.DoubleSide});
+    if(walls==='4'||walls==='3'||walls==='back'){
+      var b=new THREE.Mesh(new THREE.PlaneGeometry(W,H),wmat);b.position.set(0,H/2,-hD);shell.add(b);
+    }
+    if(walls==='4'||walls==='3'){
+      var lw=new THREE.Mesh(new THREE.PlaneGeometry(D,H),wmat);lw.position.set(-hW,H/2,0);lw.rotation.y=Math.PI/2;shell.add(lw);
+      var rw=new THREE.Mesh(new THREE.PlaneGeometry(D,H),wmat);rw.position.set(hW,H/2,0);rw.rotation.y=-Math.PI/2;shell.add(rw);
+    }
+    if(walls==='4'){
+      var fw=new THREE.Mesh(new THREE.PlaneGeometry(W,H),wmat);fw.position.set(0,H/2,hD);fw.rotation.y=Math.PI;shell.add(fw);
+    }
+    genCode();
+  }
+
+  var ray=new THREE.Raycaster(),mouse=new THREE.Vector2();
+  var _downAt=null;
+  renderer.domElement.addEventListener('pointerdown',function(e){
+    if(e.button!==0)return;
+    _downAt={x:e.clientX,y:e.clientY};
+  });
+  renderer.domElement.addEventListener('pointerup',function(e){
+    if(e.button!==0||!_downAt)return;
+    if(brushActive)return; // brush handler takes over
+    var dx=e.clientX-_downAt.x,dy=e.clientY-_downAt.y;
+    var dist=Math.sqrt(dx*dx+dy*dy);
+    _downAt=null;
+    // If moved more than 5px, it was an orbit/pan drag — ignore
+    if(dist>5)return;
+    if(gizmo.dragging)return;
+
+    var r=renderer.domElement.getBoundingClientRect();
+    mouse.x=((e.clientX-r.left)/r.width)*2-1;
+    mouse.y=-((e.clientY-r.top)/r.height)*2+1;
+    ray.setFromCamera(mouse,camera);
+    var meshes=[];
+    items.forEach(function(i){i.obj3d.traverse(function(c){if(c.isMesh)meshes.push(c)})});
+    var hits=ray.intersectObjects(meshes,false);
+    if(hits.length){
+      var h=hits[0].object,found=null;
+      while(h&&!found){found=items.find(function(i){return i.obj3d===h});h=h.parent}
+      if(found){selectItem(found);return}
+    }
+    // Clicked on nothing — deselect
+    deselect();
+  });
+
+  function selectItem(entry){sel=entry;gizmo.attach(entry.obj3d);syncFromObj();showForm(true);refreshTree();window.dispatchEvent(new CustomEvent('designer:select',{detail:{entry:entry}}))}
+  function deselect(){sel=null;gizmo.detach();showForm(false);refreshTree();window.dispatchEvent(new CustomEvent('designer:select',{detail:{entry:null}}))}
+  function showForm(on){$('p-empty').style.display=on?'none':'block';$('p-form').style.display=on?'block':'none'}
+
+  function syncFromObj(){
+    if(!sel)return;var o=sel.obj3d;
+    $('pName').value=sel.name;$('pType').value=sel.type;
+    $('pX').value=r3(o.position.x);$('pY').value=r3(o.position.y);$('pZ').value=r3(o.position.z);
+    $('pRX').value=r1(THREE.MathUtils.radToDeg(o.rotation.x));
+    $('pRY').value=r1(THREE.MathUtils.radToDeg(o.rotation.y));
+    $('pRZ').value=r1(THREE.MathUtils.radToDeg(o.rotation.z));
+    $('pSX').value=r3(o.scale.x);$('pSY').value=r3(o.scale.y);$('pSZ').value=r3(o.scale.z);
+    $('pTopic').value=sel.topic||'';$('pLabel').value=sel.intLabel||'';
+    // Primitive fields
+    var pf_el=$('prim-fields');
+    if(sel.isPrimitive){
+      pf_el.style.display='';
+      $('pMat').value=sel.matType||'standard';
+      $('pColor').value=sel.color||'#aaaaaa';
+      $('sw-obj').style.background=sel.color||'#aaaaaa';
+      // Geometry param fields
+      var gp=$('geom-params');gp.innerHTML='';
+      var p=sel.geomParams;
+      if(p){
+        var fields=[];
+        switch(sel.type){
+          case 'box':fields=[['w','Width'],['h','Height'],['d','Depth']];break;
+          case 'cylinder':fields=[['rT','Radius Top'],['rB','Radius Bot'],['h','Height'],['seg','Segments']];break;
+          case 'sphere':fields=[['r','Radius'],['seg','Segments']];break;
+          case 'cone':fields=[['r','Radius'],['h','Height']];break;
+          case 'torus':fields=[['r','Radius'],['tube','Tube']];break;
+          case 'plane':fields=[['w','Width'],['h','Height']];break;
+        }
+        fields.forEach(function(f){
+          gp.innerHTML+='<div class="field"><label>'+f[1]+'</label>'+
+            '<input type="number" step="0.05" min="0.01" value="'+p[f[0]]+'" onchange="D.updateGeom(\''+f[0]+'\',this.value)"></div>';
+        });
+      }
+    } else {
+      pf_el.style.display='none';
+    }
+  }
+
+  function setMaterial(val){
+    if(!sel||!sel.isPrimitive)return;
+    sel.matType=val;
+    var col=parseInt(sel.color.replace('#',''),16);
+    sel.obj3d.material.dispose();
+    sel.obj3d.material=MAT[val](col);
+    genCode();
+  }
+  function setColor(val){
+    if(!sel)return;
+    sel.color=val;
+    var col=parseInt(val.replace('#',''),16);
+    sel.obj3d.traverse(function(c){
+      if(c.isMesh&&c.material&&c.material.color) c.material.color.setHex(col);
+    });
+    genCode();
+  }
+  function updateGeom(key,val){
+    if(!sel||!sel.isPrimitive)return;
+    sel.geomParams[key]=parseFloat(val);
+    var newGeo=makePrimGeo(sel.type,sel.geomParams);
+    sel.obj3d.geometry.dispose();
+    sel.obj3d.geometry=newGeo;
+    genCode();
+  }
+
+  function setPos(){if(!sel)return;sel.obj3d.position.set(pf2('pX'),pf2('pY'),pf2('pZ'));genCode()}
+  function setRot(){if(!sel)return;sel.obj3d.rotation.set(d2r(pf2('pRX')),d2r(pf2('pRY')),d2r(pf2('pRZ')));genCode()}
+  function setScale(){if(!sel)return;sel.obj3d.scale.set(pf2('pSX')||1,pf2('pSY')||1,pf2('pSZ')||1);genCode()}
+  function setProp(k,v){if(!sel)return;sel[k]=v;if(k==='name'){sel.obj3d.name=v;refreshTree()}genCode()}
+
+  function duplicate(){
+    if(!sel)return;
+    var o=sel.obj3d.clone();o.position.x+=1;o.name=sel.name+'_cp';scene.add(o);
+    var e={id:idN++,name:o.name,type:sel.type,obj3d:o,topic:'',intLabel:'',opts:JSON.parse(JSON.stringify(sel.opts))};
+    items.push(e);selectItem(e);refreshTree();genCode();
+  }
+  function deleteSel(){
+    if(!sel)return;gizmo.detach();scene.remove(sel.obj3d);disposeObj(sel.obj3d);
+    items=items.filter(function(i){return i!==sel});sel=null;showForm(false);refreshTree();genCode();
+  }
+
+  function refreshTree(){
+    var el=$('tree');el.innerHTML='';
+    items.forEach(function(e){
+      var d=document.createElement('div');
+      d.className='tree-item'+(sel===e?' sel':'');
+      var dotColor=e.type==='group'?'var(--ok)':e.isPrimitive?'#6a8aaa':'var(--accent)';
+      var typeTag=e.type==='group'?'<span style="color:var(--ok);font-size:10px">[grp]</span>':
+        e.isPrimitive?'<span style="color:#6a8aaa;font-size:10px">['+e.type+']</span>':'';
+      d.innerHTML='<span class="dot" style="background:'+dotColor+'"></span>'+
+        '<span class="nm">'+e.name+'</span> '+typeTag+
+        (e.topic?'<span style="color:var(--accent);font-size:10px">&#9889;</span>':'')+
+        '<button class="x" onclick="event.stopPropagation();D.deleteById('+e.id+')">&#215;</button>';
+      d.onclick=(function(entry){return function(){selectItem(entry)}})(e);
+      el.appendChild(d);
+    });
+  }
+  function deleteById(id){
+    var e=items.find(function(i){return i.id===id});if(!e)return;
+    if(sel===e)deselect();scene.remove(e.obj3d);disposeObj(e.obj3d);
+    items=items.filter(function(i){return i.id!==id});refreshTree();genCode();
+  }
+
+  // ─── Grouping ───
+  function groupAll(){
+    var prims=items.filter(function(e){return e.isPrimitive});
+    if(prims.length<1){alert('Add some primitives first.');return}
+    var name=$('grpName').value||'customObject';
+    var icon=$('grpIcon').value||'&#9670;';
+    var cat=$('grpCat').value||'furniture';
+    var group=new THREE.Group();
+    group.name=name;
+    // Store children info for code gen
+    var childData=[];
+    prims.forEach(function(e){
+      gizmo.detach();
+      scene.remove(e.obj3d);
+      group.add(e.obj3d);
+      childData.push({name:e.name,type:e.type,geomParams:JSON.parse(JSON.stringify(e.geomParams)),
+        matType:e.matType,color:e.color,
+        px:r3(e.obj3d.position.x),py:r3(e.obj3d.position.y),pz:r3(e.obj3d.position.z),
+        rx:r3(e.obj3d.rotation.x),ry:r3(e.obj3d.rotation.y),rz:r3(e.obj3d.rotation.z),
+        sx:r3(e.obj3d.scale.x),sy:r3(e.obj3d.scale.y),sz:r3(e.obj3d.scale.z)});
+    });
+    scene.add(group);
+    // Remove old entries, add group entry
+    items=items.filter(function(e){return !e.isPrimitive});
+    var entry={id:idN++,name:name,type:'group',obj3d:group,topic:'',intLabel:'',opts:{},
+      isPrimitive:false,geomParams:null,matType:'standard',color:'#aaaaaa',
+      children:childData,groupMeta:{icon:icon,cat:cat}};
+    items.push(entry);
+    selectItem(entry);refreshTree();genCode();
+  }
+
+  function ungroupSel(){
+    if(!sel||sel.type!=='group')return;
+    var group=sel.obj3d;
+    var children=[].concat(group.children);
+    gizmo.detach();scene.remove(group);
+    items=items.filter(function(i){return i!==sel});
+    var childData=sel.children||[];
+    children.forEach(function(child,i){
+      var wp=new THREE.Vector3();child.getWorldPosition(wp);
+      group.remove(child);child.position.copy(wp);
+      scene.add(child);
+      var cd=childData[i]||{};
+      items.push({id:idN++,name:cd.name||child.name||'ungrouped_'+idN,
+        type:cd.type||'box',obj3d:child,topic:'',intLabel:'',opts:{},
+        isPrimitive:true,geomParams:cd.geomParams||{w:1,h:1,d:1},
+        matType:cd.matType||'standard',color:cd.color||'#aaaaaa',children:null});
+    });
+    sel=null;showForm(false);refreshTree();genCode();
+  }
+
+  function gizmoMode(m){
+    if(brushActive) toggleBrush(); // deactivate brush
+    gizmo.setMode(m);
+    ['translate','rotate','scale'].forEach(function(k){
+      document.getElementById('mb-'+k).classList.toggle('on',k===m);
+    });
+  }
+  window.addEventListener('keydown',function(e){
+    if(e.target.tagName==='INPUT'||e.target.tagName==='SELECT')return;
+    if(e.key==='g'||e.key==='w')gizmoMode('translate');
+    if(e.key==='r')gizmoMode('rotate');
+    if(e.key==='e')toggleBrush();
+    if(e.key==='s')gizmoMode('scale');
+    if(e.key==='Delete'||e.key==='Backspace')deleteSel();
+    if(e.key==='d'&&e.ctrlKey){e.preventDefault();duplicate()}
+    if(e.key==='Escape')deselect();
+  });
+
+  function genCode(){
+    var L=[];
+
+    if(currentMode==='object'){
+      // ─── Object Builder mode: generate OBJECTS.register() ───
+      var groups=items.filter(function(e){return e.type==='group'});
+      var prims=items.filter(function(e){return e.isPrimitive});
+
+      if(groups.length>0){
+        groups.forEach(function(g){
+          var nm=varName(g.name);
+          var meta=g.groupMeta||{};
+          L.push('OBJECTS.register("'+g.name+'", function(opts) {');
+          L.push('  opts = opts || {};');
+          L.push('  const g = new THREE.Group();');
+          (g.children||[]).forEach(function(c){
+            var matCall='M.'+c.matType+'('+hex(c.color)+')';
+            if(c.type==='box'){
+              L.push('  g.add(_box('+c.geomParams.w+', '+c.geomParams.h+', '+c.geomParams.d+', '+matCall+', ['+c.px+', '+c.py+', '+c.pz+']));');
+            } else if(c.type==='cylinder'){
+              L.push('  g.add(_cyl('+c.geomParams.rT+', '+c.geomParams.rB+', '+c.geomParams.h+', '+matCall+', ['+c.px+', '+c.py+', '+c.pz+'], '+c.geomParams.seg+'));');
+            } else if(c.type==='sphere'){
+              L.push('  var _s = new THREE.Mesh(new THREE.SphereGeometry('+c.geomParams.r+', '+c.geomParams.seg+', '+c.geomParams.seg2+'), '+matCall+');');
+              L.push('  _s.position.set('+c.px+', '+c.py+', '+c.pz+'); g.add(_s);');
+            } else if(c.type==='cone'){
+              L.push('  var _c = new THREE.Mesh(new THREE.ConeGeometry('+c.geomParams.r+', '+c.geomParams.h+', '+c.geomParams.seg+'), '+matCall+');');
+              L.push('  _c.position.set('+c.px+', '+c.py+', '+c.pz+'); g.add(_c);');
+            } else if(c.type==='torus'){
+              L.push('  var _t = new THREE.Mesh(new THREE.TorusGeometry('+c.geomParams.r+', '+c.geomParams.tube+', '+c.geomParams.seg+', '+c.geomParams.seg2+'), '+matCall+');');
+              L.push('  _t.position.set('+c.px+', '+c.py+', '+c.pz+'); g.add(_t);');
+            } else if(c.type==='plane'){
+              L.push('  var _p = new THREE.Mesh(new THREE.PlaneGeometry('+c.geomParams.w+', '+c.geomParams.h+'), '+matCall+');');
+              L.push('  _p.position.set('+c.px+', '+c.py+', '+c.pz+'); g.add(_p);');
+            }
+          });
+          L.push('  return g;');
+          L.push('}, { icon: "'+(meta.icon||'&#9670;')+'", category: "'+(meta.cat||'furniture')+'" });');
+          L.push('');
+        });
+      }
+
+      // Also show ungrouped primitives as comments
+      if(prims.length>0){
+        L.push('// Ungrouped primitives (group them to generate a register() call):');
+        prims.forEach(function(e){
+          var o=e.obj3d;
+          L.push('//   '+e.name+' ['+e.type+'] at ('+r3(o.position.x)+', '+r3(o.position.y)+', '+r3(o.position.z)+')');
+        });
+      }
+
+      if(groups.length===0&&prims.length===0){
+        L.push('// Add primitives, position them, then click "Group all into object".');
+        L.push('// The OBJECTS.register() code will appear here.');
+      }
+
+    } else {
+      // ─── Room mode: generate buildXxx() in the rooms.js style ───
+      var W=pf2('rW')||14,D=pf2('rD')||12,H=pf2('rH')||5;
+      var fc=hex($('rFloorCol').value),wc=hex($('rWallCol').value);
+      var walls=$('rWalls').value,shape=$('rShape').value;
+      // If a room was loaded from rooms.js, honor its identity in the output.
+      var roomId=window._loadedRoomId||'myRoom';
+      var fnName=window._loadedRoomFn||'buildMyRoom';
+      L.push('// Paste into rooms.js. Lights, tickers, dust motes, animated rings,');
+      L.push('// and any non-prefab meshes from the original builder are NOT round-');
+      L.push('// tripped — keep that custom code from your existing '+fnName+'().');
+      L.push('function '+fnName+'() {');
+      L.push('  const r = new Room("'+roomId+'");');
+      var emitShell=(shape!=='circle'&&(walls==='4'||walls==='3'||walls==='back'));
+      if(emitShell){
+        var shellOpts='W: '+W+', D: '+D+', H: '+H+
+          ', floorColor: '+fc+', wallColor: '+wc;
+        L.push('  const { halfW, halfD, H } = buildShell(r, { '+shellOpts+' });');
+      } else if(shape==='circle'){
+        L.push('  r.setFloor(O("floor", { size: '+Math.max(W,D)+', color: '+fc+', shape: "circle" }));');
+      } else {
+        L.push('  r.setFloor(O("floor", { width: '+W+', depth: '+D+', color: '+fc+' }));');
+      }
+      L.push('');
+      L.push('  // ── PLACED ITEMS (from designer) ─────────────────────────');
+      items.forEach(function(e){
+        var o=e.obj3d;
+        var px=r3(o.position.x),py=r3(o.position.y),pz=r3(o.position.z);
+        var rx=r3(o.rotation.x),ry=r3(o.rotation.y),rz=r3(o.rotation.z);
+        var sx=r3(o.scale.x),sy=r3(o.scale.y),sz=r3(o.scale.z);
+
+        if(e.isPrimitive){
+          // Raw primitive — emit as a one-off mesh.
+          var v=varName(e.name);
+          var matCall='M.'+e.matType+'('+hex(e.color)+')';
+          switch(e.type){
+            case 'box':L.push('  const '+v+' = _box('+e.geomParams.w+', '+e.geomParams.h+', '+e.geomParams.d+', '+matCall+');');break;
+            case 'cylinder':L.push('  const '+v+' = _cyl('+e.geomParams.rT+', '+e.geomParams.rB+', '+e.geomParams.h+', '+matCall+', null, '+e.geomParams.seg+');');break;
+            case 'sphere':L.push('  const '+v+' = new THREE.Mesh(new THREE.SphereGeometry('+e.geomParams.r+', '+e.geomParams.seg+', '+e.geomParams.seg2+'), '+matCall+');');break;
+            case 'cone':L.push('  const '+v+' = new THREE.Mesh(new THREE.ConeGeometry('+e.geomParams.r+', '+e.geomParams.h+', '+e.geomParams.seg+'), '+matCall+');');break;
+            case 'torus':L.push('  const '+v+' = new THREE.Mesh(new THREE.TorusGeometry('+e.geomParams.r+', '+e.geomParams.tube+', '+e.geomParams.seg+', '+e.geomParams.seg2+'), '+matCall+');');break;
+            case 'plane':L.push('  const '+v+' = new THREE.Mesh(new THREE.PlaneGeometry('+e.geomParams.w+', '+e.geomParams.h+'), '+matCall+');');break;
+          }
+          L.push('  '+v+'.position.set('+px+', '+py+', '+pz+');');
+          if(rx||ry||rz) L.push('  '+v+'.rotation.set('+rx+', '+ry+', '+rz+');');
+          if(sx!==1||sy!==1||sz!==1) L.push('  '+v+'.scale.set('+sx+', '+sy+', '+sz+');');
+          if(e.topic) L.push('  r.addInteractive('+v+', { topic: "'+e.topic+'", label: "'+(e.intLabel||e.name)+'" });');
+          else L.push('  r.add('+v+');');
+          return;
+        }
+
+        // Build the single opts blob fed to r.place / O() — merges prefab
+        // construction opts with placement transforms (rotY / scale). We strip
+        // rot*/scale from prefabOpts before re-emitting (those keys are
+        // already represented in the obj's position/rotation/scale, which we
+        // emit explicitly below) to avoid duplicate-key collisions.
+        var skipKeys={rotY:1,rotX:1,rotZ:1,scale:1};
+        function fmtPrefabOpts(opts){
+          return Object.keys(opts||{}).filter(function(k){return !skipKeys[k]}).map(function(k){
+            var v=opts[k];
+            if(typeof v==='number'&&k.toLowerCase().indexOf('color')>=0){
+              return k+': 0x'+v.toString(16).padStart(6,'0');
+            }
+            return k+': '+JSON.stringify(v);
+          });
+        }
+        var optsParts=[];
+        // Uniform scale collapses to `scale`; non-uniform is rare, fall through.
+        var uniformScale=(sx===sy&&sy===sz);
+        if(uniformScale&&sx!==1) optsParts.push('scale: '+sx);
+        if(ry) optsParts.push('rotY: '+ry);
+        if(rx) optsParts.push('rotX: '+rx);
+        if(rz) optsParts.push('rotZ: '+rz);
+        optsParts=optsParts.concat(fmtPrefabOpts(e.opts));
+        var optsStr=optsParts.length?', { '+optsParts.join(', ')+' }':'';
+
+        if(e.topic){
+          // Interactive — needs a variable, because r.addInteractive takes the obj.
+          var v=varName(e.name);
+          var prefabOpts=fmtPrefabOpts(e.opts).join(', ');
+          L.push('  const '+v+' = O("'+e.type+'"'+(prefabOpts?', { '+prefabOpts+' }':'')+');');
+          L.push('  '+v+'.position.set('+px+', '+py+', '+pz+');');
+          if(rx||ry||rz) L.push('  '+v+'.rotation.set('+rx+', '+ry+', '+rz+');');
+          if(!uniformScale&&(sx!==1||sy!==1||sz!==1)) L.push('  '+v+'.scale.set('+sx+', '+sy+', '+sz+');');
+          else if(uniformScale&&sx!==1) L.push('  '+v+'.scale.setScalar('+sx+');');
+          L.push('  r.addInteractive('+v+', { topic: "'+e.topic+'", label: "'+(e.intLabel||e.name)+'" });');
+        } else if(uniformScale){
+          L.push('  r.place("'+e.type+'", '+px+', '+py+', '+pz+optsStr+');');
+        } else {
+          // Non-uniform scale — fall back to verbose form.
+          var v2=varName(e.name);
+          var prefabOpts2=fmtPrefabOpts(e.opts).join(', ');
+          L.push('  const '+v2+' = O("'+e.type+'"'+(prefabOpts2?', { '+prefabOpts2+' }':'')+');');
+          L.push('  '+v2+'.position.set('+px+', '+py+', '+pz+');');
+          if(rx||ry||rz) L.push('  '+v2+'.rotation.set('+rx+', '+ry+', '+rz+');');
+          L.push('  '+v2+'.scale.set('+sx+', '+sy+', '+sz+');');
+          L.push('  r.add('+v2+');');
+        }
+      });
+      L.push('');
+      L.push('  // ── KEEP YOUR CUSTOM CODE BELOW ──────────────────────────');
+      L.push('  // Lights (point/hemisphere/flicker), tickers (dust, gulls,');
+      L.push('  // wave rings, orb floats), chandeliers, and any non-prefab');
+      L.push('  // meshes were not loaded into the designer. Paste those back');
+      L.push('  // from your existing '+fnName+'() before the return.');
+      L.push('');
+      L.push('  return r;');
+      L.push('}');
+    }
+
+    $('code-out').textContent=L.join('\n');
+  }
+
+  function copyCode(){
+    navigator.clipboard.writeText($('code-out').textContent).then(function(){
+      var b=document.querySelector('#bottom-panel .btn');
+      if(b){b.textContent='Copied!';setTimeout(function(){b.textContent='Copy'},1500)}
+    });
+  }
+  function exportFile(){
+    genCode();
+    var blob=new Blob([$('code-out').textContent],{type:'text/javascript'});
+    var a=document.createElement('a');a.href=URL.createObjectURL(blob);
+    a.download='room_design.js';a.click();URL.revokeObjectURL(a.href);
+  }
+  function clearAll(){
+    if(!confirm('Clear all objects?'))return;
+    gizmo.detach();items.forEach(function(e){scene.remove(e.obj3d);disposeObj(e.obj3d)});
+    items=[];sel=null;showForm(false);refreshTree();genCode();
+  }
+
+  // ════════════════════════════════════════════════════════
+  // LOAD ROOM — pull an existing room from rooms.js into the editor.
+  //
+  // Only items tagged in their userData with `prefabName` (everything that
+  // went through O() in rooms.js) round-trip — lights, tickers, dust motes,
+  // custom meshes, and the shell pieces don't. The shell is re-emitted from
+  // the form inputs; the user keeps the custom code by hand.
+  // ════════════════════════════════════════════════════════
+
+  // Shell config per room — what we set on the form so rebuildShell() draws
+  // an approximation that matches each room's buildShell() call.
+  var ROOM_SHELL = {
+    room:        { W:14, D:12, H:5,   shape:'rect',   walls:'4',  floor:'#4a3220', wall:'#2a2018', fnName:'buildStudy' },
+    garden:      { W:24, D:24, H:5,   shape:'circle', walls:'0',  floor:'#2a3a26', wall:'#2a2018', fnName:'buildGarden' },
+    library:     { W:18, D:26, H:7,   shape:'rect',   walls:'4',  floor:'#2a1f14', wall:'#2a2018', fnName:'buildLibrary' },
+    observatory: { W:18, D:18, H:5,   shape:'circle', walls:'0',  floor:'#080608', wall:'#2a2018', fnName:'buildObservatory' },
+    workshop:    { W:14, D:12, H:4.6, shape:'rect',   walls:'4',  floor:'#2a1f15', wall:'#261c14', fnName:'buildWorkshop' },
+    tavern:      { W:16, D:14, H:5.2, shape:'rect',   walls:'4',  floor:'#3a261a', wall:'#2a1d12', fnName:'buildTavern' },
+    shore:       { W:24, D:24, H:5,   shape:'circle', walls:'0',  floor:'#c4a878', wall:'#2a2018', fnName:'buildShore' },
+  };
+
+  function loadRoom(id){
+    if(!id){return}
+    if(!window.ROOMS||!window.ROOMS[id]){
+      alert('rooms.js did not load — window.ROOMS["'+id+'"] is undefined.');
+      $('loadRoomSel').value='';
+      return;
+    }
+
+    // Clear current scene.
+    gizmo.detach();
+    items.forEach(function(e){scene.remove(e.obj3d);disposeObj(e.obj3d)});
+    items=[]; sel=null; idN=0; showForm(false);
+
+    // Set form inputs to match the room's shell so rebuildShell() draws an
+    // approximation of the original room.
+    var cfg=ROOM_SHELL[id]||ROOM_SHELL.room;
+    $('rW').value=cfg.W; $('rD').value=cfg.D; $('rH').value=cfg.H;
+    $('rFloorCol').value=cfg.floor; $('sw-floor').style.background=cfg.floor;
+    $('rWallCol').value=cfg.wall;   $('sw-wall').style.background=cfg.wall;
+    if($('rWalls')) $('rWalls').value=cfg.walls;
+    if($('rShape')) $('rShape').value=cfg.shape;
+    rebuildShell();
+
+    // Build the room — get a Room instance whose group is fully populated.
+    var room;
+    try { room = window.ROOMS[id](); }
+    catch(err){ alert('rooms.js threw while building '+id+': '+err.message); return; }
+
+    // Map root→interactive metadata so we can re-tag tied items.
+    var interMap=new Map();
+    (room.interactives||[]).forEach(function(i){
+      interMap.set(i.root, { topic: i.topic, label: i.label });
+    });
+
+    // Walk the room's top-level children. We pluck each prefab-tagged one
+    // (recursively, since some rooms wrap items in subgroups) and adopt it
+    // into our editor's items[]. Shell pieces (floor/wall/beam) are skipped
+    // because rebuildShell() already drew the shell from the form inputs.
+    var SHELL_PREFABS={floor:1,wall:1,beam:1,skyDome:1,starDome:1};
+    var detached=[];
+    function collect(node){
+      if(node.userData&&node.userData.prefabName){
+        if(SHELL_PREFABS[node.userData.prefabName]) return; // handled by shell
+        detached.push(node); return;
+      }
+      // Tickers / wave rings / custom groups: recurse to find prefabs inside.
+      var kids=node.children?node.children.slice():[];
+      kids.forEach(collect);
+    }
+    var topChildren=room.group.children.slice();
+    topChildren.forEach(collect);
+
+    detached.forEach(function(obj){
+      if(obj.parent) obj.parent.remove(obj);
+      var prefab=obj.userData.prefabName;
+      var opts=obj.userData.prefabOpts||{};
+      // Drop our own metadata so it doesn't leak into a re-export.
+      delete obj.userData.prefabName;
+      delete obj.userData.prefabOpts;
+      var inter=interMap.get(obj);
+      if(inter) delete obj.userData.interactive;
+      obj.name=prefab+'_'+idN;
+      scene.add(obj);
+      var entry={
+        id: idN++, name: obj.name, type: prefab, obj3d: obj,
+        topic: inter? inter.topic : '',
+        intLabel: inter? inter.label : '',
+        opts: opts,
+      };
+      items.push(entry);
+    });
+
+    // Remember which room we loaded so genCode emits the right fn name.
+    window._loadedRoomId=id;
+    window._loadedRoomFn=cfg.fnName;
+    refreshTree(); genCode();
+
+    // Tiny toast.
+    var tb=$('vp-info'); if(tb){tb.textContent='Loaded '+detached.length+' prefabs from '+cfg.fnName+'()';}
+  }
+  function toggleTheme(){
+    var cur=document.documentElement.getAttribute('data-theme')||'dark';
+    _applyTheme(cur==='dark'?'light':'dark');
+  }
+
+  function $(id){return document.getElementById(id)}
+  function pf2(id){return parseFloat($(id).value)||0}
+  function r3(n){return Math.round(n*1000)/1000}
+  function r1(n){return Math.round(n*10)/10}
+  function d2r(d){return THREE.MathUtils.degToRad(d)}
+  function hex(c){return '0x'+c.replace('#','').padStart(6,'0')}
+  function varName(n){return n.replace(/[^a-zA-Z0-9_]/g,'_').replace(/^(\d)/,'_$1')||'obj'}
+  function disposeObj(o){o.traverse(function(c){if(c.geometry)c.geometry.dispose();if(c.material){(Array.isArray(c.material)?c.material:[c.material]).forEach(function(m){m.dispose&&m.dispose()})}})}
+
+  function animate(){requestAnimationFrame(animate);orbit.update();renderer.render(scene,camera)}
+  function onResize(){
+    var vp=$('viewport-area');var w=vp.clientWidth,h=vp.clientHeight;if(!w||!h)return;
+    renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();
+  }
+  window.addEventListener('resize',onResize);
+  new ResizeObserver(onResize).observe($('viewport-area'));
+
+  requestAnimationFrame(function(){
+    var saved=localStorage.getItem('designer-theme');
+    if(saved)_applyTheme(saved);
+    onResize();rebuildShell();buildPalette();animate();
+    document.getElementById('left-panel').setAttribute('data-mode','room');
+    buildMaterialPresets();
+  });
+
+  function buildMaterialPresets(){
+    var floorPresets=[
+      {name:'Dark oak',color:'#4a3220'},
+      {name:'Light oak',color:'#8a6a40'},
+      {name:'Walnut',color:'#3a2418'},
+      {name:'Birch',color:'#c8a870'},
+      {name:'Cherry',color:'#6a3028'},
+      {name:'Ash',color:'#d8c8a8'},
+      {name:'Slate',color:'#4a4a50'},
+      {name:'Marble',color:'#d8d0c8'},
+      {name:'Concrete',color:'#8a8880'},
+      {name:'Terracotta',color:'#b86a48'},
+      {name:'Tile white',color:'#e8e4dc'},
+      {name:'Tile dark',color:'#3a3830'},
+    ];
+    var wallPresets=[
+      {name:'Plaster warm',color:'#2a2018'},
+      {name:'Plaster cream',color:'#c8b89a'},
+      {name:'White',color:'#e8e4dc'},
+      {name:'Light grey',color:'#b0aaa0'},
+      {name:'Warm grey',color:'#8a8070'},
+      {name:'Charcoal',color:'#3a3830'},
+      {name:'Brick red',color:'#8a4030'},
+      {name:'Brick tan',color:'#b89070'},
+      {name:'Stone',color:'#6a6458'},
+      {name:'Sage',color:'#7a8a70'},
+      {name:'Navy',color:'#2a3040'},
+      {name:'Terracotta',color:'#a06040'},
+    ];
+    // Try to load custom texture images from data/floors/ and data/walls/
+    // If images exist, use them; otherwise fallback to color swatches
+    var fp=document.getElementById('floor-presets');
+    var wp=document.getElementById('wall-presets');
+    if(fp) buildPresetChips(fp,floorPresets,'rFloorCol','sw-floor');
+    if(wp) buildPresetChips(wp,wallPresets,'rWallCol','sw-wall');
+  }
+  function buildPresetChips(container,presets,inputId,swatchId){
+    container.innerHTML='';
+    var imgDir=inputId==='rFloorCol'?'data/floors/':'data/walls/';
+    presets.forEach(function(p){
+      var chip=document.createElement('div');
+      chip.className='mp';
+      chip.title=p.name;
+      // Try image first — use onerror to fallback to color swatch
+      var img=new Image();
+      img.src=imgDir+p.name.toLowerCase().replace(/\s+/g,'_')+'.jpg';
+      img.onerror=function(){
+        // No image found, use color swatch
+        chip.innerHTML='<div class="mp-swatch" style="background:'+p.color+'"></div>';
+      };
+      img.onload=function(){
+        chip.innerHTML='';
+        chip.appendChild(img);
+      };
+      // Fallback immediately too
+      chip.innerHTML='<div class="mp-swatch" style="background:'+p.color+'"></div>';
+      chip.onclick=function(){
+        var inp=document.getElementById(inputId);
+        var sw=document.getElementById(swatchId);
+        if(inp){inp.value=p.color;if(sw)sw.style.background=p.color;D.rebuildShell();}
+        container.querySelectorAll('.mp').forEach(function(c){c.classList.remove('active')});
+        chip.classList.add('active');
+      };
+      container.appendChild(chip);
+    });
+  }
+
+  // ─── Mesh Decimation (edge collapse) ───
+  // Reduces triangle count. ratio = target, e.g. 0.5 = keep ~50% of triangles.
+  function decimateMesh(geometry, ratio){
+    var pos=geometry.getAttribute('position');
+    if(!pos||pos.count<6) return geometry;
+
+    // Step 1: Weld duplicate vertices (critical for non-indexed geo like OBJ)
+    var rawVerts=[];
+    for(var i=0;i<pos.count;i++){
+      rawVerts.push(pos.getX(i),pos.getY(i),pos.getZ(i));
+    }
+    var vertMap={}; // "x,y,z" -> welded index
+    var weldedPos=[]; // flat [x,y,z,x,y,z,...]
+    var weldRemap=new Uint32Array(pos.count); // old vertex -> welded index
+    var weldCount=0;
+
+    for(var i=0;i<pos.count;i++){
+      var x=rawVerts[i*3],y=rawVerts[i*3+1],z=rawVerts[i*3+2];
+      // Round to avoid floating point key issues
+      var key=Math.round(x*1e4)+','+Math.round(y*1e4)+','+Math.round(z*1e4);
+      if(vertMap[key]===undefined){
+        vertMap[key]=weldCount;
+        weldedPos.push(x,y,z);
+        weldCount++;
+      }
+      weldRemap[i]=vertMap[key];
+    }
+
+    // Step 2: Build welded index array
+    var indices;
+    if(geometry.index){
+      var origIdx=geometry.index.array;
+      indices=[];
+      for(var i=0;i<origIdx.length;i++) indices.push(weldRemap[origIdx[i]]);
+    } else {
+      indices=[];
+      for(var i=0;i<pos.count;i++) indices.push(weldRemap[i]);
+    }
+
+    // Build triangle list (skip degenerate)
+    var tris=[];
+    for(var t=0;t<indices.length;t+=3){
+      var a=indices[t],b=indices[t+1],c=indices[t+2];
+      if(a!==b&&b!==c&&a!==c) tris.push([a,b,c]);
+    }
+
+    if(tris.length<5) return geometry; // too few to decimate
+
+    var targetTris=Math.max(4,Math.floor(tris.length*ratio));
+    if(targetTris>=tris.length) return geometry; // nothing to do
+
+    // Step 3: Vertex positions (welded)
+    var verts=[];
+    for(var i=0;i<weldCount;i++){
+      verts.push([weldedPos[i*3],weldedPos[i*3+1],weldedPos[i*3+2]]);
+    }
+
+    // Step 4: Collapse remap
+    var collapse=new Int32Array(weldCount);
+    for(var i=0;i<weldCount;i++) collapse[i]=i;
+
+    function resolve(v){
+      var path=[];
+      while(collapse[v]!==v){path.push(v);v=collapse[v]}
+      // Path compression
+      for(var i=0;i<path.length;i++) collapse[path[i]]=v;
+      return v;
+    }
+
+    // Step 5: Build edges sorted by squared length
+    var edges=[];
+    var edgeSet=new Set();
+    for(var t=0;t<tris.length;t++){
+      var tri=tris[t];
+      for(var e=0;e<3;e++){
+        var a=tri[e],b=tri[(e+1)%3];
+        var lo=Math.min(a,b),hi=Math.max(a,b);
+        var key=lo+':'+hi;
+        if(!edgeSet.has(key)){
+          edgeSet.add(key);
+          var dx=verts[a][0]-verts[b][0];
+          var dy=verts[a][1]-verts[b][1];
+          var dz=verts[a][2]-verts[b][2];
+          edges.push({a:a,b:b,cost:dx*dx+dy*dy+dz*dz});
+        }
+      }
+    }
+    edges.sort(function(x,y){return x.cost-y.cost});
+
+    // Step 6: Edge collapse loop
+    var ei=0;
+    while(tris.length>targetTris&&ei<edges.length){
+      var edge=edges[ei++];
+      var ra=resolve(edge.a),rb=resolve(edge.b);
+      if(ra===rb) continue;
+
+      // Merge rb into ra at midpoint
+      verts[ra][0]=(verts[ra][0]+verts[rb][0])*0.5;
+      verts[ra][1]=(verts[ra][1]+verts[rb][1])*0.5;
+      verts[ra][2]=(verts[ra][2]+verts[rb][2])*0.5;
+      collapse[rb]=ra;
+
+      // Remove degenerate triangles
+      var kept=[];
+      for(var t=0;t<tris.length;t++){
+        var tri=tris[t];
+        var a=resolve(tri[0]),b=resolve(tri[1]),c=resolve(tri[2]);
+        if(a!==b&&b!==c&&a!==c) kept.push([a,b,c]);
+      }
+      tris=kept;
+    }
+
+    // Step 7: Rebuild clean geometry
+    var finalVertMap={};
+    var finalPos=[];
+    var fi=0;
+    function getFinal(v){
+      var r=resolve(v);
+      if(finalVertMap[r]===undefined){
+        finalVertMap[r]=fi;
+        finalPos.push(verts[r][0],verts[r][1],verts[r][2]);
+        fi++;
+      }
+      return finalVertMap[r];
+    }
+    var finalIdx=[];
+    for(var t=0;t<tris.length;t++){
+      var a=getFinal(tris[t][0]);
+      var b=getFinal(tris[t][1]);
+      var c=getFinal(tris[t][2]);
+      if(a!==b&&b!==c&&a!==c) finalIdx.push(a,b,c);
+    }
+
+    var newGeo=new THREE.BufferGeometry();
+    newGeo.setAttribute('position',new THREE.BufferAttribute(new Float32Array(finalPos),3));
+    if(finalIdx.length>0) newGeo.setIndex(finalIdx);
+    newGeo.computeVertexNormals();
+    return newGeo;
+  }
+
+  function decimateObject(obj3d, ratio){
+    // Collect meshes first to avoid modifying during traversal
+    var meshes=[];
+    obj3d.traverse(function(c){if(c.isMesh) meshes.push(c)});
+    meshes.forEach(function(m){
+      var newGeo=decimateMesh(m.geometry,ratio);
+      if(newGeo!==m.geometry){
+        m.geometry.dispose();
+        m.geometry=newGeo;
+      }
+    });
+  }
+
+  // ─── Erase Brush ───
+  // When active, clicking on a mesh face removes triangles in a radius.
+  var brushActive=false;
+  var brushRadius=0.3;
+
+  function toggleBrush(){
+    brushActive=!brushActive;
+    var btn=$('btn-brush');
+    if(btn){
+      btn.classList.toggle('on',brushActive);
+      renderer.domElement.style.cursor=brushActive?'crosshair':'';
+    }
+    if(brushActive){
+      gizmo.detach();
+      $('vp-info').textContent='ERASE BRUSH — click faces to remove (scroll = radius)';
+      $('vp-info').style.color='var(--danger)';
+    } else {
+      $('vp-info').textContent=currentMode==='object'?'OBJECT BUILDER — walls hidden':'select an object to move it';
+      $('vp-info').style.color=currentMode==='object'?'var(--accent)':'';
+      renderer.domElement.style.cursor='';
+    }
+  }
+
+  function setBrushRadius(val){
+    brushRadius=Math.max(0.05,Math.min(5,val));
+    $('brush-radius-val').textContent=brushRadius.toFixed(2);
+  }
+
+  // Brush click handler — intercepts the normal pointerup when brush is active
+  renderer.domElement.addEventListener('pointerup',function(e){
+    if(!brushActive||e.button!==0||!_downAt)return;
+    var dx=e.clientX-_downAt.x,dy=e.clientY-_downAt.y;
+    if(Math.sqrt(dx*dx+dy*dy)>5)return; // was a drag
+
+    var rect=renderer.domElement.getBoundingClientRect();
+    var mx=((e.clientX-rect.left)/rect.width)*2-1;
+    var my=-((e.clientY-rect.top)/rect.height)*2+1;
+    var brushRay=new THREE.Raycaster();
+    brushRay.setFromCamera(new THREE.Vector2(mx,my),camera);
+
+    var meshes=[];
+    items.forEach(function(it){it.obj3d.traverse(function(c){if(c.isMesh)meshes.push(c)})});
+    var hits=brushRay.intersectObjects(meshes,false);
+    if(!hits.length)return;
+
+    var hit=hits[0];
+    var mesh=hit.object;
+    var hitPoint=hit.point;
+
+    eraseFaces(mesh,hitPoint,brushRadius);
+    _downAt=null; // consume the event so normal selection doesn't fire
+    e.stopImmediatePropagation();
+  },true); // capture phase
+
+  // Scroll to adjust brush radius when brush is active
+  renderer.domElement.addEventListener('wheel',function(e){
+    if(!brushActive)return;
+    e.preventDefault();
+    setBrushRadius(brushRadius+(e.deltaY>0?-0.05:0.05));
+  },{passive:false});
+
+  function eraseFaces(mesh,worldPoint,radius){
+    var geo=mesh.geometry;
+    if(!geo)return;
+
+    // Convert world point to local space
+    var invMat=new THREE.Matrix4().copy(mesh.matrixWorld).invert();
+    var localPt=worldPoint.clone().applyMatrix4(invMat);
+    var localR=radius/mesh.getWorldScale(new THREE.Vector3()).x;
+    var r2=localR*localR;
+
+    var pos=geo.getAttribute('position');
+    if(!pos)return;
+
+    var indices;
+    if(geo.index){
+      indices=Array.from(geo.index.array);
+    } else {
+      indices=[];
+      for(var i=0;i<pos.count;i++) indices.push(i);
+    }
+
+    // Filter triangles: remove any with centroid inside radius
+    var keptIdx=[];
+    var v=new THREE.Vector3();
+    for(var t=0;t<indices.length;t+=3){
+      var a=indices[t],b=indices[t+1],c=indices[t+2];
+      // Centroid
+      var cx=(pos.getX(a)+pos.getX(b)+pos.getX(c))/3;
+      var cy=(pos.getY(a)+pos.getY(b)+pos.getY(c))/3;
+      var cz=(pos.getZ(a)+pos.getZ(b)+pos.getZ(c))/3;
+      v.set(cx-localPt.x,cy-localPt.y,cz-localPt.z);
+      if(v.lengthSq()>r2){
+        keptIdx.push(a,b,c);
+      }
+    }
+
+    if(keptIdx.length===indices.length) return; // nothing removed
+
+    if(geo.index){
+      geo.setIndex(keptIdx);
+    } else {
+      // Non-indexed: rebuild position buffer
+      var newPos=[];
+      for(var i=0;i<keptIdx.length;i++){
+        var vi=keptIdx[i];
+        newPos.push(pos.getX(vi),pos.getY(vi),pos.getZ(vi));
+      }
+      var newGeo=new THREE.BufferGeometry();
+      newGeo.setAttribute('position',new THREE.BufferAttribute(new Float32Array(newPos),3));
+      newGeo.computeVertexNormals();
+      mesh.geometry.dispose();
+      mesh.geometry=newGeo;
+    }
+    geo.computeVertexNormals();
+    geo.index && (geo.index.needsUpdate=true);
+    geo.attributes.position.needsUpdate=true;
+  }
+
+  // ─── Import system ───
+  var gltfLoader=new THREE.GLTFLoader();
+  var objLoader=new THREE.OBJLoader();
+
+  // Drag and drop
+  (function(){
+    var dz=$('drop-zone');
+    if(!dz)return;
+    ['dragenter','dragover'].forEach(function(ev){
+      dz.addEventListener(ev,function(e){e.preventDefault();e.stopPropagation();dz.classList.add('over')});
+    });
+    ['dragleave','drop'].forEach(function(ev){
+      dz.addEventListener(ev,function(e){e.preventDefault();e.stopPropagation();dz.classList.remove('over')});
+    });
+    dz.addEventListener('drop',function(e){
+      var file=e.dataTransfer.files[0];
+      if(file) handleFile(file);
+    });
+  })();
+
+  function showProgress(pct,msg){
+    var wrap=$('progress-wrap');
+    var fill=$('progress-fill');
+    var label=$('progress-label');
+    wrap.classList.add('active');
+    fill.style.width=Math.min(100,Math.round(pct))+'%';
+    label.textContent=msg||'';
+  }
+  function hideProgress(){
+    setTimeout(function(){
+      $('progress-wrap').classList.remove('active');
+      $('progress-fill').style.width='0%';
+      $('progress-label').textContent='';
+    },600);
+  }
+
+  function handleFile(file){
+    if(!file)return;
+    var name=file.name.toLowerCase();
+    var ext=name.split('.').pop();
+
+    if(ext==='glb'||ext==='gltf'){
+      loadGLTF(file);
+    } else if(ext==='obj'){
+      loadOBJ(file);
+    } else {
+      alert('Unsupported format: .'+ext+'\nUse .glb, .gltf, or .obj');
+    }
+    // Reset file input so same file can be re-imported
+    $('file-input').value='';
+  }
+
+  function loadGLTF(file){
+    showProgress(5,'Reading file...');
+    var reader=new FileReader();
+    reader.onprogress=function(e){
+      if(e.lengthComputable) showProgress(5+e.loaded/e.total*30,'Reading file...');
+    };
+    reader.onload=function(){
+      showProgress(40,'Parsing GLTF...');
+      var arrayBuf=reader.result;
+      gltfLoader.parse(arrayBuf,'',function(gltf){
+        showProgress(75,'Processing meshes...');
+        var obj=gltf.scene||gltf.scenes[0];
+        if(!obj){hideProgress();alert('No scene found in GLTF');return}
+        finishImport(obj,file.name,'glb');
+      },function(err){
+        hideProgress();
+        alert('Failed to parse GLTF: '+err.message);
+      });
+    };
+    reader.readAsArrayBuffer(file);
+  }
+
+  function loadOBJ(file){
+    showProgress(5,'Reading file...');
+    var reader=new FileReader();
+    reader.onprogress=function(e){
+      if(e.lengthComputable) showProgress(5+e.loaded/e.total*30,'Reading file...');
+    };
+    reader.onload=function(){
+      showProgress(40,'Parsing OBJ...');
+      try{
+        var text=reader.result;
+        showProgress(60,'Building geometry...');
+        var obj=objLoader.parse(text);
+        // OBJ files come with no materials by default — give a neutral one
+        obj.traverse(function(c){
+          if(c.isMesh&&(!c.material||c.material.type==='MeshPhongMaterial')){
+            c.material=new THREE.MeshStandardMaterial({color:0xaaaaaa,roughness:0.6,metalness:0.1});
+          }
+        });
+        finishImport(obj,file.name,'obj');
+      } catch(err){
+        hideProgress();
+        alert('Failed to parse OBJ: '+err.message);
+      }
+    };
+    reader.readAsText(file);
+  }
+
+  function finishImport(obj,filename,format){
+    showProgress(85,'Counting geometry...');
+
+    // Gather stats
+    var meshCount=0,vertCount=0,triCount=0;
+    obj.traverse(function(c){
+      if(c.isMesh){
+        meshCount++;
+        if(c.geometry){
+          var pos=c.geometry.getAttribute('position');
+          if(pos) vertCount+=pos.count;
+          if(c.geometry.index) triCount+=c.geometry.index.count/3;
+          else if(pos) triCount+=pos.count/3;
+        }
+      }
+    });
+
+    showProgress(92,'Normalizing scale...');
+
+    // Auto-scale: fit into a ~2 unit bounding box
+    var box=new THREE.Box3().setFromObject(obj);
+    var size=new THREE.Vector3();box.getSize(size);
+    var maxDim=Math.max(size.x,size.y,size.z);
+    if(maxDim>0){
+      var targetSize=2;
+      var s=targetSize/maxDim;
+      obj.scale.multiplyScalar(s);
+    }
+    // Center on ground
+    box.setFromObject(obj);
+    var center=new THREE.Vector3();box.getCenter(center);
+    obj.position.sub(center);
+    obj.position.y-=box.min.y; // sit on floor
+
+    var baseName=filename.replace(/\.[^.]+$/,'').replace(/[^a-zA-Z0-9_-]/g,'_');
+    obj.name=baseName+'_'+idN;
+    scene.add(obj);
+
+    showProgress(100,'Done!');
+
+    var entry={
+      id:idN++,name:obj.name,type:'imported',obj3d:obj,topic:'',intLabel:'',opts:{},
+      isPrimitive:false,geomParams:null,matType:'standard',color:'#aaaaaa',children:null,
+      // Import-specific data
+      importData:{
+        filename:filename,
+        format:format,
+        modelPath:'models/'+filename,
+        meshCount:meshCount,
+        vertCount:vertCount,
+        triCount:Math.round(triCount),
+        exportMode:'reference', // 'reference' or 'convert'
+        convertedCode:null,
+      }
+    };
+
+    // Pre-generate conversion code (for simple models)
+    if(vertCount<50000){
+      entry.importData.convertedCode=convertToJS(obj,baseName);
+    }
+
+    items.push(entry);
+    selectItem(entry);
+    refreshTree();
+    genCode();
+    hideProgress();
+  }
+
+  // ─── Convert model to JS code ───
+  function convertToJS(obj,name){
+    var lines=[];
+    lines.push('OBJECTS.register("'+name+'", function(opts) {');
+    lines.push('  opts = opts || {};');
+    lines.push('  const g = new THREE.Group();');
+
+    var meshIdx=0;
+    obj.traverse(function(c){
+      if(!c.isMesh)return;
+      var geo=c.geometry;
+      if(!geo)return;
+      var pos=geo.getAttribute('position');
+      if(!pos)return;
+
+      var mi='m'+meshIdx;
+      meshIdx++;
+
+      // Material
+      var mat=c.material;
+      var col=mat&&mat.color?'0x'+mat.color.getHexString():'0xaaaaaa';
+      var rough=mat&&mat.roughness!==undefined?mat.roughness:0.6;
+      var metal=mat&&mat.metalness!==undefined?mat.metalness:0.1;
+      lines.push('  const '+mi+'_mat = new THREE.MeshStandardMaterial({ color: '+col+', roughness: '+r3(rough)+', metalness: '+r3(metal)+' });');
+
+      // Geometry — for indexed buffer geometries, extract position array
+      var posArr=Array.from(pos.array);
+      // Truncate precision
+      posArr=posArr.map(function(v){return r3(v)});
+
+      lines.push('  const '+mi+'_pos = new Float32Array('+JSON.stringify(posArr)+');');
+      lines.push('  const '+mi+'_geo = new THREE.BufferGeometry();');
+      lines.push('  '+mi+'_geo.setAttribute("position", new THREE.BufferAttribute('+mi+'_pos, 3));');
+
+      // Normals
+      var norm=geo.getAttribute('normal');
+      if(norm){
+        var normArr=Array.from(norm.array).map(function(v){return r3(v)});
+        lines.push('  '+mi+'_geo.setAttribute("normal", new THREE.BufferAttribute(new Float32Array('+JSON.stringify(normArr)+'), 3));');
+      } else {
+        lines.push('  '+mi+'_geo.computeVertexNormals();');
+      }
+
+      // Index
+      if(geo.index){
+        var idxArr=Array.from(geo.index.array);
+        lines.push('  '+mi+'_geo.setIndex('+JSON.stringify(idxArr)+');');
+      }
+
+      lines.push('  const '+mi+' = new THREE.Mesh('+mi+'_geo, '+mi+'_mat);');
+
+      // Transform
+      var wp=new THREE.Vector3();c.getWorldPosition(wp);
+      var wr=new THREE.Euler();
+      var wq=new THREE.Quaternion();c.getWorldQuaternion(wq);wr.setFromQuaternion(wq);
+      var ws=new THREE.Vector3();c.getWorldScale(ws);
+      if(wp.x||wp.y||wp.z) lines.push('  '+mi+'.position.set('+r3(wp.x)+', '+r3(wp.y)+', '+r3(wp.z)+');');
+      if(wr.x||wr.y||wr.z) lines.push('  '+mi+'.rotation.set('+r3(wr.x)+', '+r3(wr.y)+', '+r3(wr.z)+');');
+      if(ws.x!==1||ws.y!==1||ws.z!==1) lines.push('  '+mi+'.scale.set('+r3(ws.x)+', '+r3(ws.y)+', '+r3(ws.z)+');');
+
+      lines.push('  g.add('+mi+');');
+    });
+
+    lines.push('  return g;');
+    lines.push('}, { icon: "&#128230;", category: "imported" });');
+    return lines.join('\n');
+  }
+
+  function setExportMode(mode){
+    if(!sel||!sel.importData)return;
+    sel.importData.exportMode=mode;
+    $('exp-ref').classList.toggle('active',mode==='reference');
+    $('exp-js').classList.toggle('active',mode==='convert');
+    genCode();
+  }
+
+  // Update syncFromObj to show model info
+  var _origSyncFromObj=syncFromObj;
+  syncFromObj=function(){
+    _origSyncFromObj();
+    if(!sel)return;
+    var mi=$('model-info');
+    if(sel.importData){
+      mi.style.display='';
+      var d=sel.importData;
+      $('model-stats').innerHTML=
+        'File: <span>'+d.filename+'</span><br>'+
+        'Format: <span>'+d.format.toUpperCase()+'</span><br>'+
+        'Meshes: <span>'+d.meshCount+'</span><br>'+
+        'Vertices: <span>'+d.vertCount.toLocaleString()+'</span><br>'+
+        'Triangles: <span>'+d.triCount.toLocaleString()+'</span>'+
+        (d.vertCount>=50000?'<br><span style="color:var(--accent)">Simplify mesh before converting to JS</span>':'');
+      $('pModelPath').value=d.modelPath;
+      $('exp-ref').classList.toggle('active',d.exportMode==='reference');
+      $('exp-js').classList.toggle('active',d.exportMode==='convert');
+      $('exp-js').style.display='';
+    } else {
+      mi.style.display='none';
+    }
+  };
+
+  // Update genCode to handle imported models
+  var _origGenCode=genCode;
+  genCode=function(){
+    // Check if any imported items need special handling
+    var hasImported=items.some(function(e){return e.type==='imported'});
+    if(!hasImported){_origGenCode();return}
+
+    // Rebuild with import support
+    var L=[];
+    if(currentMode==='object'){
+      // In object mode, same as before but handle imported
+      _origGenCode();
+      return;
+    }
+
+    var W=pf2('rW')||14,D=pf2('rD')||12,H=pf2('rH')||5;
+    var fc=hex($('rFloorCol').value),wc=hex($('rWallCol').value);
+    var walls=$('rWalls').value,shape=$('rShape').value;
+
+    L.push('function buildMyRoom() {');
+    L.push('  const r = new Room("myRoom");');
+    L.push('  const W = '+W+', D = '+D+', H = '+H+';');
+    L.push('  const halfW = W/2, halfD = D/2;');
+    L.push('');
+
+    if(shape==='circle') L.push('  r.setFloor(make.floor({ size: '+Math.max(W,D)+', color: '+fc+', shape: "circle" }));');
+    else L.push('  r.setFloor(make.floor({ width: W, depth: D, color: '+fc+' }));');
+
+    if(walls==='4'||walls==='3'||walls==='back'){
+      L.push('  const back = make.wall({ width: W, height: H, color: '+wc+' });');
+      L.push('  back.position.set(0, H/2, -halfD); r.add(back);');
+    }
+    if(walls==='4'||walls==='3'){
+      L.push('  const leftW = make.wall({ width: D, height: H, color: '+wc+' });');
+      L.push('  leftW.position.set(-halfW, H/2, 0); leftW.rotation.y = Math.PI/2; r.add(leftW);');
+      L.push('  const rightW = make.wall({ width: D, height: H, color: '+wc+' });');
+      L.push('  rightW.position.set(halfW, H/2, 0); rightW.rotation.y = -Math.PI/2; r.add(rightW);');
+    }
+    if(walls==='4'){
+      L.push('  const front = make.wall({ width: W, height: H, color: '+wc+' });');
+      L.push('  front.position.set(0, H/2, halfD); front.rotation.y = Math.PI; r.add(front);');
+    }
+    L.push('');
+
+    items.forEach(function(e){
+      var o=e.obj3d,v=varName(e.name);
+      var px=r3(o.position.x),py=r3(o.position.y),pz=r3(o.position.z);
+      var rx=r3(o.rotation.x),ry=r3(o.rotation.y),rz=r3(o.rotation.z);
+      var sx=r3(o.scale.x),sy=r3(o.scale.y),sz=r3(o.scale.z);
+
+      if(e.type==='imported'){
+        var d=e.importData;
+        if(d.exportMode==='convert'&&d.convertedCode){
+          L.push('  // Converted from: '+d.filename);
+          L.push('  const '+v+' = make.'+varName(d.filename.replace(/\.[^.]+$/,''))+'();');
+        } else {
+          L.push('  // Imported model: '+d.filename);
+          L.push('  // Place '+d.filename+' in your models/ folder');
+          L.push('  const '+v+' = await loadModel("'+d.modelPath+'");');
+        }
+      } else if(e.isPrimitive){
+        var matCall='M.'+e.matType+'('+hex(e.color)+')';
+        switch(e.type){
+          case 'box':L.push('  const '+v+' = _box('+e.geomParams.w+', '+e.geomParams.h+', '+e.geomParams.d+', '+matCall+');');break;
+          case 'cylinder':L.push('  const '+v+' = _cyl('+e.geomParams.rT+', '+e.geomParams.rB+', '+e.geomParams.h+', '+matCall+', null, '+e.geomParams.seg+');');break;
+          case 'sphere':L.push('  const '+v+' = new THREE.Mesh(new THREE.SphereGeometry('+e.geomParams.r+', '+e.geomParams.seg+', '+e.geomParams.seg2+'), '+matCall+');');break;
+          case 'cone':L.push('  const '+v+' = new THREE.Mesh(new THREE.ConeGeometry('+e.geomParams.r+', '+e.geomParams.h+', '+e.geomParams.seg+'), '+matCall+');');break;
+          case 'torus':L.push('  const '+v+' = new THREE.Mesh(new THREE.TorusGeometry('+e.geomParams.r+', '+e.geomParams.tube+', '+e.geomParams.seg+', '+e.geomParams.seg2+'), '+matCall+');');break;
+          case 'plane':L.push('  const '+v+' = new THREE.Mesh(new THREE.PlaneGeometry('+e.geomParams.w+', '+e.geomParams.h+'), '+matCall+');');break;
+        }
+      } else if(e.type==='group'){
+        L.push('  const '+v+' = make.'+e.name+'();');
+      } else {
+        var optsStr=Object.keys(e.opts).length?JSON.stringify(e.opts):'';
+        L.push('  const '+v+' = make.'+e.type+'('+optsStr+');');
+      }
+
+      L.push('  '+v+'.position.set('+px+', '+py+', '+pz+');');
+      if(rx||ry||rz) L.push('  '+v+'.rotation.set('+rx+', '+ry+', '+rz+');');
+      if(sx!==1||sy!==1||sz!==1) L.push('  '+v+'.scale.set('+sx+', '+sy+', '+sz+');');
+      if(e.topic) L.push('  r.addInteractive('+v+', { topic: "'+e.topic+'", label: "'+(e.intLabel||e.name)+'" });');
+      else L.push('  r.add('+v+');');
+      L.push('');
+    });
+
+    L.push('  return r;');
+    L.push('}');
+
+    // Append converted object definitions at the end
+    items.forEach(function(e){
+      if(e.type==='imported'&&e.importData.exportMode==='convert'&&e.importData.convertedCode){
+        L.push('');
+        L.push('// ── Converted from '+e.importData.filename+' ──');
+        L.push(e.importData.convertedCode);
+      }
+    });
+
+    $('code-out').textContent=L.join('\n');
+  };
+
+  function decimateSel(){
+    if(!sel){alert('Select an object first');return}
+    var ratio=parseFloat($('decimate-ratio').value)||0.5;
+
+    // Count before
+    var beforeVerts=0,beforeTris=0;
+    sel.obj3d.traverse(function(c){
+      if(!c.isMesh)return;
+      var p=c.geometry.getAttribute('position');
+      if(p)beforeVerts+=p.count;
+      if(c.geometry.index)beforeTris+=c.geometry.index.count/3;
+      else if(p)beforeTris+=p.count/3;
+    });
+
+    showProgress(10,'Decimating ('+Math.round(ratio*100)+'%)...');
+    setTimeout(function(){
+      decimateObject(sel.obj3d,ratio);
+      showProgress(80,'Recounting geometry...');
+
+      setTimeout(function(){
+        // Recount after
+        var vc=0,tc=0,mc=0;
+        sel.obj3d.traverse(function(c){
+          if(!c.isMesh)return;mc++;
+          var p=c.geometry.getAttribute('position');
+          if(p)vc+=p.count;
+          if(c.geometry.index)tc+=c.geometry.index.count/3;
+          else if(p)tc+=p.count/3;
+        });
+
+        // Update import data if present
+        if(sel.importData){
+          sel.importData.vertCount=vc;
+          sel.importData.triCount=Math.round(tc);
+          sel.importData.meshCount=mc;
+          // Regenerate conversion code
+          var baseName=sel.name.replace(/_\d+$/,'');
+          sel.importData.convertedCode=convertToJS(sel.obj3d,baseName);
+        }
+
+        showProgress(100,'Done! '+beforeVerts+' → '+vc+' verts, '+Math.round(beforeTris)+' → '+Math.round(tc)+' tris');
+        syncFromObj();
+        genCode();
+        // Keep progress visible longer so user sees the result
+        setTimeout(function(){hideProgress()},2000);
+      },30);
+    },30);
+  }
+
+  window.D={
+    rebuildShell:rebuildShell,addObject:addObject,addPrimitive:addPrimitive,
+    gizmoMode:gizmoMode,setPos:setPos,setRot:setRot,setScale:setScale,setProp:setProp,
+    setMaterial:setMaterial,setColor:setColor,updateGeom:updateGeom,
+    duplicate:duplicate,deleteSel:deleteSel,deleteById:deleteById,
+    groupAll:groupAll,ungroupSel:ungroupSel,switchMode:switchMode,
+    handleFile:handleFile,setExportMode:setExportMode,decimateSel:decimateSel,
+    toggleBrush:toggleBrush,setBrushRadius:setBrushRadius,
+    copyCode:copyCode,exportFile:exportFile,clearAll:clearAll,toggleTheme:toggleTheme,
+    loadRoom:loadRoom,
+  };
+
+  // ─── Internal state exposed for extension modules ───
+  // Modules (designer-plan.js, designer-history.js, designer-snap.js, etc.)
+  // read/write this object to hook into the editor without forking the core.
+  window._D = {
+    THREE: THREE, OBJ: OBJ,
+    scene: scene, camera: camera, renderer: renderer,
+    orbit: orbit, gizmo: gizmo, shell: shell,
+    get items() { return items; },
+    set items(v) { items = v; },
+    get sel() { return sel; },
+    set sel(v) { sel = v; },
+    get currentMode() { return currentMode; },
+    set currentMode(v) { currentMode = v; },
+    get idN() { return idN; },
+    set idN(v) { idN = v; },
+    // Hooks the modules can call:
+    refreshTree: refreshTree,
+    genCode: genCode,
+    syncFromObj: syncFromObj,
+    selectItem: selectItem,
+    deselect: deselect,
+    rebuildShell: rebuildShell,
+    showForm: showForm,
+    disposeObj: disposeObj,
+    MAT: MAT, makePrimGeo: makePrimGeo,
+    defaultGeomParams: defaultGeomParams,
+    // helpers
+    $: $, r3: r3, r1: r1, d2r: d2r, hex: hex, varName: varName, pf2: pf2,
+    // event for modules to react to:
+    notify: function(event, data) {
+      window.dispatchEvent(new CustomEvent('designer:' + event, { detail: data }));
+    },
+  };
+  window.dispatchEvent(new CustomEvent('designer:ready'));
+})();
+</script>
+<!-- ════════════════════════════════════════════════════════
+     PolyPotion shell bridge — see ToolContract.dc.html.
+     Detects embedding, announces studio:ready, and receives the active
+     character as a placeable actor. Whole-scene save/import lives in
+     scene_scripts/scene-io.js.
+     ════════════════════════════════════════════════════════ -->
+<script>
+(function () {
+  var embedded = window.parent !== window ||
+    new URLSearchParams(location.search).get('embed') === '1';
+  var post = function (type, data, transfer) {
+    if (!embedded) return;
+    window.parent.postMessage(Object.assign({ __studio: true, type: type }, data || {}), '*', transfer || []);
+  };
+  window.__sceneBridge = { post: post, embedded: embedded };
+
+  if (embedded) {
+    var st = document.createElement('style');
+    st.textContent = 'body.pp-embedded #topbar a.btn[href="index.html"]{display:none}';
+    document.head.appendChild(st);
+    document.body.classList.add('pp-embedded');
+  }
+
+  var actorId = null; // shell-delivered actor — replaced on re-delivery (idempotent)
+
+  function placeActor(file, name) {
+    try {
+      if (actorId != null && window.D && window.D.deleteById) {
+        try { window.D.deleteById(actorId); } catch (_) {}
+        actorId = null;
+      }
+      var before = window._D ? window._D.items.length : 0;
+      window.D.handleFile(file); // GLB/GLTF/OBJ → finishImport (async via FileReader)
+      var grab = function (tries) {
+        var items = window._D.items;
+        if (items.length > before) {
+          var last = items[items.length - 1];
+          actorId = last.id;
+          if (name) { last.name = name; last.obj3d.name = name; window._D.refreshTree(); }
+        } else if (tries > 0) {
+          setTimeout(function () { grab(tries - 1); }, 120);
+        }
+      };
+      grab(20);
+    } catch (e) {
+      post('studio:error', { tool: 'scene', message: 'Scene: could not place character — ' + e.message });
+    }
+  }
+
+  function loadBuffer(buffer, name) {
+    var nm = name || 'character.glb';
+    if (!/\.(glb|gltf|obj)$/i.test(nm)) nm += '.glb';
+    placeActor(new File([buffer], nm, { type: 'model/gltf-binary' }), name);
+  }
+
+  function loadUrl(url, ext, label) {
+    fetch(url).then(function (r) { return r.arrayBuffer(); }).then(function (buf) {
+      var nm = (label || 'character') + '.' + (ext || 'glb');
+      placeActor(new File([buf], nm, { type: 'model/gltf-binary' }), label);
+    }).catch(function (e) {
+      post('studio:error', { tool: 'scene', message: 'Scene: character URL load failed — ' + e.message });
+    });
+  }
+
+  window.addEventListener('message', function (e) {
+    var d = e.data; if (!d || !d.__studio) return;
+    if (d.type === 'studio:loadCharBuffer') loadBuffer(d.buffer, d.name);
+    else if (d.type === 'studio:loadCharUrl') {
+      if (d.chunked) { post('studio:error', { tool: 'scene', message: 'Scene: chunked character load not wired yet.' }); return; }
+      loadUrl(d.url, d.ext, d.label);
+    }
+  });
+
+  function announce() { post('studio:ready', { tool: 'scene' }); }
+  if (window._D) announce();
+  else window.addEventListener('designer:ready', announce, { once: true });
+})();
+</script>
+<!-- Theme integration: keep the 3D viewport background in sync with the active
+     PolyPotion theme, and repoint the in-tool theme button at StudioTheme. -->
+<script>
+(function () {
+  function syncBg() {
+    try {
+      var c = getComputedStyle(document.documentElement).getPropertyValue('--viewport').trim();
+      if (c && window._dScene && window.THREE) window._dScene.background = new window.THREE.Color(c);
+    } catch (e) {}
+  }
+  window.addEventListener('studiothemechange', syncBg);
+  function ready() {
+    if (window.D) window.D.toggleTheme = function () { if (window.StudioTheme) window.StudioTheme.toggle(); };
+    var b = document.getElementById('theme-btn');
+    if (b) { b.title = 'Cycle theme'; b.innerHTML = '◐'; }
+    syncBg();
+    setTimeout(syncBg, 400); // win over the designer's own boot-time bg set
+  }
+  if (window._D) ready();
+  else window.addEventListener('designer:ready', ready, { once: true });
+})();
+</script>
+</body>
+</html>

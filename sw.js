@@ -13,7 +13,7 @@
        plane. (True vendoring is still better; this is the client-side half.)
    Bump CACHE_VERSION whenever shell files change so clients pick them up.
    ============================================================ */
-const CACHE_VERSION = 'pp-v89';
+const CACHE_VERSION = 'pp-v90';
 const CORE_CACHE = CACHE_VERSION + '-core';
 const RUNTIME_CACHE = CACHE_VERSION + '-runtime';
 const CDN_CACHE = CACHE_VERSION + '-cdn';
@@ -47,6 +47,29 @@ const CORE = [
   'Stage.dc.html',
   'MultiRig.dc.html',
   'studio3D_scripts/stage-engine.js',
+  // Scene tool (Room Designer) — own three 0.137 world; engine modules + object library.
+  'Scene.html',
+  'scene_scripts/designer-plan.js',
+  'scene_scripts/designer-history.js',
+  'scene_scripts/designer-snap.js',
+  'scene_scripts/designer-extras.js',
+  'scene_scripts/designer-extras2.js',
+  'scene_scripts/designer-params.js',
+  'scene_scripts/designer-sims.js',
+  'scene_scripts/designer-ux.js',
+  'scene_scripts/designer-wallcut.js',
+  'scene_scripts/designer-atmosphere.js',
+  'scene_scripts/designer-showcase.js',
+  'scene_scripts/scene-io.js',
+  'scene_scripts/interaction.js',
+  'scene_scripts/scene-play.js',
+  'data/objects_core.js',
+  'data/objects_props.js',
+  'data/objects_wiz_projectiles.js',
+  'data/rooms.js',
+  'data/rooms_hogwarts.js',
+  // NOTE: the remaining data/objects_*.js + data/dialogue.js are precached too
+  // once dropped in — cache.add() skips any that 404, so listing-when-present is safe.
   'MeshDoctor.dc.html',
   'ShaderLab.dc.html',
   'Director.dc.html',
@@ -149,7 +172,7 @@ const CORE = [
 // carries three.js/addons/manifold/MediaPipe since the pp-v42 migration (its
 // absence here broke offline — Audit V); storage.googleapis.com serves the
 // MediaPipe model files.
-const CDN_HOSTS = ['cdn.jsdelivr.net', 'esm.sh', 'fonts.googleapis.com', 'fonts.gstatic.com', 'storage.googleapis.com'];
+const CDN_HOSTS = ['cdn.jsdelivr.net', 'esm.sh', 'fonts.googleapis.com', 'fonts.gstatic.com', 'storage.googleapis.com', 'unpkg.com'];
 
 // fetch that gives up after `ms` instead of hanging a tool forever on a
 // stalled connection — callers fall back to cache (or error) on abort.
